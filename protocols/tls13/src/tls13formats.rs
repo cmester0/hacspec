@@ -10,7 +10,10 @@
 use super::*;
 
 // Import hacspec and all needed definitions.
-use hacspec_lib::*;
+use hacspec_lib::{Seq, SeqTrait};
+use hacspec_lib::public_bytes as bytes;
+use hacspec_lib::public_byte_array as secret_bytes;
+
 
 bytes!(Bytes1, 1);
 bytes!(Bytes2, 2);
@@ -40,14 +43,8 @@ pub fn bytes5(x0: u8, x1: u8, x2:u8, x3:u8, x4:u8) -> Bytes {
     bytes(&Bytes5([U8(x0), U8(x1), U8(x2), U8(x3), U8(x4)]))
 }
 
-const sha256_empty : Bytes32 = Bytes32(secret_bytes!([
-    0xe3, 0xb0, 0xc4, 0x42, 0x98, 0xfc, 0x1c, 0x14, 0x9a, 0xfb, 0xf4, 0xc8, 0x99, 0x6f, 0xb9, 0x24,
-    0x27, 0xae, 0x41, 0xe4, 0x64, 0x9b, 0x93, 0x4c, 0xa4, 0x95, 0x99, 0x1b, 0x78, 0x52, 0xb8, 0x55
-]));
-
 pub fn hash_empty(ha:&HashAlgorithm) -> Res<HASH> {
    hash(ha, &empty())
-   //Ok(HASH::from_seq(&sha256_empty))
 }
 pub const label_iv: Bytes2 = Bytes2(secret_bytes!([105, 118]));
 pub const label_key: Bytes3 = Bytes3(secret_bytes!([107, 101, 121]));
@@ -128,10 +125,10 @@ pub fn check(b:bool) -> Res<()> {
     else {err(parse_failed)}
 }
 
-pub fn eq1(b1: U8, b2: U8) -> bool {
+pub fn eq1(b1: Byte, b2: Byte) -> bool {
     b1.declassify() == b2.declassify()
 }
-pub fn check_eq1(b1: U8, b2: U8) -> Res<()> {
+pub fn check_eq1(b1: Byte, b2: Byte) -> Res<()> {
     if eq1(b1,b2) {Ok(())}
     else {err(parse_failed)}
 }
@@ -206,7 +203,7 @@ pub fn check_lbytes1(b: &Bytes) -> Res<usize> {
     if b.len() < 1 {
         err(parse_failed)
     } else {
-        let l = (b[0] as U8).declassify() as usize;
+        let l = (b[0] as Byte).declassify() as usize;
         if b.len() - 1 < l {
             err(parse_failed)
         } else {
@@ -219,8 +216,8 @@ pub fn check_lbytes2(b: &Bytes) -> Res<usize> {
     if b.len() < 2 {
         err(parse_failed)
     } else {
-        let l0 = (b[0] as U8).declassify() as usize;
-        let l1 = (b[1] as U8).declassify() as usize;
+        let l0 = (b[0] as Byte).declassify() as usize;
+        let l1 = (b[1] as Byte).declassify() as usize;
         let l = l0 * 256 + l1;
         if b.len() - 2 < l as usize {
             err(parse_failed)
@@ -234,9 +231,9 @@ pub fn check_lbytes3(b: &Bytes) -> Res<usize> {
     if b.len() < 3 {
         err(parse_failed)
     } else {
-        let l0 = (b[0] as U8).declassify() as usize;
-        let l1 = (b[1] as U8).declassify() as usize;
-        let l2 = (b[2] as U8).declassify() as usize;
+        let l0 = (b[0] as Byte).declassify() as usize;
+        let l1 = (b[1] as Byte).declassify() as usize;
+        let l2 = (b[2] as Byte).declassify() as usize;
         let l = l0 * 65536 + l1 * 256 + l2;
         if b.len() - 3 < l {
             err(parse_failed)
@@ -447,8 +444,8 @@ pub fn merge_exts(e1: EXTS, e2: EXTS) -> Res<EXTS> {
 }
 
 pub fn check_extension(algs: &Algorithms, b: &Bytes) -> Res<(usize, EXTS)> {
-    let l0 = (b[0] as U8).declassify() as usize;
-    let l1 = (b[1] as U8).declassify() as usize;
+    let l0 = (b[0] as Byte).declassify() as usize;
+    let l1 = (b[1] as Byte).declassify() as usize;
     let len = check_lbytes2(&b.slice_range(2..b.len()))?;
     let mut out = EXTS(None, None, None, None);
     match (l0, l1) {
@@ -471,8 +468,8 @@ pub fn check_extension(algs: &Algorithms, b: &Bytes) -> Res<(usize, EXTS)> {
 }
 
 pub fn check_server_extension(algs: &Algorithms, b: &Bytes) -> Res<(usize, Option<Bytes>)> {
-    let l0 = (b[0] as U8).declassify() as usize;
-    let l1 = (b[1] as U8).declassify() as usize;
+    let l0 = (b[0] as Byte).declassify() as usize;
+    let l1 = (b[1] as Byte).declassify() as usize;
     let len = check_lbytes2(&b.slice_range(2..b.len()))?;
     let mut out = None;
     match (l0, l1) {
@@ -751,12 +748,12 @@ fn ecdsa_signature(sv:&Bytes) -> Res<Bytes> {
         let b0 = bytes1(0x0);
         let b1 = bytes1(0x30);
         let b2 = bytes1(0x02);
-        let mut r:Seq<U8> = sv.slice(0,32);
-        let mut s:Seq<U8> = sv.slice(32,32);
-        if (r[0] as U8).declassify() >= 128 {
+        let mut r:Seq<Byte> = sv.slice(0,32);
+        let mut s:Seq<Byte> = sv.slice(32,32);
+        if (r[0] as Byte).declassify() >= 128 {
             r = b0.concat(&r);
         }
-        if (s[0] as U8).declassify() >= 128 {
+        if (s[0] as Byte).declassify() >= 128 {
             s = b0.concat(&s);
         }
         Ok(b1.concat(&lbytes1(&b2.concat(&lbytes1(&r)?).concat(&b2).concat(&lbytes1(&s)?))?))

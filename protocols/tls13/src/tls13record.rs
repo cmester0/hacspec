@@ -2,9 +2,6 @@
 
 use super::*;
 
-// Import hacspec and all needed definitions.
-use hacspec_lib::*;
-
 pub fn derive_iv_ctr(ae: &AEADAlgorithm, iv: &AEIV, n:u64) -> AEIV {
     let counter = bytes(&U64_to_be_bytes(U64(n)));
     let mut iv_ctr = AEIV::new(iv.len());

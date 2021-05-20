@@ -40,6 +40,65 @@ use std::io::prelude::*;
 use std::net::TcpStream;
 use std::str;
 
+// use U8 as Byte;
+type Byte = u8;
+type U32Word = u32Word;
+type U32 = u32;
+fn U8(x: u8) -> u8 {
+    x
+}
+fn U16(x: u16) -> u16 {
+    x
+}
+fn U32(x: u32) -> u32 {
+    x
+}
+fn U64(x: u64) -> u64 {
+    x
+}
+
+trait ByteTrait {
+    fn to_hex(&self);
+    fn from_hex(s: &str) -> Self;
+    fn declassify(self) -> u8;
+}
+
+impl ByteTrait for Byte {
+    fn to_hex(&self) {
+        todo!()
+    }
+    fn declassify(self) -> u8 {
+        self
+    }
+
+    fn from_hex(s: &str) -> Self {
+        todo!()
+    }
+}
+
+fn U32_from_be_bytes(x: u32Word) -> u32 {
+    u32_from_be_bytes(x)
+}
+
+fn U16_to_be_bytes(x: u16) -> u16Word {
+    u16Word::from_array(x.to_be_bytes())
+}
+
+fn U32_to_be_bytes(x: U32) -> u32Word {
+    u32Word::from_array(x.to_be_bytes())
+}
+
+fn U64_to_be_bytes(x: u64) -> u64Word {
+    u64Word::from_array(x.to_be_bytes())
+}
+
+fn declassify_usize_from_U8(x: Byte) -> usize {
+    x.into()
+}
+
+fn declassify_u32_from_U32(x: U32) -> u32 {
+    x
+}
 
 fn read_bytes(stream: &mut TcpStream, buf: &mut [u8], nbytes: usize) -> Res<usize> {
     match stream.read(&mut buf[..]) {

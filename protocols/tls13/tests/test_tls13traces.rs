@@ -3,6 +3,11 @@ use hacspec_lib::prelude::*;
 
 use bertie::*;
 
+use u8 as Byte;
+fn U8(x: u8) -> u8 {
+    x
+}
+
 // These are the sample TLS 1.3 traces taken from RFC 8448
 
 fn load_hex(s: &str) -> Bytes {
@@ -252,6 +257,17 @@ const ECDSA_P256_SHA256_KEY: [u8; 32] = [
     0xA6, 0xDE, 0x48, 0x21, 0x0E, 0x56, 0x12, 0xDD, 0x95, 0x3A, 0x91, 0x4E, 0x9F, 0x56, 0xC3, 0xA2,
     0xDB, 0x7A, 0x36, 0x20, 0x08, 0xE9, 0x52, 0xEE, 0xDB, 0xCE, 0xAC, 0x3B, 0x26, 0xF9, 0x20, 0xBD,
 ];
+
+trait ToHex {
+    fn to_hex(&self) -> String ;
+}
+
+impl ToHex for Random {
+    fn to_hex(&self) -> String  {
+        let strs: Vec<String> = self.0.iter().map(|b| format!("{:02x}", b)).collect();
+        strs.join("")
+    }
+}
 
 #[test]
 fn test_parse_client_hello() {
@@ -611,6 +627,8 @@ fn test_finished() {
     assert!(b);
 }
 
+use assert_eq as assert_bytes_eq;
+
 #[test]
 fn test_full_round_trip() {
     let cr = Random::from_public_slice(&random_byte_vec(Random::length()));
@@ -669,10 +687,10 @@ fn test_full_round_trip() {
                                             b"Hello server, here is the client",
                                         );
                                         let (ap, client_cipher) =
-                                            encrypt_data(&AppData(data.clone()), 0, client_cipher)
+                                            encrypt_data(AppData(data.clone()), 0, client_cipher)
                                                 .unwrap();
                                         let (ap, server_cipher) =
-                                            decrypt_data(&ap, server_cipher).unwrap();
+                                            decrypt_data(ap, server_cipher).unwrap();
                                         assert_bytes_eq!(data, ap.0);
 
                                         // Send data from server to client.
@@ -680,10 +698,10 @@ fn test_full_round_trip() {
                                             b"Hello client, here is the server.",
                                         );
                                         let (ap, _server_cipher) =
-                                            encrypt_data(&AppData(data.clone()), 0, server_cipher)
+                                            encrypt_data(AppData(data.clone()), 0, server_cipher)
                                                 .unwrap();
                                         let (ap, _client_cipher) =
-                                            decrypt_data(&ap, client_cipher).unwrap();
+                                            decrypt_data(ap, client_cipher).unwrap();
                                         assert_bytes_eq!(data, ap.0);
                                     }
                                 }

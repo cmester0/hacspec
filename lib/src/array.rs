@@ -662,6 +662,16 @@ macro_rules! _secret_array {
 macro_rules! _public_array {
     ($name:ident,$l:expr,$t:ty) => {
         _array_base!($name, $l, $t);
+        
+        impl $name {
+            #[cfg_attr(feature = "use_attributes", not_hacspec($name))]
+            pub fn from_public_slice(v: &[$t]) -> $name {
+                debug_assert!(v.len() == $l);
+                let mut value = [<$t>::default(); $l];
+                value.clone_from_slice(v);
+                Self(value)
+            }
+        }
 
         impl fmt::Debug for $name {
             #[cfg_attr(feature = "use_attributes", not_hacspec($name))]
@@ -941,6 +951,13 @@ macro_rules! bytes {
 macro_rules! public_bytes {
     ($name:ident, $l:expr) => {
         array!($name, $l, u8);
+    };
+}
+
+#[macro_export]
+macro_rules! public_byte_array {
+    ([ $( $x:expr ),+ ] ) => {
+        [$($x),+]
     };
 }
 

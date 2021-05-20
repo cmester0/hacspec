@@ -5,10 +5,7 @@
 use evercrypt::prelude::*;
 use hacspec_lib::*;
 
-use crate::{
-    crypto_error, hkdf_error, insufficient_entropy, invalid_cert, mac_failed,
-    unsupported_algorithm, verify_failed,
-};
+use crate::{Byte, ByteTrait, U32Word, U32_from_be_bytes, U8, crypto_error, declassify_u32_from_U32, declassify_usize_from_U8, hkdf_error, insufficient_entropy, invalid_cert, mac_failed, unsupported_algorithm, verify_failed};
 
 use backtrace::Backtrace;
 pub type Res<T> = Result<T, usize>;
@@ -18,7 +15,7 @@ pub fn err<T>(x: usize) -> Res<T> {
     Err(x)
 }
 
-pub type Bytes = ByteSeq;
+pub type Bytes = Seq<Byte>;
 pub fn empty() -> Bytes {
     return Seq::new(0);
 }
@@ -27,12 +24,12 @@ pub fn zeros(u: usize) -> Bytes {
     return Seq::new(u);
 }
 
-pub fn bytes<T: SeqTrait<U8>>(x: &T) -> Bytes {
+pub fn bytes<T: SeqTrait<Byte>>(x: &T) -> Bytes {
     return Seq::from_seq(x);
 }
 
 pub type Entropy = Bytes;
-bytes!(Random, 32);
+array!(Random, 32, Byte);
 
 pub type DHSK = Bytes;
 pub type DHPK = Bytes;
@@ -268,7 +265,7 @@ pub fn verk_from_cert(cert: &Bytes) -> Res<VERK> {
     // cert is an ASN.1 sequence. Take the first sequence inside the outer.
     // Skip 1 + length bytes
     fn get_length_length(b: &Bytes) -> usize {
-        if U8::declassify(b[0]) >> 7 == 1 {
+        if Byte::declassify(b[0]) >> 7 == 1 {
             declassify_usize_from_U8(b[0] & U8(0x7fu8))
         } else {
             0
@@ -290,7 +287,7 @@ pub fn verk_from_cert(cert: &Bytes) -> Res<VERK> {
     // Read sequences until we find the ecPublicKey (we don't support anything else right now)
     let mut pk = VERK::new(0);
     while skip < seq1.len() && pk.len() == 0 {
-        let element_type = U8::declassify(seq1[0]);
+        let element_type = Byte::declassify(seq1[0]);
         seq1 = seq1.slice(1, seq1.len() - 1);
         let len_len = get_length_length(&seq1);
         let mut len = get_short_length(&seq1);
@@ -302,7 +299,7 @@ pub fn verk_from_cert(cert: &Bytes) -> Res<VERK> {
             // peek into this sequence to see if sequence again with an ecPublicKey
             // as first element
             let seq2 = seq1.slice(len_len, len);
-            let element_type = U8::declassify(seq2[0]);
+            let element_type = Byte::declassify(seq2[0]);
             let seq2 = seq2.slice(1, seq2.len() - 1);
             if element_type == 0x30 {
                 let len_len = get_length_length(&seq2);
@@ -320,7 +317,7 @@ pub fn verk_from_cert(cert: &Bytes) -> Res<VERK> {
                             // and read the public key from the bit string
                             let bit_string = seq2.slice(oid_len + 1, seq2.len() - oid_len - 1);
                             // We only support uncompressed points
-                            if U8::declassify(bit_string[0]) == 0x03 {
+                            if Byte::declassify(bit_string[0]) == 0x03 {
                                 let pk_len = declassify_usize_from_U8(bit_string[1]); // 42
                                 let _zeroes = declassify_usize_from_U8(bit_string[2]); // 00
                                 let _uncompressed = declassify_usize_from_U8(bit_string[3]); // 04
@@ -434,18 +431,18 @@ pub fn hkdf_expand(ha: &HashAlgorithm, k: &KEY, info: &Bytes, len: usize) -> Res
 // FIXME: #98 add #[unsafe_hacspec] attribute
 fn aesgcm_encrypt_unsafe(k: &AEK, iv: &AEIV, payload: &Bytes, ad: &Bytes) -> Res<Bytes> {
     let mut nonce = [0u8; 12];
-    nonce.copy_from_slice(&iv.to_native());
+    nonce.copy_from_slice(&iv.as_slice());
     match evercrypt::aead::encrypt(
         AeadMode::Aes128Gcm,
-        &k.to_native(),
-        &payload.to_native(),
+        &k.as_slice(),
+        &payload.as_slice(),
         &nonce,
-        &ad.to_native(),
+        &ad.as_slice(),
     ) {
         Ok((mut c, t)) => {
             c.extend_from_slice(&t);
-            Ok(Bytes::from_public_slice(&c))
-        },
+            Ok(Bytes::from_vec(c))
+        }
         Err(_e) => Err(crypto_error),
     }
 }
@@ -453,18 +450,18 @@ fn aesgcm_encrypt_unsafe(k: &AEK, iv: &AEIV, payload: &Bytes, ad: &Bytes) -> Res
 // FIXME: #98 add #[unsafe_hacspec] attribute
 fn chachapoly_encrypt_unsafe(k: &AEK, iv: &AEIV, payload: &Bytes, ad: &Bytes) -> Res<Bytes> {
     let mut nonce = [0u8; 12];
-    nonce.copy_from_slice(&iv.to_native());
+    nonce.copy_from_slice(&iv.as_slice());
     match evercrypt::aead::encrypt(
         AeadMode::Chacha20Poly1305,
-        &k.to_native(),
-        &payload.to_native(),
+        &k.as_slice(),
+        &payload.as_slice(),
         &nonce,
-        &ad.to_native(),
+        &ad.as_slice(),
     ) {
         Ok((mut c, t)) => {
             c.extend_from_slice(&t);
-            Ok(Bytes::from_public_slice(&c))
-        },
+            Ok(Bytes::from_vec(c))
+        }
         Err(_e) => Err(crypto_error),
     }
 }
@@ -476,7 +473,6 @@ pub fn aead_encrypt(
     payload: &Bytes,
     ad: &Bytes,
 ) -> Res<Bytes> {
-    // XXX: the result should be Seq<u8> not Seq<U8>.
     match a {
         AEADAlgorithm::AES_128_GCM => aesgcm_encrypt_unsafe(k, iv, payload, ad),
         AEADAlgorithm::AES_256_GCM => Err(unsupported_algorithm),
@@ -487,18 +483,18 @@ pub fn aead_encrypt(
 // FIXME: #98 add #[unsafe_hacspec] attribute
 fn aesgcm_decrypt_unsafe(k: &AEK, iv: &AEIV, ciphertext: Bytes, ad: &Bytes) -> Res<Bytes> {
     let mut nonce = [0u8; 12];
-    nonce.copy_from_slice(&iv.to_native());
+    nonce.copy_from_slice(&iv.as_slice());
     let ctxt_len = ciphertext.len();
     let (ciphertext, tag) = ciphertext.split_off(ctxt_len - 16);
     match evercrypt::aead::decrypt(
         AeadMode::Aes128Gcm,
-        &k.to_native(),
-        &ciphertext.to_native(),
-        &tag.to_native(),
+        &k.as_slice(),
+        &ciphertext.as_slice(),
+        &tag.as_slice(),
         &nonce,
-        &ad.to_native(),
+        &ad.as_slice(),
     ) {
-        Ok(ptxt) => Ok(Bytes::from_public_slice(&ptxt)),
+        Ok(ptxt) => Ok(Bytes::from_vec(ptxt)),
         Err(_e) => Err(mac_failed),
     }
 }
@@ -506,18 +502,18 @@ fn aesgcm_decrypt_unsafe(k: &AEK, iv: &AEIV, ciphertext: Bytes, ad: &Bytes) -> R
 // FIXME: #98 add #[unsafe_hacspec] attribute
 fn chachapoly_decrypt_unsafe(k: &AEK, iv: &AEIV, ciphertext: Bytes, ad: &Bytes) -> Res<Bytes> {
     let mut nonce = [0u8; 12];
-    nonce.copy_from_slice(&iv.to_native());
+    nonce.copy_from_slice(&iv.as_slice());
     let ctxt_len = ciphertext.len();
     let (ciphertext, tag) = ciphertext.split_off(ctxt_len - 16);
     match evercrypt::aead::decrypt(
         AeadMode::Chacha20Poly1305,
-        &k.to_native(),
-        &ciphertext.to_native(),
-        &tag.to_native(),
+        &k.as_slice(),
+        &ciphertext.as_slice(),
+        &tag.as_slice(),
         &nonce,
-        &ad.to_native(),
+        &ad.as_slice(),
     ) {
-        Ok(ptxt) => Ok(Bytes::from_public_slice(&ptxt)),
+        Ok(ptxt) => Ok(Bytes::from_vec(ptxt)),
         Err(_e) => Err(mac_failed),
     }
 }

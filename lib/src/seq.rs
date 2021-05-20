@@ -410,6 +410,13 @@ impl PartialEq for Seq<U8> {
     }
 }
 
+impl PartialEq for Seq<u8> {
+    #[cfg_attr(feature = "use_attributes", not_hacspec)]
+    fn eq(&self, other: &Self) -> bool {
+        self.b == other.b
+    }
+}
+
 impl PublicSeq<u8> {
     #[cfg_attr(feature = "use_attributes", unsafe_hacspec)]
     pub fn from_hex(s: &str) -> PublicSeq<u8> {
@@ -463,6 +470,29 @@ impl_from_public_slice!(u32, U32);
 impl_from_public_slice!(u64, U64);
 impl_from_public_slice!(u128, U128);
 
+impl Seq<u8> {
+    #[cfg_attr(feature = "use_attributes", not_hacspec)]
+    pub fn from_public_slice(v: &[u8]) -> Seq<u8> {
+        Self {
+            b: v.to_vec()
+        }
+    }
+    #[cfg_attr(feature = "use_attributes", not_hacspec)]
+    pub fn to_native(&self) -> Vec<u8> {
+        self.b.clone()
+    }
+    #[cfg_attr(feature = "use_attributes", not_hacspec)]
+    pub fn as_slice(&self) -> &[u8] {
+        &self.b
+    }
+    #[cfg_attr(feature = "use_attributes", not_hacspec)]
+    pub fn from_hex(s: &str) -> Seq<u8> {
+        Self {
+            b: hex_string_to_bytes(s),
+        }
+    }
+}
+
 macro_rules! impl_declassify {
     ($t:ty,$st:ty) => {
         impl Seq<$st> {
@@ -493,6 +523,14 @@ impl_declassify!(u64, U64);
 impl_declassify!(u128, U128);
 
 impl Seq<U8> {
+    #[cfg_attr(feature = "use_attributes", not_hacspec)]
+    pub fn to_hex(&self) -> String {
+        let strs: Vec<String> = self.b.iter().map(|b| format!("{:02x}", b)).collect();
+        strs.join("")
+    }
+}
+
+impl Seq<u8> {
     #[cfg_attr(feature = "use_attributes", not_hacspec)]
     pub fn to_hex(&self) -> String {
         let strs: Vec<String> = self.b.iter().map(|b| format!("{:02x}", b)).collect();

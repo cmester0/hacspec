@@ -7,6 +7,7 @@ use bertie::*;
 use criterion::{criterion_group, criterion_main, BatchSize, Criterion};
 use hacspec_dev::prelude::*;
 use hacspec_lib::prelude::*;
+type ByteSeq = Seq<u8>;
 
 // 1MB
 const PAYLOAD_SIZE: usize = 0x100000;

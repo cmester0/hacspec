@@ -1,8 +1,5 @@
 use super::*;
 
-// Import hacspec and all needed definitions.
-use hacspec_lib::*;
-
 /* TLS 1.3 Key Schedule: See RFC 8446 Section 7 */
 
 pub fn hkdf_expand_label(
