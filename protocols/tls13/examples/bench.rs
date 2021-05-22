@@ -783,7 +783,7 @@ fn selected_tests(mut args: env::Args) {
 
 fn all_tests() {
     for test in ALL_BENCHMARKS.iter() {
-        // bench_bulk_rustls(test, 1024 * 1024);
+        bench_bulk_rustls(test, 1024 * 1024);
         bench_bulk_hacspec(test, 1024 * 1024);
         // bench_handshake(test, ClientAuth::No, Resumption::No);
         // bench_handshake(test, ClientAuth::Yes, Resumption::No);

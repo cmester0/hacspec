@@ -61,3 +61,7 @@ default-members = [
     "examples/aes128-gcm",
 ]
 exclude = [ "language" ]
+
+[patch.crates-io]
+evercrypt-sys = { version = "0.0.9", git = "https://github.com/franziskuskiefer/evercrypt-rust.git"}
+evercrypt = { version = "0.0.10", git = "https://github.com/franziskuskiefer/evercrypt-rust.git", branch = "aead-combined" }

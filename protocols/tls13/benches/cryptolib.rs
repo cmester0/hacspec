@@ -73,7 +73,7 @@ fn bench(c: &mut Criterion) {
                             algorithm,
                             &key,
                             &data,
-                            &nonce.try_into().unwrap(),
+                            &nonce,
                             &aad,
                         );
                     },

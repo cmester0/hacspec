@@ -5,7 +5,11 @@
 use evercrypt::prelude::*;
 use hacspec_lib::*;
 
-use crate::{Byte, ByteTrait, U32Word, U32_from_be_bytes, U8, crypto_error, declassify_u32_from_U32, declassify_usize_from_U8, hkdf_error, insufficient_entropy, invalid_cert, mac_failed, unsupported_algorithm, verify_failed};
+use crate::{
+    crypto_error, declassify_u32_from_U32, declassify_usize_from_U8, hkdf_error,
+    insufficient_entropy, invalid_cert, mac_failed, unsupported_algorithm, verify_failed, Byte,
+    ByteTrait, U32Word, U32_from_be_bytes, U8,
+};
 
 use backtrace::Backtrace;
 pub type Res<T> = Result<T, usize>;
@@ -430,38 +434,28 @@ pub fn hkdf_expand(ha: &HashAlgorithm, k: &KEY, info: &Bytes, len: usize) -> Res
 
 // FIXME: #98 add #[unsafe_hacspec] attribute
 fn aesgcm_encrypt_unsafe(k: &AEK, iv: &AEIV, payload: &Bytes, ad: &Bytes) -> Res<Bytes> {
-    let mut nonce = [0u8; 12];
-    nonce.copy_from_slice(&iv.as_slice());
-    match evercrypt::aead::encrypt(
+    match evercrypt::aead::encrypt_comb(
         AeadMode::Aes128Gcm,
         &k.as_slice(),
         &payload.as_slice(),
-        &nonce,
+        &iv.as_slice(),
         &ad.as_slice(),
     ) {
-        Ok((mut c, t)) => {
-            c.extend_from_slice(&t);
-            Ok(Bytes::from_vec(c))
-        }
+        Ok(ct) => Ok(Bytes::from_vec(ct)),
         Err(_e) => Err(crypto_error),
     }
 }
 
 // FIXME: #98 add #[unsafe_hacspec] attribute
 fn chachapoly_encrypt_unsafe(k: &AEK, iv: &AEIV, payload: &Bytes, ad: &Bytes) -> Res<Bytes> {
-    let mut nonce = [0u8; 12];
-    nonce.copy_from_slice(&iv.as_slice());
-    match evercrypt::aead::encrypt(
+    match evercrypt::aead::encrypt_comb(
         AeadMode::Chacha20Poly1305,
         &k.as_slice(),
         &payload.as_slice(),
-        &nonce,
+        &iv.as_slice(),
         &ad.as_slice(),
     ) {
-        Ok((mut c, t)) => {
-            c.extend_from_slice(&t);
-            Ok(Bytes::from_vec(c))
-        }
+        Ok(ct) => Ok(Bytes::from_vec(ct)),
         Err(_e) => Err(crypto_error),
     }
 }
@@ -482,16 +476,11 @@ pub fn aead_encrypt(
 
 // FIXME: #98 add #[unsafe_hacspec] attribute
 fn aesgcm_decrypt_unsafe(k: &AEK, iv: &AEIV, ciphertext: Bytes, ad: &Bytes) -> Res<Bytes> {
-    let mut nonce = [0u8; 12];
-    nonce.copy_from_slice(&iv.as_slice());
-    let ctxt_len = ciphertext.len();
-    let (ciphertext, tag) = ciphertext.split_off(ctxt_len - 16);
-    match evercrypt::aead::decrypt(
+    match evercrypt::aead::decrypt_comb(
         AeadMode::Aes128Gcm,
         &k.as_slice(),
         &ciphertext.as_slice(),
-        &tag.as_slice(),
-        &nonce,
+        &iv.as_slice(),
         &ad.as_slice(),
     ) {
         Ok(ptxt) => Ok(Bytes::from_vec(ptxt)),
@@ -501,16 +490,11 @@ fn aesgcm_decrypt_unsafe(k: &AEK, iv: &AEIV, ciphertext: Bytes, ad: &Bytes) -> R
 
 // FIXME: #98 add #[unsafe_hacspec] attribute
 fn chachapoly_decrypt_unsafe(k: &AEK, iv: &AEIV, ciphertext: Bytes, ad: &Bytes) -> Res<Bytes> {
-    let mut nonce = [0u8; 12];
-    nonce.copy_from_slice(&iv.as_slice());
-    let ctxt_len = ciphertext.len();
-    let (ciphertext, tag) = ciphertext.split_off(ctxt_len - 16);
-    match evercrypt::aead::decrypt(
+    match evercrypt::aead::decrypt_comb(
         AeadMode::Chacha20Poly1305,
         &k.as_slice(),
         &ciphertext.as_slice(),
-        &tag.as_slice(),
-        &nonce,
+        &iv.as_slice(),
         &ad.as_slice(),
     ) {
         Ok(ptxt) => Ok(Bytes::from_vec(ptxt)),
