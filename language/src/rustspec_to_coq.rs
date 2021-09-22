@@ -1643,7 +1643,8 @@ pub fn translate_and_write_to_file(
     let export_quick_check = p.items.iter().any(|i| {i.0.tags.0.contains(&ItemTag::QuickCheck)});
     write!(
         file,
-        "Require Import Lib MachineIntegers.\n\
+        "(** This file was automatically generated using Hacspec **)\n\
+        Require Import Lib MachineIntegers.\n\
         From Coq Require Import ZArith.\n\
         Import List.ListNotations.\n\
         Open Scope Z_scope.\n\
