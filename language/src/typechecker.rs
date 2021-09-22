@@ -2301,6 +2301,30 @@ fn typecheck_statement(
                 new_mutated,
             ))
         }
+	Statement::Unsafe((b, b_span)) => {
+	    let (new_b, var_context_b) = typecheck_block(
+                sess,
+                (b.clone(), b_span.clone()),
+                top_level_context,
+                &var_context,
+                return_typ,
+            )?;
+	    let new_mutated = VarSet(
+                match &new_b.mutated {
+                    None => HashSet::new(),
+                    Some(m) => m.vars.0.clone(),
+                });
+	    Ok((
+                Statement::Unsafe(
+                    (new_b, *b_span),
+                ),
+                ((Borrowing::Consumed, s_span), (BaseTyp::Unit, s_span)),
+                var_context
+                    .clone()
+                    .intersection(var_context_b),
+                new_mutated,
+            ))
+	}
         Statement::ForLoop((x, x_span), e1, e2, (b, b_span)) => {
             let original_var_context = var_context;
             let (new_e1, t_e1, var_context) =
