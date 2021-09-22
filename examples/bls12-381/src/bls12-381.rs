@@ -601,6 +601,7 @@ fn test_fp2_prop_add_neg(a: Fp2) -> bool {
 #[quickcheck] //Using the fp arbitraty implementation from above to generate fp2 elements.
 fn test_fp2_prop_mul_inv(a: Fp2) -> bool {
     let b = fp2inv(a);
+    fp2fromfp(Fp::ZERO()) == a ||
     fp2fromfp(Fp::ONE()) == fp2mul(a, b)
 }
 
@@ -618,6 +619,7 @@ fn test_extraction_issue() -> bool {
 #[quickcheck] //Using the fp arbitraty implementation from above to generate fp2 elements.
 fn test_fp6_prop_mul_inv(a: Fp6) -> bool {
     let b = fp6inv(a);
+    fp6fromfp2(fp2fromfp(Fp::ZERO())) == a ||
     fp6fromfp2(fp2fromfp(Fp::ONE())) == fp6mul(a, b)
 }
 
@@ -643,6 +645,7 @@ fn test_fp12_prop_add_neg(a: Fp12) -> bool {
 #[quickcheck] //Using the fp arbitraty implementation from above to generate fp2 elements.
 fn test_fp12_prop_mul_inv(a: Fp12) -> bool {
     let b = fp12inv(a);
+    fp12fromfp6(fp6fromfp2(fp2fromfp(Fp::ZERO()))) == a ||
     fp12fromfp6(fp6fromfp2(fp2fromfp(Fp::ONE()))) == fp12mul(a, b)
 }
 
