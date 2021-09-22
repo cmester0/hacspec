@@ -2309,7 +2309,6 @@ fn typecheck_statement(
                 &var_context,
                 return_typ,
             )?;
-	    
 	    let new_mutated = VarSet(
                 match &new_b.mutated {
                     None => HashSet::new(),
