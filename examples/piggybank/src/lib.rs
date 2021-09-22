@@ -54,7 +54,7 @@ pub fn piggy_smash(ctx : Context) -> PiggySmashResult {
 	    if !(owner == sender) {
 		PiggySmashResult::PiggySmashResultInr
 	    } else {
-		PiggySmashResult::PiggySmashResultInl ((owner, sender, balance, PiggyBankState::Smashed), owner, balance),
+		PiggySmashResult::PiggySmashResultInl ((owner, sender, balance, PiggyBankState::Smashed), owner, balance)
 	    },
 	PiggyBankState::Smashed => PiggySmashResult::PiggySmashResultInr,
     }

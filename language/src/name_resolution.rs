@@ -336,6 +336,16 @@ fn resolve_statement(
                 name_context,
             ))
         }
+	Statement::Unsafe(b) => {
+	    let block = resolve_block(sess, b, &name_context, top_level_ctx)?;
+	    Ok ((
+		(
+		    Statement::Unsafe(block),
+		    s_span,
+		),
+		name_context,
+	    ))
+	}
         Statement::ReturnExp(e) => {
             let new_e =
                 resolve_expression(sess, (e, s_span.clone()), &name_context, top_level_ctx)?;

@@ -1108,6 +1108,19 @@ fn translate_statements<'a>(
                     .append(translate_statements(statements, top_ctx))
             }
         }
+	Statement::Unsafe((b, _)) => {
+            let b_question_mark = *b.contains_question_mark.as_ref().unwrap();
+            let block_contains_question_mark = b_question_mark;
+	    let expr = RcDoc::as_string("").append(translate_block(b, true, top_ctx)).append("unit");
+            if block_contains_question_mark {
+                // TODO
+                unimplemented!()
+            } else {
+                make_let_binding(RcDoc::as_string("unsafe_let"), None, expr, false)
+                    .append(RcDoc::hardline())
+                    .append(translate_statements(statements, top_ctx))
+            }
+	}
         Statement::ForLoop((x, _), (e1, _), (e2, _), (mut b, _)) => {
             let mutated_info = b.mutated.clone().unwrap();
             // TODO: handle question_mark
