@@ -9,15 +9,14 @@ pub enum PiggyBankState {
     Smashed,
 }
 
-// TODO: Monad notation?
-
 pub fn piggy_init() -> PiggyBankState {
     // Always succeeds
-    PiggyBankState::Intact // Ok()
+    PiggyBankState::Intact
 }
 
-// type ByteSeqResult = Result<ByteSeq, u8>;
-bytes!(UserAddress, 32);
+// type ByteSeqResult = Result<ByteSeq, u8>; assert_bytes_eq!
+// bytes!(UserAddress, 32);
+array!(UserAddress, 32, u8); // U8
     
 // owner, sender, balance, state
 pub type Context = (UserAddress, UserAddress, u64, PiggyBankState);
@@ -51,11 +50,12 @@ pub fn piggy_smash(ctx : Context) -> PiggySmashResult {
 
     // Ensure only the owner can smash the piggy bank.
     match state {
-	PiggyBankState::Intact => // TODO: if !(owner == sender) {
-	//     PiggySmashResult::PiggySmashResultInr
-	// } else {
-	    PiggySmashResult::PiggySmashResultInl ((owner, sender, balance, PiggyBankState::Smashed), owner, balance),
-	// }
+	PiggyBankState::Intact =>
+	    if !(owner == sender) {
+		PiggySmashResult::PiggySmashResultInr
+	    } else {
+		PiggySmashResult::PiggySmashResultInl ((owner, sender, balance, PiggyBankState::Smashed), owner, balance),
+	    },
 	PiggyBankState::Smashed => PiggySmashResult::PiggySmashResultInr,
     }
 }
@@ -110,6 +110,21 @@ fn test_transfer_to_smash_fails (user : UserAddress, start_val : u64, increment 
 	    },
 	PiggySmashResult::PiggySmashResultInr => false,
     }
+}
+
+#[cfg(test)]
+#[cfg(proof)]
+fn test_transfer_to_smash_fails_zero (user : UserAddress, sender : UserAddress, start_val : u64, increment : u64) -> bool {
+    !(
+    user != sender &&
+    match piggy_smash((user, sender, start_val, piggy_init())) {
+	PiggySmashResult::PiggySmashResultInl ((ctx , _ , _)) =>
+	    match piggy_insert (ctx, increment) {
+		PiggyInsertResult::PiggyInsertResultInl (_) => true,
+		PiggyInsertResult::PiggyInsertResultInr => false,
+	    },
+	PiggySmashResult::PiggySmashResultInr => false,
+    })
 }
 
 // Cannot smash and lose money
