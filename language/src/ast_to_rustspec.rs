@@ -1252,9 +1252,26 @@ fn translate_expr(
             sess.span_rustspec_err(e.span.clone(), "closures are not allowed in Hacspec");
             Err(())
         }
-        ExprKind::Block(_, _) => {
-            sess.span_rustspec_err(e.span.clone(), "inline blocks are not allowed in Hacspec");
-            Err(())
+        ExprKind::Block(a, _) => {
+            match a.rules {
+                BlockCheckMode::Unsafe (_) => {
+                    let r_f_e = translate_block(sess, specials, a)?;
+                    Ok((ExprTranslationResult::TransStmt(Statement::Unsafe(r_f_e)), e.span.into()))
+                        
+                    // let r_f_e = translate_block(sess, specials, a)?;
+                    // Ok(r_f_e)
+                },
+                    // Ok ((
+                    //     ExprTranslationResult::TransExpr(Expression::Lit(Literal::Unit)),
+                    //     e.span.clone().into(),
+                    // )),
+                _ => {
+                    sess.span_rustspec_err(e.span.clone(), "inline blocks are not allowed in Hacspec");
+                    Err(())
+                },
+            }
+            // sess.span_rustspec_err(e.span.clone(), "inline blocks are not allowed in Hacspec");
+            // Err(())
         }
         ExprKind::Async(_, _, _) => {
             sess.span_rustspec_err(e.span.clone(), "async/await is not allowed in Hacspec");
@@ -1556,13 +1573,15 @@ fn translate_block(
     specials: &SpecialNames,
     b: &ast::Block,
 ) -> TranslationResult<Spanned<Block>> {
-    match b.rules {
-        BlockCheckMode::Unsafe(_) => {
-            sess.span_rustspec_err(b.span, "unsafe blocks are not allowed in Hacspec");
-            return Err(());
-        }
-        BlockCheckMode::Default => (),
-    };
+    // Allow Unsafe blocks!
+    // match b.rules {
+    //     BlockCheckMode::Unsafe(_) => {
+    //         ()
+    //         sess.span_rustspec_err(b.span, "unsafe blocks are not allowed in Hacspec");
+    //         return Err(());
+    //     }
+    //     BlockCheckMode::Default => (),
+    // };
     let stmts = b
         .stmts
         .iter()

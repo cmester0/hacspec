@@ -975,6 +975,7 @@ fn translate_statements<'a>(
         Some(s) => s.clone(),
     };
     match s.0 {
+	Statement::Unsafe(_) => unimplemented!(),
         Statement::LetBinding((pat, _), typ, (expr, _), question_mark) => {
             if question_mark {
                 make_error_returning_let_binding(
