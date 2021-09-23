@@ -1282,14 +1282,7 @@ fn translate_expr(
                 BlockCheckMode::Unsafe (_) => {
                     let r_f_e = translate_block(sess, specials, a)?;
                     Ok((ExprTranslationResult::TransStmt(Statement::Unsafe(r_f_e)), e.span.into()))
-                        
-                    // let r_f_e = translate_block(sess, specials, a)?;
-                    // Ok(r_f_e)
                 },
-                    // Ok ((
-                    //     ExprTranslationResult::TransExpr(Expression::Lit(Literal::Unit)),
-                    //     e.span.clone().into(),
-                    // )),
                 _ => {
                     sess.span_rustspec_err(e.span.clone(), "inline blocks are not allowed in Hacspec");
                     Err(())

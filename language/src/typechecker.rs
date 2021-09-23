@@ -2309,6 +2309,7 @@ fn typecheck_statement(
                 &var_context,
                 return_typ,
             )?;
+	    
 	    let new_mutated = VarSet(
                 match &new_b.mutated {
                     None => HashSet::new(),
@@ -2316,9 +2317,17 @@ fn typecheck_statement(
                 });
 	    Ok((
                 Statement::Unsafe(
-                    (new_b, *b_span),
+                    (new_b.clone(), *b_span),
                 ),
-                ((Borrowing::Consumed, s_span), (BaseTyp::Unit, s_span)),
+                match new_b.return_typ.clone() {
+                    None => {
+			// Should not happen
+			panic!()
+                    }
+                    Some(((b_t, _), (t, _))) => {
+			((b_t, s_span), (t, s_span))
+                    }
+		},
                 var_context
                     .clone()
                     .intersection(var_context_b),
