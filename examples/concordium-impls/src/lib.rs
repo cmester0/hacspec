@@ -174,6 +174,7 @@ pub type ContractState = u32;
 mod test {
     /// A type representing the constract state bytes.
     // #[derive(Default)]
+    pub type ContractState = u32;
 
     // pub fn try_from_u64_to_u32 (inp : i64) -> Result<u32, std::num::TryFromIntError> {
     //     std::convert::TryFrom::try_from(inp)
