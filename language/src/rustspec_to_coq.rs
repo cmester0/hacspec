@@ -1108,17 +1108,46 @@ fn translate_statements<'a>(
                     .append(translate_statements(statements, top_ctx))
             }
         }
-	Statement::Unsafe((b, _)) => {
+	Statement::Unsafe((mut b, _)) => {
+	    let mutated_info = b.mutated.clone().unwrap();
             let b_question_mark = *b.contains_question_mark.as_ref().unwrap();
+	    b.stmts.push(add_ok_if_result(
+                mutated_info.stmt.clone(),
+                b_question_mark,
+            ));
+	    // let mut_tuple = |prefix: String| -> RcDoc<'a> {
+            //     // if there is only one element, just print the identifier instead of making a tuple
+            //     if mutated_info.vars.0.len() == 0 {
+	    // 	    // Todo: get unique name:
+	    // 	    RcDoc::as_string("my_unsafe_block")
+	    // 	}
+            //     else if mutated_info.vars.0.len() == 1 {
+            //         match mutated_info.vars.0.iter().next() {
+            //             None => RcDoc::nil(),
+            //             Some(i) =>
+            //                 translate_ident(Ident::Local(i.clone()))
+            //         }
+            //     }
+            //     // print as tuple otherwise
+            //     else {
+            //         RcDoc::as_string(prefix)
+	    // 		.append(make_tuple(mutated_info
+	    // 				   .vars
+	    // 				   .0
+	    // 				   .iter()
+	    // 				   .sorted()
+	    // 				   .map(|i| translate_ident(Ident::Local(i.clone())))))
+            //     }
+	    // };
             let block_contains_question_mark = b_question_mark;
-	    let expr = RcDoc::as_string("").append(translate_block(b, true, top_ctx)).append("unit");
+	    let expr = translate_block(b, true, top_ctx);
             if block_contains_question_mark {
                 // TODO
                 unimplemented!()
             } else {
-                make_let_binding(RcDoc::as_string("unsafe_let"), None, expr, false)
-                    .append(RcDoc::hardline())
-                    .append(translate_statements(statements, top_ctx))
+		expr // make_let_binding(mut_tuple("'".to_string()), None, expr, false)
+                .append(RcDoc::hardline())
+                .append(translate_statements(statements, top_ctx))
             }
 	}
         Statement::ForLoop((x, _), (e1, _), (e2, _), (mut b, _)) => {
