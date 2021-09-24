@@ -166,12 +166,14 @@ pub fn reject_impl_from_new_receive_name_error(nre: NewReceiveNameError) -> Reje
 //     }
 // }
 
+pub type ContractState = u32;
+
+
 // Ignore until tuple issue is fixed!
 #[cfg(test)]
 mod test {
     /// A type representing the constract state bytes.
     // #[derive(Default)]
-    pub type ContractState = u32;
 
     // pub fn try_from_u64_to_u32 (inp : i64) -> Result<u32, std::num::TryFromIntError> {
     //     std::convert::TryFrom::try_from(inp)
@@ -240,7 +242,6 @@ mod test {
 		    }
 		},
 	}
-
     }
 }
     
@@ -302,6 +303,84 @@ mod test {
 //         }
 //     }
 // }
+
+// #[derive(Debug, Default, PartialEq, Eq)]
+// pub struct ParseError {}
+
+// pub type ParseResult<A> = Result<A, ParseError>;
+
+
+// mod missing_extern_c {
+//     pub enum ParseResultUsize {
+//         ParseResultUsizeOk (usize),
+//         ParseResultUsizeError,
+//     };
+
+
+//     // #[cfg_attr(target_arch = "wasm32", link(wasm_import_module = "concordium"))]
+//     extern "C" {
+//         pub(crate) fn load_state(start: *mut u8, length: u32, offset: u32) -> u32;
+//     }
+
+//     fn contract_state_impl_read_read(current_position : ContractState, buf: &mut [u8]) -> (ContractState, ParseResultUsize) {
+//         let len: u32 = buf.len() as u32; // {
+//         //     match  {
+//         //         Ok(v) => v,
+//         //         _ => return Err(ParseError::default()),
+//         //     }
+//         // };
+//         let num_read = unsafe { load_state(buf.as_mut_ptr(), len, current_position) };
+        
+//         (current_position + num_read, ParseResultUsize::ParseResultUsizeOk(num_read as usize))
+//     }
+
+// }
+
+
+// /// Read a `u32` in little-endian format. This is optimized to not
+// /// initialize a dummy value before calling an external function.
+// fn contract_state_impl_read_read_u64(&mut self) -> ParseResult<u64> {
+//     let mut bytes: MaybeUninit<[u8; 8]> = MaybeUninit::uninit();
+//     let num_read =
+//         unsafe { load_state(bytes.as_mut_ptr() as *mut u8, 8, self.current_position) };
+//     self.current_position += num_read;
+//     if num_read == 8 {
+//         unsafe { Ok(u64::from_le_bytes(bytes.assume_init())) }
+//     } else {
+//         Err(ParseError::default())
+//     }
+// }
+
+// /// Read a `u32` in little-endian format. This is optimized to not
+// /// initialize a dummy value before calling an external function.
+// fn contract_state_impl_read_read_u32(&mut self) -> ParseResult<u32> {
+//     let mut bytes: MaybeUninit<[u8; 4]> = MaybeUninit::uninit();
+//     let num_read =
+//         unsafe { load_state(bytes.as_mut_ptr() as *mut u8, 4, self.current_position) };
+//     self.current_position += num_read;
+//     if num_read == 4 {
+//         unsafe { Ok(u32::from_le_bytes(bytes.assume_init())) }
+//     } else {
+//         Err(ParseError::default())
+//     }
+// }
+
+// /// Read a `u8` in little-endian format. This is optimized to not
+// /// initialize a dummy value before calling an external function.
+// fn contract_state_impl_read_read_u8(&mut self) -> ParseResult<u8> {
+//     let mut bytes: MaybeUninit<[u8; 1]> = MaybeUninit::uninit();
+//     let num_read =
+//         unsafe { load_state(bytes.as_mut_ptr() as *mut u8, 1, self.current_position) };
+//     self.current_position += num_read;
+//     if num_read == 1 {
+//         unsafe { Ok(bytes.assume_init()[0]) }
+//     } else {
+//         Err(ParseError::default())
+//     }
+// }
+
+////////////////////
+
 
 // impl Read for ContractState {
 //     fn read(&mut self, buf: &mut [u8]) -> ParseResult<usize> {
