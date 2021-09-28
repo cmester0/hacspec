@@ -1,110 +1,1115 @@
 use hacspec_lib::prelude::*;
 use concordium_std::*;
-use piggybank::*;
+// use concordium_impls::*;
+// use std::num;
 
-/// The state of the piggy bank
-#[derive(Debug, Serialize, PartialEq, Eq)]
-enum PiggyBankState {
-    /// Alive and well, allows for GTU to be inserted.
-    Intact,
-    /// The piggy bank has been emptied, preventing further GTU to be inserted.
-    Smashed,
+// use std::{
+//     collections::{BTreeMap, BTreeSet},
+//     convert::{self, TryFrom, TryInto},
+//     hash::Hash,
+//     mem, num, prims,
+//     prims::*,
+//     traits::*,
+//     types::*,
+//     vec::Vec,
+//     String,
+// };
+use std::convert::{self, TryFrom, TryInto};
+// use std::convert;
+use std::mem;
+use std::num;
+// use concordium_contracts_common::*;
+use mem::MaybeUninit;
+
+
+/// An error message, signalling rejection of a smart contract invocation.
+/// The client will see the error code as a reject reason; if a schema is
+/// provided, the error message corresponding to the error code will be
+/// displayed. The valid range for an error code is from i32::MIN to  -1.
+#[derive(Eq, PartialEq, Debug)]
+#[repr(transparent)]
+pub struct Reject {
+    pub error_code: num::NonZeroI32,
 }
 
-
-#[init(contract = "PiggyBank")]
-fn piggy_init(_ctx: &impl HasInitContext) -> InitResult<PiggyBankState> {
-    piggybank::piggy_init();
-    Ok (PiggyBankState::Intact)
-    // Always succeeds
-    // Ok(PiggyBankState::Intact)
-}
-
-fn u8x32_to_user_address (acc : [u8;32]) -> UserAddress {
-    UserAddress ([acc[0],
-		  acc[1],
-		  acc[2],
-		  acc[3],
-		  acc[4],
-		  acc[5],
-		  acc[6],
-		  acc[7],
-		  acc[8],
-		  acc[9],
-		  acc[10],
-		  acc[11],
-		  acc[12],
-		  acc[13],
-		  acc[14],
-		  acc[15],
-		  acc[16],
-		  acc[17],
-		  acc[18],
-		  acc[19],
-		  acc[20],
-		  acc[21],
-		  acc[22],
-		  acc[23],
-		  acc[24],
-		  acc[25],
-		  acc[26],
-		  acc[27],
-		  acc[28],
-		  acc[29],
-		  acc[30],
-		  acc[31],])
-}
-
-/// Insert some GTU into a piggy bank, allowed by anyone.
-#[receive(contract = "PiggyBank", name = "insert", payable)]
-fn piggy_insert<A: HasActions>(
-    ctx: &impl HasReceiveContext,
-    amount: Amount,
-    state: &mut PiggyBankState,
-) -> ReceiveResult<A> {
-
-    // bytes!()
-    let owner = u8x32_to_user_address(ctx.owner().0);
-    let sender = match ctx.sender() {
-	Address::Account (acd) => u8x32_to_user_address(acd.0),
-	_ => u8x32_to_user_address([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]),
-    };
-    let balance = ctx.self_balance().micro_gtu;
-    let addition = amount.micro_gtu;
-    let piggybank_state = match *state {
-	PiggyBankState::Intact => piggybank::PiggyBankState::Intact,
-	PiggyBankState::Smashed => piggybank::PiggyBankState::Smashed,
-    };
-    
-    match piggybank::piggy_insert((owner, sender, balance, piggybank_state), addition) {
-	PiggyInsertResult::PiggyInsertResultInl (_, _, _, _) => (),
-	    _ => panic!(),
-    };
-    
-    Ok(A::accept())
-}
-
-/// Smash a piggy bank retrieving the GTU, only allowed by the owner.
-#[receive(contract = "PiggyBank", name = "smash")]
-fn piggy_smash<A: HasActions>(
-    ctx: &impl HasReceiveContext,
-    state: &mut PiggyBankState,
-) -> ReceiveResult<A> {
-
-    let owner = u8x32_to_user_address(ctx.owner().0);
-    let sender = match ctx.sender() {
-	Address::Account (acd) => u8x32_to_user_address(acd.0),
-	_ => u8x32_to_user_address([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]),
-    };
-    let balance = ctx.self_balance().micro_gtu;
-    let piggybank_state = match *state {
-	PiggyBankState::Intact => piggybank::PiggyBankState::Intact,
-	PiggyBankState::Smashed => piggybank::PiggyBankState::Smashed,
-    };
-    
-    match piggybank::piggy_smash((owner, sender, balance, piggybank_state)) {
-	PiggySmashResult::PiggySmashResultInl (_, _, balance_result) =>
-	    Ok(A::simple_transfer(&ctx.owner(), Amount {micro_gtu : balance_result,})),
-	_ => panic!(),
+/// Default error is i32::MIN.
+impl Default for Reject {
+    #[inline(always)]
+    fn default() -> Self {
+        Self {
+            error_code: unsafe { num::NonZeroI32::new_unchecked(i32::MIN) },
+        }
     }
 }
+
+impl Reject {
+    /// This returns `None` for all values >= 0 and `Some` otherwise.
+    pub fn new(x: i32) -> Option<Self> {
+        if x < 0 {
+            let error_code = unsafe { num::NonZeroI32::new_unchecked(x) };
+            Some(Reject {
+                error_code,
+            })
+        } else {
+            None
+        }
+    }
+}
+
+impl convert::From<()> for Reject {
+    #[inline(always)]
+    fn from(_: ()) -> Self {
+        Reject {
+            error_code: unsafe { num::NonZeroI32::new_unchecked(i32::MIN + 1) },
+        }
+    }
+}
+
+impl convert::From<ParseError> for Reject {
+    #[inline(always)]
+    fn from(_: ParseError) -> Self {
+        Reject {
+            error_code: unsafe { num::NonZeroI32::new_unchecked(i32::MIN + 2) },
+        }
+    }
+}
+
+/// full is mapped to i32::MIN+3, Malformed is mapped to i32::MIN+4.
+impl From<LogError> for Reject {
+    #[inline(always)]
+    fn from(le: LogError) -> Self {
+        let error_code = match le {
+            LogError::Full => unsafe { num::NonZeroI32::new_unchecked(i32::MIN + 3) },
+            LogError::Malformed => unsafe { num::NonZeroI32::new_unchecked(i32::MIN + 4) },
+        };
+        Self {
+            error_code,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum NewContractNameError {
+    MissingInitPrefix,
+    TooLong,
+    ContainsDot,
+    InvalidCharacters,
+}
+
+/// MissingInitPrefix is mapped to i32::MIN + 5,
+/// TooLong to i32::MIN + 6,
+/// ContainsDot to i32::MIN + 9, and
+/// InvalidCharacters to i32::MIN + 10.
+impl From<NewContractNameError> for Reject {
+    fn from(nre: NewContractNameError) -> Self {
+        let error_code = match nre {
+            NewContractNameError::MissingInitPrefix => unsafe {
+                num::NonZeroI32::new_unchecked(i32::MIN + 5)
+            },
+            NewContractNameError::TooLong => unsafe {
+                num::NonZeroI32::new_unchecked(i32::MIN + 6)
+            },
+            NewContractNameError::ContainsDot => unsafe {
+                num::NonZeroI32::new_unchecked(i32::MIN + 9)
+            },
+            NewContractNameError::InvalidCharacters => unsafe {
+                num::NonZeroI32::new_unchecked(i32::MIN + 10)
+            },
+        };
+        Self {
+            error_code,
+        }
+    }
+}
+
+/// MissingDotSeparator is mapped to i32::MIN + 7,
+/// TooLong to i32::MIN + 8, and
+/// InvalidCharacters to i32::MIN + 11.
+impl From<NewReceiveNameError> for Reject {
+    fn from(nre: NewReceiveNameError) -> Self {
+        let error_code = match nre {
+            NewReceiveNameError::MissingDotSeparator => unsafe {
+                num::NonZeroI32::new_unchecked(i32::MIN + 7)
+            },
+            NewReceiveNameError::TooLong => unsafe {
+                num::NonZeroI32::new_unchecked(i32::MIN + 8)
+            },
+            NewReceiveNameError::InvalidCharacters => unsafe {
+                num::NonZeroI32::new_unchecked(i32::MIN + 11)
+            },
+        };
+        Self {
+            error_code,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum NewReceiveNameError {
+    MissingDotSeparator,
+    TooLong,
+    InvalidCharacters,
+}
+
+/// A type representing the constract state bytes.
+#[derive(Default)]
+pub struct ContractState {
+    pub(crate) current_position: u32,
+}
+
+/// # Contract state trait implementations.
+impl Seek for ContractState {
+    type Err = ();
+
+    fn seek(&mut self, pos: SeekFrom) -> Result<u64, Self::Err> {
+        use SeekFrom::*;
+        match pos {
+            Start(offset) => match u32::try_from(offset) {
+                Ok(offset_u32) => {
+                    self.current_position = offset_u32;
+                    Ok(offset)
+                }
+                _ => Err(()),
+            },
+            End(delta) => {
+                let end = 4; // self.size(); \\
+                if delta >= 0 {
+                    match u32::try_from(delta)
+                        .ok()
+                        .and_then(|x| self.current_position.checked_add(x))
+                    {
+                        Some(offset_u32) => {
+                            self.current_position = offset_u32;
+                            Ok(u64::from(offset_u32))
+                        }
+                        _ => Err(()),
+                    }
+                } else {
+                    match delta.checked_abs().and_then(|x| u32::try_from(x).ok()) {
+                        Some(before) if before <= end => {
+                            let new_pos = end - before;
+                            self.current_position = new_pos;
+                            Ok(u64::from(new_pos))
+                        }
+                        _ => Err(()),
+                    }
+                }
+            }
+            Current(delta) => {
+                let new_offset = if delta >= 0 {
+                    u32::try_from(delta).ok().and_then(|x| self.current_position.checked_add(x))
+                } else {
+                    delta
+                        .checked_abs()
+                        .and_then(|x| u32::try_from(x).ok())
+                        .and_then(|x| self.current_position.checked_sub(x))
+                };
+                match new_offset {
+                    Some(offset) => {
+                        self.current_position = offset;
+                        Ok(u64::from(offset))
+                    }
+                    _ => Err(()),
+                }
+            }
+        }
+    }
+}
+
+// Found in concordium-std/srd/prims.rs
+extern "C" {
+    // returns how many bytes were read.
+    pub(crate) fn load_state(start: *mut u8, length: u32, offset: u32) -> u32;
+}
+
+impl Read for ContractState {
+    fn read(&mut self, buf: &mut [u8]) -> Result<usize, ParseError> {
+        let len: u32 = {
+            match buf.len().try_into() {
+                Ok(v) => v,
+                _ => return Err(ParseError::default()),
+            }
+        };
+        let num_read = unsafe { load_state(buf.as_mut_ptr(), len, self.current_position) };
+        self.current_position += num_read;
+        Ok(num_read as usize)
+    }
+
+    /// Read a `u32` in little-endian format. This is optimized to not
+    /// initialize a dummy value before calling an external function.
+    fn read_u64(&mut self) -> ParseResult<u64> {
+        let mut bytes: MaybeUninit<[u8; 8]> = MaybeUninit::uninit();
+        let num_read =
+            unsafe { load_state(bytes.as_mut_ptr() as *mut u8, 8, self.current_position) };
+        self.current_position += num_read;
+        if num_read == 8 {
+            unsafe { Ok(u64::from_le_bytes(bytes.assume_init())) }
+        } else {
+            Result::Err(ParseError::default()) 
+        }
+    }
+
+    /// Read a `u32` in little-endian format. This is optimized to not
+    /// initialize a dummy value before calling an external function.
+    fn read_u32(&mut self) -> ParseResult<u32> {
+        let mut bytes: MaybeUninit<[u8; 4]> = MaybeUninit::uninit();
+        let num_read =
+            unsafe { load_state(bytes.as_mut_ptr() as *mut u8, 4, self.current_position) };
+        self.current_position += num_read;
+        if num_read == 4 {
+            unsafe { Ok(u32::from_le_bytes(bytes.assume_init())) }
+        } else {
+            Err(ParseError::default())
+        }
+    }
+
+    /// Read a `u8` in little-endian format. This is optimized to not
+    /// initialize a dummy value before calling an external function.
+    fn read_u8(&mut self) -> ParseResult<u8> {
+        let mut bytes: MaybeUninit<[u8; 1]> = MaybeUninit::uninit();
+        let num_read =
+            unsafe { load_state(bytes.as_mut_ptr() as *mut u8, 1, self.current_position) };
+        self.current_position += num_read;
+        if num_read == 1 {
+            unsafe { Ok(bytes.assume_init()[0]) }
+        } else {
+            Err (ParseError::default())
+        }
+    }
+}
+
+// Found in concordium-std/srd/prims.rs
+extern "C" {
+    // returns how many bytes were written
+    pub(crate) fn write_state(start: *const u8, length: u32, offset: u32) -> u32;
+}
+
+impl Write for ContractState {
+    type Err = ();
+
+    fn write(&mut self, buf: &[u8]) -> Result<usize, Self::Err> {
+        let len: u32 = {
+            match buf.len().try_into() {
+                Ok(v) => v,
+                _ => return Err(()),
+            }
+        };
+        if self.current_position.checked_add(len).is_none() {
+            return Err(());
+        }
+        let num_bytes = unsafe { write_state(buf.as_ptr(), len, self.current_position) };
+        self.current_position += num_bytes; // safe because of check above that len + pos is small enough
+        Ok(num_bytes as usize)
+    }
+}
+
+
+// Found in concordium-std/srd/prims.rs
+extern "C" {
+    // this was unsuccesful (new state too big), or 1 if successful.
+    pub(crate) fn resize_state(new_size: u32) -> u32; // returns 0 or 1.
+    // get current state size in bytes.
+    pub(crate) fn state_size() -> u32;
+}
+
+impl HasContractState<()> for ContractState {
+    type ContractStateData = ();
+
+    #[inline(always)]
+    fn open(_: Self::ContractStateData) -> Self {
+        ContractState {
+            current_position: 0,
+        }
+    }
+
+    fn reserve(&mut self, len: u32) -> bool {
+        let cur_size = unsafe { state_size() };
+        if cur_size < len {
+            let res = unsafe { resize_state(len) };
+            res == 1
+        } else {
+            true
+        }
+    }
+
+    #[inline(always)]
+    fn size(&self) -> u32 { unsafe { state_size() } }
+
+    fn truncate(&mut self, new_size: u32) {
+        let cur_size = self.size();
+        if cur_size > new_size {
+            unsafe { resize_state(new_size) };
+        }
+        if new_size < self.current_position {
+            self.current_position = new_size
+        }
+    }
+}
+
+#[derive(Default)]
+/// A type representing the parameter to init and receive methods.
+pub struct Parameter {
+    pub(crate) current_position: u32,
+}
+
+// Found in concordium-std/srd/prims.rs
+extern "C" {
+    // Write a section of the parameter to the given location. Return the number
+    // of bytes written. The location is assumed to contain enough memory to
+    // write the requested length into.
+    pub(crate) fn get_parameter_section(param_bytes: *mut u8, length: u32, offset: u32) -> u32;
+}
+    
+/// # Trait implementations for Parameter
+impl Read for Parameter {
+    fn read(&mut self, buf: &mut [u8]) -> ParseResult<usize> {
+        let len: u32 = {
+            match buf.len().try_into() {
+                Ok(v) => v,
+                _ => return Err(ParseError::default()),
+            }
+        };
+        let num_read =
+            unsafe { get_parameter_section(buf.as_mut_ptr(), len, self.current_position) };
+        self.current_position += num_read;
+        Ok(num_read as usize)
+    }
+}
+
+// Found in concordium-std/srd/prims.rs
+extern "C" {
+    // Get the size of the parameter to the method (either init or receive).
+    pub(crate) fn get_parameter_size() -> u32;
+}
+
+impl HasParameter for Parameter {
+    #[inline(always)]
+    fn size(&self) -> u32 { unsafe { get_parameter_size() } }
+}
+
+
+// Found in concordium-std/srd/prims.rs
+extern "C" {
+    // Getters for the chain meta data
+    /// Slot time (in milliseconds) from chain meta data
+    pub(crate) fn get_slot_time() -> u64;
+}
+
+#[doc(hidden)]
+pub struct ChainMetaExtern {}
+
+/// # Trait implementations for the chain metadata.
+impl HasChainMetadata for ChainMetaExtern {
+    #[inline(always)]
+    fn slot_time(&self) -> SlotTime { Timestamp::from_timestamp_millis(unsafe { get_slot_time() }) }
+}
+
+// Found in concordium-std/srd/prims.rs
+extern "C" {
+    // Write a section of the policy to the given location. Return the number
+    // of bytes written. The location is assumed to contain enough memory to
+    // write the requested length into.
+    pub(crate) fn get_policy_section(policy_bytes: *mut u8, length: u32, offset: u32) -> u32;
+}
+
+/// A type representing the attributes, lazily acquired from the host.
+#[derive(Default)]
+pub struct AttributesCursor {
+    /// Current position of the cursor, starting from 0.
+    /// Note that this is only for the variable attributes.
+    /// `created_at` and `valid_to` will require.
+    pub(crate) current_position: u32,
+    /// The number of remaining items in the policy.
+    pub(crate) remaining_items:  u16,
+}
+
+
+/// Policy on the credential of the account.
+///
+/// This is one of the key features of the Concordium blockchain. Each account
+/// on the chain is backed by an identity. The policy is verified and signed by
+/// the identity provider before an account can be created on the chain.
+///
+/// The type is parameterized by the choice of `Attributes`. These are either
+/// borrowed or owned, in the form of an iterator over key-value pairs or a
+/// vector of such. This flexibility is needed so that attributes can be
+/// accessed efficiently, as well as constructed conveniently for testing.
+#[cfg_attr(feature = "fuzz", derive(Arbitrary))]
+#[derive(Debug, Clone)]
+pub struct Policy<Attributes> {
+    /// Identity of the identity provider who signed the identity object that
+    /// this policy is derived from.
+    pub identity_provider: IdentityProvider,
+    /// Timestamp at the beginning of the month when the identity object backing
+    /// this policy was created. This timestamp has very coarse granularity
+    /// in order for the identity provider to not be able to link identities
+    /// they have created with accounts that users created on the chain.
+    /// as a timestamp (which has millisecond granularity) in order to make it
+    /// easier to compare with, e.g., `slot_time`.
+    pub created_at:        Timestamp,
+    /// Beginning of the month where the identity is __no longer valid__.
+    pub valid_to:          Timestamp,
+    /// List of attributes, in ascending order of the tag.
+    pub items:             Attributes,
+}
+
+
+impl HasPolicy for Policy<AttributesCursor> {
+    fn identity_provider(&self) -> IdentityProvider { self.identity_provider }
+
+    fn created_at(&self) -> Timestamp { self.created_at }
+
+    fn valid_to(&self) -> Timestamp { self.valid_to }
+
+    fn next_item(&mut self, buf: &mut [u8; 31]) -> Option<(AttributeTag, u8)> {
+        if self.items.remaining_items == 0 {
+            return None;
+        }
+
+        let (tag_value_len, num_read) = unsafe {
+            let mut tag_value_len = MaybeUninit::<[u8; 2]>::uninit();
+            // Should succeed, otherwise host violated precondition.
+            let num_read = get_policy_section(
+                tag_value_len.as_mut_ptr() as *mut u8,
+                2,
+                self.items.current_position,
+            );
+            (tag_value_len.assume_init(), num_read)
+        };
+        self.items.current_position += num_read;
+        if tag_value_len[1] > 31 {
+            // Should not happen because all attributes fit into 31 bytes.
+            return None;
+        }
+        let num_read = unsafe {
+            get_policy_section(
+                buf.as_mut_ptr(),
+                u32::from(tag_value_len[1]),
+                self.items.current_position,
+            )
+        };
+        self.items.current_position += num_read;
+        self.items.remaining_items -= 1;
+        Some((AttributeTag(tag_value_len[0]), tag_value_len[1]))
+    }
+}
+
+/// An iterator over policies using host functions to supply the data.
+/// The main interface to using this type is via the methods of the [Iterator](https://doc.rust-lang.org/std/iter/trait.Iterator.html)
+/// and [ExactSizeIterator](https://doc.rust-lang.org/std/iter/trait.ExactSizeIterator.html) traits.
+pub struct PoliciesIterator {
+    /// Position in the policies binary serialization.
+    pos:             u32,
+    /// Number of remaining items in the stream.
+    remaining_items: u16,
+}
+
+impl Iterator for PoliciesIterator {
+    type Item = Policy<AttributesCursor>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.remaining_items == 0 {
+            return None;
+        }
+        // 2 for total size of this section, 4 for identity_provider,
+        // 8 bytes for created_at, 8 for valid_to, and 2 for
+        // the length
+        let mut buf: MaybeUninit<[u8; 2 + 4 + 8 + 8 + 2]> = MaybeUninit::uninit();
+        let buf = unsafe {
+            get_policy_section(buf.as_mut_ptr() as *mut u8, 2 + 4 + 8 + 8 + 2, self.pos);
+            buf.assume_init()
+        };
+        let skip_part: [u8; 2] = buf[0..2].try_into().unwrap_abort();
+        let ip_part: [u8; 4] = buf[2..2 + 4].try_into().unwrap_abort();
+        let created_at_part: [u8; 8] = buf[2 + 4..2 + 4 + 8].try_into().unwrap_abort();
+        let valid_to_part: [u8; 8] = buf[2 + 4 + 8..2 + 4 + 8 + 8].try_into().unwrap_abort();
+        let len_part: [u8; 2] = buf[2 + 4 + 8 + 8..2 + 4 + 8 + 8 + 2].try_into().unwrap_abort();
+        let identity_provider = IdentityProvider::from_le_bytes(ip_part);
+        let created_at = Timestamp::from_timestamp_millis(u64::from_le_bytes(created_at_part));
+        let valid_to = Timestamp::from_timestamp_millis(u64::from_le_bytes(valid_to_part));
+        let remaining_items = u16::from_le_bytes(len_part);
+        let attributes_start = self.pos + 2 + 4 + 8 + 8 + 2;
+        self.pos += u32::from(u16::from_le_bytes(skip_part)) + 2;
+        self.remaining_items -= 1;
+        Some(Policy {
+            identity_provider,
+            created_at,
+            valid_to,
+            items: AttributesCursor {
+                current_position: attributes_start,
+                remaining_items,
+            },
+        })
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let rem = self.remaining_items as usize;
+        (rem, Some(rem))
+    }
+}
+
+impl ExactSizeIterator for PoliciesIterator {
+    #[inline(always)]
+    fn len(&self) -> usize { self.remaining_items as usize }
+}
+
+/// Context backed by host functions.
+#[derive(Default)]
+#[doc(hidden)]
+pub struct ExternContext<T: // sealed::
+                         ContextType> {
+    marker: std::marker::PhantomData<T>,
+}
+
+#[derive(Default)]
+#[doc(hidden)]
+pub struct InitContextExtern;
+#[derive(Default)]
+#[doc(hidden)]
+pub struct ReceiveContextExtern;
+
+// pub(crate) mod sealed {
+//     use super::*;
+//     /// Marker trait intended to indicate which context type we have.
+//     /// This is deliberately a sealed trait, so that it is only implementable
+//     /// by types in this crate.
+    pub trait ContextType {}
+    impl ContextType for InitContextExtern {}
+    impl ContextType for ReceiveContextExtern {}
+// }
+
+impl<T: // sealed::
+     ContextType> HasCommonData for ExternContext<T> {
+    type MetadataType = ChainMetaExtern;
+    type ParamType = Parameter;
+    type PolicyIteratorType = PoliciesIterator;
+    type PolicyType = Policy<AttributesCursor>;
+
+    #[inline(always)]
+    fn metadata(&self) -> &Self::MetadataType { &ChainMetaExtern {} }
+
+    fn policies(&self) -> PoliciesIterator {
+        let mut buf: MaybeUninit<[u8; 2]> = MaybeUninit::uninit();
+        let buf = unsafe {
+            get_policy_section(buf.as_mut_ptr() as *mut u8, 2, 0);
+            buf.assume_init()
+        };
+        PoliciesIterator {
+            pos:             2, // 2 because we already read 2 bytes.
+            remaining_items: u16::from_le_bytes(buf),
+        }
+    }
+
+    #[inline(always)]
+    fn parameter_cursor(&self) -> Self::ParamType {
+        Parameter {
+            current_position: 0,
+        }
+    }
+}
+
+// Found in concordium-std/srd/prims.rs
+extern "C" {
+    // Getter for the init context.
+    /// Address of the sender, 32 bytes
+    pub(crate) fn get_init_origin(start: *mut u8);
+}
+
+/// # Trait implementations for the init context
+impl HasInitContext for ExternContext<InitContextExtern> {
+    type InitData = ();
+
+    /// Create a new init context by using an external call.
+    fn open(_: Self::InitData) -> Self { ExternContext::default() }
+
+    #[inline(always)]
+    fn init_origin(&self) -> AccountAddress {
+        let mut bytes: MaybeUninit<[u8; ACCOUNT_ADDRESS_SIZE]> = MaybeUninit::uninit();
+        let ptr = bytes.as_mut_ptr();
+        let address = unsafe {
+            get_init_origin(ptr as *mut u8);
+            bytes.assume_init()
+        };
+        AccountAddress(address)
+    }
+}
+
+// Found in concordium-std/srd/prims.rs
+extern "C" {
+    // Getters for the receive context
+    /// Invoker of the top-level transaction, AccountAddress.
+    pub(crate) fn get_receive_invoker(start: *mut u8);
+    /// Address of the contract itself, ContractAddress.
+    pub(crate) fn get_receive_self_address(start: *mut u8);
+    /// Self-balance of the contract, returns the amount
+    pub(crate) fn get_receive_self_balance() -> u64;
+    /// Immediate sender of the message (either contract or account).
+    pub(crate) fn get_receive_sender(start: *mut u8);
+    /// Owner of the contract, AccountAddress.
+    pub(crate) fn get_receive_owner(start: *mut u8);
+}
+
+/// # Trait implementations for the receive context
+impl HasReceiveContext for ExternContext<ReceiveContextExtern> {
+    type ReceiveData = ();
+
+    /// Create a new receive context
+    fn open(_: Self::ReceiveData) -> Self { ExternContext::default() }
+
+    #[inline(always)]
+    fn invoker(&self) -> AccountAddress {
+        let mut bytes: MaybeUninit<[u8; ACCOUNT_ADDRESS_SIZE]> = MaybeUninit::uninit();
+        let ptr = bytes.as_mut_ptr();
+        let address = unsafe {
+            get_receive_invoker(ptr as *mut u8);
+            bytes.assume_init()
+        };
+        AccountAddress(address)
+    }
+
+    #[inline(always)]
+    fn self_address(&self) -> ContractAddress {
+        let mut bytes: MaybeUninit<[u8; 16]> = MaybeUninit::uninit();
+        let ptr = bytes.as_mut_ptr();
+        let address = unsafe {
+            get_receive_self_address(ptr as *mut u8);
+            bytes.assume_init()
+        };
+        match from_bytes(&address) {
+            Ok(v) => v,
+            Err(_) => trap(),
+        }
+    }
+
+    #[inline(always)]
+    fn self_balance(&self) -> Amount {
+        Amount::from_micro_gtu(unsafe { get_receive_self_balance() })
+    }
+
+    #[inline(always)]
+    fn sender(&self) -> Address {
+        let mut bytes: MaybeUninit<[u8; 33]> = MaybeUninit::uninit();
+        let ptr = bytes.as_mut_ptr() as *mut u8;
+        unsafe {
+            get_receive_sender(ptr);
+            let tag = *ptr;
+            match tag {
+                0u8 => {
+                    match from_bytes(core::slice::from_raw_parts(ptr.add(1), ACCOUNT_ADDRESS_SIZE))
+                    {
+                        Ok(v) => Address::Account(v),
+                        Err(_) => trap(),
+                    }
+                }
+                1u8 => match from_bytes(core::slice::from_raw_parts(ptr.add(1), 16)) {
+                    Ok(v) => Address::Contract(v),
+                    Err(_) => trap(),
+                },
+                _ => trap(), // unreachable!("Host violated precondition."),
+            }
+        }
+    }
+
+    #[inline(always)]
+    fn owner(&self) -> AccountAddress {
+        let mut bytes: MaybeUninit<[u8; ACCOUNT_ADDRESS_SIZE]> = MaybeUninit::uninit();
+        let ptr = bytes.as_mut_ptr();
+        let address = unsafe {
+            get_receive_owner(ptr as *mut u8);
+            bytes.assume_init()
+        };
+        AccountAddress(address)
+    }
+}
+
+/// A type representing the logger.
+#[derive(Default)]
+pub struct Logger {
+    pub(crate) _private: (),
+}
+
+// Found in concordium-std/srd/prims.rs
+extern "C" {
+    // Add a log item. Return values are
+    // - -1 if logging failed due to the message being too long
+    // - 0 if the log is already full
+    // - 1 if data was successfully logged.
+    pub(crate) fn log_event(start: *const u8, length: u32) -> i32;
+}
+
+/// #Implementations of the logger.
+
+impl HasLogger for Logger {
+    #[inline(always)]
+    fn init() -> Self {
+        Self {
+            _private: (),
+        }
+    }
+
+    fn log_raw(&mut self, event: &[u8]) -> Result<(), LogError> {
+        let res = unsafe { log_event(event.as_ptr(), event.len() as u32) };
+        match res {
+            1 => Ok(()),
+            0 => Err(LogError::Full),
+            _ => Err(LogError::Malformed),
+        }
+    }
+}
+
+/// Actions that can be produced at the end of a contract execution. This
+/// type is deliberately not cloneable so that we can enforce that
+/// `and_then` and `or_else` can only be used when more than one event is
+/// created.
+///
+/// This type is marked as `must_use` since functions that produce
+/// values of the type are effectful.
+#[must_use]
+pub struct Action {
+    pub(crate) _private: u32,
+}
+
+// impl Action {
+//     pub fn tag(&self) -> u32 { self._private }
+// }
+
+extern "C" {
+    pub(crate) fn accept() -> u32;
+    // Basic action to send tokens to an account.
+    pub(crate) fn simple_transfer(addr_bytes: *const u8, amount: u64) -> u32;
+    // Send a message to a smart contract.
+    pub(crate) fn send(
+        addr_index: u64,
+        addr_subindex: u64,
+        receive_name: *const u8,
+        receive_name_len: u32,
+        amount: u64,
+        parameter: *const u8,
+        parameter_len: u32,
+    ) -> u32;
+    // Combine two actions using normal sequencing. This is using the stack of
+    // actions already produced.
+    pub(crate) fn combine_and(l: u32, r: u32) -> u32;
+    // Combine two actions using or. This is using the stack of actions already
+    // produced.
+    pub(crate) fn combine_or(l: u32, r: u32) -> u32;
+}
+
+/// #Implementation of actions.
+/// These actions are implemented by direct calls to host functions.
+impl HasActions for Action {
+    #[inline(always)]
+    fn accept() -> Self {
+        Action {
+            _private: unsafe { accept() },
+        }
+    }
+
+    #[inline(always)]
+    fn simple_transfer(acc: &AccountAddress, amount: Amount) -> Self {
+        let res = unsafe { simple_transfer(acc.0.as_ptr(), amount.micro_gtu) };
+        Action {
+            _private: res,
+        }
+    }
+
+    #[inline(always)]
+    fn send_raw(
+        ca: &ContractAddress,
+        receive_name: ReceiveName,
+        amount: Amount,
+        parameter: &[u8],
+    ) -> Self {
+        let receive_bytes = receive_name.get_chain_name().as_bytes();
+        let res = unsafe {
+            send(
+                ca.index,
+                ca.subindex,
+                receive_bytes.as_ptr(),
+                receive_bytes.len() as u32,
+                amount.micro_gtu,
+                parameter.as_ptr(),
+                parameter.len() as u32,
+            )
+        };
+        Action {
+            _private: res,
+        }
+    }
+
+    #[inline(always)]
+    fn and_then(self, then: Self) -> Self {
+        let res = unsafe { combine_and(self._private, then._private) };
+        Action {
+            _private: res,
+        }
+    }
+
+    #[inline(always)]
+    fn or_else(self, el: Self) -> Self {
+        let res = unsafe { combine_or(self._private, el._private) };
+        Action {
+            _private: res,
+        }
+    }
+}
+
+/// Allocates a Vec of bytes prepended with its length as a `u32` into memory,
+/// and prevents them from being dropped. Returns the pointer.
+/// Used to pass bytes from a Wasm module to its host.
+#[doc(hidden)]
+pub fn put_in_memory(input: &[u8]) -> *mut u8 {
+    let bytes_length = input.len() as u32;
+    let mut bytes = to_bytes(&bytes_length);
+    bytes.extend_from_slice(input);
+    let ptr = bytes.as_mut_ptr();
+    #[cfg(feature = "std")]
+    ::std::mem::forget(bytes);
+    #[cfg(not(feature = "std"))]
+    core::mem::forget(bytes);
+    ptr
+}
+
+/// Wrapper for
+/// [HasActions::send_raw](./trait.HasActions.html#tymethod.send_raw), which
+/// automatically serializes the parameter. Note that if the parameter is
+/// already a byte array or convertible to a byte array without allocations it
+/// is preferrable to use [send_raw](./trait.HasActions.html#tymethod.send_raw).
+/// It is more efficient and avoids memory allocations.
+pub fn wrapper_send<A: HasActions, P: Serial>(
+    ca: &ContractAddress,
+    receive_name: ReceiveName,
+    amount: Amount,
+    parameter: &P,
+) -> A {
+    let param_bytes = to_bytes(parameter);
+    A::send_raw(ca, receive_name, amount, &param_bytes)
+}
+
+// impl<A, E> UnwrapAbort for Result<A, E> {
+//     type Unwrap = A;
+
+//     #[inline]
+//     fn unwrap_abort(self) -> Self::Unwrap {
+//         match self {
+//             Ok(x) => x,
+//             Err(_) => trap(),
+//         }
+//     }
+// }
+
+// #[cfg(not(feature = "std"))]
+// use core::fmt;
+// #[cfg(feature = "std")]
+// use std::fmt;
+
+// impl<A, E: fmt::Debug> ExpectReport for Result<A, E> {
+//     type Unwrap = A;
+
+//     fn expect_report(self, msg: &str) -> Self::Unwrap {
+//         match self {
+//             Ok(x) => x,
+//             Err(e) => crate::fail!("{}: {:?}", msg, e),
+//         }
+//     }
+// }
+
+// impl<A: fmt::Debug, E> ExpectErrReport for Result<A, E> {
+//     type Unwrap = E;
+
+//     fn expect_err_report(self, msg: &str) -> Self::Unwrap {
+//         match self {
+//             Ok(a) => crate::fail!("{}: {:?}", msg, a),
+//             Err(e) => e,
+//         }
+//     }
+// }
+
+// impl<A> UnwrapAbort for Option<A> {
+//     type Unwrap = A;
+
+//     #[inline(always)]
+//     fn unwrap_abort(self) -> Self::Unwrap { self.unwrap_or_else(|| crate::trap()) }
+// }
+
+// impl<A> ExpectReport for Option<A> {
+//     type Unwrap = A;
+
+//     fn expect_report(self, msg: &str) -> Self::Unwrap {
+//         match self {
+//             Some(v) => v,
+//             None => crate::fail!("{}", msg),
+//         }
+//     }
+// }
+
+// impl<A: fmt::Debug> ExpectNoneReport for Option<A> {
+//     fn expect_none_report(self, msg: &str) {
+//         if let Some(x) = self {
+//             crate::fail!("{}: {:?}", msg, x)
+//         }
+//     }
+// }
+
+// impl<K: Serial + Ord> SerialCtx for BTreeSet<K> {
+//     fn serial_ctx<W: Write>(
+//         &self,
+//         size_len: schema::SizeLength,
+//         out: &mut W,
+//     ) -> Result<(), W::Err> {
+//         schema::serial_length(self.len(), size_len, out)?;
+//         serial_set_no_length(self, out)
+//     }
+// }
+
+// impl<K: Deserial + Ord + Copy> DeserialCtx for BTreeSet<K> {
+//     fn deserial_ctx<R: Read>(
+//         size_len: schema::SizeLength,
+//         ensure_ordered: bool,
+//         source: &mut R,
+//     ) -> ParseResult<Self> {
+//         let len = schema::deserial_length(source, size_len)?;
+//         if ensure_ordered {
+//             deserial_set_no_length(source, len)
+//         } else {
+//             deserial_set_no_length_no_order_check(source, len)
+//         }
+//     }
+// }
+
+// impl<K: Serial + Ord, V: Serial> SerialCtx for BTreeMap<K, V> {
+//     fn serial_ctx<W: Write>(
+//         &self,
+//         size_len: schema::SizeLength,
+//         out: &mut W,
+//     ) -> Result<(), W::Err> {
+//         schema::serial_length(self.len(), size_len, out)?;
+//         serial_map_no_length(self, out)
+//     }
+// }
+
+// impl<K: Deserial + Ord + Copy, V: Deserial> DeserialCtx for BTreeMap<K, V> {
+//     fn deserial_ctx<R: Read>(
+//         size_len: schema::SizeLength,
+//         ensure_ordered: bool,
+//         source: &mut R,
+//     ) -> ParseResult<Self> {
+//         let len = schema::deserial_length(source, size_len)?;
+//         if ensure_ordered {
+//             deserial_map_no_length(source, len)
+//         } else {
+//             deserial_map_no_length_no_order_check(source, len)
+//         }
+//     }
+// }
+
+// /// Serialization for HashSet given a size_len.
+// /// Values are not serialized in any particular order.
+// impl<K: Serial> SerialCtx for HashSet<K> {
+//     fn serial_ctx<W: Write>(
+//         &self,
+//         size_len: schema::SizeLength,
+//         out: &mut W,
+//     ) -> Result<(), W::Err> {
+//         schema::serial_length(self.len(), size_len, out)?;
+//         serial_hashset_no_length(self, out)
+//     }
+// }
+
+// /// Deserialization for HashSet given a size_len.
+// /// Values are not verified to be in any particular order and setting
+// /// ensure_ordering have no effect.
+// impl<K: Deserial + Eq + Hash> DeserialCtx for HashSet<K> {
+//     fn deserial_ctx<R: Read>(
+//         size_len: schema::SizeLength,
+//         _ensure_ordered: bool,
+//         source: &mut R,
+//     ) -> ParseResult<Self> {
+//         let len = schema::deserial_length(source, size_len)?;
+//         deserial_hashset_no_length(source, len)
+//     }
+// }
+
+// /// Serialization for HashMap given a size_len.
+// /// Keys are not serialized in any particular order.
+// impl<K: Serial, V: Serial> SerialCtx for HashMap<K, V> {
+//     fn serial_ctx<W: Write>(
+//         &self,
+//         size_len: schema::SizeLength,
+//         out: &mut W,
+//     ) -> Result<(), W::Err> {
+//         schema::serial_length(self.len(), size_len, out)?;
+//         serial_hashmap_no_length(self, out)
+//     }
+// }
+
+// /// Deserialization for HashMap given a size_len.
+// /// Keys are not verified to be in any particular order and setting
+// /// ensure_ordering have no effect.
+// impl<K: Deserial + Eq + Hash, V: Deserial> DeserialCtx for HashMap<K, V> {
+//     fn deserial_ctx<R: Read>(
+//         size_len: schema::SizeLength,
+//         _ensure_ordered: bool,
+//         source: &mut R,
+//     ) -> ParseResult<Self> {
+//         let len = schema::deserial_length(source, size_len)?;
+//         deserial_hashmap_no_length(source, len)
+//     }
+// }
+
+// impl<T: Serial> SerialCtx for &[T] {
+//     fn serial_ctx<W: Write>(
+//         &self,
+//         size_len: schema::SizeLength,
+//         out: &mut W,
+//     ) -> Result<(), W::Err> {
+//         schema::serial_length(self.len(), size_len, out)?;
+//         serial_vector_no_length(self, out)
+//     }
+// }
+
+// impl<T: Deserial> DeserialCtx for Vec<T> {
+//     fn deserial_ctx<R: Read>(
+//         size_len: schema::SizeLength,
+//         _ensure_ordered: bool,
+//         source: &mut R,
+//     ) -> ParseResult<Self> {
+//         let len = schema::deserial_length(source, size_len)?;
+//         deserial_vector_no_length(source, len)
+//     }
+// }
+
+// impl SerialCtx for &str {
+//     fn serial_ctx<W: Write>(
+//         &self,
+//         size_len: schema::SizeLength,
+//         out: &mut W,
+//     ) -> Result<(), W::Err> {
+//         schema::serial_length(self.len(), size_len, out)?;
+//         serial_vector_no_length(&self.as_bytes().to_vec(), out)
+//     }
+// }
+
+// impl SerialCtx for String {
+//     fn serial_ctx<W: Write>(
+//         &self,
+//         size_len: schema::SizeLength,
+//         out: &mut W,
+//     ) -> Result<(), W::Err> {
+//         self.as_str().serial_ctx(size_len, out)
+//     }
+// }
+
+// impl DeserialCtx for String {
+//     fn deserial_ctx<R: Read>(
+//         size_len: schema::SizeLength,
+//         _ensure_ordered: bool,
+//         source: &mut R,
+//     ) -> ParseResult<Self> {
+//         let len = schema::deserial_length(source, size_len)?;
+//         let bytes = deserial_vector_no_length(source, len)?;
+//         let res = String::from_utf8(bytes).map_err(|_| ParseError::default())?;
+//         Ok(res)
+//     }
+// }
+
