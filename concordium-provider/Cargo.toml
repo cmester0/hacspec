@@ -14,6 +14,7 @@ hacspec-lib = { path = "../lib", version = "0.1.0-beta.1" }
 aead = { version = "0.4", features = ["alloc"] }
 concordium-std = { version = "0.5" }
 piggybank = { path = "../examples/piggybank" }
+concordium-impls = { path = "../examples/concordium-impls" }
 
 [dev-dependencies]
 evercrypt-provider = { path = "../utils/evercrypt-provider" }
