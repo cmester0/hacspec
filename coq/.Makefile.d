@@ -4,6 +4,9 @@ src/MachineIntegers.vos src/MachineIntegers.vok src/MachineIntegers.required_vos
 src/Lib.vo src/Lib.glob src/Lib.v.beautified src/Lib.required_vo: src/Lib.v src/MachineIntegers.vo
 src/Lib.vio: src/Lib.v src/MachineIntegers.vio
 src/Lib.vos src/Lib.vok src/Lib.required_vos: src/Lib.v src/MachineIntegers.vos
+src/QuickChickLib.vo src/QuickChickLib.glob src/QuickChickLib.v.beautified src/QuickChickLib.required_vo: src/QuickChickLib.v src/Lib.vo src/MachineIntegers.vo src/Lib.vo
+src/QuickChickLib.vio: src/QuickChickLib.v src/Lib.vio src/MachineIntegers.vio src/Lib.vio
+src/QuickChickLib.vos src/QuickChickLib.vok src/QuickChickLib.required_vos: src/QuickChickLib.v src/Lib.vos src/MachineIntegers.vos src/Lib.vos
 src/Bls.vo src/Bls.glob src/Bls.v.beautified src/Bls.required_vo: src/Bls.v src/Lib.vo src/MachineIntegers.vo src/Lib.vo
 src/Bls.vio: src/Bls.v src/Lib.vio src/MachineIntegers.vio src/Lib.vio
 src/Bls.vos src/Bls.vok src/Bls.required_vos: src/Bls.v src/Lib.vos src/MachineIntegers.vos src/Lib.vos
