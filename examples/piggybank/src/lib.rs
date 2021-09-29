@@ -17,7 +17,7 @@ pub fn piggy_init() -> PiggyBankState {
 // type ByteSeqResult = Result<ByteSeq, u8>; assert_bytes_eq!
 // bytes!(UserAddress, 32);
 array!(UserAddress, 32, u8); // U8
-    
+
 // owner, sender, balance, state
 pub type Context = (UserAddress, UserAddress, u64, PiggyBankState);
 
@@ -36,7 +36,7 @@ pub fn piggy_insert(
     ctx : Context,
     amount: u64) -> PiggyInsertResult {
     let (owner, sender, balance, state) = ctx;
-    
+
     // Ensure the piggy bank has not been smashed already.
     // ensure!
     match state {
@@ -76,118 +76,115 @@ use quickcheck::*;
 #[cfg(proof)]
 fn test_init() -> bool {
     let state = piggy_init();
-    
+
     match state {// "Piggy bank state should be intact after initialization."
         PiggyBankState::Intact => true,
         PiggyBankState::Smashed => false,
     }
 }
 
-// fn test_insert_intact() {
-//     // Setup
-//     let mut ctx = ReceiveContextTest::empty();
+#[quickcheck]
+#[cfg(test)]
+#[cfg(proof)]
+fn test_insert_intact() -> bool {
+    // Setup
+    let ctx =
+        (UserAddress ([0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,]),
+         UserAddress ([0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,]),
+         100_u64,
+         PiggyBankState::Intact);
 
-//     let owner = AccountAddress([0u8; 32]);
-//     ctx.set_owner(owner);
-//     let sender = Address::Account(owner);
-//     ctx.set_sender(sender);
-//     let balance = Amount::from_micro_gtu(100);
-//     ctx.set_self_balance(balance);
-    
-//     let amount = Amount::from_micro_gtu(100);
-//     let mut state = PiggyBankState::Intact;
-    
-//     // Trigger the insert
-//     let actions_result: ReceiveResult<ActionsTree> = piggy_insert(&ctx, amount, &mut state);
-    
-//     // Inspect the result
-//     let actions = actions_result.expect_report("Inserting GTU results in error.");
-    
-//     claim_eq!(actions, ActionsTree::accept(), "No action should be produced.");
-//     claim_eq!(state, PiggyBankState::Intact, "Piggy bank state should still be intact.");
-// }
+    // Trigger the insert
+    let result: PiggyInsertResult = piggy_insert(ctx, 100_u64);
 
-// fn test_insert_smashed() {
-//     // Setup
-//     let mut ctx = ReceiveContextTest::empty();
+    match result {
+        PiggyInsertResult::PiggyInsertResultInl (owner, sender, balance, state) => match state {
+            PiggyBankState::Intact => true,
+            PiggyBankState::Smashed => false,
+        },
+        PiggyInsertResult::PiggyInsertResultInr => false,
+    }
+}
 
-//     let owner = AccountAddress([0u8; 32]);
-//     ctx.set_owner(owner);
-//     let sender = Address::Account(owner);
-//     ctx.set_sender(sender);
-//     let balance = Amount::from_micro_gtu(100);
-//     ctx.set_self_balance(balance);
-    
-//     let amount = Amount::from_micro_gtu(100);
-//     let mut state = PiggyBankState::Smashed;
+#[quickcheck]
+#[cfg(test)]
+#[cfg(proof)]
+fn test_insert_smashed() -> bool {
+    // Setup
+    let ctx =
+        (UserAddress ([0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,]),
+         UserAddress ([0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,]),
+         100_u64,
+         PiggyBankState::Smashed);
 
-//     // Trigger the insert
-//     let actions_result: ReceiveResult<ActionsTree> = piggy_insert(&ctx, amount, &mut state);
+    let result = piggy_insert(ctx, 100_u64);
+    match result {
+        PiggyInsertResult::PiggyInsertResultInl (_, _, _, _) => false,
+        PiggyInsertResult::PiggyInsertResultInr => true,
+    }
+}
 
-//     // Inspect the result
-//     claim!(actions_result.is_err(), "Should failed when piggy bank is smashed.");
-// }
+#[quickcheck]
+#[cfg(test)]
+#[cfg(proof)]
+fn test_smash_intact() -> bool {
+    // Setup
+    let ctx =
+        (UserAddress ([0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,]),
+         UserAddress ([0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,]),
+         100_u64,
+         PiggyBankState::Intact);
 
-// fn test_smash_intact() {
-//     // Setup the context
+    let result = piggy_smash(ctx);
 
-//     let mut ctx = ReceiveContextTest::empty();
-//     let owner = AccountAddress([0u8; 32]);
-//     ctx.set_owner(owner);
-//     let sender = Address::Account(owner);
-//     ctx.set_sender(sender);
-//     let balance = Amount::from_micro_gtu(100);
-//     ctx.set_self_balance(balance);
+    match result {
+        PiggySmashResult::PiggySmashResultInl ((_,_,_,state), _, balance) => match state {
+            PiggyBankState::Intact => false,
+            PiggyBankState::Smashed => balance == 100_u64,
+        },
+        PiggySmashResult::PiggySmashResultInrSmashed => false,
+        PiggySmashResult::PiggySmashResultInrOwnerSender => false,
+    }
+}
 
-//     let mut state = PiggyBankState::Intact;
+#[quickcheck]
+#[cfg(test)]
+#[cfg(proof)]
+fn test_smash_intact_not_owner() -> bool {
+    // Setup
+    let ctx =
+        (UserAddress ([0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,]),
+         UserAddress ([1_u8,1_u8,1_u8,1_u8,1_u8,1_u8,1_u8,1_u8,1_u8,1_u8,1_u8,1_u8,1_u8,1_u8,1_u8,1_u8,1_u8,1_u8,1_u8,1_u8,1_u8,1_u8,1_u8,1_u8,1_u8,1_u8,1_u8,1_u8,1_u8,1_u8,1_u8,1_u8,]),
+         100_u64,
+         PiggyBankState::Intact);
+    // Setup the context
 
-//     // Trigger the smash
-//     let actions_result: Result<ActionsTree, _> = piggy_smash(&ctx, &mut state);
+    let result = piggy_smash(ctx);
+    match result {
+        PiggySmashResult::PiggySmashResultInl (_, _, _) => false,
+        PiggySmashResult::PiggySmashResultInrSmashed => false,
+        PiggySmashResult::PiggySmashResultInrOwnerSender => true,
+    }
+}
 
-//     // Inspect the result
-//     let actions = actions_result.expect_report("Inserting GTU results in error.");
-//     claim_eq!(actions, ActionsTree::simple_transfer(&owner, balance));
-//     claim_eq!(state, PiggyBankState::Smashed);
-// }
+#[quickcheck]
+#[cfg(test)]
+#[cfg(proof)]
+fn test_smash_smashed()  -> bool {
+    // Setup
+    let ctx =
+        (UserAddress ([0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,]),
+         UserAddress ([0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,]),
+         100_u64,
+         PiggyBankState::Smashed);
 
-// fn test_smash_intact_not_owner() {
-//     // Setup the context
-
-//     let mut ctx = ReceiveContextTest::empty();
-//     let owner = AccountAddress([0u8; 32]);
-//     ctx.set_owner(owner);
-//     let sender = Address::Account(AccountAddress([1u8; 32]));
-//     ctx.set_sender(sender);
-//     let balance = Amount::from_micro_gtu(100);
-//     ctx.set_self_balance(balance);
-
-//     let mut state = PiggyBankState::Intact;
-
-//     // Trigger the smash
-//     let actions_result: Result<ActionsTree, _> = piggy_smash(&ctx, &mut state);
-
-//     let err = actions_result.expect_err_report("Contract is expected to fail.");
-//     claim_eq!(err, Reject {error_code: unsafe { std::num::NonZeroI32::new_unchecked(4) }}, "Expected to fail with error NotOwner") // SmashError::NotOwner // TODO: ??
-// }
-
-// fn test_smash_smashed() {
-//     // Setup the context
-//     let mut ctx = ReceiveContextTest::empty();
-//     let owner = AccountAddress([0u8; 32]);
-//     ctx.set_owner(owner);
-//     let sender = Address::Account(owner);
-//     ctx.set_sender(sender);
-//     let balance = Amount::from_micro_gtu(100);
-//     ctx.set_self_balance(balance);
-
-//     let mut state = PiggyBankState::Smashed;
-
-//     // Trigger the smash
-//     let actions_result: Result<ActionsTree, _> = piggy_smash(&ctx, &mut state);
-
-//     let err = actions_result.expect_err_report("Contract is expected to fail.");
-//     claim_eq!(err, Reject {error_code: unsafe { std::num::NonZeroI32::new_unchecked(5) }}, "Expected  to fail with error AlreadySmashed") // TODO: ??
-// }
+    let result = piggy_smash(ctx);
+    match result {
+        PiggySmashResult::PiggySmashResultInl (_, _, _) => false,
+        PiggySmashResult::PiggySmashResultInrSmashed => true,
+        PiggySmashResult::PiggySmashResultInrOwnerSender => false,
+    }
+}
 
 
 
