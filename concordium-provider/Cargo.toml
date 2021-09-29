@@ -1,5 +1,5 @@
 [package]
-name = "hacspec-concordium-provider"
+name = "concordium-provider"
 version = "0.1.0-beta.1"
 authors = ["Franziskus Kiefer <franziskuskiefer@gmail.com>", "Denis Merigoux <denis.merigoux@gmail.com>"]
 edition = "2018"
@@ -11,8 +11,7 @@ repository = "https://github.com/hacspec/hacspec"
 
 [dependencies]
 hacspec-lib = { path = "../lib", version = "0.1.0-beta.1" }
-aead = { version = "0.4", features = ["alloc"] }
-concordium-std = { version = "0.5" }
+concordium-std = { path = "../../../concordium-rust-smart-contracts/concordium-std" } # version = "=0.5" }
 piggybank = { path = "../examples/piggybank" }
 concordium-impls = { path = "../examples/concordium-impls" }
 

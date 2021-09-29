@@ -8,5 +8,7 @@
 //! This crate does not have tests on its own but is tested through the
 //! [utils test](https://github.com/hacspec/hacspec/tree/master/utils/rc-tests).
 
-mod provider;
+pub mod provider;
 pub use provider::{};
+pub mod piggy_provider;
+pub use piggy_provider::{};

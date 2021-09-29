@@ -12,6 +12,7 @@ members = [
     "utils/attributes",
     "utils/rc-bench",
     "utils/rc-tests",
+    "utils/concordium-bench",
     "utils/util",
     "examples/curve25519",
     "examples/chacha20",

@@ -1,26 +1,10 @@
 use hacspec_lib::prelude::*;
 use concordium_std::*;
-// use concordium_impls::*;
-// use std::num;
-
-// use std::{
-//     collections::{BTreeMap, BTreeSet},
-//     convert::{self, TryFrom, TryInto},
-//     hash::Hash,
-//     mem, num, prims,
-//     prims::*,
-//     traits::*,
-//     types::*,
-//     vec::Vec,
-//     String,
-// };
+use concordium_impls::*;
 use std::convert::{self, TryFrom, TryInto};
-// use std::convert;
 use std::mem;
 use std::num;
-// use concordium_contracts_common::*;
 use mem::MaybeUninit;
-
 
 /// An error message, signalling rejection of a smart contract invocation.
 /// The client will see the error code as a reject reason; if a schema is
@@ -32,26 +16,25 @@ pub struct Reject {
     pub error_code: num::NonZeroI32,
 }
 
+fn my_reject_to_their_reject(inp : concordium_impls::Reject) -> Reject {
+    let error_code = unsafe { num::NonZeroI32::new_unchecked(inp) };
+    Reject {error_code,}
+}
+
 /// Default error is i32::MIN.
 impl Default for Reject {
     #[inline(always)]
     fn default() -> Self {
-        Self {
-            error_code: unsafe { num::NonZeroI32::new_unchecked(i32::MIN) },
-        }
+        my_reject_to_their_reject(reject_impl_default())
     }
 }
 
 impl Reject {
     /// This returns `None` for all values >= 0 and `Some` otherwise.
     pub fn new(x: i32) -> Option<Self> {
-        if x < 0 {
-            let error_code = unsafe { num::NonZeroI32::new_unchecked(x) };
-            Some(Reject {
-                error_code,
-            })
-        } else {
-            None
+        match new_reject_impl(x) {
+            OptionReject::SomeReject (error_code) => Some(my_reject_to_their_reject(error_code)),
+            OptionReject::NoneReject => None,
         }
     }
 }
@@ -59,96 +42,66 @@ impl Reject {
 impl convert::From<()> for Reject {
     #[inline(always)]
     fn from(_: ()) -> Self {
-        Reject {
-            error_code: unsafe { num::NonZeroI32::new_unchecked(i32::MIN + 1) },
-        }
+        my_reject_to_their_reject(reject_impl_convert_from_unit())
     }
 }
 
 impl convert::From<ParseError> for Reject {
     #[inline(always)]
     fn from(_: ParseError) -> Self {
-        Reject {
-            error_code: unsafe { num::NonZeroI32::new_unchecked(i32::MIN + 2) },
-        }
+        my_reject_to_their_reject(reject_impl_convert_from_parse_error())
+    }
+}
+
+fn their_logerror_to_my_logerror(inp : concordium_std::LogError) -> concordium_impls::LogError {
+    match inp {
+        concordium_std::LogError::Full      => concordium_impls::LogError::Full,
+        concordium_std::LogError::Malformed => concordium_impls::LogError::Malformed,
     }
 }
 
 /// full is mapped to i32::MIN+3, Malformed is mapped to i32::MIN+4.
-impl From<LogError> for Reject {
+impl From<concordium_std::LogError> for Reject {
     #[inline(always)]
-    fn from(le: LogError) -> Self {
-        let error_code = match le {
-            LogError::Full => unsafe { num::NonZeroI32::new_unchecked(i32::MIN + 3) },
-            LogError::Malformed => unsafe { num::NonZeroI32::new_unchecked(i32::MIN + 4) },
-        };
-        Self {
-            error_code,
-        }
+    fn from(le: concordium_std::LogError) -> Self {
+        my_reject_to_their_reject(reject_impl_from_log_error(their_logerror_to_my_logerror(le)))        
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum NewContractNameError {
-    MissingInitPrefix,
-    TooLong,
-    ContainsDot,
-    InvalidCharacters,
+fn their_new_contract_name_error_to_my_new_contract_name_error(inp : concordium_std::NewContractNameError) -> concordium_impls::NewContractNameError {
+    match inp {
+        concordium_std::NewContractNameError::MissingInitPrefix => concordium_impls::NewContractNameError::NewContractNameErrorMissingInitPrefix,
+        concordium_std::NewContractNameError::TooLong           => concordium_impls::NewContractNameError::NewContractNameErrorTooLong,
+        concordium_std::NewContractNameError::ContainsDot => concordium_impls::NewContractNameError::NewContractNameErrorContainsDot,
+        concordium_std::NewContractNameError::InvalidCharacters => concordium_impls::NewContractNameError::NewContractNameErrorInvalidCharacters,
+    }
 }
 
 /// MissingInitPrefix is mapped to i32::MIN + 5,
 /// TooLong to i32::MIN + 6,
 /// ContainsDot to i32::MIN + 9, and
 /// InvalidCharacters to i32::MIN + 10.
-impl From<NewContractNameError> for Reject {
-    fn from(nre: NewContractNameError) -> Self {
-        let error_code = match nre {
-            NewContractNameError::MissingInitPrefix => unsafe {
-                num::NonZeroI32::new_unchecked(i32::MIN + 5)
-            },
-            NewContractNameError::TooLong => unsafe {
-                num::NonZeroI32::new_unchecked(i32::MIN + 6)
-            },
-            NewContractNameError::ContainsDot => unsafe {
-                num::NonZeroI32::new_unchecked(i32::MIN + 9)
-            },
-            NewContractNameError::InvalidCharacters => unsafe {
-                num::NonZeroI32::new_unchecked(i32::MIN + 10)
-            },
-        };
-        Self {
-            error_code,
-        }
+impl From<concordium_std::NewContractNameError> for Reject {
+    fn from(nre: concordium_std::NewContractNameError) -> Self {
+        my_reject_to_their_reject(reject_impl_from_new_contract_name_error(their_new_contract_name_error_to_my_new_contract_name_error(nre)))
     }
 }
 
-/// MissingDotSeparator is mapped to i32::MIN + 7,
+fn their_new_receive_name_error_to_my_new_receive_name_error(inp : concordium_std::NewReceiveNameError) -> concordium_impls::NewReceiveNameError {
+    match inp {
+        concordium_std::NewReceiveNameError::MissingDotSeparator => concordium_impls::NewReceiveNameError::NewReceiveNameErrorMissingDotSeparator,
+        concordium_std::NewReceiveNameError::TooLong             => concordium_impls::NewReceiveNameError::NewReceiveNameErrorTooLong,
+        concordium_std::NewReceiveNameError::InvalidCharacters   => concordium_impls::NewReceiveNameError::NewReceiveNameErrorInvalidCharacters,
+    }
+}
+
+/// missingdotseparator is mapped to i32::MIN + 7,
 /// TooLong to i32::MIN + 8, and
 /// InvalidCharacters to i32::MIN + 11.
-impl From<NewReceiveNameError> for Reject {
-    fn from(nre: NewReceiveNameError) -> Self {
-        let error_code = match nre {
-            NewReceiveNameError::MissingDotSeparator => unsafe {
-                num::NonZeroI32::new_unchecked(i32::MIN + 7)
-            },
-            NewReceiveNameError::TooLong => unsafe {
-                num::NonZeroI32::new_unchecked(i32::MIN + 8)
-            },
-            NewReceiveNameError::InvalidCharacters => unsafe {
-                num::NonZeroI32::new_unchecked(i32::MIN + 11)
-            },
-        };
-        Self {
-            error_code,
-        }
+impl From<concordium_std::NewReceiveNameError> for Reject {
+    fn from(nre: concordium_std::NewReceiveNameError) -> Self {
+        my_reject_to_their_reject(reject_impl_from_new_receive_name_error(their_new_receive_name_error_to_my_new_receive_name_error(nre)))
     }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum NewReceiveNameError {
-    MissingDotSeparator,
-    TooLong,
-    InvalidCharacters,
 }
 
 /// A type representing the constract state bytes.
@@ -157,6 +110,11 @@ pub struct ContractState {
     pub(crate) current_position: u32,
 }
 
+fn update_their_contract_state (a : concordium_impls::ContractState, b : &mut ContractState) {
+    b.current_position = a;
+}
+
+// TODO: Put hacspec implementation into seek
 /// # Contract state trait implementations.
 impl Seek for ContractState {
     type Err = ();
@@ -231,8 +189,10 @@ impl Read for ContractState {
             }
         };
         let num_read = unsafe { load_state(buf.as_mut_ptr(), len, self.current_position) };
-        self.current_position += num_read;
-        Ok(num_read as usize)
+
+        let (new_pos, ret) = contract_state_impl_read_read(self.current_position, num_read);
+        update_their_contract_state(new_pos, self);
+        Ok(ret)
     }
 
     /// Read a `u32` in little-endian format. This is optimized to not
@@ -241,11 +201,12 @@ impl Read for ContractState {
         let mut bytes: MaybeUninit<[u8; 8]> = MaybeUninit::uninit();
         let num_read =
             unsafe { load_state(bytes.as_mut_ptr() as *mut u8, 8, self.current_position) };
-        self.current_position += num_read;
-        if num_read == 8 {
-            unsafe { Ok(u64::from_le_bytes(bytes.assume_init())) }
+        let (new_pos, success) = contract_state_impl_read_read_u64(self.current_position, num_read);
+        update_their_contract_state(new_pos, self);
+        if success {
+            Ok(unsafe { u64::from_le_bytes(bytes.assume_init()) })
         } else {
-            Result::Err(ParseError::default()) 
+            Err(ParseError::default())
         }
     }
 
@@ -255,9 +216,11 @@ impl Read for ContractState {
         let mut bytes: MaybeUninit<[u8; 4]> = MaybeUninit::uninit();
         let num_read =
             unsafe { load_state(bytes.as_mut_ptr() as *mut u8, 4, self.current_position) };
-        self.current_position += num_read;
-        if num_read == 4 {
-            unsafe { Ok(u32::from_le_bytes(bytes.assume_init())) }
+
+        let (new_pos, success) = contract_state_impl_read_read_u32(self.current_position, num_read);
+        update_their_contract_state(new_pos, self);
+        if success {
+            Ok(unsafe { u32::from_le_bytes(bytes.assume_init()) })
         } else {
             Err(ParseError::default())
         }
@@ -269,11 +232,14 @@ impl Read for ContractState {
         let mut bytes: MaybeUninit<[u8; 1]> = MaybeUninit::uninit();
         let num_read =
             unsafe { load_state(bytes.as_mut_ptr() as *mut u8, 1, self.current_position) };
-        self.current_position += num_read;
-        if num_read == 1 {
+
+        let (new_pos, success) = contract_state_impl_read_read_u8(self.current_position, num_read);
+        update_their_contract_state(new_pos, self);
+        if success {
             unsafe { Ok(bytes.assume_init()[0]) }
-        } else {
-            Err (ParseError::default())
+        }
+        else {
+            Err(ParseError::default())
         }
     }
 }
@@ -294,12 +260,13 @@ impl Write for ContractState {
                 _ => return Err(()),
             }
         };
-        if self.current_position.checked_add(len).is_none() {
+        if write_impl_for_contract_state_test(self.current_position, len) {
             return Err(());
         }
         let num_bytes = unsafe { write_state(buf.as_ptr(), len, self.current_position) };
-        self.current_position += num_bytes; // safe because of check above that len + pos is small enough
-        Ok(num_bytes as usize)
+         let (new_pos, ret) = write_impl_for_contract_state(self.current_position, num_bytes); // safe because of check above that len + pos is small enough
+        update_their_contract_state(new_pos, self);
+        Ok(ret)
     }
 }
 
@@ -318,15 +285,15 @@ impl HasContractState<()> for ContractState {
     #[inline(always)]
     fn open(_: Self::ContractStateData) -> Self {
         ContractState {
-            current_position: 0,
+            current_position: has_contract_state_impl_for_contract_state_open(),
         }
     }
 
     fn reserve(&mut self, len: u32) -> bool {
         let cur_size = unsafe { state_size() };
-        if cur_size < len {
+        if has_contract_state_impl_for_contract_state_reserve_0(cur_size, len) {
             let res = unsafe { resize_state(len) };
-            res == 1
+            has_contract_state_impl_for_contract_state_reserve_1(res)
         } else {
             true
         }
@@ -337,12 +304,10 @@ impl HasContractState<()> for ContractState {
 
     fn truncate(&mut self, new_size: u32) {
         let cur_size = self.size();
-        if cur_size > new_size {
+        if has_contract_state_impl_for_contract_state_truncate_0(cur_size, new_size) {
             unsafe { resize_state(new_size) };
         }
-        if new_size < self.current_position {
-            self.current_position = new_size
-        }
+        update_their_contract_state(has_contract_state_impl_for_contract_state_truncate_1(self.current_position, new_size), self)
     }
 }
 
@@ -350,6 +315,10 @@ impl HasContractState<()> for ContractState {
 /// A type representing the parameter to init and receive methods.
 pub struct Parameter {
     pub(crate) current_position: u32,
+}
+
+fn update_their_parameter_state (a : concordium_impls::Parameter, b : &mut Parameter) {
+    b.current_position = a;
 }
 
 // Found in concordium-std/srd/prims.rs
@@ -371,8 +340,9 @@ impl Read for Parameter {
         };
         let num_read =
             unsafe { get_parameter_section(buf.as_mut_ptr(), len, self.current_position) };
-        self.current_position += num_read;
-        Ok(num_read as usize)
+        let (new_pos, ret) = read_impl_for_parameter_read(self.current_position, num_read);
+        update_their_parameter_state(new_pos, self);
+        Ok(ret)
     }
 }
 
@@ -413,7 +383,7 @@ extern "C" {
 }
 
 /// A type representing the attributes, lazily acquired from the host.
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct AttributesCursor {
     /// Current position of the cursor, starting from 0.
     /// Note that this is only for the variable attributes.
@@ -421,6 +391,15 @@ pub struct AttributesCursor {
     pub(crate) current_position: u32,
     /// The number of remaining items in the policy.
     pub(crate) remaining_items:  u16,
+}
+
+fn my_attributes_cursor_to_their_attributes_cursor(inp : concordium_impls::AttributesCursor) -> AttributesCursor {
+    let (current_position,remaining_items) = inp;
+    AttributesCursor {current_position: current_position, remaining_items: remaining_items}
+}
+
+fn their_attributes_cursor_to_my_attributes_cursor(inp : AttributesCursor) -> concordium_impls::AttributesCursor {
+    (inp.current_position, inp.remaining_items)
 }
 
 
@@ -462,7 +441,7 @@ impl HasPolicy for Policy<AttributesCursor> {
     fn valid_to(&self) -> Timestamp { self.valid_to }
 
     fn next_item(&mut self, buf: &mut [u8; 31]) -> Option<(AttributeTag, u8)> {
-        if self.items.remaining_items == 0 {
+        if has_policy_impl_for_policy_attributes_cursor_next_test(their_attributes_cursor_to_my_attributes_cursor(self.items.clone())) {
             return None;
         }
 
@@ -476,11 +455,15 @@ impl HasPolicy for Policy<AttributesCursor> {
             );
             (tag_value_len.assume_init(), num_read)
         };
-        self.items.current_position += num_read;
-        if tag_value_len[1] > 31 {
+
+        let (new_self_items, check) = has_policy_impl_for_policy_attributes_cursor_next_tag_invalid(their_attributes_cursor_to_my_attributes_cursor(self.items.clone()), tag_value_len[1], num_read);
+        self.items = my_attributes_cursor_to_their_attributes_cursor(new_self_items);
+        if check {
             // Should not happen because all attributes fit into 31 bytes.
             return None;
         }
+
+        
         let num_read = unsafe {
             get_policy_section(
                 buf.as_mut_ptr(),
@@ -488,8 +471,7 @@ impl HasPolicy for Policy<AttributesCursor> {
                 self.items.current_position,
             )
         };
-        self.items.current_position += num_read;
-        self.items.remaining_items -= 1;
+        self.items = my_attributes_cursor_to_their_attributes_cursor(has_policy_impl_for_policy_attributes_cursor_next(their_attributes_cursor_to_my_attributes_cursor(self.items.clone()), num_read));
         Some((AttributeTag(tag_value_len[0]), tag_value_len[1]))
     }
 }
@@ -747,12 +729,12 @@ impl HasLogger for Logger {
         }
     }
 
-    fn log_raw(&mut self, event: &[u8]) -> Result<(), LogError> {
+    fn log_raw(&mut self, event: &[u8]) -> Result<(), concordium_std::LogError> {
         let res = unsafe { log_event(event.as_ptr(), event.len() as u32) };
         match res {
             1 => Ok(()),
-            0 => Err(LogError::Full),
-            _ => Err(LogError::Malformed),
+            0 => Err(concordium_std::LogError::Full),
+            _ => Err(concordium_std::LogError::Malformed),
         }
     }
 }
@@ -769,9 +751,9 @@ pub struct Action {
     pub(crate) _private: u32,
 }
 
-// impl Action {
-//     pub fn tag(&self) -> u32 { self._private }
-// }
+impl Action {
+    pub fn tag(&self) -> u32 { self._private }
+}
 
 extern "C" {
     pub(crate) fn accept() -> u32;

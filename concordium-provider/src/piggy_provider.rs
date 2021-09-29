@@ -1,10 +1,12 @@
 use hacspec_lib::prelude::*;
 use concordium_std::*;
 use piggybank::*;
+// use crate::provider::*;
+use crate::provider::Action;
 
 /// The state of the piggy bank
 #[derive(Debug, Serialize, PartialEq, Eq)]
-enum PiggyBankState {
+pub enum PiggyBankState {
     /// Alive and well, allows for GTU to be inserted.
     Intact,
     /// The piggy bank has been emptied, preventing further GTU to be inserted.
@@ -13,7 +15,7 @@ enum PiggyBankState {
 
 
 #[init(contract = "PiggyBank")]
-fn piggy_init(_ctx: &impl HasInitContext) -> InitResult<PiggyBankState> {
+pub fn piggy_init(_ctx: &impl HasInitContext) -> InitResult<PiggyBankState> {
     piggybank::piggy_init();
     Ok (PiggyBankState::Intact)
     // Always succeeds
@@ -57,7 +59,7 @@ fn u8x32_to_user_address (acc : [u8;32]) -> UserAddress {
 
 /// Insert some GTU into a piggy bank, allowed by anyone.
 #[receive(contract = "PiggyBank", name = "insert", payable)]
-fn piggy_insert<A: HasActions>(
+pub fn piggy_insert<A: HasActions>(
     ctx: &impl HasReceiveContext,
     amount: Amount,
     state: &mut PiggyBankState,
@@ -66,8 +68,8 @@ fn piggy_insert<A: HasActions>(
     // bytes!()
     let owner = u8x32_to_user_address(ctx.owner().0);
     let sender = match ctx.sender() {
-	Address::Account (acd) => u8x32_to_user_address(acd.0),
-	_ => u8x32_to_user_address([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]),
+        Address::Account (acd) => u8x32_to_user_address(acd.0),
+        _ => u8x32_to_user_address([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]),
     };
     let balance = ctx.self_balance().micro_gtu;
     let addition = amount.micro_gtu;
@@ -77,16 +79,20 @@ fn piggy_insert<A: HasActions>(
     };
     
     match piggybank::piggy_insert((owner, sender, balance, piggybank_state), addition) {
-	PiggyInsertResult::PiggyInsertResultInl (_, _, _, _) => (),
-	    _ => panic!(),
-    };
-    
-    Ok(A::accept())
+	PiggyInsertResult::PiggyInsertResultInl (_, _, _, _) => Ok(A::accept()),
+	_ => Err(Default::default()), 
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Reject)]
+pub enum SmashError {
+    NotOwner,
+    AlreadySmashed,
 }
 
 /// Smash a piggy bank retrieving the GTU, only allowed by the owner.
 #[receive(contract = "PiggyBank", name = "smash")]
-fn piggy_smash<A: HasActions>(
+pub fn piggy_smash<A: HasActions>(
     ctx: &impl HasReceiveContext,
     state: &mut PiggyBankState,
 ) -> ReceiveResult<A> {
@@ -103,8 +109,15 @@ fn piggy_smash<A: HasActions>(
     };
     
     match piggybank::piggy_smash((owner, sender, balance, piggybank_state)) {
-	PiggySmashResult::PiggySmashResultInl (_, _, balance_result) =>
-	    Ok(A::simple_transfer(&ctx.owner(), Amount {micro_gtu : balance_result,})),
-	_ => panic!(),
+	PiggySmashResult::PiggySmashResultInl ((_,_,_,c), _, balance_result) => {
+            *state = match c {
+	        piggybank::PiggyBankState::Intact => PiggyBankState::Intact,
+	        piggybank::PiggyBankState::Smashed => PiggyBankState::Smashed,
+            };
+            
+	    Ok(A::simple_transfer(&ctx.owner(), Amount {micro_gtu : balance_result,}))
+        }
+	PiggySmashResult::PiggySmashResultInrOwnerSender => Err(Reject {error_code: unsafe { std::num::NonZeroI32::new_unchecked(4) }}), // SmashError::NotOwner
+        PiggySmashResult::PiggySmashResultInrSmashed => Err(Reject {error_code: unsafe { std::num::NonZeroI32::new_unchecked(5) }}),
     }
 }
