@@ -168,7 +168,7 @@ fn translate_ident<'a>(x: Ident) -> RcDoc<'a, ()> {
         }
     }
 }
-    
+
 fn translate_constructor<'a>(enum_name: TopLevelIdent) -> RcDoc<'a> {
     RcDoc::as_string(enum_name.0)
 }
@@ -182,7 +182,7 @@ fn translate_enum_case_name<'a>(enum_name: BaseTyp, case_name: TopLevelIdent) ->
         BaseTyp::Named(name, opts) => {
             match opts {
                 None => RcDoc::nil(),
-                Some (_) => 
+                Some (_) =>
                     // if (name.0).0 == "Option" || (name.0).0 == "Result"  { // generalize
                     //     RcDoc::nil()
                     // } else {
@@ -1391,7 +1391,8 @@ fn translate_item<'a>(item: &'a DecoratedItem, top_ctx: &'a TopLevelContext, exp
                     .append(translate_enum_name(name.0.clone()))
                     .append(RcDoc::as_string(") :="))
                     .append(RcDoc::hardline())
-                    .append(RcDoc::as_string("Build_Show (")
+                    .append(
+                        RcDoc::as_string("Build_Show (")
                         .append(translate_enum_name(name.0.clone()))
                         .append(RcDoc::as_string(") (fun x => match x with"))
                         .append(RcDoc::hardline())
@@ -1402,19 +1403,137 @@ fn translate_item<'a>(item: &'a DecoratedItem, top_ctx: &'a TopLevelContext, exp
                                     .append(RcDoc::space())
                                     .append(translate_enum_case_name(name_ty.clone(), case_name.0.clone()))
                                     .append(RcDoc::space())
+                                    .append(match case_typ {
+                                        None => RcDoc::nil(),
+                                        Some(case_typ) =>
+                                            match case_typ.0.clone() {
+                                                BaseTyp::Tuple(args) =>
+                                                    RcDoc::as_string("(")
+                                                    .append(RcDoc::intersperse(
+                                                        (0..args.len()).map(|b| {
+                                                            RcDoc::as_string("x").append(RcDoc::as_string(b))
+                                                        }),
+                                                        RcDoc::as_string(", ")))
+                                                    .append(RcDoc::as_string(")"))
+                                                    .append(RcDoc::space()),
+                                                _ => RcDoc::nil(),
+                                            },
+                                    })
                                     .append(RcDoc::as_string("=>"))
                                     .append(RcDoc::space())
-                                    .append(RcDoc::as_string("\""))
-                                    .append(translate_enum_case_name(name_ty.clone(), case_name.0.clone()))
-                                    .append(RcDoc::as_string("\"%string"))
+                                    .append(match case_typ {
+                                        None => RcDoc::as_string("\"")
+                                            .append(translate_enum_case_name(name_ty.clone(), case_name.0.clone()))
+                                            .append(RcDoc::as_string("\"%string")),
+                                        Some(case_typ) =>
+                                            match case_typ.0.clone() {
+                                                BaseTyp::Tuple(args) =>
+                                                    RcDoc::as_string("append (")
+                                                    .append(RcDoc::intersperse(
+                                                        (0..args.len()).map(|b| {
+                                                            RcDoc::as_string("show x").append(RcDoc::as_string(b))
+                                                        }),
+                                                        RcDoc::as_string(") (append (")))
+                                                    .append(RcDoc::as_string(") \""))
+                                                    .append(translate_enum_case_name(name_ty.clone(), case_name.0.clone()))
+                                                    .append(RcDoc::as_string("\"%string"))
+                                                    .append(RcDoc::space())
+                                                    .append((1..args.len()).fold(RcDoc::nil(), |a,_| {
+                                                            a.append(RcDoc::as_string(")"))
+                                                    })),
+                                                _ =>
+                                                    RcDoc::as_string("\"")
+                                                    .append(translate_enum_case_name(name_ty.clone(), case_name.0.clone()))
+                                                    .append(RcDoc::as_string("\"%string")),
+                                            },
+                                    })
                             }),
                             RcDoc::line(),
                         ))
-                            .append(RcDoc::hardline())
-                            .append(RcDoc::as_string("end)."))
-                            .group()
-                            .nest(1)
+                        .append(RcDoc::hardline())
+                        .append(RcDoc::as_string("end)."))
+                        .group()
+                        .nest(2)
                     )
+                    .append(RcDoc::hardline())
+                    
+                    .append(RcDoc::as_string("Definition"))
+                    .append(RcDoc::space())
+                    .append(RcDoc::as_string("g_"))
+                    .append(translate_enum_name(name.0.clone()))
+                    .append(RcDoc::space())
+                    .append(RcDoc::as_string(":"))
+                    .append(RcDoc::space())
+                    .append(RcDoc::as_string("G ("))
+                    .append(translate_enum_name(name.0.clone()))
+                    .append(RcDoc::as_string(") :="))
+                    .append(RcDoc::hardline())
+                    .append(RcDoc::intersperse(
+                        cases.into_iter().map(|(case_name, case_typ)| {
+                            match case_typ {
+                                None => RcDoc::nil(),
+                                Some(case_typ) =>
+                                    match case_typ.0.clone() {
+                                        BaseTyp::Tuple(args) =>
+                                            RcDoc::as_string("bindGen arbitrary (fun x =>"),
+                                        _ => RcDoc::nil(),
+                                    },
+                            }
+                        }),
+                        RcDoc::space()))
+                    .append(
+                        RcDoc::as_string("elems [")
+                        .append(RcDoc::intersperse(
+                            cases.into_iter().map(|(case_name, case_typ)| {
+                                let name_ty = BaseTyp::Named(name.clone(), None);
+                                translate_enum_case_name(name_ty.clone(), case_name.0.clone())
+                                .append(match case_typ {
+                                    None => RcDoc::nil(),
+                                    Some(case_typ) =>
+                                        match case_typ.0.clone() {
+                                            BaseTyp::Tuple(args) => RcDoc::space().append(RcDoc::as_string("x")),
+                                            _ => RcDoc::nil(),
+                                        },
+                                })
+                            }),
+                            RcDoc::space().append(RcDoc::as_string(";")),
+                        ))
+                        .append(RcDoc::as_string("]"))
+                        .append(cases.into_iter().fold(RcDoc::nil(), |a, (case_name, case_typ)| {
+                            a.append(match case_typ {
+                                None => RcDoc::nil(),
+                                Some(case_typ) =>
+                                    match case_typ.0.clone() {
+                                        BaseTyp::Tuple(args) => RcDoc::as_string(")"),
+                                        _ => RcDoc::nil(),
+                                    },
+                            })
+                        }))
+                        .append(RcDoc::as_string("."))
+                        .group()
+                        .nest(1)
+                    )
+                    
+                    .append(RcDoc::hardline())
+                    .append(RcDoc::as_string("Instance"))
+                    .append(RcDoc::space())
+                    .append(RcDoc::as_string("gen_"))
+                    .append(translate_enum_name(name.0.clone()))
+                    .append(RcDoc::space())
+                    .append(RcDoc::as_string(":"))
+                    .append(RcDoc::space())
+                    .append(RcDoc::as_string("Gen ("))
+                    .append(translate_enum_name(name.0.clone()))
+                    .append(RcDoc::as_string(") := Build_Gen"))
+                    .append(RcDoc::space())
+                    .append(translate_enum_name(name.0.clone()))
+                    .append(RcDoc::space())
+                    .append(RcDoc::as_string("g_"))
+                    .append(translate_enum_name(name.0.clone()))
+                    .append(RcDoc::as_string("."))
+                    .group()
+                    .append(RcDoc::hardline())
+                    
             } else {
                 RcDoc::nil()
             }
@@ -1526,6 +1645,7 @@ fn translate_item<'a>(item: &'a DecoratedItem, top_ctx: &'a TopLevelContext, exp
                         .append(RcDoc::as_string("_"))
                         .append(RcDoc::as_string(" x))."))
                         .append(RcDoc::hardline())
+                            
                         .append(RcDoc::as_string("Definition"))
                         .append(RcDoc::space())
                         .append(RcDoc::as_string("g_"))
@@ -1541,6 +1661,7 @@ fn translate_item<'a>(item: &'a DecoratedItem, top_ctx: &'a TopLevelContext, exp
                         .append(RcDoc::as_string("_"))
                         .append(RcDoc::as_string(" x))."))
                         .append(RcDoc::hardline())
+                            
                         .append(RcDoc::as_string("Instance"))
                         .append(RcDoc::space())
                         .append(RcDoc::as_string("gen_"))
@@ -1737,7 +1858,7 @@ pub fn translate_and_write_to_file(
         Open Scope hacspec_scope.\n\
         {}",
         if export_quick_check {
-            "From QuickChick Require Import QuickChick.\n\
+            "From QuickChick Require Import QuickChick. Import QcNotation.\n\
              Require Import QuickChickLib.\n"
         } else {
             ""

@@ -1,0 +1,14 @@
+[package]
+name = "concordium-bench"
+version = "0.1.0"
+edition = "2018"
+
+[dependencies]
+
+[dev-dependencies]
+concordium-provider = { path = "../../concordium-provider" }
+concordium-std = { path = "../../../../concordium-rust-smart-contracts/concordium-std" } # version = "=0.5" }
+
+[[bench]]
+name = "benchmarks"
+harness = false
