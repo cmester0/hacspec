@@ -1376,7 +1376,50 @@ fn translate_item<'a>(item: &'a DecoratedItem, top_ctx: &'a TopLevelContext, exp
                 }),
             RcDoc::line(),
         ))
-        .append(RcDoc::as_string(".")),
+        .append(RcDoc::as_string("."))
+        .append(
+            if export_quick_check {
+                RcDoc::hardline()
+                    .append(RcDoc::as_string("Instance"))
+                    .append(RcDoc::space())
+                    .append(RcDoc::as_string("show_"))
+                    .append(translate_enum_name(name.0.clone()))
+                    .append(RcDoc::space())
+                    .append(RcDoc::as_string(":"))
+                    .append(RcDoc::space())
+                    .append(RcDoc::as_string("Show ("))
+                    .append(translate_enum_name(name.0.clone()))
+                    .append(RcDoc::as_string(") :="))
+                    .append(RcDoc::hardline())
+                    .append(RcDoc::as_string("Build_Show (")
+                        .append(translate_enum_name(name.0.clone()))
+                        .append(RcDoc::as_string(") (fun x => match x with"))
+                        .append(RcDoc::hardline())
+                        .append(RcDoc::intersperse(
+                            cases.into_iter().map(|(case_name, case_typ)| {
+                                let name_ty = BaseTyp::Named(name.clone(), None);
+                                RcDoc::as_string("|")
+                                    .append(RcDoc::space())
+                                    .append(translate_enum_case_name(name_ty.clone(), case_name.0.clone()))
+                                    .append(RcDoc::space())
+                                    .append(RcDoc::as_string("=>"))
+                                    .append(RcDoc::space())
+                                    .append(RcDoc::as_string("\""))
+                                    .append(translate_enum_case_name(name_ty.clone(), case_name.0.clone()))
+                                    .append(RcDoc::as_string("\"%string"))
+                            }),
+                            RcDoc::line(),
+                        ))
+                            .append(RcDoc::hardline())
+                            .append(RcDoc::as_string("end)."))
+                            .group()
+                            .nest(1)
+                    )
+            } else {
+                RcDoc::nil()
+            }
+        )
+        .group(),
         Item::ArrayDecl(name, size, cell_t, index_typ) => RcDoc::as_string("Definition")
         .append(RcDoc::space())
         .append(translate_ident(Ident::TopLevel(name.0.clone())))
@@ -1694,7 +1737,8 @@ pub fn translate_and_write_to_file(
         Open Scope hacspec_scope.\n\
         {}",
         if export_quick_check {
-            "From QuickChick Require Import QuickChick.\n"
+            "From QuickChick Require Import QuickChick.\n\
+             Require Import QuickChickLib.\n"
         } else {
             ""
         }
