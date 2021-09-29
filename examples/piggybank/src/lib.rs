@@ -28,7 +28,8 @@ pub enum PiggyInsertResult {
 
 pub enum PiggySmashResult {
     PiggySmashResultInl (Context, UserAddress, u64),
-    PiggySmashResultInr,
+    PiggySmashResultInrOwnerSender,
+    PiggySmashResultInrSmashed,
 }
 
 pub fn piggy_insert(
@@ -52,11 +53,11 @@ pub fn piggy_smash(ctx : Context) -> PiggySmashResult {
     match state {
 	PiggyBankState::Intact =>
 	    if !(owner == sender) {
-		PiggySmashResult::PiggySmashResultInr
+		PiggySmashResult::PiggySmashResultInrOwnerSender
 	    } else {
 		PiggySmashResult::PiggySmashResultInl ((owner, sender, balance, PiggyBankState::Smashed), owner, balance)
 	    },
-	PiggyBankState::Smashed => PiggySmashResult::PiggySmashResultInr,
+	PiggyBankState::Smashed => PiggySmashResult::PiggySmashResultInrSmashed,
     }
 }
 

@@ -1163,3 +1163,17 @@ Inductive result (a: Type) (b: Type) :=
 
 Arguments Ok {_ _}.
 Arguments Err {_ _}.
+
+(*** Option *)
+
+Definition option_is_none {X} (x : option X) : bool :=
+  match x with
+    | Some a => false
+    | None => true
+  end.
+
+Definition pub_uint32_checked_add (a b : int32) : option int32 :=
+  if a >? 2 ^ 32 - b
+  then None 
+  else Some (MachineIntegers.add a b).
+
