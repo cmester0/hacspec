@@ -77,7 +77,10 @@ use quickcheck::*;
 fn test_init() -> bool {
     let state = piggy_init();
     
-    state == PiggyBankState::Intact // "Piggy bank state should be intact after initialization."
+    match state {// "Piggy bank state should be intact after initialization."
+        PiggyBankState::Intact => true,
+        PiggyBankState::Smashed => false,
+    }
 }
 
 // fn test_insert_intact() {
