@@ -47,6 +47,6 @@ Definition g_nseq n : G (nseq (int8) (usize n)).
   apply n0.
 Defined.  
 
-Instance gen_int64 : Gen (int64) := Build_Gen int64 g_int64.
+Instance gen_nseq n : Gen (nseq (int8) (usize n)) := Build_Gen (nseq (int8) (usize n)) (g_nseq n).
 
 
