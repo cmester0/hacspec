@@ -34,6 +34,7 @@ members = [
     "examples/gf128",
     "examples/aes128-gcm",
     "examples/piggybank",
+    "examples/auction",
     "examples/concordium-impls",
 ]
 default-members = [
@@ -67,6 +68,7 @@ default-members = [
     "examples/gf128",
     "examples/aes128-gcm",
     "examples/piggybank",
+    "examples/auction",
     "examples/concordium-impls",
 ]
 exclude = [ "language" ]

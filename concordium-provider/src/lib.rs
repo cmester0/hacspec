@@ -12,3 +12,5 @@ pub mod provider;
 pub use provider::{};
 pub mod piggy_provider;
 pub use piggy_provider::{};
+pub mod auction_provider;
+pub use auction_provider::{};

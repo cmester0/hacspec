@@ -107,7 +107,6 @@ Definition test_init  : bool :=
     piggy_init  in 
   match state_11 with | Intact => true | Smashed => false end.
 
-Compute test_init.
 (* QuickChick (test_init). *)
 
 
@@ -574,5 +573,3 @@ Definition test_smash_smashed  : bool :=
 
 Theorem test_smash_smashed_correct : test_smash_smashed = true.
 Proof. reflexivity. Qed.
-
-

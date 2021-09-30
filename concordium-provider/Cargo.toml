@@ -13,6 +13,7 @@ repository = "https://github.com/hacspec/hacspec"
 hacspec-lib = { path = "../lib", version = "0.1.0-beta.1" }
 concordium-std = { path = "../../../concordium-rust-smart-contracts/concordium-std" } # version = "=0.5" }
 piggybank = { path = "../examples/piggybank" }
+auction = { path = "../examples/auction" }
 concordium-impls = { path = "../examples/concordium-impls" }
 
 [dev-dependencies]
