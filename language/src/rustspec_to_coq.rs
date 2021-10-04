@@ -584,7 +584,7 @@ fn translate_prefix_for_func_name<'a>(
             }
         }
         BaseTyp::Variable(_) => panic!(), // shoult not happen
-        BaseTyp::Tuple(_) => panic!(),    // should not happen
+        BaseTyp::Tuple(_) => (RcDoc::as_string("tuple"), FuncPrefix::Regular), // panic!(),    // should not happen
         BaseTyp::NaturalInteger(_, modulo, bits) => (
             RcDoc::as_string(NAT_MODULE),
             FuncPrefix::NatMod(modulo.0.clone(), bits.0.clone()),
