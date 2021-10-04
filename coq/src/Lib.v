@@ -1177,3 +1177,6 @@ Definition pub_uint32_checked_add (a b : int32) : option int32 :=
   then None 
   else Some (MachineIntegers.add a b).
 
+Definition public_byte_seq := seq int8.
+Definition tuple_clone {X} (a : X) := a.
+Definition seq_clone {X} (a : X) := a.
