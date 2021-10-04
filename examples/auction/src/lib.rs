@@ -82,6 +82,12 @@ fn seq_map_update_entry(m : SeqMap, sender_address : UserAddress, amount : u64) 
 
 pub type AuctionBidResult = Result<(), BidError>;
 
+pub enum Bool {
+    True,
+    False,
+}
+
+
 pub fn auction_bid(
     ctx: Context,
     amount: u64,
@@ -94,26 +100,25 @@ pub fn auction_bid(
 
     let ((acs, upb, ce, expirye, (updated1_mape, updated2_mape)), rese) = match auction_state {
         AuctionState::NotSoldYet =>
-            if slot_time <= expiry {
-                match sender {
-                    UserAddressSet::None => ((auction_state,b,c,expiry,e), AuctionBidResult::Err(BidError::ContractSender)),
-                    UserAddressSet::Some (sender_address) =>
-                        match seq_map_entry(e.clone(), sender_address) {
-                            MapEntry::Entry (bid_to_update, new_map) =>
-                                match seq_map_update_entry(new_map.clone(), sender_address, bid_to_update + amount) {
-                                    MapUpdate::Update (updated_bid, updated_map) =>
-                                        if updated_bid > b {
-                                            ((auction_state, updated_bid, c, expiry, updated_map), AuctionBidResult::Ok(()))
-                                        } else {
-                                            ((auction_state, b, c, expiry, updated_map), AuctionBidResult::Err(BidError::BidTooLow))
-                                        },
-                                },
-                        },
-                }
-            }
-        else {
-            ((auction_state,b,c,expiry,e), AuctionBidResult::Err(BidError::BidsOverWaitingForAuctionFinalization))
-        },
+            match if slot_time <= expiry { Bool::True } else { Bool::False } {
+                Bool::True =>
+                    match sender {
+                        UserAddressSet::None => ((auction_state,b,c,expiry,e), AuctionBidResult::Err(BidError::ContractSender)),
+                        UserAddressSet::Some (sender_address) =>
+                            match seq_map_entry(e.clone(), sender_address) {
+                                MapEntry::Entry (bid_to_update, new_map) =>
+                                    match seq_map_update_entry(new_map.clone(), sender_address, bid_to_update + amount) {
+                                        MapUpdate::Update (updated_bid, updated_map) =>
+                                            match if updated_bid > b { Bool::True } else { Bool::False } {
+                                                Bool::True => ((auction_state, updated_bid, c, expiry, updated_map), AuctionBidResult::Ok(())),
+                                                Bool::False => ((auction_state, b, c, expiry, updated_map), AuctionBidResult::Err(BidError::BidTooLow)),
+                                            },
+                                    },
+                            },
+                    },
+                Bool::False =>
+                    ((auction_state,b,c,expiry,e), AuctionBidResult::Err(BidError::BidsOverWaitingForAuctionFinalization)),
+            },
         AuctionState::Sold (_) => ((auction_state,b,c,expiry,e), AuctionBidResult::Err(BidError::AuctionFinalized))
     };
 
@@ -136,35 +141,37 @@ pub enum FinalizeAction {
 
 pub enum BidRemain {
     None,
-    Some(u64),
+    Some(u64,()),
 }
+
+pub type AuctionFinalizeResult = Result<FinalizeAction, FinalizeError>;
+
 
 pub fn auction_finalize(
     ctx: FinalizeContext,
     state: State,
-) -> (State, Result<FinalizeAction, FinalizeError>) {
+) -> (State, AuctionFinalizeResult) {
     let (mut auction_state, b, c, expiry, (m1,m2)) = state;
     let (slot_time, owner, balance) = ctx;
-
-    println!("SXEP {} {}", slot_time , expiry);
     
     let (continues, mut return_action) = match auction_state {
         AuctionState::NotSoldYet =>
             if slot_time > expiry {
-                if balance == 0 {
-                    (false, Ok(FinalizeAction::Accept))
+                if balance == 0_u64 {
+                    (false, AuctionFinalizeResult::Ok(FinalizeAction::Accept))
                 }
                 else {
-                    (true, Ok(FinalizeAction::SimpleTransfer(owner, b, PublicByteSeq::new(0_usize))))
+                    (true, AuctionFinalizeResult::Ok(FinalizeAction::SimpleTransfer(owner, b, PublicByteSeq::new(0_usize))))
                 }
             } else {
-                (false, Err(FinalizeError::AuctionStillActive))
+                (false, AuctionFinalizeResult::Err(FinalizeError::AuctionStillActive))
             },
-        AuctionState::Sold (_) => (false, Err(FinalizeError::AuctionFinalized)),
+        AuctionState::Sold (_) => (false, AuctionFinalizeResult::Err(FinalizeError::AuctionFinalized)),
     };
 
-    let result = if continues {
-        let mut remaining_bid = BidRemain::None;
+    let mut remaining_bid = BidRemain::None;
+    
+    if continues {
         // Return bids that are smaller than highest
         // let aucstate = auction_state;
         for x in 0..m1.clone().len() / 32 {
@@ -172,42 +179,45 @@ pub fn auction_finalize(
             let addr = UserAddress::from_seq(&m1.clone().slice(x * 32,32));
             if amnt < b {
                 return_action = match return_action {
-                    Ok(FinalizeAction::SimpleTransfer(o,b,a)) => Ok(FinalizeAction::SimpleTransfer(o,b,a.concat(&addr).concat(&u64_to_be_bytes(amnt)))),
-                    Ok(FinalizeAction::Accept) => Ok(FinalizeAction::Accept),
-                    Err(e) => Err(e),
+                    AuctionFinalizeResult::Ok(a) => match a {
+                        FinalizeAction::SimpleTransfer(o,b,a) => AuctionFinalizeResult::Ok(FinalizeAction::SimpleTransfer(o,b,a.concat(&addr).concat(&u64_to_be_bytes(amnt)))),
+                        FinalizeAction::Accept => AuctionFinalizeResult::Ok(FinalizeAction::Accept),
+                    },
+                    AuctionFinalizeResult::Err(e) => AuctionFinalizeResult::Err(e),
                 };
             }
             else {
-                match remaining_bid {
-                    BidRemain::None => {auction_state = AuctionState::Sold(addr); remaining_bid = BidRemain::Some(amnt)},
-                    BidRemain::Some (_) => return_action = Err(FinalizeError::BidMapError),
-                };
+                if match remaining_bid {
+                    BidRemain::None => true,
+                    BidRemain::Some (_, _) => false,
+                } {
+                    auction_state = AuctionState::Sold(addr);
+                    remaining_bid = BidRemain::Some(amnt, ());
+                } else {
+                    return_action = AuctionFinalizeResult::Err(FinalizeError::BidMapError);
+                }                
             }
         }
-
+    };
+        
+    if continues {
         // Ensure that the only bidder left in the map is the one with the highest bid
-        let res =
-            match return_action {
-                Ok (_) =>
+        return_action =
+            // match return_action {
+            //     AuctionFinalizeResult::Ok (_) =>
                     match remaining_bid {
-                        BidRemain::Some(amount) => {
-                            if amount == b {
-                                return_action
-                            }
-                            else {
-                                Err(FinalizeError::BidMapError)
-                            }
-                        }
-                        BidRemain::None => Err(FinalizeError::BidMapError),
-                    },
-                Err (e) => Err (e)
-            };
+                        BidRemain::Some(amount, _) =>
+                            match if amount == b { Bool::True } else { Bool::False } {
+                                Bool::True => return_action,
+                                Bool::False => AuctionFinalizeResult::Err(FinalizeError::BidMapError),
+                            },
+                        BidRemain::None => AuctionFinalizeResult::Err(FinalizeError::BidMapError),
+                    };// ,
+                // AuctionFinalizeResult::Err (e) => AuctionFinalizeResult::Err (e)
+            // };
 
-        ((auction_state, b, c, expiry, (m1,m2)), res)
-
-    } else {
-        ((auction_state, b, c, expiry, (m1,m2)), return_action)
+        // return_action = res;
     };
 
-    result
+    ((auction_state, b, c, expiry, (m1,m2)), return_action)
 }
