@@ -218,8 +218,8 @@ fn their_state_to_my_state (s : &mut State) -> auction::State {
 fn their_context_to_my_context (ctx: &impl HasReceiveContext) -> auction::Context {
     (ctx.metadata().slot_time().timestamp_millis(),
      match ctx.sender() {
-         Address::Contract(_) => None,
-         Address::Account(account_address) => Some (u8x32_to_user_address(account_address.0)),
+         Address::Contract(_) => UserAddressSet::UserAddressNone,
+         Address::Account(account_address) => UserAddressSet::UserAddressSome (u8x32_to_user_address(account_address.0), ()),
      })
 }
 
@@ -244,7 +244,7 @@ pub fn auction_bid<A: HasActions>(
         Err(auction::BidError::ContractSender) =>                        Err(BidError::ContractSender),
         Err(auction::BidError::BidTooLow) =>                             Err(BidError::BidTooLow),
         Err(auction::BidError::BidsOverWaitingForAuctionFinalization) => Err(BidError::BidsOverWaitingForAuctionFinalization),
-        Err(auction::BidError::AuctionFinalized) =>                      Err(BidError::AuctionFinalized),
+        Err(auction::BidError::AuctionIsFinalized) =>                    Err(BidError::AuctionFinalized),
     }
 }
 

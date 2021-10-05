@@ -1180,3 +1180,8 @@ Definition pub_uint32_checked_add (a b : int32) : option int32 :=
 Definition public_byte_seq := seq int8.
 Definition tuple_clone {X} (a : X) := a.
 Definition seq_clone {X} (a : X) := a.
+
+Instance eq_dec_unit : EqDec unit.
+Proof.
+  apply (Build_EqDec unit (fun _ _ => true)). intros. destruct x. destruct y. reflexivity.
+Defined.

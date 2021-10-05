@@ -35,11 +35,15 @@ pub enum BidError {
     BidTooLow,      /* { bid: Amount, highest_bid: Amount } */
     // raised if bid is lower than highest amount
     BidsOverWaitingForAuctionFinalization, // raised if bid is placed after auction expiry time
-    AuctionFinalized,                      /* raised if bid is placed after auction has been
+    AuctionIsFinalized,                      /* raised if bid is placed after auction has been
                                             * finalized */
 }
 
-pub type UserAddressSet = Option<UserAddress>;
+// pub type UserAddressSet = Option<UserAddress>;
+pub enum UserAddressSet {
+    UserAddressSome (UserAddress, ()),
+    UserAddressNone,
+}
 pub type Context = (u64, UserAddressSet);
 pub type FinalizeContext = (u64, UserAddress, u64);
 
@@ -82,7 +86,7 @@ fn seq_map_update_entry(m : SeqMap, sender_address : UserAddress, amount : u64) 
 
 pub type AuctionBidResult = Result<(), BidError>;
 
-pub enum Bool {
+pub enum Boolean {
     True,
     False,
 }
@@ -100,26 +104,26 @@ pub fn auction_bid(
 
     let ((acs, upb, ce, expirye, (updated1_mape, updated2_mape)), rese) = match auction_state {
         AuctionState::NotSoldYet =>
-            match if slot_time <= expiry { Bool::True } else { Bool::False } {
-                Bool::True =>
+            match if slot_time <= expiry { Boolean::True } else { Boolean::False } {
+                Boolean::True =>
                     match sender {
-                        UserAddressSet::None => ((auction_state,b,c,expiry,e), AuctionBidResult::Err(BidError::ContractSender)),
-                        UserAddressSet::Some (sender_address) =>
+                        UserAddressSet::UserAddressNone => ((auction_state,b,c,expiry,e), AuctionBidResult::Err(BidError::ContractSender)),
+                        UserAddressSet::UserAddressSome (sender_address, _) =>
                             match seq_map_entry(e.clone(), sender_address) {
                                 MapEntry::Entry (bid_to_update, new_map) =>
                                     match seq_map_update_entry(new_map.clone(), sender_address, bid_to_update + amount) {
                                         MapUpdate::Update (updated_bid, updated_map) =>
-                                            match if updated_bid > b { Bool::True } else { Bool::False } {
-                                                Bool::True => ((auction_state, updated_bid, c, expiry, updated_map), AuctionBidResult::Ok(())),
-                                                Bool::False => ((auction_state, b, c, expiry, updated_map), AuctionBidResult::Err(BidError::BidTooLow)),
+                                            match if updated_bid > b { Boolean::True } else { Boolean::False } {
+                                                Boolean::True => ((auction_state, updated_bid, c, expiry, updated_map), AuctionBidResult::Ok(())),
+                                                Boolean::False => ((auction_state, b, c, expiry, updated_map), AuctionBidResult::Err(BidError::BidTooLow)),
                                             },
                                     },
                             },
                     },
-                Bool::False =>
+                Boolean::False =>
                     ((auction_state,b,c,expiry,e), AuctionBidResult::Err(BidError::BidsOverWaitingForAuctionFinalization)),
             },
-        AuctionState::Sold (_) => ((auction_state,b,c,expiry,e), AuctionBidResult::Err(BidError::AuctionFinalized))
+        AuctionState::Sold (_) => ((auction_state,b,c,expiry,e), AuctionBidResult::Err(BidError::AuctionIsFinalized))
     };
 
 
@@ -207,9 +211,9 @@ pub fn auction_finalize(
             //     AuctionFinalizeResult::Ok (_) =>
                     match remaining_bid {
                         BidRemain::Some(amount, _) =>
-                            match if amount == b { Bool::True } else { Bool::False } {
-                                Bool::True => return_action,
-                                Bool::False => AuctionFinalizeResult::Err(FinalizeError::BidMapError),
+                            match if amount == b { Boolean::True } else { Boolean::False } {
+                                Boolean::True => return_action,
+                                Boolean::False => AuctionFinalizeResult::Err(FinalizeError::BidMapError),
                             },
                         BidRemain::None => AuctionFinalizeResult::Err(FinalizeError::BidMapError),
                     };// ,
@@ -220,4 +224,171 @@ pub fn auction_finalize(
     };
 
     ((auction_state, b, c, expiry, (m1,m2)), return_action)
+}
+
+#[cfg(proof)]
+#[test]
+/// Test that the smart-contract initialization sets the state correctly
+/// (no bids, active state, indicated auction-end time and item name).
+pub fn auction_test_init() -> bool {
+    let item = PublicByteSeq::new(0_usize);
+    let time = 100_u64;
+    
+    fresh_state(item.clone(), time) == (AuctionState::NotSoldYet, 0_u64, item.clone(), time, (PublicByteSeq::new(0_usize), PublicByteSeq::new(0_usize)))
+}
+
+#[cfg(proof)]
+fn verify_bid(
+    state: State,
+    account: UserAddress,
+    ctx: Context,
+    amount: u64,
+    bid_map: SeqMap,
+    highest_bid: u64,
+) -> bool {    
+    let item = PublicByteSeq::new(0_usize);
+    let time = 100_u64;
+    
+    let (state, res) = auction_bid(ctx, amount, state);    
+    // res.expect("Bidding should pass");
+    // bid_map.insert(account, highest_bid);
+    let bid_map = match seq_map_update_entry(bid_map, account, highest_bid) {
+        MapUpdate::Update (_, updated_map) => updated_map
+    };
+    
+    state == (AuctionState::NotSoldYet, highest_bid, item.clone(), time, bid_map)
+    // assert_eq!(*state, dummy_active_state(highest_bid, bid_map.clone()));
+}
+
+// const AUCTION_END: u64 = 1;
+
+// fn new_account() -> AccountAddress {
+//     let account = AccountAddress([0; 32]);
+//     ADDRESS_COUNTER.fetch_add(1, Ordering::SeqCst);
+//     account
+// }
+
+// #[cfg(proof)]
+// fn new_account_ctx() -> (UserAddress, Context) {
+//     let account = new_account();
+//     let ctx = new_ctx(account, account, 1_u64);
+//     (account, ctx)
+// }
+
+// #[cfg(proof)]
+// fn new_ctx(
+//     owner: UserAddress,
+//     sender: UserAddress,
+//     slot_time: u64,
+// ) -> Context {
+//     // let mut ctx = Context;
+//     // ctx.set_sender(Address::Account(sender));
+//     // ctx.set_owner(owner);
+//     // ctx.set_metadata_slot_time(Timestamp::from_timestamp_millis(slot_time));
+//     // ctx
+//     (slot_time, sender)
+// }
+
+#[cfg(proof)]
+#[test]
+/// Test a sequence of bids and finalizations:
+/// 0. Auction is initialized.
+/// 1. Alice successfully bids 0.1 GTU.
+/// 2. Alice successfully bids another 0.1 GTU, highest bid becomes 0.2 GTU
+/// (the sum of her two bids). 3. Bob successfully bids 0.3 GTU, highest
+/// bid becomes 0.3 GTU. 4. Someone tries to finalize the auction before
+/// its end time. Attempt fails. 5. Dave successfully finalizes the
+/// auction after its end time.    Alice gets her money back, while
+/// Carol (the owner of the contract) collects the highest bid amount.
+/// 6. Attempts to subsequently bid or finalize fail.
+fn test_auction_bid_and_finalize() -> bool {
+    let item = PublicByteSeq::new(0_usize);
+    let time = 100_u64;
+
+    let amount = 100_u64;
+    // let winning_amount = 300_u64;
+    // let big_amount = 500_u64;
+
+    let mut bid_map = (PublicByteSeq::new(0_usize), PublicByteSeq::new(0_usize)); // BTreeMap::new();
+
+    // initializing auction
+    let mut state = fresh_state(item.clone(), time);
+    
+    // 1st bid: account1 bids amount1
+    let alice = (UserAddress([0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,]));
+    let alice_ctx = (1_u64, UserAddressSet::UserAddressSome(alice, ()));
+
+    // let balance = 100_u64;
+    // alice_ctx.set_self_balance(balance);
+    
+    verify_bid(state, alice, alice_ctx, amount, bid_map, amount)
+    
+    // // 2nd bid: account1 bids `amount` again
+    // // should work even though it's the same amount because account1 simply
+    // // increases their bid
+    // verify_bid(&mut state, alice, &alice_ctx, amount, &mut bid_map, amount + amount);
+    
+    // // 3rd bid: second account
+    // let (bob, mut bob_ctx) = new_account_ctx();
+
+    // bob_ctx.set_self_balance(balance);
+    
+    // verify_bid(&mut state, bob, &bob_ctx, winning_amount, &mut bid_map, winning_amount);
+    
+    // // trying to finalize auction that is still active
+    // // (specifically, the bid is submitted at the last moment, at the AUCTION_END
+    // // time)
+    // let mut ctx4 = ReceiveContextTest::empty();
+
+    // let owner = AccountAddress([0u8; 32]);
+    // ctx4.set_owner(owner);
+    // let sender = Address::Account(owner);
+    // ctx4.set_sender(sender);
+    // let balance = Amount::from_micro_gtu(100);
+    // ctx4.set_self_balance(balance);
+    
+    // ctx4.set_metadata_slot_time(Timestamp::from_timestamp_millis(AUCTION_END));
+    // let finres: Result<ActionsTree, _> = auction_finalize(&ctx4, &mut state);
+    // expect_error(
+    //     finres,
+    //     FinalizeError::AuctionStillActive,
+    //     "Finalizing auction should fail when it's before auction-end time",
+    // );
+
+    // // finalizing auction
+    // let carol = new_account();
+    // let dave = new_account();
+    // let mut ctx5 = new_ctx(carol, dave, AUCTION_END + 1);
+
+    // ctx5.set_self_balance(winning_amount);
+    // let finres2: Result<ActionsTree, _> = auction_finalize(&ctx5, &mut state);
+    // let actions = finres2.expect("Finalizing auction should work");
+    // assert_eq!(
+    //     actions,
+    //     ActionsTree::simple_transfer(&carol, winning_amount)
+    //         .and_then(ActionsTree::simple_transfer(&alice, amount + amount))
+    // );
+    // assert_eq!(state, make_state (
+    //     AuctionState::Sold(bob),
+    //     winning_amount,
+    //     ITEM.as_bytes().to_vec(),
+    //     Timestamp::from_timestamp_millis(AUCTION_END),
+    //     bid_map,
+    // ));
+
+    // // attempting to finalize auction again should fail
+    // let finres3: Result<ActionsTree, _> = auction_finalize(&ctx5, &mut state);
+    // expect_error(
+    //     finres3,
+    //     FinalizeError::AuctionFinalized,
+    //     "Finalizing auction a second time should fail",
+    // );
+
+    // // attempting to bid again should fail
+    // let res4: Result<ActionsTree, _> = auction_bid(&bob_ctx, big_amount, &mut state);
+    // expect_error(
+    //     res4,
+    //     BidError::AuctionFinalized,
+    //     "Bidding should fail because the auction is finalized",
+    // );
 }
