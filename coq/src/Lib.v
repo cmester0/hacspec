@@ -12,7 +12,7 @@ From Coqprime Require GZnZ.
 
 Declare Scope hacspec_scope.
 
-Axiom secret : forall {WS : WORDSIZE},  (@int WS) -> (@int WS). 
+Axiom secret : forall {WS : WORDSIZE},  (@int WS) -> (@int WS).
 
 Axiom uint8_declassify : int8 -> int8.
 Axiom int8_declassify : int8 -> int8.
@@ -53,7 +53,7 @@ Definition int_size := int32.
 (* Represents any type that can be converted to uint_size and back *)
 Class UInt_sizable (A : Type) := {
   usize : A -> uint_size;
-  from_uint_size : uint_size -> A; 
+  from_uint_size : uint_size -> A;
 }.
 Arguments usize {_} {_}.
 Arguments from_uint_size {_} {_}.
@@ -77,7 +77,7 @@ Global Instance Z_uint_sizable : UInt_sizable Z := {
 (* Same, but for int_size *)
 Class Int_sizable (A : Type) := {
   isize : A -> int_size;
-  from_int_size : int_size -> A; 
+  from_int_size : int_size -> A;
 }.
 
 Arguments isize {_} {_}.
@@ -165,13 +165,13 @@ Definition uint128_rotate_right (u: int128) (s: int128) : int128 :=
 (* should use size u instead of u? *)
 Definition usize_shift_right (u: uint_size) (s: int32) : uint_size :=
   (ror u s).
-Infix "usize_shift_right" := (usize_shift_right) (at level 77) : hacspec_scope. 
+Infix "usize_shift_right" := (usize_shift_right) (at level 77) : hacspec_scope.
 
 (* should use size u instead of u? *)
 Definition usize_shift_left (u: uint_size) (s: int32) : uint_size :=
   (rol u s).
-Infix "usize_shift_left" := (usize_shift_left) (at level 77) : hacspec_scope. 
-  
+Infix "usize_shift_left" := (usize_shift_left) (at level 77) : hacspec_scope.
+
 Definition pub_uint128_wrapping_add (x y: int128) : int128 :=
   add x y.
 
@@ -181,8 +181,8 @@ Definition shift_left_ `{WS : WORDSIZE} (i : @int WS) (j : uint_size) :=
 Definition shift_right_ `{WS : WORDSIZE} (i : @int WS) (j : uint_size) :=
   MachineIntegers.shr i (repr (from_uint_size j)) .
 
-Infix "shift_left" := (shift_left_) (at level 77) : hacspec_scope. 
-Infix "shift_right" := (shift_right_) (at level 77) : hacspec_scope. 
+Infix "shift_left" := (shift_left_) (at level 77) : hacspec_scope.
+Infix "shift_right" := (shift_right_) (at level 77) : hacspec_scope.
 
 Infix "%%" := Z.rem (at level 40, left associativity) : Z_scope.
 Infix ".+" := (MachineIntegers.add) (at level 77) : hacspec_scope.
@@ -200,7 +200,7 @@ Notation "A × B" := (prod A B) (at level 79, left associativity) : hacspec_scop
 (*** Loops *)
 
 Open Scope nat_scope.
-Fixpoint foldi_ 
+Fixpoint foldi_
   {acc : Type}
   (fuel : nat)
   (i : uint_size)
@@ -223,7 +223,7 @@ Definition foldi
   | Zpos p => foldi_ (Pos.to_nat p) lo f init
   end.
 
-(* Typeclass handling of default elements, for use in sequences/arrays. 
+(* Typeclass handling of default elements, for use in sequences/arrays.
    We provide instances for the library integer types *)
 Class Default (A : Type) := {
   default : A
@@ -273,6 +273,9 @@ Definition seq_new_ {A: Type} (init : A) (len: nat) : seq A :=
 Definition array_from_list (A: Type) (l: list A) : nseq A (length l)
   := of_list l.
 
+Definition list_from_array (A: Type) {n} (s : nseq A n) : list A
+  := to_list s.
+
 (* automatic conversion from list to array *)
 Global Coercion array_from_list : list >-> nseq.
 
@@ -288,8 +291,8 @@ Definition array_index {A: Type} `{Default A} {len : nat} (s: nseq A len) (i: na
 Proof.
   destruct (i <? len) eqn:H1.
   (* If i < len, index normally *)
-  - rewrite Nat.ltb_lt in H1. 
-    exact (Vector.nth s (Fin.of_nat_lt H1)). 
+  - rewrite Nat.ltb_lt in H1.
+    exact (Vector.nth s (Fin.of_nat_lt H1)).
   (* otherwise return default element *)
   - exact default.
 Defined.
@@ -299,7 +302,7 @@ Definition array_upd {A: Type} {len : nat} (s: nseq A len) (i: nat) (new_v: A) :
 Proof.
   destruct (i <? len) eqn:H.
   (* If i < len, update normally *)
-  - rewrite Nat.ltb_lt in H. 
+  - rewrite Nat.ltb_lt in H.
     exact (Vector.replace s (Fin.of_nat_lt H) new_v).
   (* otherwise return original array *)
   - exact s.
@@ -329,12 +332,12 @@ Definition array_from_seq
   (* {H : List.length input = out_len} *)
     : nseq a out_len :=
     let out := Vector.const default out_len in
-    update_sub out 0 (out_len - 1) input. 
+    update_sub out 0 (out_len - 1) input.
   (* Vector.of_list input. *)
 
 Global Coercion array_from_seq : seq >-> nseq.
 
-Definition slice {A} (l : seq A) (i j : nat) : seq A := 
+Definition slice {A} (l : seq A) (i j : nat) : seq A :=
   if j <=? i then [] else firstn (j-i+1) (skipn i l).
 
 Definition lseq_slice {A n} (l : nseq A n) (i j : nat) : nseq A _ :=
@@ -351,7 +354,7 @@ Definition array_from_slice
     : nseq a out_len :=
     let out := const default_value out_len in
     update_sub out 0 slice_len (lseq_slice (of_list input) start (start + slice_len)).
-  
+
 
 Definition array_slice
   {a: Type}
@@ -376,7 +379,7 @@ Definition array_from_slice_range
     let (start, fin) := start_fin in
     update_sub out 0 ((from_uint_size fin) - (from_uint_size start)) (of_list (slice input (from_uint_size start) (from_uint_size fin))).
 
-  
+
 Definition array_slice_range
   {a: Type}
   {len : nat}
@@ -384,7 +387,7 @@ Definition array_slice_range
   (start_fin:(uint_size * uint_size))
     : nseq a _ :=
   lseq_slice input (from_uint_size (fst start_fin)) (from_uint_size (snd start_fin)).
-  
+
 Definition array_update
   {a: Type}
  `{Default a}
@@ -439,7 +442,7 @@ Definition seq_update
   update_sub (of_list s) start (length input) (of_list input).
 
 (* updating only a single value in a sequence*)
-Definition seq_upd 
+Definition seq_upd
   {a: Type}
  `{Default a}
   (s: seq a)
@@ -448,7 +451,7 @@ Definition seq_upd
     : seq a :=
   update_sub (of_list s) start 1 (of_list [v]).
 
-Definition sub {a} (s : list a) start n := 
+Definition sub {a} (s : list a) start n :=
   slice s start (start + n).
 
 Definition seq_update_start
@@ -509,7 +512,7 @@ Definition seq_from_seq {A} (l : seq A) := l.
 (**** Chunking *)
 
 Definition seq_num_chunks {a: Type} (s: seq a) (chunk_len: nat) : nat :=
-  ((length s) + chunk_len - 1) / chunk_len. 
+  ((length s) + chunk_len - 1) / chunk_len.
 
 Definition seq_chunk_len
   {a: Type}
@@ -733,7 +736,7 @@ Definition nat_mod_two {p} : nat_mod p := GZnZ.mkznz p _ (GZnZ.modz p 2).
 (* Coercion Z.of_N : N >-> Z. *)
 
 Definition nat_mod_add {n : Z} (a : nat_mod n) (b : nat_mod n) : nat_mod n := GZnZ.add n a b.
-   
+
 Infix "+%" := nat_mod_add (at level 33) : hacspec_scope.
 
 Definition nat_mod_mul {n : Z} (a:nat_mod n) (b:nat_mod n) : nat_mod n := GZnZ.mul n a b.
@@ -750,7 +753,7 @@ Definition nat_mod_neg {n : Z} (a:nat_mod n) : nat_mod n := GZnZ.opp n a.
 Definition nat_mod_inv {n : Z} (a:nat_mod n) : nat_mod n := GZnZ.inv n a.
 
 Definition nat_mod_exp {p : Z} (a:nat_mod p) (n : uint_size) : nat_mod p :=
-  let n : nat := Z.to_nat (from_uint_size n) in 
+  let n : nat := Z.to_nat (from_uint_size n) in
   let fix exp_ (e : nat_mod p) (n : nat) :=
     match n with
     | 0%nat => nat_mod_one
@@ -787,7 +790,7 @@ Definition nat_mod_bit {n : Z} (a : nat_mod n) (i : uint_size) :=
 
 (* Alias for nat_mod_bit *)
 Definition nat_get_mod_bit {p} (a : nat_mod p) := nat_mod_bit a.
-(*   
+(*
 Definition nat_mod_to_public_byte_seq_le (n: pos)  (len: uint_size) (x: nat_mod_mod n) : lseq pub_uint8 len =
   Definition n' := n % (pow2 (8 * len)) in
   Lib.ByteSequence.nat_mod_to_bytes_le len n'*)
@@ -801,7 +804,7 @@ Axiom array_to_le_uint32s : forall {A l}, nseq A l -> nseq uint32 l.
 Axiom array_to_be_uint32s : forall {l}, nseq uint8 l -> nseq uint32 (l/4).
 Axiom array_to_le_bytes : forall {A l}, nseq A l -> seq uint8.
 Axiom array_to_be_bytes : forall {A l}, nseq A l -> seq uint8.
-Axiom nat_mod_from_byte_seq_le : forall  {A n}, seq A -> nat_mod n.  
+Axiom nat_mod_from_byte_seq_le : forall  {A n}, seq A -> nat_mod n.
 Axiom most_significant_bit : forall {m}, nat_mod m -> uint_size -> uint_size.
 
 
@@ -823,7 +826,7 @@ Section Casting.
 
   Arguments cast {_} _ {_}.
 
-  Notation "' x" := (cast _ x) (at level 20) : hacspec_scope. 
+  Notation "' x" := (cast _ x) (at level 20) : hacspec_scope.
   Open Scope hacspec_scope.
 
   (* Casting to self is always possible *)
@@ -856,7 +859,7 @@ Section Casting.
   Global Instance cast_N_to_Z : Cast N Z := {
     cast := Z.of_N
   }.
-  
+
   Global Instance cast_Z_to_int {WORDSIZE} : Cast Z (@int WORDSIZE) := {
     cast n := repr n
   }.
@@ -886,7 +889,7 @@ End Casting.
 
 
 Global Arguments pair {_ _} & _ _.
-Global Arguments id {_} & _. 
+Global Arguments id {_} & _.
 Section Coercions.
   (* First, in order to have automatic coercions for tuples, we add bidirectionality hints: *)
 
@@ -899,7 +902,7 @@ Section Coercions.
   Global Coercion Z.of_N : N >-> Z.
 
   Global Coercion repr : Z >-> int.
-  
+
   Definition Z_to_int `{WORDSIZE} (n : Z) : int := repr n.
   Global Coercion  Z_to_int : Z >-> int.
 
@@ -914,7 +917,7 @@ Section Coercions.
   Definition N_to_uint_size (n : Z) : uint_size := repr n.
   Global Coercion N_to_uint_size : Z >-> uint_size.
   Definition nat_to_int `{WORDSIZE} (n : nat) := repr (Z.of_nat n).
-  Global Coercion nat_to_int : nat >-> int.  
+  Global Coercion nat_to_int : nat >-> int.
 
   Definition uint_size_to_nat (n : uint_size) : nat := from_uint_size n.
   Global Coercion uint_size_to_nat : uint_size >-> nat.
@@ -924,7 +927,7 @@ Section Coercions.
 
   Definition uint32_to_nat (n : uint32) : nat := unsigned n.
   Global Coercion uint32_to_nat : uint32 >-> nat.
-  
+
 
   Global Coercion GZnZ.val : GZnZ.znz >-> Z.
 
@@ -961,7 +964,7 @@ Section Coercions.
 
   Definition uint_size_to_int64 (n : uint_size) : int64 := repr n.
   Global Coercion uint_size_to_int64 : uint_size >-> int64.
-  
+
 
   (* coercions into nat_mod *)
   Definition Z_in_nat_mod {m : Z} (x:Z) : nat_mod m.
@@ -987,7 +990,7 @@ Section Coercions.
     Show Proof.
   Defined.
   Global Coercion int_in_nat_mod : int >-> nat_mod.
-   
+
   Definition uint_size_in_nat_mod (n : uint_size) : nat_mod 16 := int_in_nat_mod n.
   Global Coercion uint_size_in_nat_mod : uint_size >-> nat_mod.
 
@@ -997,10 +1000,118 @@ End Coercions.
 (*** Casting *)
 
 
-Definition uint64_from_uint8 (n : int8) : int64 := repr n.
-Definition uint8_from_uint64 (n : int8) : int64 := repr n.
+Theorem modulus_wordsize_8_value : @modulus WORDSIZE8 = 256. Proof. reflexivity. Qed.
+Theorem modulus_wordsize_16_value : @modulus WORDSIZE16 = 65536. Proof. reflexivity. Qed.
+Theorem modulus_wordsize_32_value : @modulus WORDSIZE32 = 4294967296. Proof. reflexivity. Qed.
+Theorem modulus_wordsize_64_value : @modulus WORDSIZE64 = 18446744073709551616. Proof. reflexivity. Qed.
 
+Require Import Lia.
 
+Definition uint64_from_uint8 (n : int8) : int64.
+Proof.
+  apply (repr n).
+
+  (* destruct n. *)
+  (* destruct intrange. *)
+  (* assert (-1 < intval < (@modulus WORDSIZE64)). { *)
+  (*   split. *)
+  (*   - apply H. *)
+  (*   - apply Z.lt_trans with (m := (@modulus WORDSIZE8)). *)
+  (*     apply H0. *)
+  (*     apply eq_refl. *)
+  (* } *)
+
+  (* apply {| intval := intval ; intrange := H1 |}.   *)
+Defined.
+
+Definition uint8_from_uint64 (n : int64) : int8.
+Proof.
+  apply (repr n).
+  (* destruct n. *)
+  (* destruct intrange. *)
+
+  (* assert (-1 < (intval mod (@modulus WORDSIZE8)) < (@modulus WORDSIZE8)). { *)
+  (*   rewrite modulus_wordsize_64_value in H0. *)
+  (*   rewrite modulus_wordsize_8_value. *)
+  (*   destruct (Z.mod_pos_bound intval 256 eq_refl). *)
+
+  (*   split. *)
+  (*   - lia. *)
+  (*   - apply H2. *)
+  (* } *)
+
+  (* apply {| intval := intval mod modulus ; intrange := H1 |}. *)
+Defined.
+
+  (* := repr n. *)
+
+(* Set Printing All. *)
+(* Print uint64_from_uint8. *)
+
+Theorem repr_unsigned_diff : forall z WS1 WS2, @Z_mod_modulus WS2 z = z -> @repr WS1 (@unsigned WS2 (@repr WS2 z)) = (@repr WS1 z).
+Proof.
+  intros.
+  cbn.
+  f_equal.
+  apply H.
+Qed.
+
+Theorem repr_unsigned_diff_general : forall WS1 WS2 (z : @int WS2) k , (z = @repr WS2 k /\ @Z_mod_modulus WS2 k = k) -> @repr WS1 (@unsigned WS2 z) = (@repr WS1 k).
+Proof.
+  intros.
+  cbn.
+  f_equal.
+  inversion_clear H. subst.
+  cbn.
+  apply H1.
+Qed.
+
+Print repr .
+
+Theorem uint8_from_uint64_uint64_from_uint8_is_id :
+  forall n, uint8_from_uint64 (uint64_from_uint8 n) = repr n.
+Proof.
+  unfold uint8_from_uint64.
+  unfold uint64_from_uint8.
+  cbn.
+  intros n.
+
+  rewrite Z_mod_modulus_eq.
+  rewrite Z_mod_modulus_eq.
+  rewrite Z_mod_modulus_eq.
+
+  (* rewrite modulus_wordsize_8_value. *)
+  rewrite modulus_wordsize_32_value.
+  rewrite modulus_wordsize_64_value.
+  replace 18446744073709551616 with (4294967296 * 4294967296) by reflexivity.
+  rewrite Zaux.Zmod_mod_mult by lia.
+
+  rewrite nat_N_Z.
+  rewrite nat_N_Z.
+
+  rewrite Z2Nat.id.
+  - rewrite Z2Nat.id.
+    + rewrite Zmod_mod.
+      destruct n.
+      unfold unsigned.
+      cbn.
+
+      pose proof intrange.
+
+      rewrite modulus_wordsize_8_value in H.
+
+      destruct intval.
+      * cbn. reflexivity.
+      * reflexivity.
+      * lia.
+    + apply Z.mod_pos_bound, ZCmisc.Zlt_0_pos.
+  - rewrite ZifyInst.of_nat_to_nat_eq.
+    apply Z.mod_pos_bound, ZCmisc.Zlt_0_pos.
+Qed.
+
+Theorem uint64_from_uint8_uint8_from_uint64_is_id :
+  forall n, uint64_from_uint8 (uint8_from_uint64 n) = n.
+Admitted.
 (* Comparisons, boolean equality, and notation *)
 
 Class EqDec (A : Type) :=
@@ -1029,7 +1140,7 @@ Global Program Instance nat_eqdec : EqDec nat := {
 Global Instance nat_comparable : Comparable nat := {
   ltb := Nat.ltb;
   leb := Nat.leb;
-  gtb a b := Nat.ltb b a; 
+  gtb a b := Nat.ltb b a;
   geb a b := Nat.leb b a;
 }.
 
@@ -1041,7 +1152,7 @@ Global Instance N_eqdec : EqDec N := {
 Global Instance N_comparable : Comparable N := {
   ltb := N.ltb;
   leb := N.leb;
-  gtb a b := N.ltb b a; 
+  gtb a b := N.ltb b a;
   geb a b := N.leb b a;
 }.
 
@@ -1053,7 +1164,7 @@ Global Instance Z_eqdec : EqDec Z := {
 Global Instance Z_comparable : Comparable Z := {
   ltb := Z.ltb;
   leb := Z.leb;
-  gtb a b := Z.ltb b a; 
+  gtb a b := Z.ltb b a;
   geb a b := Z.leb b a;
 }.
 
@@ -1072,7 +1183,7 @@ Global Instance int_eqdec `{WORDSIZE}: EqDec int := {
 Global Instance int_comparable `{WORDSIZE} : Comparable int := {
   ltb := lt;
   leb a b := if eq a b then true else lt a b ;
-  gtb a b := lt b a; 
+  gtb a b := lt b a;
   geb a b := if eq a b then true else lt b a;
 }.
 
@@ -1088,7 +1199,7 @@ Global Instance nat_mod_eqdec {p} : EqDec (nat_mod p) := {
 Global Instance nat_mod_comparable `{p : Z} : Comparable (nat_mod p) := {
   ltb a b := Z.ltb (nat_mod_val p a) (nat_mod_val p b);
   leb a b := if Zeq_bool a b then true else Z.ltb (nat_mod_val p a) (nat_mod_val p b) ;
-  gtb a b := Z.ltb (nat_mod_val p b) (nat_mod_val p a); 
+  gtb a b := Z.ltb (nat_mod_val p b) (nat_mod_val p a);
   geb a b := if Zeq_bool b a then true else Z.ltb (nat_mod_val p b) (nat_mod_val p a) ;
 }.
 
@@ -1121,12 +1232,12 @@ Proof.
   (* show heads are equal *)
   - apply (eqb_leibniz a a0 H0).
   (* show tails are equal using induction hypothesis *)
-  - apply IHl1. assumption. 
+  - apply IHl1. assumption.
 Qed.
 
 
 Global Instance List_eqdec {A} `{EqDec A} : EqDec (list A) := {
-  eqb := list_eqdec; 
+  eqb := list_eqdec;
   eqb_leibniz := list_eqdec_sound;
 }.
 Require Import Program.Equality.
@@ -1140,7 +1251,7 @@ Proof.
 Qed.
 
 Global Program Instance Vector_eqdec {A n} `{EqDec A}: EqDec (Vector.t A n) := {
-  eqb := Vector.eqb _ eqb; 
+  eqb := Vector.eqb _ eqb;
   eqb_leibniz := vector_eqb_sound;
 }.
 
@@ -1174,7 +1285,7 @@ Definition option_is_none {X} (x : option X) : bool :=
 
 Definition pub_uint32_checked_add (a b : int32) : option int32 :=
   if a >? 2 ^ 32 - b
-  then None 
+  then None
   else Some (MachineIntegers.add a b).
 
 Definition public_byte_seq := seq int8.
@@ -1185,3 +1296,1056 @@ Instance eq_dec_unit : EqDec unit.
 Proof.
   apply (Build_EqDec unit (fun _ _ => true)). intros. destruct x. destruct y. reflexivity.
 Defined.
+
+Open Scope hacspec_scope.
+
+Definition pow2 {WS : WORDSIZE} (n : nat) : int :=
+  match n with
+  | O => (repr 1)
+  | S n' => repr 2 shift_left 4 * n'
+  end.
+
+Theorem list_fold_once :
+  forall {A} (f : A -> nat) y ys x,
+    List.fold_left (fun a b => (a + f b)%nat) (y :: ys) x =
+    List.fold_left (fun a b => (a + f b)%nat) ys (x + f y)%nat.
+Proof.
+  reflexivity.
+Qed.
+
+Theorem list_fold_single :
+  forall {A} (f : A -> nat) y x,
+    List.fold_left (fun a b => (a + f b)%nat) [y] x =
+    (x + f y)%nat.
+Proof.
+  reflexivity.
+Qed.
+
+Theorem list_fold_empty :
+  forall {A} (f : A -> nat) x,
+    List.fold_left (fun a b => (a + f b)%nat) [] x =
+    x.
+Proof.
+  reflexivity.
+Qed.
+
+Fixpoint nat_be_range_at_position_ (k : nat) (z : nat) (n : nat) : list bool :=
+  match k with
+  | O => []
+  | S k' => Nat.testbit z (n + k') :: nat_be_range_at_position_ k' z n
+  end.
+
+Definition nat_be_range_at_position (k : nat) (z : nat) (n : nat) :=
+  nat_be_range_at_position_ k z n.
+
+Fixpoint nat_be_range_to_position_ (z : list bool) (val : nat) : nat :=
+  match z with
+  | [] => val
+  | x :: xs => nat_be_range_to_position_ xs ((if x then 2 ^ List.length xs else 0) + val)
+  end.
+
+Definition nat_be_range_to_position (k : nat) (z : list bool) (n : nat) : nat :=
+  (nat_be_range_to_position_ z 0 * 2^(k * n))%nat.
+
+Theorem nat_be_range_at_position_extend_general :
+  forall k z n a, nat_be_range_at_position_ a z (n + k) ++ nat_be_range_at_position_ k z n
+           = nat_be_range_at_position_ (k + a) z n.
+Proof.
+  intros.
+  induction a.
+  - rewrite Nat.add_0_r.
+    reflexivity.
+  - cbn.
+    rewrite IHa.
+    rewrite <- plus_n_Sm.
+    cbn.
+    rewrite Nat.add_assoc.
+    reflexivity.
+Qed.
+
+Theorem nat_be_range_at_position_extend_general_lemma :
+  forall k z n,
+    (nat_be_range_at_position k z (k * S n) ++ nat_be_range_at_position (k * S n) z 0 =
+    nat_be_range_at_position (k * S (S n)) z 0)%nat.
+Proof.
+  intros.
+  Check nat_be_range_at_position_extend_general (k * S n) z 0 k.
+
+  replace (nat_be_range_at_position (k * S (S n)) z 0)%nat with (nat_be_range_at_position (k * S n + k) z 0)%nat by (rewrite <- Nat.mul_succ_r ; reflexivity).
+  replace (nat_be_range_at_position k z (k * S n))%nat with (nat_be_range_at_position k z (0 + k * S n))%nat by (rewrite Nat.add_0_l ; reflexivity).
+
+  rewrite nat_be_range_at_position_extend_general.
+  reflexivity.
+Qed.
+
+Theorem nat_be_range_to_position_extract_value :
+  forall l v,
+    (nat_be_range_to_position_ l v = v + nat_be_range_to_position_ l 0)%nat.
+Proof.
+Admitted.
+
+(* l1 = (nat_be_range_at_position (k * S n) z 0) *)
+(* l2 = (nat_be_range_at_position k z (k * S n)) *)
+(* l2 ++ l1 = (nat_be_range_at_position (k * S (S n)) z 0) *)
+
+Theorem helper_thm :
+  forall l1 l2 k n,
+    (nat_be_range_to_position (k * S n) l1 0 + nat_be_range_to_position k l2 (S n))%nat =
+    nat_be_range_to_position (k * S (S n)) (l2 ++ l1) 0.
+Proof.
+  intros.
+  induction l2.
+  - unfold nat_be_range_to_position.
+    cbn.
+    rewrite Nat.add_0_r.
+    rewrite Nat.mul_0_r.
+    rewrite Nat.mul_0_r.
+    cbn.
+    rewrite Nat.mul_1_r.
+    reflexivity.
+  - cbn.
+    rewrite nat_be_range_to_position_extract_value.
+    destruct a.
+    + rewrite Nat.add_0_r.
+      rewrite Nat.mul_0_r.
+      cbn.
+      rewrite Nat.mul_1_r.
+      rewrite Nat.add_0_r.
+
+      replace ((nat_be_range_to_position (k * S n) l1 0 +
+                (2 ^ length l2 + nat_be_range_to_position_ l2 0) * 2 ^ (k * S n)))
+        with
+          (2 ^ length l2 * 2 ^ (k * S n) + nat_be_range_to_position (k * S n) l1 0 +
+                               (nat_be_range_to_position_ l2 0) * 2 ^ (k * S n)).
+      Admitted.
+      
+
+Theorem goal :
+  forall k z n,
+    List.fold_left
+      (fun s i => (s + nat_be_range_to_position k (nat_be_range_at_position k z (k * i)) i)%nat)
+      (List.seq 0%nat (S n)) 0%nat
+    = nat_be_range_to_position (k * (S n)) (nat_be_range_at_position (k * S n) z 0) 0.
+Proof.
+  intros.
+  induction n.
+  - cbn.
+    rewrite Nat.mul_0_r.
+    rewrite Nat.mul_1_r.
+    reflexivity.
+  - replace (List.seq 0 (S (S n))) with (List.seq 0 (S n) ++ [S n]) by (rewrite (seq_S (S n)) ; reflexivity).
+    rewrite fold_left_app.
+    rewrite IHn.
+    rewrite list_fold_single.
+
+    rewrite helper_thm.
+    f_equal.
+    unfold nat_be_range_at_position.
+    rewrite nat_be_range_at_position_extend_general_lemma.
+    reflexivity.
+Qed.
+
+
+Theorem k :
+  forall k z n,
+    z <= (k * (S n)) ->
+    z = nat_be_range_to_position (k * (S n)) (nat_be_range_at_position (k * S n) z 0) 0.
+Proof.
+Admitted.
+
+
+Definition nat_be_range_to_position (k : nat) (z : nat) (n : nat) : nat :=
+  (z * 2 ^ (k * n))%nat.
+
+Definition nat_be_range_at_position (k : nat) (z : nat) (n : nat) : nat :=
+  List.fold_left (fun x y => x +
+                          if Nat.testbit z (n * k + y)
+                          then 2 ^ y
+                          else 0) (List.seq 0 k) 0.
+
+
+Theorem helper :
+  forall k z,
+    nat_be_range_to_position k (nat_be_range_at_position k z 0) 0 +
+    nat_be_range_to_position k (nat_be_range_at_position k z 1) 1 =
+    nat_be_range_to_position (2 * k) (nat_be_range_at_position (2 * k) z 0) 0.
+Proof.
+  intros.
+
+  unfold nat_be_range_to_position.
+  unfold nat_be_range_at_position.
+
+  induction k.
+  - 
+    
+
+Theorem asdf :
+  forall k n,
+    List.fold_left (fun z i => z + nat_be_range_to_position 4 (nat_be_range_at_position 4 k i) i) (List.seq 0 n) 0 = nat_be_range_to_position n (nat_be_range_at_position n k n) n (* (k mod 2 ^ (4 * n))%nat *).
+Proof.
+  intros.
+  induction n.
+  - reflexivity.
+  - replace (List.seq 0 (S n)) with (List.seq 0 n ++ [n]) by (rewrite seq_S ; reflexivity).
+    rewrite fold_left_app.
+    rewrite IHn.
+    helper    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Definition nat_be_from_byte_and_position (z : nat) (n : nat) : nat :=
+  z * 2 ^ (4 * n).
+
+Fixpoint nat_be_byte_at_position (z : nat) (n : nat) : nat :=
+  match n with
+  | O => z mod 16
+  | S n' =>
+    match z / 2 with
+    | O => O
+    | z' => nat_be_byte_at_position z' n'
+    end
+  end.
+
+Example asdf :
+  forall k,
+    nat_be_byte_at_position (nat_be_from_byte_and_position k 0) 0
+    = (k mod 2 ^ 4)%nat.
+Proof.
+  intros.
+  induction k.
+  - reflexivity.
+  - unfold nat_be_from_byte_and_position.
+    replace (2 ^ (4 * 0))%nat with (1)%nat by reflexivity.
+    rewrite Nat.mul_1_r.
+    reflexivity.
+Qed.
+
+Theorem asdf2 :
+  forall n k,
+    nat_be_byte_at_position (nat_be_from_byte_and_position k n) n
+    = (k mod 2 ^ (4 * (S n)) - k mod 2 ^ (4 * n))%nat.
+Proof.
+  induction n ; intros.
+  - rewrite asdf.
+    replace (2 ^ (4 * 0))%nat with 1%nat by reflexivity.
+    rewrite Nat.mod_1_r.
+    rewrite Nat.mul_1_r.
+    rewrite Nat.sub_0_r.
+    reflexivity.
+  - cbn.
+    induction k.
+    + cbn.
+      rewrite Nat.mod_0_l.
+      * rewrite Nat.mod_0_l.
+        -- rewrite Nat.sub_diag.
+           reflexivity.
+        -- rewrite Nat.add_0_r.
+           rewrite Nat.add_0_r.
+           Check Nat.pow_add_lower 2 2 (n + S (n + S (n + S n))).
+           rewrite Nat.pow_add_lower.
+           rewrite Nat.add_mod_idemp_l.
+           pose (Nat.pow_nonzero).
+      
+Qed.
+
+
+
+Theorem asdf :
+  forall k n,
+    List.fold_left (fun z i => z + nat_be_byte_at_position (nat_be_from_byte_and_position k i) i) (List.seq 0 n) 0 = k mod 2 ^ (4 * n).
+Proof.
+  intros.
+  induction n.
+  - rewrite Z.mod_1_r. reflexivity.
+  - replace (List.seq 0 (S n)) with (List.seq 0 n ++ [n]) by (rewrite seq_S ; reflexivity).
+    rewrite fold_left_app.
+    rewrite IHn.
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Definition Z_be_from_byte_and_position (z : Z) (n : nat) : Z :=
+  Z.shiftl z (4 * n).
+
+Definition Z_be_byte_at_position (z : Z) (n : nat) : Z :=
+  (Z.shiftr (z - (Z.shiftl (Z.shiftr z (4 * (S n))) (4 * (S n)))) (4 * n)).
+
+Compute Z_be_from_byte_and_position (Z_be_byte_at_position 200 0) 0.
+
+Compute List.seq 0 10.
+
+(* Znumtheory.Zmod_div_mod *)
+
+Theorem PosPowNonZero : (forall (m : nat) n, n >= 0 -> Z.pos (BinPosDef.Pos.of_nat m) ^ n <> 0).
+  intros.
+  induction n.
+  - easy.
+  - apply Z.abs_pos.
+    rewrite Z.abs_pow.
+    apply (Zaux.Zpower_pos_gt_0 (Z.pos (BinPosDef.Pos.of_nat m)) p).
+    easy.
+  - contradiction.
+Qed.
+
+Theorem Z_be_bytes_inverse_general_helper :
+  forall (n : nat) k,
+    (2 ^ (4 * (S n)) | k) ->
+    0 <= k < 2 ^ (4 * (S (S n))) ->
+    Z_be_from_byte_and_position (Z_be_byte_at_position k (S n)) (S n) = k.
+Proof.
+  intros.
+  unfold Z_be_from_byte_and_position.
+  unfold Z_be_byte_at_position.
+  repeat rewrite Z.shiftr_div_pow2 by lia ; repeat rewrite Z.shiftl_mul_pow2 by lia.
+  replace (k / 2 ^ (4 * S (S n))) with 0 by (rewrite Zdiv_small ; lia).
+  rewrite Z.sub_0_r.
+  apply (Z.sub_cancel_l k).
+  rewrite Z.sub_diag.
+  rewrite <- Zmod_eq_full by (apply (PosPowNonZero 2) ; easy).
+  apply Znumtheory.Zdivide_mod.
+  apply H.
+Qed.
+
+Theorem Z_be_bytes_inverse_general_helper_2 :
+  forall (n : nat) k,
+    (2 ^ (4 * S n) | k) ->
+    Z_be_from_byte_and_position (Z_be_byte_at_position k n) n = 0.
+Proof.
+  intros.
+  unfold Z_be_from_byte_and_position.
+  unfold Z_be_byte_at_position.
+  repeat rewrite Z.shiftr_div_pow2 by lia ; repeat rewrite Z.shiftl_mul_pow2 by lia.
+  rewrite <- Zmod_eq_full by (apply (PosPowNonZero 2) ; easy).
+  rewrite Z_div_exact_full_1.
+  reflexivity.
+  rewrite Z.mul_comm.
+  apply (Z.sub_cancel_l k).
+  rewrite Z.sub_diag.
+  rewrite <- Zmod_eq_full by (apply (PosPowNonZero 2) ; easy).
+  symmetry.
+  apply Znumtheory.Zdivide_mod.
+  assumption.
+Qed.
+
+
+Theorem Z_be_bytes_inverse_general :
+  forall (n : nat) k,
+    0 <= k < 2 ^ (4 * n) ->
+    List.fold_left (fun z i => z + Z_be_from_byte_and_position (Z_be_byte_at_position k i) i) (List.seq 0 n) 0 = k - k / 2 ^ (4 * n) * 2 ^ (4 * n).
+Proof.
+  intros.
+
+  induction n ; intros.
+  - cbn. rewrite Z.div_1_r. rewrite Z.mul_1_r. rewrite Z.sub_diag. reflexivity.
+  - replace (List.seq 0 (S n)) with (List.seq 0 n ++ [S n]).
+    rewrite fold_left_app.
+    rewrite IHn.
+
+    assert (forall a, List.fold_left (fun (z : Z) (i : nat) => z + Z_be_from_byte_and_position (Z_be_byte_at_position k i) i) [S n] a = a + Z_be_from_byte_and_position (Z_be_byte_at_position k (S n)) (S n)) by reflexivity.
+    rewrite H0. clear H0.
+
+    replace (Z_be_from_byte_and_position (Z_be_byte_at_position k (S n)) (S n)) with 0.
+    replace (k / 2 ^ (4 * S n)) with 0 by (rewrite Z.div_small ; easy).
+    rewrite Z.div_small.
+    lia.
+
+
+
+
+    simpl.
+    replace (Z_be_from_byte_and_position (Z_be_byte_at_position k (S n)) (S n)) with 0.
+    + rewrite Z.add_0_r.
+      reflexivity.
+    + unfold Z_be_from_byte_and_position.
+      unfold Z_be_byte_at_position.
+      repeat rewrite Z.shiftr_div_pow2 by lia ; repeat rewrite Z.shiftl_mul_pow2 by lia.
+      rewrite <- Zmod_eq_full by (apply (PosPowNonZero 2) ; easy).
+      rewrite Z_div_exact_full_1.
+      reflexivity.
+      rewrite Z.mul_comm.
+      apply (Z.sub_cancel_l k).
+      rewrite Z.sub_diag.
+      rewrite <- Zmod_eq_full by (apply (PosPowNonZero 2) ; easy).
+      symmetry.
+      apply Znumtheory.Zdivide_mod.
+
+Qed.
+
+
+
+Theorem Z_be_bytes_inverse :
+  forall k,
+    k < 2 ^ (4 * 8)
+    -> (Z_be_from_byte_and_position (Z_be_byte_at_position k 0) 0)
+    + (Z_be_from_byte_and_position (Z_be_byte_at_position k 1) 1)
+    + (Z_be_from_byte_and_position (Z_be_byte_at_position k 2) 2)
+    + (Z_be_from_byte_and_position (Z_be_byte_at_position k 3) 3)
+    + (Z_be_from_byte_and_position (Z_be_byte_at_position k 4) 4)
+    + (Z_be_from_byte_and_position (Z_be_byte_at_position k 5) 5)
+    + (Z_be_from_byte_and_position (Z_be_byte_at_position k 6) 6)
+    + (Z_be_from_byte_and_position (Z_be_byte_at_position k 7) 7) = k.
+Proof.
+  intros.
+
+  assert (forall a , a = k -> a = List.fold_left (fun z n => z + Z_be_from_byte_and_position (Z_be_byte_at_position k n) n) (List.seq 0 8%nat) 0) by (intros ; rewrite <- (Z_be_bytes_inverse_general k 8) in H0 ; assumption).
+  rewrite H0 by reflexivity. clear H0.
+  replace (List.seq 0 8) with ([0]%nat ++ [1]%nat  ++ [2]%nat ++ [3]%nat ++ [4]%nat  ++ [5]%nat  ++ [6]%nat  ++ [7]%nat   ) by reflexivity.
+  repeat rewrite fold_left_app.
+  reflexivity.
+Qed.
+
+
+  rewrite <- (Z_be_bytes_inverse_general k 8).
+
+  unfold Z_be_byte_at_position.
+  unfold Z_be_from_byte_and_position.
+
+  repeat rewrite Z.shiftr_div_pow2 by lia ; repeat rewrite Z.shiftl_mul_pow2 by lia.
+  repeat rewrite <- Zmod_eq_full by (apply Z.pow_nonzero ; easy).
+
+  destruct k.
+  - reflexivity.
+  - apply Z.sub_move_0_r.
+
+
+
+    assert (forall a , a - Z.pos p = a - Z.pos p mod 2 ^ (4 * S i)) by (rewrite H; reflexivity).
+    rewrite H0.
+
+    replace (Z.pos p mod 2 ^ (4 * S i) / 2 ^ (4 * i) * 2 ^ (4 * i) - Z.pos p mod 2 ^ (4 * S i)) with
+        ((Z.pos p mod 2 ^ (4 * S i) - Z.pos p mod 2 ^ (4 * S i)) / 2 ^ (4 * i) * 2 ^ (4 * i)).
+    rewrite Z.sub_diag.
+    reflexivity.
+
+
+    rewrite <- H.
+
+
+    (* replace (Z.pos p mod 2 ^ (4 * S i) / 2 ^ (4 * i) * 2 ^ (4 * i) - Z.pos p) with *)
+    (*     (Z.pos p - Z.pos p mod 2 ^ (4 * S i) / 2 ^ (4 * i) * 2 ^ (4 * i)). *)
+    rewrite <- Zmod_eq.
+
+    Check (2 - - 1).
+    rewrite Z.sub_opp_l.
+
+  -
+
+
+
+Definition be_byte_at_position (i : int64) (n : nat) : int8 :=
+  @repr WORDSIZE8 (Z.shiftr (i - (Z.shiftl (Z.shiftr i (4 * (S n))) (4 * (S n)))) (4 * n)).
+
+(* Proof. *)
+(*   apply (uint8_from_uint64 ((i .- ((i shift_right (4 * (S n))) shift_left (4 * (S n)))) shift_right (4 * n))). *)
+
+(*   (* pose ((i .- ((i shift_right (4 * (S n))) shift_left (4 * (S n)))) shift_right (4 * n)). *) *)
+(*   (* destruct i0. *) *)
+
+(*   (* assert (-1 < intval < (@modulus WORDSIZE8)). { *) *)
+(*   (*   destruct intrange. *) *)
+(*   (*   split. *) *)
+(*   (*   lia. *) *)
+(*   (*   rewrite modulus_wordsize_8_value. *) *)
+(*   (*   admit. *) *)
+(*   (* } *) *)
+
+(*   (* apply {| intval := intval ; intrange := H |}. *) *)
+
+(* Defined. *)
+
+  (* := *)
+  (*  uint8_from_uint64 ((i .- ((i shift_right (4 * (S n))) shift_left (4 * (S n)))) shift_right (4 * n)). *)
+  (* (* @repr WORDSIZE8 ((i - (i / 2 ^ (4 * (S n))) * 2 ^ (4 * (S n))) / 2 ^ (4 * n)). *) *)
+  (* (* uint8_from_uint64 ((i .- ((i ./ (repr 2) .^ (repr (4 * (S n)))) .* ((repr 2) .^ (repr (4 * (S n)))))) ./ (repr 2) .^ (repr (4 * n))). *) *)
+
+
+Definition be_from_byte_and_position (i : int8) (n : nat) : int64 :=
+  200 - (Z.shiftl i (4 * n)).
+  (* (uint64_from_uint8 i) shift_left (4 * n). *)
+
+Compute be_from_byte_and_position (be_byte_at_position 200 0) 0.
+
+Theorem be_byte_at_position_inverse_of_be_from_byte_and_position :
+  forall n, be_byte_at_position (n) 0 <.? (@repr WORDSIZE8 32) = true.
+Proof.
+  intros.
+  unfold be_byte_at_position.
+  unfold uint8_from_uint64.
+  cbn.
+  repeat rewrite Z_mod_modulus_eq.
+
+  (* rewrite modulus_wordsize_64_value. *)
+  (* rewrite modulus_wordsize_32_value.  *)
+
+  rewrite Z.mod_small.
+
+  unfold unsigned.
+  destruct n.
+  cbn.
+
+  (* rewrite Z.mod_small.
+ *)
+  (* replace (Zbits.P_mod_two_p 200 wordsize) with 200 by reflexivity. *)
+  unfold Z.div2.
+
+  repeat rewrite nat_N_Z.
+  repeat rewrite N_nat_Z.
+  rewrite ZifyInst.of_nat_to_nat_eq.
+  rewrite Z.max_r.
+  cbn.
+
+  destruct intval.
+  reflexivity.
+  cbn.
+  destruct p ; try reflexivity.
+  - destruct p ; try reflexivity.
+    + destruct p ; try reflexivity.
+      * destruct p ; try reflexivity.
+        -- cbn.
+           rewrite Z.pos_sub_diag.
+           reflexivity.
+        -- cbn.
+           rewrite Z.pos_sub_diag.
+           reflexivity.
+      * destruct p ; try reflexivity.
+        -- cbn.
+           rewrite Z.pos_sub_diag.
+           reflexivity.
+        -- cbn.
+           rewrite Z.pos_sub_diag.
+           reflexivity.
+    + destruct p ; try reflexivity.
+      * destruct p ; try reflexivity.
+        -- cbn.
+           rewrite Z.pos_sub_diag.
+           reflexivity.
+        -- cbn.
+           rewrite Z.pos_sub_diag.
+           reflexivity.
+      * destruct p ; try reflexivity.
+        -- cbn.
+           rewrite Z.pos_sub_diag.
+           reflexivity.
+        -- cbn.
+           rewrite Z.pos_sub_diag.
+           reflexivity.
+  - destruct p ; try reflexivity.
+    + destruct p ; try reflexivity.
+      * destruct p ; try reflexivity.
+        -- cbn.
+           rewrite Z.pos_sub_diag.
+           reflexivity.
+        -- cbn.
+           rewrite Z.pos_sub_diag.
+           reflexivity.
+      * destruct p ; try reflexivity.
+        -- cbn.
+           rewrite Z.pos_sub_diag.
+           reflexivity.
+        -- cbn.
+           rewrite Z.pos_sub_diag.
+           reflexivity.
+    + destruct p ; try reflexivity.
+      * destruct p ; try reflexivity.
+        -- cbn.
+           rewrite Z.pos_sub_diag.
+           reflexivity.
+        -- cbn.
+           rewrite Z.pos_sub_diag.
+           reflexivity.
+      * destruct p ; try reflexivity.
+        -- cbn.
+           rewrite Z.pos_sub_diag.
+           reflexivity.
+        -- cbn.
+           rewrite Z.pos_sub_diag.
+           reflexivity.
+  - cbn.
+    unfold Pos.div2_up.
+    destruct p ; try reflexivity.
+    * destruct p ; try reflexivity.
+        -- destruct p ; try reflexivity.
+           ++ destruct p ; try reflexivity.
+              ** rewrite Z.pos_sub_gt ; easy.
+              ** rewrite Z.pos_sub_gt ; easy.
+           ++ destruct p ; try reflexivity.
+              ** rewrite Z.pos_sub_gt ; easy.
+              ** rewrite Z.pos_sub_gt ; easy.
+        -- destruct p ; try reflexivity.
+           ++ destruct p ; try reflexivity.
+              ** rewrite Z.pos_sub_gt ; easy.
+              ** rewrite Z.pos_sub_gt ; easy.
+           ++ destruct p ; try reflexivity.
+              ** rewrite Z.pos_sub_gt ; easy.
+              ** rewrite Z.pos_sub_gt ; easy.
+    * destruct p ; try reflexivity.
+        -- destruct p ; try reflexivity.
+           ++ destruct p ; try reflexivity.
+              ** rewrite Z.pos_sub_gt ; easy.
+              ** rewrite Z.pos_sub_gt ; easy.
+           ++ destruct p ; try reflexivity.
+              ** rewrite Z.pos_sub_gt ; easy.
+              ** rewrite Z.pos_sub_gt ; easy.
+        -- destruct p ; try reflexivity.
+           ++ destruct p ; try reflexivity.
+              ** rewrite Z.pos_sub_gt ; easy.
+              ** rewrite Z.pos_sub_gt ; easy.
+           ++ destruct p ; try reflexivity.
+              ** rewrite Z.pos_sub_gt ; easy.
+              ** rewrite Z.pos_sub_gt ; easy.
+  - destruct intrange.
+    lia.
+  - unfold unsigned.
+    destruct n.
+    cbn.
+    destruct intrange.
+    split.
+    lia.
+    rewrite modulus_wordsize_32_value.
+
+
+    rewrite unsigned_repr_eq.
+        -- cbn.
+           rewrite Z.pos_sub_diag.
+           reflexivity.
+      * destruct p ; try reflexivity.
+        -- cbn.
+           rewrite Z.pos_sub_diag.
+           reflexivity.
+        -- cbn.
+           rewrite Z.pos_sub_diag.
+           reflexivity.
+
+Qed.
+
+
+Theorem be_byte_at_position_inverse_of_be_from_byte_and_position :
+  forall k i, be_from_byte_and_position (be_byte_at_position k i) i = repr k.
+Proof.
+  intros.
+  unfold be_byte_at_position.
+  unfold be_from_byte_and_position.
+
+  induction i.
+  - cbn.
+    unfold "shift_right".
+    unfold "shift_left".
+
+    replace ((from_uint_size 4)) with (4) by reflexivity.
+
+    unfold signed.
+    unfold unsigned.
+    (* unfold repr. *)
+
+
+    cbn.
+
+    destruct k.
+
+    rewrite uint64_from_uint8_uint8_from_uint64_is_id.
+
+    unfold shr.
+    unfold shl.
+    unfold Z.shiftr.
+    unfold Z.shiftl.
+    unfold signed.
+    unfold unsigned.
+    cbn.
+
+    replace (Zbits.P_mod_two_p 4 wordsize) with 4 by reflexivity.
+
+    rewrite nat_N_Z.
+    rewrite ZifyInst.of_nat_to_nat_eq.
+    rewrite Z.max_r.
+
+    rewrite Z_mod_modulus_eq.
+    rewrite Z_mod_modulus_eq.
+
+    rewrite Z_mod_modulus_eq.
+    rewrite Z_mod_modulus_eq.
+
+    rewrite Z_mod_modulus_eq.
+
+    unfold half_modulus.
+
+    rewrite modulus_wordsize_64_value.
+    rewrite modulus_wordsize_32_value.
+
+    cbn.
+
+    destruct intval.
+    + cbn.
+      reflexivity.
+    + destruct (Coqlib.zlt (Z.pos p) 9223372036854775808).
+      * rewrite (Z.mod_small (Z.div2 (Z.div2 (Z.div2 (Z.div2 (Z.pos p))))) 18446744073709551616).
+        cbn.
+        destruct p.
+        -- cbn.
+           destruct p.
+           cbn.
+           destruct p.
+           cbn.
+           destruct p.
+           cbn.
+
+           rewrite (Z.mod_small (Z.pos p~0~0~0~0) 18446744073709551616).
+           cbn.
+
+           rewrite (Z.mod_small (Z.succ_double (Z.succ_double (Z.succ_double (Z.succ_double (Z.pos_sub p p))))) 18446744073709551616).
+
+           destruct (Coqlib.zlt
+         (Z.succ_double
+            (Z.succ_double (Z.succ_double (Z.succ_double (Z.pos_sub p p)))))
+         9223372036854775808).
+
+           rewrite Z.mod_small.
+           rewrite Z.mod_small.
+
+
+           rewrite modulus_wordsize_64_value in intrange.
+           lia.
+
+
+    rewrite modulus_wordsize_8_value.
+
+
+    (* f_equal. *)
+    (* f_equal. *)
+
+    (*   by (apply Z.mod_pos_bound; lia).     *)
+
+    rewrite Z_mod_modulus_eq.
+    rewrite Z_mod_modulus_eq.
+
+    rewrite Z_mod_modulus_eq.
+    rewrite Z_mod_modulus_eq.
+
+    cbn.
+
+    replace (Zbits.P_mod_two_p 4 wordsize) with 4 by reflexivity.
+    cbn.
+    unfold half_modulus.
+    rewrite modulus_wordsize_64_value.
+    (* rewrite modulus_wordsize_32_value. *)
+    (* rewrite modulus_wordsize_8_value. *)
+    rewrite modulus_wordsize_64_value in intrange.
+
+    (* unfold repr. *)
+
+
+    rewrite Z_mod_modulus_eq.
+    rewrite Z_mod_modulus_eq.
+    rewrite Z_mod_modulus_eq.
+    rewrite Z_mod_modulus_eq.
+    rewrite Z_mod_modulus_eq.
+
+    rewrite modulus_wordsize_64_value.
+    rewrite modulus_wordsize_32_value.
+    rewrite modulus_wordsize_8_value.
+
+    (* rewrite ZifyInst.of_nat_to_nat_eq. *)
+    (* rewrite Z *)
+
+    cbn.
+
+    replace ((if Coqlib.zlt
+                   (intval (k .- shl (shr k (@repr WORDSIZE64 4)) (@repr WORDSIZE64 4)))
+                   half_modulus
+              then intval (k .- shl (shr k (@repr WORDSIZE64 4)) (@repr WORDSIZE64 4))
+              else
+                intval (k .- shl (shr k (@repr WORDSIZE64 4)) (@repr WORDSIZE64 4)) -
+                modulus)) with (intval (k .- shl (shr k (@repr WORDSIZE64 4)) (@repr WORDSIZE64 4))).
+    2 : {
+      destruct k.
+      destruct intval.
+      - reflexivity.
+      - cbn.
+
+        rewrite Z_mod_modulus_eq.
+        rewrite Z_mod_modulus_eq.
+        rewrite Z_mod_modulus_eq.
+
+        rewrite Zbits.Zshiftl_mul_two_p.
+        rewrite Zbits.Zshiftr_div_two_p.
+        unfold two_p.
+        unfold two_power_pos.
+        unfold signed.
+
+        unfold half_modulus.
+        rewrite modulus_wordsize_64_value.
+        unfold unsigned.
+        unfold intval.
+
+        destruct (Coqlib.zlt (Z.pos p) (18446744073709551616 / 2)) eqn:Hold.
+        + cbn.
+          replace (Zbits.P_mod_two_p 4 wordsize) with 4 by reflexivity.
+          cbn.
+          rewrite Zmult_mod_idemp_l.
+
+          cbn.
+
+
+            rewrite (Z.mod_mod ((signed {| intval := 0; intrange := intrange |} / 16)
+    mod 18446744073709551616 * 16) 18446744073709551616).
+
+    }.
+
+    cbn.
+
+    rewrite Z_mod_modulus_eq.
+    rewrite Z_mod_modulus_eq.
+    rewrite Z_mod_modulus_eq.
+    rewrite Z_mod_modulus_eq.
+    rewrite Z_mod_modulus_eq.
+    rewrite Z_mod_modulus_eq.
+    rewrite Z_mod_modulus_eq.
+    rewrite Z_mod_modulus_eq.
+    rewrite Z_mod_modulus_eq.
+
+    rewrite Z.mod_mod by easy.
+    rewrite Z.mod_mod by easy.
+
+    rewrite nat_N_Z.
+    rewrite nat_N_Z.
+
+    rewrite modulus_wordsize_64_value.
+    rewrite modulus_wordsize_32_value.
+    rewrite modulus_wordsize_8_value.
+
+    rewrite ZifyInst.of_nat_to_nat_eq.
+    rewrite Z.max_r by (apply Z.mod_pos_bound; lia).
+    rewrite ZifyInst.of_nat_to_nat_eq.
+    rewrite Z.max_r by (apply Z.mod_pos_bound; lia).
+
+    replace 18446744073709551616 with (4294967296 * 4294967296) by reflexivity.
+    rewrite Zaux.Zmod_mod_mult by lia.
+    cbn.
+
+    replace 4294967296 with (16777216 * 256) by reflexivity.
+    rewrite Zaux.Zmod_mod_mult by lia.
+    cbn.
+
+    destruct k.
+
+    pose proof (mod_val := intrange).
+    rewrite modulus_wordsize_64_value in mod_val.
+
+    destruct intval.
+
+    rewrite Z.mod_small.
+    * rewrite Z.mod_small.
+      -- rewrite Z.mod_small.
+         ++ reflexivity.
+         ++ cbn.
+            easy.
+      -- easy.
+    * easy.
+    *
+
+
+
+      cbn.
+      replace (- (Z.shiftl
+         (Z.shiftr (signed {| intval := Z.pos p; intrange := intrange |})
+            (Zbits.P_mod_two_p 4 wordsize) mod 18446744073709551616)
+         (Zbits.P_mod_two_p 4 wordsize) mod 18446744073709551616)) with (- ((Z.shiftl (Z.shiftr (signed {| intval := Z.pos p; intrange := intrange |}) (Zbits.P_mod_two_p 4 (@wordsize WORDSIZE64))) (Zbits.P_mod_two_p 4 (@wordsize WORDSIZE64))) mod 18446744073709551616)).
+      2 : {
+        cbn.
+        f_equal.
+        f_equal.
+        f_equal.
+
+        apply (Z.mod_unique (Z.shiftr (signed {| intval := Z.pos p; intrange := intrange |})
+    (Zbits.P_mod_two_p 4 wordsize)) 18446744073709551616 (-1) (Z.shiftr (signed {| intval := Z.pos p; intrange := intrange |})
+                                                                        (Zbits.P_mod_two_p 4 wordsize))).
+        left.
+        split.
+
+        rewrite Zbits.Zshiftr_div_two_p.
+        apply Z_div_pos.
+        easy.
+        unfold signed.
+
+        cbn.
+
+        unfold Coqlib.zlt.
+
+        Check Z_lt_dec.
+
+        unfold half_modulus.
+        rewrite modulus_wordsize_64_value.
+
+        Check @left ((Z.pos p) < half_modulus) (~ (Z.pos p) < half_modulus) .
+        Check Z_lt_dec (Z.pos p) half_modulus.
+        assert (Z_lt_dec (Z.pos p) half_modulus = (@left ((Z.pos p) < half_modulus) (~ (Z.pos p) < half_modulus) )).
+
+        unfold Z_lt_dec.
+
+        assert .
+        admit.
+
+        (* match goal with *)
+        (* | [ |- Z_lt_dec (Zpos p) (@half_modulus WORDSIZE64) ] => Zpos p *)
+        (* end. *)
+
+        Set Printing All.
+
+        rewrite H.
+
+        replace (if Z_lt_dec (Z.pos p) (@half_modulus WORDSIZE64)
+                 then Z.pos p
+                 else Z.pos_sub p (shift_nat (@wordsize WORDSIZE64) 1)) with (Zpos p).
+
+        apply Pos2Z.pos_is_nonneg.
+
+        destruct Z_lt_dec.
+        - apply Pos2Z.pos_is_nonneg.
+        - unfold half_modulus in n.
+          rewrite modulus_wordsize_64_value in n.
+          rewrite <- Pos2Z.add_neg_pos.
+          rewrite <- Z.add_comm.
+          rewrite Z.add_le_mono_r with (p := (Z.pos (shift_nat (@wordsize WORDSIZE64) 1))).
+          rewrite Z.add_0_l.
+          replace (Z.pos p + Z.neg (shift_nat wordsize 1) + Z.pos (shift_nat wordsize 1)) with (Z.pos p + (Z.neg (shift_nat (@wordsize WORDSIZE64) 1) + Z.pos (shift_nat (@wordsize WORDSIZE64) 1))).
+          cbn.
+          rewrite Z.pos_sub_diag.
+
+
+          replace (shift_nat wordsize 1) with 18446744073709551616.
+
+
+
+        cbn.
+        replace (if Coqlib.zlt (Z.pos p) half_modulus
+     then Z.pos p
+                 else Z.pos_sub p (shift_nat wordsize 1)) with (Z.pos p).
+        apply Pos2Z.pos_is_nonneg.
+        unfold Coqlib.zlt.
+        unfold Z_lt_dec.
+        unfold half_modulus.
+
+
+
+        unfold signed.
+        cbn.
+
+        .
+
+        replace (Zbits.P_mod_two_p 4 wordsize) with 4 by reflexivity.
+        rewrite Zbits.Zshiftr_div_two_p.
+        cbn.
+        unfold two_power_pos.
+        cbn.
+        apply Z_div_pos.
+
+        apply Pos2Z.pos_is_nonneg.
+
+
+        rewrite Zaux.Zmod_mod_mult by lia.
+
+
+
+      }
+
+
+
+
+
+
+      split ; try apply Pos2Z.pos_is_nonneg ; lia.
+
+
+    destruct mod_val.
+
+      destruct k.
+    pose proof intrange.
+    rewrite modulus_wordsize_64_value in H.
+    destruct intval ; try reflexivity.
+    + cbn.
+
+      replace 18446744073709551616 with (4294967296 * 4294967296).
+      rewrite Zaux.Zmod_mod_mult by lia.
+
+      replace 4294967296 with (16777216 * 256).
+      rewrite Zaux.Zmod_mod_mult by lia.
+
+      cbn.
+
+      rewrite Z.mod_small.
+      * rewrite Z.mod_small.
+        -- rewrite Z.mod_small.
+           ++ unfold signed. cbn. unfold Z_mod_modulus. cbn. reflexivity.
+           ++ lia.
+
+
+      cbn.
+
+      rewrite Z.mod_mod.
+
+    rewrite Nat2Z.id.
+    rewrite Z.mod_mod.
+
+    replace ((@repr WORDSIZE64 (from_uint_size 0))) with (@zero WORDSIZE64) by reflexivity.
+    rewrite shl_zero.
+    rewrite shr_zero.
+
+    rewrite uint64_from_uint8_uint8_from_uint64_is_id.
+
+    Check zero.
+
+(* Theorem be_byte_at_position_inverse_of_be_from_byte_and_position :
+  forall z k l,
+                                                                    k = repr z ->
+    l = array_from_list (int8) [be_byte_at_position k 7; be_byte_at_position k 6; be_byte_at_position k 5; be_byte_at_position k 4; be_byte_at_position k 3; be_byte_at_position k 2; be_byte_at_position k 1; be_byte_at_position k 0]
+    -> k = fst (@List.fold_left (int64 * nat) int8 (fun a b => ( (repr ((fst a) + (be_from_byte_and_position b (snd a)))), Nat.pred (snd a))) (list_from_array (int8) l) (repr 0,7%nat)).
+Proof.
+  intros. subst.
+  induction z.
+  - reflexivity.
+  - induction p.
+    + (* simpl. *)     *)
+
+Axiom compute_u64_to_be_bytes :
+  forall k, u64_to_be_bytes k = array_from_list (int8) [be_byte_at_position k 7; be_byte_at_position k 6; be_byte_at_position k 5; be_byte_at_position k 4; be_byte_at_position k 3; be_byte_at_position k 2; be_byte_at_position k 1; be_byte_at_position k 0].
+
+Axiom compute_u64_from_be_bytes :
+  forall l, length (Vector.to_list l) = 8 -> u64_from_be_bytes l = Vector.to_list l.
