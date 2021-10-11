@@ -1007,46 +1007,8 @@ Theorem modulus_wordsize_64_value : @modulus WORDSIZE64 = 18446744073709551616. 
 
 Require Import Lia.
 
-Definition uint64_from_uint8 (n : int8) : int64.
-Proof.
-  apply (repr n).
-
-  (* destruct n. *)
-  (* destruct intrange. *)
-  (* assert (-1 < intval < (@modulus WORDSIZE64)). { *)
-  (*   split. *)
-  (*   - apply H. *)
-  (*   - apply Z.lt_trans with (m := (@modulus WORDSIZE8)). *)
-  (*     apply H0. *)
-  (*     apply eq_refl. *)
-  (* } *)
-
-  (* apply {| intval := intval ; intrange := H1 |}.   *)
-Defined.
-
-Definition uint8_from_uint64 (n : int64) : int8.
-Proof.
-  apply (repr n).
-  (* destruct n. *)
-  (* destruct intrange. *)
-
-  (* assert (-1 < (intval mod (@modulus WORDSIZE8)) < (@modulus WORDSIZE8)). { *)
-  (*   rewrite modulus_wordsize_64_value in H0. *)
-  (*   rewrite modulus_wordsize_8_value. *)
-  (*   destruct (Z.mod_pos_bound intval 256 eq_refl). *)
-
-  (*   split. *)
-  (*   - lia. *)
-  (*   - apply H2. *)
-  (* } *)
-
-  (* apply {| intval := intval mod modulus ; intrange := H1 |}. *)
-Defined.
-
-  (* := repr n. *)
-
-(* Set Printing All. *)
-(* Print uint64_from_uint8. *)
+Definition uint64_from_uint8 (n : int8) : int64 := repr n.
+Definition uint8_from_uint64 (n : int64) : int8 := repr n.
 
 Theorem repr_unsigned_diff : forall z WS1 WS2, @Z_mod_modulus WS2 z = z -> @repr WS1 (@unsigned WS2 (@repr WS2 z)) = (@repr WS1 z).
 Proof.
@@ -1108,11 +1070,6 @@ Proof.
   - rewrite ZifyInst.of_nat_to_nat_eq.
     apply Z.mod_pos_bound, ZCmisc.Zlt_0_pos.
 Qed.
-
-Theorem uint64_from_uint8_uint8_from_uint64_is_id :
-  forall n, uint64_from_uint8 (uint8_from_uint64 n) = n.
-Admitted.
-(* Comparisons, boolean equality, and notation *)
 
 Class EqDec (A : Type) :=
   { eqb : A -> A -> bool ;
@@ -1329,209 +1286,23 @@ Proof.
   reflexivity.
 Qed.
 
-Fixpoint nat_be_range_at_position (k : nat) (z : nat) (n : nat) : list bool :=
+Fixpoint nat_be_range_at_position (k : nat) (z : Z) (n : Z) : list bool :=
   match k with
   | O => []
-  | S k' => Nat.testbit z (n + k') :: nat_be_range_at_position k' z n
+  | S k' => Z.testbit z (n + k') :: nat_be_range_at_position k' z n
   end.
 
-Fixpoint nat_be_range_to_position_ (z : list bool) (val : nat) : nat :=
+Fixpoint nat_be_range_to_position_ (z : list bool) (val : Z) : Z :=
   match z with
   | [] => val
   | x :: xs => nat_be_range_to_position_ xs ((if x then 2 ^ List.length xs else 0) + val)
   end.
 
-Definition nat_be_range_to_position (k : nat) (z : list bool) (n : nat) : nat :=
-  (nat_be_range_to_position_ z 0 * 2^(k * n))%nat.
+Definition nat_be_range_to_position (k : nat) (z : list bool) (n : Z) : Z :=
+  (nat_be_range_to_position_ z 0 * 2^(k * n)).
 
-Definition nat_be_range (k : nat) (z : nat) (n : nat) : nat :=
+Definition nat_be_range (k : nat) (z : Z) (n : nat) : Z :=
   nat_be_range_to_position_ (nat_be_range_at_position k z (n * k)) 0 * 2^(k * n).
-
-Theorem nat_be_range_at_position_extend_general :
-  forall k z n a, nat_be_range_at_position a z (n + k) ++ nat_be_range_at_position k z n
-           = nat_be_range_at_position (k + a) z n.
-Proof.
-  intros.
-  induction a.
-  - rewrite Nat.add_0_r.
-    reflexivity.
-  - cbn.
-    rewrite IHa.
-    rewrite <- plus_n_Sm.
-    cbn.
-    rewrite Nat.add_assoc.
-    reflexivity.
-Qed.
-
-Theorem nat_be_range_at_position_extend_general_lemma :
-  forall k z n,
-    (nat_be_range_at_position k z (k * S n) ++ nat_be_range_at_position (k * S n) z 0 =
-    nat_be_range_at_position (k * S (S n)) z 0)%nat.
-Proof.
-  intros.
-  Check nat_be_range_at_position_extend_general (k * S n) z 0 k.
-
-  replace (nat_be_range_at_position (k * S (S n)) z 0)%nat with (nat_be_range_at_position (k * S n + k) z 0)%nat by (rewrite <- Nat.mul_succ_r ; reflexivity).
-  replace (nat_be_range_at_position k z (k * S n))%nat with (nat_be_range_at_position k z (0 + k * S n))%nat by (rewrite Nat.add_0_l ; reflexivity).
-
-  rewrite nat_be_range_at_position_extend_general.
-  reflexivity.
-Qed.
-
-Theorem nat_be_range_to_position_extract_value :
-  forall l v,
-    (nat_be_range_to_position_ l v = v + nat_be_range_to_position_ l 0)%nat.
-Proof.
-Admitted.
-
-(* l1 = (nat_be_range_at_position (k * S n) z 0) *)
-(* l2 = (nat_be_range_at_position k z (k * S n)) *)
-(* l2 ++ l1 = (nat_be_range_at_position (k * S (S n)) z 0) *)
-
-Theorem helper_thm :
-  forall l1 l2 k n,
-    (nat_be_range_to_position (k * S n) l1 0 + nat_be_range_to_position k l2 (S n))%nat =
-    nat_be_range_to_position (k * S (S n)) (l2 ++ l1) 0.
-Proof.
-  intros.
-  induction l2.
-  - unfold nat_be_range_to_position.
-    cbn.
-    rewrite Nat.add_0_r.
-    rewrite Nat.mul_0_r.
-    rewrite Nat.mul_0_r.
-    cbn.
-    rewrite Nat.mul_1_r.
-    reflexivity.
-  - cbn.
-    rewrite nat_be_range_to_position_extract_value.
-    destruct a.
-    + rewrite Nat.add_0_r.
-      rewrite Nat.mul_0_r.
-      cbn.
-      rewrite Nat.mul_1_r.
-      rewrite Nat.add_0_r.
-
-      replace ((nat_be_range_to_position (k * S n) l1 0 +
-                (2 ^ length l2 + nat_be_range_to_position_ l2 0) * 2 ^ (k * S n)))
-        with
-          (2 ^ length l2 * 2 ^ (k * S n) + nat_be_range_to_position (k * S n) l1 0 +
-                               (nat_be_range_to_position_ l2 0) * 2 ^ (k * S n)).
-      Admitted.
-      
-
-Theorem goal :
-  forall k z n,
-    List.fold_left
-      (fun s i => (s + nat_be_range_to_position k (nat_be_range_at_position k z (k * i)) i)%nat)
-      (List.seq 0%nat (S n)) 0%nat
-    = nat_be_range_to_position (k * (S n)) (nat_be_range_at_position (k * S n) z 0) 0.
-Proof.
-  intros.
-  induction n.
-  - cbn.
-    rewrite Nat.mul_0_r.
-    rewrite Nat.mul_1_r.
-    reflexivity.
-  - replace (List.seq 0 (S (S n))) with (List.seq 0 (S n) ++ [S n]) by (rewrite (seq_S (S n)) ; reflexivity).
-    rewrite fold_left_app.
-    rewrite IHn.
-    rewrite list_fold_single.
-
-    rewrite helper_thm.
-    f_equal.
-    unfold nat_be_range_at_position.
-    rewrite nat_be_range_at_position_extend_general_lemma.
-    reflexivity.
-Qed.
-
-Theorem help :
-  forall k n, nat_be_range_at_position k 0 n = repeat false k.
-Proof.
-  intros.
-  induction k.
-  - reflexivity.
-  - cbn.
-    rewrite IHk.
-    rewrite Nat.bits_0.
-    reflexivity.
-Qed.
-
-Theorem help2 :
-  forall k, nat_be_range_to_position_ (repeat false k) 0 = 0.
-Proof.
-  induction k.
-  - reflexivity.
-  - cbn.
-    apply IHk.
-Qed.
-    
-  
-Theorem help3 :
-  forall k z n, length (nat_be_range_at_position k z n) = k.
-Proof.
-  intros.
-  induction k.
-  - reflexivity.
-  - cbn.
-    rewrite IHk.
-    reflexivity.
-Qed.
-
-Theorem k_helper :
-  forall (z k : nat),
-    (z < 2^k)%nat ->
-    nat_be_range_to_position k (nat_be_range_at_position k z 0%nat) 0%nat = z.
-Proof.
-  unfold nat_be_range_at_position.
-  unfold nat_be_range_to_position.
-  intros.
-  rewrite Nat.mul_0_r.
-  cbn.
-  rewrite Nat.mul_1_r.
-  induction k.
-  - cbn. cbn in H. lia.
-  - cbn.
-    rewrite help3.
-    rewrite Nat.add_0_r.
-    destruct (Nat.testbit z k) eqn:o.
-Admitted.  
-
-Theorem k2 :
-  forall (z k n : nat),
-    z <= (k * (S n)) ->
-    z = nat_be_range_to_position (k * (S n)) (nat_be_range_at_position (k * S n) z 0%nat) 0%nat.
-Proof.
-  induction z ; intros.
-  - cbn.
-    unfold nat_be_range_at_position.
-    (* induction k. *)
-  (*   + reflexivity. *)
-  (*   + cbn. *)
-  (*     rewrite Nat.mul_0_r. *)
-  (*     cbn. *)
-  (*     rewrite Nat.mul_1_r. *)
-  (*     rewrite Nat.add_0_r. *)
-  (*     cbn. *)
-  (*     rewrite help. *)
-  (*     rewrite repeat_length. *)
-  (*     rewrite Nat.bits_0. *)
-  (*     rewrite help2. *)
-  (*     reflexivity. *)
-  (* - cbn. *)
-  (*   destruct k. *)
-  (*   + contradiction. *)
-  (*   + cbn. *)
-  (*     destruct (Nat.testbit (S z) (n + k * S n)). *)
-  (*     * rewrite Nat.mul_0_r. *)
-  (*       cbn. *)
-  (*       rewrite Nat.mul_1_r. *)
-  (*       rewrite Nat.add_0_r. *)
-  (*       rewrite help3. *)
-  (*       rewrite <- IHz. *)      
-Admitted.
-
-
 
 Definition u64_to_be_bytes' : int64 -> nseq int8 8 :=
   fun k => array_from_list (int8) [nat_to_int (nat_be_range 4 k 7) ;
@@ -1543,20 +1314,25 @@ Definition u64_to_be_bytes' : int64 -> nseq int8 8 :=
                                nat_to_int (nat_be_range 4 k 1) ;
                                nat_to_int (nat_be_range 4 k 0)]. 
 
-Compute u64_to_be_bytes' 20.
+Definition u64_from_be_bytes' : nseq int8 8 -> int64 :=
+  fun l => List.fold_left
+          (fun s i => (s + int8_to_nat i)%nat)
+          (Vector.to_list l) 0%nat. 
 
+Compute u64_to_be_bytes' 2000000.
+Compute u64_from_be_bytes' (u64_to_be_bytes' 200).
+                                                    
 Axiom compute_u64_to_be_bytes :
   forall k, u64_to_be_bytes k = u64_to_be_bytes' k.
 
 
 Axiom compute_u64_from_be_bytes :
-  forall l, length (Vector.to_list l) = 8 -> u64_from_be_bytes l = List.fold_left
-      (fun s i => (s + int8_to_nat i)%nat)
-      (Vector.to_list l) 0%nat. 
+  forall l, length (Vector.to_list l) = 8 -> u64_from_be_bytes l = u64_from_be_bytes' l. 
 
+Axiom u64_back_and_forth : forall k, u64_from_be_bytes' (u64_to_be_bytes' k) = k.
 
-Axiom compute_u64_to_be_bytes :
-  forall k, u64_to_be_bytes k = array_from_list (int8) [be_byte_at_position k 7; be_byte_at_position k 6; be_byte_at_position k 5; be_byte_at_position k 4; be_byte_at_position k 3; be_byte_at_position k 2; be_byte_at_position k 1; be_byte_at_position k 0].
+(* Definition be_byte_at_position (i : int64) (n : nat) : int8 := *)
+(*   @repr WORDSIZE8 ((i - (i / 2 ^ (4 * (S n))) * 2 ^ (4 * (S n))) / 2 ^ (4 * n)). *)
 
-Axiom compute_u64_from_be_bytes :
-  forall l, length (Vector.to_list l) = 8 -> u64_from_be_bytes l = Vector.to_list l.
+(* Definition be_from_byte_and_position (i : int8) (n : nat) : int64 := *)
+(*   @repr WORDSIZE64 (i * 2 ^ (4 * n)). *)

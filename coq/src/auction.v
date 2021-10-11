@@ -510,22 +510,6 @@ Definition test_auction_bid_and_finalize  : bool :=
   verify_bid (state_78) (alice_79) (alice_ctx_80) (amount_76) (bid_map_77) (
     amount_76).
 
-
-Definition be_byte_at_position (i : int64) (n : nat) : int8 :=
-  @repr WORDSIZE8 ((i - (i / 2 ^ (4 * (S n))) * 2 ^ (4 * (S n))) / 2 ^ (4 * n)).
-
-Definition be_from_byte_and_position (i : int8) (n : nat) : int64 :=
-  @repr WORDSIZE64 (i * 2 ^ (4 * n)).
-
-Theorem be_byte_at_position_inverse_of_be_from_byte_and_position :
-  forall k l, l = array_from_list (int8) [be_byte_at_position k 7; be_byte_at_position k 6; be_byte_at_position k 5; be_byte_at_position k 4; be_byte_at_position k 3; be_byte_at_position k 2; be_byte_at_position k 1; be_byte_at_position k 0] -> List.fold_left (Vector.to_list l).
-
-Axiom compute_u64_to_be_bytes :
-  forall k, u64_to_be_bytes k = array_from_list (int8) [be_byte_at_position k 7; be_byte_at_position k 6; be_byte_at_position k 5; be_byte_at_position k 4; be_byte_at_position k 3; be_byte_at_position k 2; be_byte_at_position k 1; be_byte_at_position k 0].
-
-Axiom compute_u64_from_be_bytes :
-  forall l, length (Vector.to_list l) = 8 -> u64_from_be_bytes l = Vector.to_list l.
-
 Theorem test_auction_bid_and_finalize_correct : test_auction_bid_and_finalize = true.
 Proof.
   unfold test_auction_bid_and_finalize.
