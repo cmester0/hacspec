@@ -11,7 +11,7 @@ Definition user_address := nseq (int8) (usize 32).
 
 Inductive auction_state :=
 | NotSoldYet : auction_state
-| Sold : (user_address) -> auction_state.
+| Sold : user_address -> auction_state.
 
 Definition eqb_auction_state (x y : auction_state) : bool := match x with
    | NotSoldYet => match y with | NotSoldYet=> true | _ => false end
@@ -237,7 +237,7 @@ Definition auction_bid
     | True => match sender_24 with
     | UserAddressNone => (
       (auction_state_18, b_19, c_20, expiry_21, e_22),
-      Err ((ContractSender))
+      Err (ContractSender)
     )
     | UserAddressSome (sender_address_32, _) => match seq_map_entry (
       tuple_clone (e_22)) (sender_address_32) with
@@ -248,19 +248,19 @@ Definition auction_bid
       (updated_bid_35) >.? (b_19)):bool then (True) else (False)) with
     | True => (
       (auction_state_18, updated_bid_35, c_20, expiry_21, updated_map_36),
-      Ok ((tt))
+      Ok (tt)
     )
     | False => (
       (auction_state_18, b_19, c_20, expiry_21, updated_map_36),
-      Err ((BidTooLow))
+      Err (BidTooLow)
     ) end end end end
     | False => (
       (auction_state_18, b_19, c_20, expiry_21, e_22),
-      Err ((BidsOverWaitingForAuctionFinalization))
+      Err (BidsOverWaitingForAuctionFinalization)
     ) end
     | Sold _ => (
       (auction_state_18, b_19, c_20, expiry_21, e_22),
-      Err ((AuctionIsFinalized))
+      Err (AuctionIsFinalized)
     ) end in 
   (
     (acs_25, upb_26, ce_27, expirye_28, (updated1_mape_29, updated2_mape_30)),
@@ -340,12 +340,12 @@ Definition auction_finalize
   let '(continues_48, return_action_49) :=
     match auction_state_39 with
     | NotSoldYet => (if ((slot_time_45) >.? (expiry_42)):bool then (
-      (if ((balance_47) =.? (repr 0)):bool then ((false, Ok ((Accept)))) else (
+      (if ((balance_47) =.? (repr 0)):bool then ((false, Ok (Accept))) else (
         (
           true,
-          Ok ((SimpleTransfer ((owner_46, b_40, seq_new_ (repr 0) (usize 0)))))
-        )))) else ((false, Err ((AuctionStillActive)))))
-    | Sold _ => (false, Err ((AuctionFinalized))) end in 
+          Ok (SimpleTransfer ((owner_46, b_40, seq_new_ (repr 0) (usize 0))))
+        )))) else ((false, Err (AuctionStillActive))))
+    | Sold _ => (false, Err (AuctionFinalized)) end in 
   let remaining_bid_50 :=
     None in 
   let '(auction_state_39, return_action_49, remaining_bid_50) :=
@@ -371,17 +371,15 @@ Definition auction_finalize
                 match return_action_49 with
                 | Ok a_54 => match a_54 with
                 | SimpleTransfer (o_55, b_56, a_57) => Ok (
-                  (
-                    SimpleTransfer (
-                      (
-                        o_55,
-                        b_56,
-                        seq_concat (seq_concat (a_57) (addr_53)) (
-                          u64_to_be_bytes (amnt_52))
-                      ))
-                  ))
-                | Accept => Ok ((Accept)) end
-                | Err e_58 => Err ((e_58)) end in 
+                  SimpleTransfer (
+                    (
+                      o_55,
+                      b_56,
+                      seq_concat (seq_concat (a_57) (addr_53)) (
+                        u64_to_be_bytes (amnt_52))
+                    )))
+                | Accept => Ok (Accept) end
+                | Err e_58 => Err (e_58) end in 
               (auction_state_39, return_action_49, remaining_bid_50)
             ) else (
               let '(auction_state_39, return_action_49, remaining_bid_50) :=
@@ -389,13 +387,13 @@ Definition auction_finalize
                 | None => true
                 | Some (_, _) => false end:bool then (
                   let auction_state_39 :=
-                    Sold ((addr_53)) in 
+                    Sold (addr_53) in 
                   let remaining_bid_50 :=
                     Some ((amnt_52, tt)) in 
                   (auction_state_39, return_action_49, remaining_bid_50)
                 ) else (
                   let return_action_49 :=
-                    Err ((BidMapError)) in 
+                    Err (BidMapError) in 
                   (auction_state_39, return_action_49, remaining_bid_50)
                 ) in 
               (auction_state_39, return_action_49, remaining_bid_50)
@@ -412,8 +410,8 @@ Definition auction_finalize
         | Some (amount_59, _) => match (if ((amount_59) =.? (b_40)):bool then (
           True) else (False)) with
         | True => return_action_49
-        | False => Err ((BidMapError)) end
-        | None => Err ((BidMapError)) end in 
+        | False => Err (BidMapError) end
+        | None => Err (BidMapError) end in 
       (return_action_49)
     ) else ( (return_action_49)
     ) in 
@@ -444,31 +442,41 @@ Definition verify_bid
   (amount_65 : int64)
   (bid_map_66 : seq_map)
   (highest_bid_67 : int64)
-  : bool :=
+  : (state × bool) :=
   let item_68 :=
     seq_new_ (repr 0) (usize 0) in 
   let time_69 :=
     repr 100 in 
-  let '(state_70, res_71) :=
+  let '((auc_st_70, hb_71, its_72, tm_73, bm_74), res_75) :=
     auction_bid (ctx_64) (amount_65) (state_62) in 
-  let bid_map_72 :=
-    match seq_map_update_entry (bid_map_66) (account_63) (highest_bid_67) with
-    | Update (_, updated_map_73) => updated_map_73 end in 
-  (state_70) =.? (
-    (NotSoldYet, highest_bid_67, seq_clone (item_68), time_69, bid_map_72)).
+  let bid_map_76 :=
+    match seq_map_update_entry (tuple_clone (bid_map_66)) (account_63) (
+      highest_bid_67) with
+    | Update (_, updated_map_77) => updated_map_77 end in 
+  (
+    (auc_st_70, hb_71, seq_clone (its_72), tm_73, tuple_clone (bm_74)),
+    ((auc_st_70, hb_71, seq_clone (its_72), tm_73, tuple_clone (bm_74))) =.? (
+      (
+        NotSoldYet,
+        highest_bid_67,
+        seq_clone (item_68),
+        time_69,
+        tuple_clone (bid_map_76)
+      ))
+  ).
 
 Definition test_auction_bid_and_finalize  : bool :=
-  let item_74 :=
+  let item_78 :=
     seq_new_ (repr 0) (usize 0) in 
-  let time_75 :=
+  let time_79 :=
     repr 100 in 
-  let amount_76 :=
+  let amount_80 :=
     repr 100 in 
-  let bid_map_77 :=
+  let bid_map_81 :=
     (seq_new_ (repr 0) (usize 0), seq_new_ (repr 0) (usize 0)) in 
-  let state_78 :=
-    fresh_state (seq_clone (item_74)) (time_75) in 
-  let alice_79 :=
+  let state_82 :=
+    fresh_state (seq_clone (item_78)) (time_79) in 
+  let alice_83 :=
     array_from_list int8 (
       let l :=
         [
@@ -505,10 +513,12 @@ Definition test_auction_bid_and_finalize  : bool :=
           repr 0;
           repr 0
         ] in  l) in 
-  let alice_ctx_80 :=
-    (repr 1, UserAddressSome ((alice_79, tt))) in 
-  verify_bid (state_78) (alice_79) (alice_ctx_80) (amount_76) (bid_map_77) (
-    amount_76).
+  let alice_ctx_84 :=
+    (repr 1, UserAddressSome ((alice_83, tt))) in 
+  let '(state_85, result_0_86) :=
+    verify_bid (state_82) (alice_83) (alice_ctx_84) (amount_80) (
+      tuple_clone (bid_map_81)) (amount_80) in 
+  result_0_86.
 
 Theorem test_auction_bid_and_finalize_correct : test_auction_bid_and_finalize = true.
 Proof. Admitted.

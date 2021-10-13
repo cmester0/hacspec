@@ -1245,9 +1245,30 @@ Definition pub_uint32_checked_add (a b : int32) : option int32 :=
   then None
   else Some (MachineIntegers.add a b).
 
+Definition pub_uint32_checked_sub (a b : int32) : option int32 :=
+  if a - b >? 2 ^ 32
+  then None
+  else Some (MachineIntegers.sub a b).
+
+Definition pub_int64_checked_abs (i : int64) : option int64 :=
+  if eqb i (repr (-2^64))
+  then None
+  else
+    if ltb i 0
+    then Some (repr (- i))
+    else Some i.
+
+Definition pub_int32_checked_abs (i : int32) : option int32 :=
+  if eqb i (repr (-2^32))
+  then None
+  else
+    if ltb i (repr 0)
+    then Some (repr (- i))
+    else Some i.
+
 Definition public_byte_seq := seq int8.
-Definition tuple_clone {X} (a : X) := a.
-Definition seq_clone {X} (a : X) := a.
+Notation tuple_clone a := a.
+Notation seq_clone a := a.
 
 Instance eq_dec_unit : EqDec unit.
 Proof.
@@ -1319,20 +1340,27 @@ Definition u64_from_be_bytes' : nseq int8 8 -> int64 :=
           (fun s i => (s + int8_to_nat i)%nat)
           (Vector.to_list l) 0%nat. 
 
+Definition u64_from_be_bytes'' : nseq int8 8 -> int64 :=
+  (fun v => Vector.fold_right (fun i s => (s .+ (uint64_from_uint8 i))%nat) v (@repr WORDSIZE64 0)).
+
 Compute u64_to_be_bytes' 2000000.
-Compute u64_from_be_bytes' (u64_to_be_bytes' 200).
+Compute u64_from_be_bytes'' (u64_to_be_bytes' 200).
                                                     
 Axiom compute_u64_to_be_bytes :
   forall k, u64_to_be_bytes k = u64_to_be_bytes' k.
 
+(* Axiom compute_u64_from_be_bytes : *)
+(*   forall l, length (Vector.to_list l) = 8 -> u64_from_be_bytes l = u64_from_be_bytes' l.  *)
 
 Axiom compute_u64_from_be_bytes :
-  forall l, length (Vector.to_list l) = 8 -> u64_from_be_bytes l = u64_from_be_bytes' l. 
+  forall l, length (Vector.to_list l) = 8 -> u64_from_be_bytes l = u64_from_be_bytes'' l. 
 
-Axiom u64_back_and_forth : forall k, u64_from_be_bytes' (u64_to_be_bytes' k) = k.
+Axiom u64_back_and_forth : forall k, u64_from_be_bytes'' (u64_to_be_bytes' k) = k.
 
 (* Definition be_byte_at_position (i : int64) (n : nat) : int8 := *)
 (*   @repr WORDSIZE8 ((i - (i / 2 ^ (4 * (S n))) * 2 ^ (4 * (S n))) / 2 ^ (4 * n)). *)
 
 (* Definition be_from_byte_and_position (i : int8) (n : nat) : int64 := *)
 (*   @repr WORDSIZE64 (i * 2 ^ (4 * n)). *)
+
+(*** Functions *)

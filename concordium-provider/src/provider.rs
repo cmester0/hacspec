@@ -119,57 +119,18 @@ fn update_their_contract_state (a : concordium_impls::ContractState, b : &mut Co
 impl Seek for ContractState {
     type Err = ();
 
-    fn seek(&mut self, pos: SeekFrom) -> Result<u64, Self::Err> {
-        use SeekFrom::*;
-        match pos {
-            Start(offset) => match u32::try_from(offset) {
-                Ok(offset_u32) => {
-                    self.current_position = offset_u32;
-                    Ok(offset)
-                }
-                _ => Err(()),
-            },
-            End(delta) => {
-                let end = 4; // self.size(); \\
-                if delta >= 0 {
-                    match u32::try_from(delta)
-                        .ok()
-                        .and_then(|x| self.current_position.checked_add(x))
-                    {
-                        Some(offset_u32) => {
-                            self.current_position = offset_u32;
-                            Ok(u64::from(offset_u32))
-                        }
-                        _ => Err(()),
-                    }
-                } else {
-                    match delta.checked_abs().and_then(|x| u32::try_from(x).ok()) {
-                        Some(before) if before <= end => {
-                            let new_pos = end - before;
-                            self.current_position = new_pos;
-                            Ok(u64::from(new_pos))
-                        }
-                        _ => Err(()),
-                    }
-                }
-            }
-            Current(delta) => {
-                let new_offset = if delta >= 0 {
-                    u32::try_from(delta).ok().and_then(|x| self.current_position.checked_add(x))
-                } else {
-                    delta
-                        .checked_abs()
-                        .and_then(|x| u32::try_from(x).ok())
-                        .and_then(|x| self.current_position.checked_sub(x))
-                };
-                match new_offset {
-                    Some(offset) => {
-                        self.current_position = offset;
-                        Ok(u64::from(offset))
-                    }
-                    _ => Err(()),
-                }
-            }
+    fn seek(&mut self, pos: concordium_std::SeekFrom) -> Result<u64, Self::Err> {
+        let pos_our = match pos {
+            concordium_std::SeekFrom::Start (a) => concordium_impls::SeekFrom::Start (a),
+            concordium_std::SeekFrom::End (a) => concordium_impls::SeekFrom::End (a),
+            concordium_std::SeekFrom::Current (a) => concordium_impls::SeekFrom::Current (a)
+        };
+        
+        let (offset, res) = contract_state_impl_seek (self.current_position, pos_our);
+        self.current_position += offset;
+        match res {
+            SeekResult::Ok (a) => Ok (a),
+            SeekResult::Err (()) => Err (())
         }
     }
 }

@@ -1,7 +1,18 @@
+#![feature(register_tool, rustc_attrs)]
+#![register_tool(creusot)]
+#![feature(proc_macro_hygiene, stmt_expr_attributes)]
+
 use concordium_std::{collections::BTreeMap, *};
 // use concordium_provider::provider::*;
 use concordium_provider::piggy_provider::*;
 use concordium_provider::auction_provider::*;
+use std::convert::TryInto;
+
+#[macro_use]
+use pearlite_syn::*;
+
+extern crate creusot_contracts;
+use creusot_contracts::*;
 
 ////////////////////////////////////////////////////////////
  
@@ -301,10 +312,93 @@ impl<'a> HasInitContext for InitContextTest<'a> {
     }
 }
 
+/// Contract state for testing, mimicking the operations the scheduler allows,
+/// including the limit on the size of the maximum size of the contract state.
+pub struct ContractStateTest<T> {
+    pub cursor: Cursor<T>,
+}
+
+/// A borrowed instantiation of `ContractStateTest`.
+pub type ContractStateTestBorrowed<'a> = ContractStateTest<&'a mut Vec<u8>>;
+
+/// An owned variant that can be more convenient for testing since the type
+/// itself owns the data.
+pub type ContractStateTestOwned = ContractStateTest<Vec<u8>>;
+
+#[derive(Debug, PartialEq, Eq)]
+/// An error that is raised when operating with `Seek`, `Write`, or `Read` trait
+/// methods of the `ContractStateTest` type.
+pub enum ContractStateError {
+    /// The computation of the new offset would result in an overflow.
+    Overflow,
+    /// An error occurred when writing to the contract state.
+    Write,
+    /// The new offset would be out of bounds of the state.
+    Offset,
+    /// Some other error occurred.
+    Default,
+}
+
+// impl<T: AsRef<[u8]>> Seek for ContractStateTest<T> {
+//     type Err = TryFromIntError; // ContractStateError;
+
+//     fn seek(&mut self, pos: SeekFrom) -> Result<u64, Self::Err> {
+//         use ContractStateError::*;
+//         match pos {
+//             SeekFrom::Start(x) => {
+//                 // We can set the position to just after the end of the current length.
+//                 let new_offset = x.try_into()?;
+//                 if new_offset <= self.cursor.data.as_ref().len() {
+//                     self.cursor.offset = new_offset;
+//                     Ok(x)
+//                 } else {
+//                     Err(Offset)
+//                 }
+//             }
+//             SeekFrom::End(x) => {
+//                 // cannot seek beyond end, nor before beginning
+//                 if x <= 0 {
+//                     let end: u32 = self.cursor.data.as_ref().len().try_into()?;
+//                     let minus_x = x.checked_abs().ok_or(Overflow)?;
+//                     if let Some(new_pos) = end.checked_sub(minus_x.try_into()?) {
+//                         self.cursor.offset = new_pos.try_into()?;
+//                         Ok(u64::from(new_pos))
+//                     } else {
+//                         Err(Offset)
+//                     }
+//                 } else {
+//                     Err(Offset)
+//                 }
+//             }
+//             SeekFrom::Current(x) => match x {
+//                 0 => Ok(self.cursor.offset.try_into()?),
+//                 x if x > 0 => {
+//                     let x = x.try_into()?;
+//                     let new_pos = self.cursor.offset.checked_add(x).ok_or(Overflow)?;
+//                     if new_pos <= self.cursor.data.as_ref().len() {
+//                         self.cursor.offset = new_pos;
+//                         new_pos.try_into().map_err(Self::Err::from)
+//                     } else {
+//                         Err(Offset)
+//                     }
+//                 }
+//                 x => {
+//                     let x = (-x).try_into()?;
+//                     let new_pos = self.cursor.offset.checked_sub(x).ok_or(Overflow)?;
+//                     self.cursor.offset = new_pos;
+//                     new_pos.try_into().map_err(Self::Err::from)
+//                 }
+//             },
+//         }
+//     }
+// }
+
+
 
 ////////////////////////////////////////////////////////////
 
-fn test_init() {
+// #[ensures(result == false)]
+fn test_init() -> bool {
     // Setup
     let ctx = InitContextTest::empty();
 
@@ -319,8 +413,10 @@ fn test_init() {
         PiggyBankState::Intact,
         "Piggy bank state should be intact after initialization."
     );
-}
 
+    state == PiggyBankState::Intact
+}
+    
 fn test_insert_intact() {
     // Setup
     let mut ctx = ReceiveContextTest::empty();
@@ -672,6 +768,108 @@ fn test_auction_bid_zero() {
     );
 }
 
+
+// use concordium_contracts_common::{Read, Seek, SeekFrom, Write};
+// use concordium_contracts_common::{Read, Seek, SeekFrom, Write};
+
+// use crate::{constants, traits::HasContractState};
+
+// // #[test]
+// // Perform a number of operations from Seek, Read, Write and HasContractState
+// // classes on the ContractStateTest structure and check that they behave as
+// // specified.
+// fn test_contract_state() {
+//     let data = vec![1; 100];
+//     let mut state = ContractStateTest::open(data);
+//     assert_eq!(state.seek(SeekFrom::Start(100)), Ok(100), "Seeking to the end failed.");
+//     assert_eq!(
+//         state.seek(SeekFrom::Current(0)),
+//         Ok(100),
+//         "Seeking from current position with offset 0 failed."
+//     );
+//     assert!(
+//         state.seek(SeekFrom::Current(1)).is_err(),
+//         "Seeking from current position with offset 1 succeeded."
+//     );
+//     assert_eq!(state.cursor.offset, 100, "Cursor position changed on failed seek.");
+//     assert_eq!(
+//         state.seek(SeekFrom::Current(-1)),
+//         Ok(99),
+//         "Seeking from current position backwards with offset 1 failed."
+//     );
+//     assert!(state.seek(SeekFrom::Current(-100)).is_err(), "Seeking beyond beginning succeeds");
+//     assert_eq!(state.seek(SeekFrom::Current(-99)), Ok(0), "Seeking to the beginning fails.");
+//     assert_eq!(state.seek(SeekFrom::End(0)), Ok(100), "Seeking from end fails.");
+//     assert!(
+//         state.seek(SeekFrom::End(1)).is_err(),
+//         "Seeking beyond the end succeeds but should fail."
+//     );
+//     assert_eq!(state.cursor.offset, 100, "Cursor position changed on failed seek.");
+//     assert_eq!(
+//         state.seek(SeekFrom::End(-20)),
+//         Ok(80),
+//         "Seeking from end leads to incorrect position."
+//     );
+//     assert_eq!(state.write(&[0; 21]), Ok(21), "Writing writes an incorrect amount of data.");
+//     assert_eq!(state.cursor.offset, 101, "After writing the cursor is at the end.");
+//     assert_eq!(state.write(&[0; 21]), Ok(21), "Writing again writes incorrect amount of data.");
+//     let mut buf = [0; 30];
+//     assert_eq!(state.read(&mut buf), Ok(0), "Reading from the end should read 0 bytes.");
+//     assert_eq!(state.seek(SeekFrom::End(-20)), Ok(102));
+//     assert_eq!(state.read(&mut buf), Ok(20), "Reading from offset 80 should read 20 bytes.");
+//     assert_eq!(&buf[0..20], &state.cursor.data[80..100], "Incorrect data was read.");
+//     assert_eq!(
+//         state.cursor.offset, 122,
+//         "After reading the offset is in the correct position."
+//     );
+//     assert!(state.reserve(222), "Could not increase state to 222.");
+//     assert!(
+//         !state.reserve(constants::MAX_CONTRACT_STATE_SIZE + 1),
+//         "State should not be resizable beyond max limit."
+//     );
+//     assert_eq!(state.write(&[2; 100]), Ok(100), "Should have written 100 bytes.");
+//     assert_eq!(state.cursor.offset, 222, "After writing the offset should be 200.");
+//     state.truncate(50);
+//     assert_eq!(state.cursor.offset, 50, "After truncation the state should be 50.");
+//     assert!(state.reserve(constants::MAX_CONTRACT_STATE_SIZE), "Could not increase state MAX.");
+//     assert_eq!(
+//         state.seek(SeekFrom::End(0)),
+//         Ok(u64::from(constants::MAX_CONTRACT_STATE_SIZE)),
+//         "State should be full now."
+//     );
+//     assert_eq!(
+//         state.write(&[1; 1000]),
+//         Ok(0),
+//         "Writing at the end after truncation should do nothing."
+//     );
+//     assert_eq!(
+//         state.cursor.data.len(),
+//         constants::MAX_CONTRACT_STATE_SIZE as usize,
+//         "State size should not increase beyond max."
+//     )
+// }
+
+// #[cfg(proof)]
+// #[test]
+// fn test_contract_state_write() {
+//     let data = [0u8,0u8,0u8,0u8,0u8,0u8,0u8,0u8,0u8,0u8];
+//     let mut state = ContractStateTest::open(data);
+//     let test0 = state.write(&1u64.to_le_bytes()) == Ok(8);
+//     // , "Incorrect number of bytes written."
+    
+//     // assert_eq!(
+//     //     state.write(&2u64.to_le_bytes()),
+//     //     Ok(8),
+//     //     "State should be resized automatically."
+//     // );
+//     // assert_eq!(state.cursor.offset, 16, "Pos should be at the end.");
+//     // assert_eq!(
+//     //     state.cursor.data,
+//     //     vec![1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0],
+//     //     "Correct data was written."
+//     // );
+// }
+
 fn main () {
     println!("\n\n\tConcordium benchmark tests\n\n");
 
@@ -700,6 +898,9 @@ fn main () {
     test_auction_bid_repeated_bid();
     println!("test_auction_bid_zero");
     test_auction_bid_zero();
+
+    // println!("\n\n\tTest Impls\n\n");
+    // test_contract_state();
     
     println!("\n\n\tDONE\n\n");
 }

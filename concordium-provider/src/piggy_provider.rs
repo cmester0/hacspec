@@ -79,7 +79,7 @@ pub fn piggy_insert<A: HasActions>(
     };
     
     match piggybank::piggy_insert((owner, sender, balance, piggybank_state), addition) {
-	PiggyInsertResult::PiggyInsertResultInl (_, _, _, _) => Ok(A::accept()),
+	PiggyInsertResult::PiggyInsertResultInl (_) => Ok(A::accept()),
 	_ => Err(Default::default()), 
     }
 }

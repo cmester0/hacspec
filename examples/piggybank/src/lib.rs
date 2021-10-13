@@ -1,3 +1,11 @@
+#![feature(register_tool, rustc_attrs)]
+#![register_tool(creusot)]
+#![feature(proc_macro_hygiene, stmt_expr_attributes)]
+
+extern crate creusot_contracts;
+
+use creusot_contracts::*;
+
 use hacspec_lib::*;
 
 /// The state of the piggy bank
@@ -22,7 +30,7 @@ array!(UserAddress, 32, u8); // U8
 pub type Context = (UserAddress, UserAddress, u64, PiggyBankState);
 
 pub enum PiggyInsertResult {
-    PiggyInsertResultInl (UserAddress, UserAddress, u64, PiggyBankState),
+    PiggyInsertResultInl (Context),
     PiggyInsertResultInr,
 }
 
@@ -40,7 +48,7 @@ pub fn piggy_insert(
     // Ensure the piggy bank has not been smashed already.
     // ensure!
     match state {
-	PiggyBankState::Intact => PiggyInsertResult::PiggyInsertResultInl (owner, sender, balance + amount, state),
+	PiggyBankState::Intact => PiggyInsertResult::PiggyInsertResultInl ((owner, sender, balance + amount, state)),
 	PiggyBankState::Smashed => PiggyInsertResult::PiggyInsertResultInr,
     }
 }
