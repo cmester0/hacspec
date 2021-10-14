@@ -1,3 +1,5 @@
+cargo-features = ["edition2021"]
+
 [package]
 name = "concordium-bench"
 version = "0.1.0"
@@ -9,9 +11,9 @@ edition = "2021"
 [dev-dependencies]
 concordium-provider = { path = "../../concordium-provider" }
 concordium-std = { path = "../../../../concordium-rust-smart-contracts/concordium-std" }
-creusot-contracts = { path = "../../../../creusot/creusot-contracts" }
-# creusot = { path = "../../../../creusot/creusot" }
-pearlite-syn = { path = "../../../../creusot/pearlite-syn" }
+# creusot-contracts = { path = "../../../../creusot/creusot-contracts" }
+# # creusot = { path = "../../../../creusot/creusot" }
+# pearlite-syn = { path = "../../../../creusot/pearlite-syn" }
 
 
 [[bench]]

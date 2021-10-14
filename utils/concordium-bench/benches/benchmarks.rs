@@ -1,6 +1,6 @@
-#![feature(register_tool, rustc_attrs)]
-#![register_tool(creusot)]
-#![feature(proc_macro_hygiene, stmt_expr_attributes)]
+// #![feature(register_tool, rustc_attrs)]
+// #![register_tool(creusot)]
+// #![feature(proc_macro_hygiene, stmt_expr_attributes)]
 
 use concordium_std::{collections::BTreeMap, *};
 // use concordium_provider::provider::*;
@@ -8,11 +8,11 @@ use concordium_provider::piggy_provider::*;
 use concordium_provider::auction_provider::*;
 use std::convert::TryInto;
 
-#[macro_use]
-use pearlite_syn::*;
+// #[macro_use]
+// use pearlite_syn::*;
 
-extern crate creusot_contracts;
-use creusot_contracts::*;
+// extern crate creusot_contracts;
+// use creusot_contracts::*;
 
 ////////////////////////////////////////////////////////////
  

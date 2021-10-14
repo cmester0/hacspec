@@ -1,10 +1,16 @@
+cargo-features = ["edition2021"]
+
 [package]
 name = "concordium-impls"
 version = "0.1.0"
-edition = "2018"
+# edition = "2018"
+edition = "2021"
 
 [dependencies]
 hacspec-lib = { path = "../../lib" }
+creusot-contracts = { path = "../../../../creusot/creusot-contracts" }
+# # creusot = { path = "../../../../creusot/creusot" }
+pearlite-syn = { path = "../../../../creusot/pearlite-syn" }
 
 [lib]
 path = "src/lib.rs"

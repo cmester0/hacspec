@@ -9,11 +9,13 @@ use creusot_contracts::*;
 pub type Reject = i32;
 
 #[trusted]
-fn I32MIN () -> i32 {
+// #[ensures(forall<n:i32> result <= n)]
+pub fn I32MIN () -> i32 {
     (!(0_i32)) ^ (((!(0_u32)) >> 1) as i32)
 }
 
-fn reject_impl_default() -> Reject {
+#[logic]
+pub fn reject_impl_default() -> Reject {
     I32MIN ()
 }
 
@@ -24,7 +26,7 @@ pub enum OptionReject {
 }
 
 #[logic]
-fn new_reject_impl(x : i32) -> OptionReject {
+pub fn new_reject_impl(x : i32) -> OptionReject {
     if x < 0_i32 {
         OptionReject::SomeReject (x)
     } else {
@@ -33,12 +35,12 @@ fn new_reject_impl(x : i32) -> OptionReject {
 }
 
 #[logic]
-fn reject_impl_convert_from_unit() -> Reject {
+pub fn reject_impl_convert_from_unit() -> Reject {
     I32MIN () + 1_i32
 }
 
 #[logic]
-fn reject_impl_convert_from_parse_error() -> Reject {
+pub fn reject_impl_convert_from_parse_error() -> Reject {
     I32MIN () + 2_i32
 }
 
@@ -53,7 +55,7 @@ pub enum LogError {
 }
 
 #[logic]
-fn reject_impl_from_log_error(le: LogError) -> Reject {
+pub fn reject_impl_from_log_error(le: LogError) -> Reject {
     match le {
         LogError::Full => I32MIN () + 3_i32,
         LogError::Malformed => I32MIN () + 4_i32 ,
@@ -69,7 +71,7 @@ pub enum NewContractNameError {
 }
 
 #[logic]
-fn reject_impl_from_new_contract_name_error(nre: NewContractNameError) -> Reject {
+pub fn reject_impl_from_new_contract_name_error(nre: NewContractNameError) -> Reject {
     match nre {
         NewContractNameError::NewContractNameErrorMissingInitPrefix => I32MIN () + 5_i32,
         NewContractNameError::NewContractNameErrorTooLong => I32MIN () + 6_i32,
@@ -86,7 +88,7 @@ pub enum NewReceiveNameError {
 }
 
 #[logic]
-fn reject_impl_from_new_receive_name_error(nre: NewReceiveNameError) -> Reject {
+pub fn reject_impl_from_new_receive_name_error(nre: NewReceiveNameError) -> Reject {
     match nre {
         NewReceiveNameError::NewReceiveNameErrorMissingDotSeparator => I32MIN () + 7_i32,
         NewReceiveNameError::NewReceiveNameErrorTooLong => I32MIN () + 8_i32,
@@ -98,11 +100,11 @@ pub type ContractState = u32;
 
 /// A type representing the constract state bytes.
 // #[derive(Default)]
-
+#[logic]
 pub fn try_from_u64_to_u32 (inp : i64) -> Result<u32, std::num::TryFromIntError> {
     std::convert::TryFrom::try_from(inp)
 }
-
+#[logic]
 pub fn try_from_i64_to_u32 (inp : i64) -> Result<u32, std::num::TryFromIntError> {
     std::convert::TryFrom::try_from(inp)
 }
@@ -137,7 +139,7 @@ pub type U32Option = Option<u32>;
 pub type I64Option = Option<i64>;
 
 #[trusted]
-fn contract_state_impl_seek(current_position :ContractState, pos: SeekFrom) -> (ContractState, SeekResult) { // (ContractState, SeekResult)    
+pub fn contract_state_impl_seek(current_position :ContractState, pos: SeekFrom) -> (ContractState, SeekResult) { // (ContractState, SeekResult)    
     match pos {
         SeekFrom::Start (offset) => (offset as u32, SeekResult::Ok (offset)),
         SeekFrom::End(delta) => 
@@ -175,60 +177,60 @@ fn contract_state_impl_seek(current_position :ContractState, pos: SeekFrom) -> (
 
 // , load_state : &dyn Fn(*mut u8, u32, u32) -> ([u8], u32)
 #[trusted]
-fn contract_state_impl_read_read(current_position : ContractState, num_read: u32) -> (ContractState, usize) {
+pub fn contract_state_impl_read_read(current_position : ContractState, num_read: u32) -> (ContractState, usize) {
     (current_position + num_read, num_read as usize)
 }
 
 /// Read a `u32` in little-endian format. This is optimized to not
 /// initialize a dummy value before calling an external function.
 #[logic]
-fn contract_state_impl_read_read_u64(current_position : ContractState, num_read : u32) -> (ContractState, bool) {
+pub fn contract_state_impl_read_read_u64(current_position : ContractState, num_read : u32) -> (ContractState, bool) {
     (current_position + num_read, num_read == 8_u32)
 }
 
 /// Read a `u32` in little-endian format. This is optimized to not
 /// initialize a dummy value before calling an external function.
 #[logic]
-fn contract_state_impl_read_read_u32(current_position : ContractState, num_read : u32) -> (ContractState, bool) {    
+pub fn contract_state_impl_read_read_u32(current_position : ContractState, num_read : u32) -> (ContractState, bool) {    
     (current_position + num_read, num_read == 4_u32)
 }
 
 /// Read a `u8` in little-endian format. This is optimized to not
 /// initialize a dummy value before calling an external function.
 #[logic]
-fn contract_state_impl_read_read_u8(current_position : ContractState, num_read : u32) -> (ContractState, bool) {
+pub fn contract_state_impl_read_read_u8(current_position : ContractState, num_read : u32) -> (ContractState, bool) {
     (current_position + num_read, num_read == 1_u32)
 }
 
 #[logic]
-fn write_impl_for_contract_state_test(current_position : ContractState, len : u32) -> bool {
+pub fn write_impl_for_contract_state_test(current_position : ContractState, len : u32) -> bool {
     current_position.checked_add(len).is_none() // Check for overflow
 }
 #[trusted]
-fn write_impl_for_contract_state(current_position : ContractState, num_bytes : u32) -> (ContractState, usize) {
+pub fn write_impl_for_contract_state(current_position : ContractState, num_bytes : u32) -> (ContractState, usize) {
     (current_position + num_bytes, num_bytes as usize)
 }
 
 #[logic]
-fn has_contract_state_impl_for_contract_state_open() -> ContractState {
+pub fn has_contract_state_impl_for_contract_state_open() -> ContractState {
     0_u32
 }
 
 #[logic]
-fn has_contract_state_impl_for_contract_state_reserve_0(len : u32, cur_size : u32) -> bool {
+pub fn has_contract_state_impl_for_contract_state_reserve_0(len : u32, cur_size : u32) -> bool {
     cur_size < len
 }
 #[logic]
-fn has_contract_state_impl_for_contract_state_reserve_1(res : u32) -> bool {
+pub fn has_contract_state_impl_for_contract_state_reserve_1(res : u32) -> bool {
     res == 1_u32
 }
 
 #[logic]
-fn has_contract_state_impl_for_contract_state_truncate_0(cur_size : u32, new_size : u32) -> bool {
+pub fn has_contract_state_impl_for_contract_state_truncate_0(cur_size : u32, new_size : u32) -> bool {
     cur_size > new_size
 }
 #[logic]
-fn has_contract_state_impl_for_contract_state_truncate_1(current_position : ContractState, new_size : u32) -> ContractState {
+pub fn has_contract_state_impl_for_contract_state_truncate_1(current_position : ContractState, new_size : u32) -> ContractState {
     if new_size < current_position {
 	new_size
     } else {
@@ -239,7 +241,7 @@ fn has_contract_state_impl_for_contract_state_truncate_1(current_position : Cont
 pub type Parameter = u32;
 
 #[trusted]
-fn read_impl_for_parameter_read(current_position : Parameter, num_read : u32) -> (Parameter, usize) {
+pub fn read_impl_for_parameter_read(current_position : Parameter, num_read : u32) -> (Parameter, usize) {
     (current_position + num_read, num_read as usize)
 }
 
@@ -266,7 +268,7 @@ pub type AttributesCursor = (u32, u16);
 //     (current_position + num_read, remaining_items - 1_u16)
 // }
 
-fn main () {}
+// fn main () {}
 
 
 // #[test]
