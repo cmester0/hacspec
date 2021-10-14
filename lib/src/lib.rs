@@ -79,6 +79,7 @@
 //!
 //! See the [secret integers](`secret_integers`) for details.
 
+pub mod struct_unfold;
 pub mod array;
 mod bigint_integers;
 mod machine_integers;

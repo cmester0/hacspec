@@ -44,16 +44,16 @@ pub struct State {
     auction_state: AuctionState,
     /// The highest bid so far (stored explicitly so that bidders can quickly
     /// see it)
-    highest_bid:   Amount,
+    highest_bid:   concordium_std::Amount,
     /// The sold item (to be displayed to the auction participants), encoded in
     /// ASCII
     item:          Vec<u8>,
     /// Expiration time of the auction at which bids will be closed (to be
     /// displayed to the auction participants)
-    expiry:        Timestamp,
+    expiry:        concordium_std::Timestamp,
     /// Keeping track of which account bid how much money
     #[concordium(size_length = 2)]
-    bids:          BTreeMap<AccountAddress, Amount>,
+    bids:          BTreeMap<AccountAddress, concordium_std::Amount>,
 }
 
 fn user_address_to_accout_address (acc : UserAddress) -> AccountAddress {
@@ -100,13 +100,13 @@ fn my_auction_state_to_their_auction_state(s : auction::AuctionState) -> Auction
 }
 
 
-fn seq_map_to_btree_map (m : SeqMap) -> BTreeMap<AccountAddress, Amount> {
+fn seq_map_to_btree_map (m : SeqMap) -> BTreeMap<AccountAddress, concordium_std::Amount> {
     let (m1,m2) = m;
 
     let m1prime = (0..m1.len() / 32).map(|x| UserAddress::from_seq(&m1.clone().slice(x * 32,32)));
     let m2prime = (0..m2.len() / 8).map(|x| u64_from_be_bytes(u64Word::from_seq(&m2.slice(x * 8, 8))));
 
-    (m1prime.zip(m2prime)).fold(BTreeMap::new(), |mut t, (x, y)| { t.insert(user_address_to_accout_address (x), Amount { micro_gtu: y }); t } )
+    (m1prime.zip(m2prime)).fold(BTreeMap::new(), |mut t, (x, y)| { t.insert(user_address_to_accout_address (x), concordium_std::Amount { micro_gtu: y }); t } )
 }
 
 
@@ -114,15 +114,15 @@ fn my_state_to_their_state (s : auction::State) -> State {
     let (a,b,c,d,e) = s;
     State {
         auction_state: my_auction_state_to_their_auction_state(a),
-        highest_bid: Amount { micro_gtu: b },
+        highest_bid: concordium_std::Amount { micro_gtu: b },
         item: c.native_slice().to_vec(),
-        expiry: Timestamp::from_timestamp_millis(d),
+        expiry: concordium_std::Timestamp::from_timestamp_millis(d),
         bids: seq_map_to_btree_map(e),
     }
 }
 
 /// A helper function to create a state for a new auction.
-fn fresh_state(itm: Vec<u8>, exp: Timestamp) -> State {
+fn fresh_state(itm: Vec<u8>, exp: concordium_std::Timestamp) -> State {
     my_state_to_their_state(auction::fresh_state(Seq::from_vec(itm), exp.timestamp_millis()))
 }
 
@@ -132,7 +132,7 @@ pub struct InitParameter {
     /// The item to be sold, as a sequence of ASCII codes.
     item:   Vec<u8>,
     /// Time of the auction end in the RFC 3339 format (https://tools.ietf.org/html/rfc3339)
-    expiry: Timestamp,
+    expiry: concordium_std::Timestamp,
 }
 
 /// For errors in which the `bid` function can result
@@ -204,7 +204,7 @@ fn their_auction_state_to_my_auction_state (s : AuctionState) -> auction::Auctio
     }
 }
 
-fn btree_map_to_seq_map (m : BTreeMap<AccountAddress, Amount>) -> SeqMap {
+fn btree_map_to_seq_map (m : BTreeMap<AccountAddress, concordium_std::Amount>) -> SeqMap {
     (m.keys().map(|x| u8x32_to_user_address(x.0)).fold(PublicByteSeq::new(0_usize), |v,x| v.concat(&x)),
      m.values().map(|x| x.micro_gtu).fold(PublicSeq::new(0_usize), |v, x| v.concat(&u64_to_be_bytes(x))))
 
@@ -233,7 +233,7 @@ fn their_context_to_my_finalize_context (ctx: &impl HasReceiveContext) -> auctio
 #[receive(contract = "auction", name = "bid", payable)]
 pub fn auction_bid<A: HasActions>(
     ctx: &impl HasReceiveContext,
-    amount: Amount,
+    amount: concordium_std::Amount,
     state: &mut State,
 ) -> Result<A, BidError> {
     let (new_state, res) = auction::auction_bid(their_context_to_my_context(ctx), amount.micro_gtu, their_state_to_my_state(state));
@@ -263,10 +263,10 @@ pub fn auction_finalize<A: HasActions>(
         Ok(FinalizeAction::SimpleTransfer(owner, b, s)) =>
             {println!("Simple Transfer"); 
             Ok((0..s.len() / (32+8))
-               .fold(A::simple_transfer(&user_address_to_accout_address(owner), Amount { micro_gtu: b }),
+               .fold(A::simple_transfer(&user_address_to_accout_address(owner), concordium_std::Amount { micro_gtu: b }),
                      |t,x| t.and_then(A::simple_transfer(
                          &user_address_to_accout_address(UserAddress::from_seq(&s.slice(x * (32+8), 32))),
-                         Amount { micro_gtu: u64_from_be_bytes(u64Word::from_seq(&s.slice(x * (32+8) + 32,8))) })
+                         concordium_std::Amount { micro_gtu: u64_from_be_bytes(u64Word::from_seq(&s.slice(x * (32+8) + 32,8))) })
                      )))},
         Err(auction::FinalizeError::BidMapError) => {println!("Bid map error"); Err(FinalizeError::BidMapError)},
         Err(auction::FinalizeError::AuctionStillActive) => {println!("Auction still alive"); Err(FinalizeError::AuctionStillActive)},
@@ -279,9 +279,9 @@ pub fn auction_finalize<A: HasActions>(
 const AUCTION_END: u64 = 1;
 const ITEM: &str = "Starry night by Van Gogh";
 
-pub fn dummy_fresh_state() -> State { dummy_active_state(Amount::zero(), BTreeMap::new()) }
+pub fn dummy_fresh_state() -> State { dummy_active_state(concordium_std::Amount::zero(), BTreeMap::new()) }
 
-pub fn dummy_active_state(highest: Amount, bids: BTreeMap<AccountAddress, Amount>) -> State {
+pub fn dummy_active_state(highest: concordium_std::Amount, bids: BTreeMap<AccountAddress, concordium_std::Amount>) -> State {
     // State {
     //     auction_state: my_auction_state_to_their_auction_state(a),
     //     highest_bid: Amount { micro_gtu: b },
@@ -294,17 +294,17 @@ pub fn dummy_active_state(highest: Amount, bids: BTreeMap<AccountAddress, Amount
         auction_state: AuctionState::NotSoldYet,
         highest_bid: highest,
         item: ITEM.as_bytes().to_vec(),
-        expiry: Timestamp::from_timestamp_millis(AUCTION_END),
+        expiry: concordium_std::Timestamp::from_timestamp_millis(AUCTION_END),
         bids: bids,
     }
 }
 
 pub fn make_state (
     auction_state: AuctionState,
-    highest_bid:   Amount,
+    highest_bid:   concordium_std::Amount,
     item:          Vec<u8>,
-    expiry:        Timestamp,
-    bids:          BTreeMap<AccountAddress, Amount>) -> State {
+    expiry:        concordium_std::Timestamp,
+    bids:          BTreeMap<AccountAddress, concordium_std::Amount>) -> State {
     State {
         auction_state: auction_state,
         highest_bid: highest_bid,
@@ -325,6 +325,6 @@ pub fn make_state (
 pub fn item_expiry_parameter() -> InitParameter {
     InitParameter {
         item:   ITEM.as_bytes().to_vec(),
-        expiry: Timestamp::from_timestamp_millis(AUCTION_END),
+        expiry: concordium_std::Timestamp::from_timestamp_millis(AUCTION_END),
     }
 }

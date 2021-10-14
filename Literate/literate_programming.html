@@ -1,0 +1,1278 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<!-- 2021-10-14 Thu 18:24 -->
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>&lrm;</title>
+<meta name="generator" content="Org mode" />
+<meta name="author" content="Lasse Letager Hansen" />
+<style type="text/css">
+ <!--/*--><![CDATA[/*><!--*/
+  .title  { text-align: center;
+             margin-bottom: .2em; }
+  .subtitle { text-align: center;
+              font-size: medium;
+              font-weight: bold;
+              margin-top:0; }
+  .todo   { font-family: monospace; color: red; }
+  .done   { font-family: monospace; color: green; }
+  .priority { font-family: monospace; color: orange; }
+  .tag    { background-color: #eee; font-family: monospace;
+            padding: 2px; font-size: 80%; font-weight: normal; }
+  .timestamp { color: #bebebe; }
+  .timestamp-kwd { color: #5f9ea0; }
+  .org-right  { margin-left: auto; margin-right: 0px;  text-align: right; }
+  .org-left   { margin-left: 0px;  margin-right: auto; text-align: left; }
+  .org-center { margin-left: auto; margin-right: auto; text-align: center; }
+  .underline { text-decoration: underline; }
+  #postamble p, #preamble p { font-size: 90%; margin: .2em; }
+  p.verse { margin-left: 3%; }
+  pre {
+    border: 1px solid #ccc;
+    box-shadow: 3px 3px 3px #eee;
+    padding: 8pt;
+    font-family: monospace;
+    overflow: auto;
+    margin: 1.2em;
+  }
+  pre.src {
+    position: relative;
+    overflow: visible;
+    padding-top: 1.2em;
+  }
+  pre.src:before {
+    display: none;
+    position: absolute;
+    background-color: white;
+    top: -10px;
+    right: 10px;
+    padding: 3px;
+    border: 1px solid black;
+  }
+  pre.src:hover:before { display: inline;}
+  /* Languages per Org manual */
+  pre.src-asymptote:before { content: 'Asymptote'; }
+  pre.src-awk:before { content: 'Awk'; }
+  pre.src-C:before { content: 'C'; }
+  /* pre.src-C++ doesn't work in CSS */
+  pre.src-clojure:before { content: 'Clojure'; }
+  pre.src-css:before { content: 'CSS'; }
+  pre.src-D:before { content: 'D'; }
+  pre.src-ditaa:before { content: 'ditaa'; }
+  pre.src-dot:before { content: 'Graphviz'; }
+  pre.src-calc:before { content: 'Emacs Calc'; }
+  pre.src-emacs-lisp:before { content: 'Emacs Lisp'; }
+  pre.src-fortran:before { content: 'Fortran'; }
+  pre.src-gnuplot:before { content: 'gnuplot'; }
+  pre.src-haskell:before { content: 'Haskell'; }
+  pre.src-hledger:before { content: 'hledger'; }
+  pre.src-java:before { content: 'Java'; }
+  pre.src-js:before { content: 'Javascript'; }
+  pre.src-latex:before { content: 'LaTeX'; }
+  pre.src-ledger:before { content: 'Ledger'; }
+  pre.src-lisp:before { content: 'Lisp'; }
+  pre.src-lilypond:before { content: 'Lilypond'; }
+  pre.src-lua:before { content: 'Lua'; }
+  pre.src-matlab:before { content: 'MATLAB'; }
+  pre.src-mscgen:before { content: 'Mscgen'; }
+  pre.src-ocaml:before { content: 'Objective Caml'; }
+  pre.src-octave:before { content: 'Octave'; }
+  pre.src-org:before { content: 'Org mode'; }
+  pre.src-oz:before { content: 'OZ'; }
+  pre.src-plantuml:before { content: 'Plantuml'; }
+  pre.src-processing:before { content: 'Processing.js'; }
+  pre.src-python:before { content: 'Python'; }
+  pre.src-R:before { content: 'R'; }
+  pre.src-ruby:before { content: 'Ruby'; }
+  pre.src-sass:before { content: 'Sass'; }
+  pre.src-scheme:before { content: 'Scheme'; }
+  pre.src-screen:before { content: 'Gnu Screen'; }
+  pre.src-sed:before { content: 'Sed'; }
+  pre.src-sh:before { content: 'shell'; }
+  pre.src-sql:before { content: 'SQL'; }
+  pre.src-sqlite:before { content: 'SQLite'; }
+  /* additional languages in org.el's org-babel-load-languages alist */
+  pre.src-forth:before { content: 'Forth'; }
+  pre.src-io:before { content: 'IO'; }
+  pre.src-J:before { content: 'J'; }
+  pre.src-makefile:before { content: 'Makefile'; }
+  pre.src-maxima:before { content: 'Maxima'; }
+  pre.src-perl:before { content: 'Perl'; }
+  pre.src-picolisp:before { content: 'Pico Lisp'; }
+  pre.src-scala:before { content: 'Scala'; }
+  pre.src-shell:before { content: 'Shell Script'; }
+  pre.src-ebnf2ps:before { content: 'ebfn2ps'; }
+  /* additional language identifiers per "defun org-babel-execute"
+       in ob-*.el */
+  pre.src-cpp:before  { content: 'C++'; }
+  pre.src-abc:before  { content: 'ABC'; }
+  pre.src-coq:before  { content: 'Coq'; }
+  pre.src-groovy:before  { content: 'Groovy'; }
+  /* additional language identifiers from org-babel-shell-names in
+     ob-shell.el: ob-shell is the only babel language using a lambda to put
+     the execution function name together. */
+  pre.src-bash:before  { content: 'bash'; }
+  pre.src-csh:before  { content: 'csh'; }
+  pre.src-ash:before  { content: 'ash'; }
+  pre.src-dash:before  { content: 'dash'; }
+  pre.src-ksh:before  { content: 'ksh'; }
+  pre.src-mksh:before  { content: 'mksh'; }
+  pre.src-posh:before  { content: 'posh'; }
+  /* Additional Emacs modes also supported by the LaTeX listings package */
+  pre.src-ada:before { content: 'Ada'; }
+  pre.src-asm:before { content: 'Assembler'; }
+  pre.src-caml:before { content: 'Caml'; }
+  pre.src-delphi:before { content: 'Delphi'; }
+  pre.src-html:before { content: 'HTML'; }
+  pre.src-idl:before { content: 'IDL'; }
+  pre.src-mercury:before { content: 'Mercury'; }
+  pre.src-metapost:before { content: 'MetaPost'; }
+  pre.src-modula-2:before { content: 'Modula-2'; }
+  pre.src-pascal:before { content: 'Pascal'; }
+  pre.src-ps:before { content: 'PostScript'; }
+  pre.src-prolog:before { content: 'Prolog'; }
+  pre.src-simula:before { content: 'Simula'; }
+  pre.src-tcl:before { content: 'tcl'; }
+  pre.src-tex:before { content: 'TeX'; }
+  pre.src-plain-tex:before { content: 'Plain TeX'; }
+  pre.src-verilog:before { content: 'Verilog'; }
+  pre.src-vhdl:before { content: 'VHDL'; }
+  pre.src-xml:before { content: 'XML'; }
+  pre.src-nxml:before { content: 'XML'; }
+  /* add a generic configuration mode; LaTeX export needs an additional
+     (add-to-list 'org-latex-listings-langs '(conf " ")) in .emacs */
+  pre.src-conf:before { content: 'Configuration File'; }
+
+  table { border-collapse:collapse; }
+  caption.t-above { caption-side: top; }
+  caption.t-bottom { caption-side: bottom; }
+  td, th { vertical-align:top;  }
+  th.org-right  { text-align: center;  }
+  th.org-left   { text-align: center;   }
+  th.org-center { text-align: center; }
+  td.org-right  { text-align: right;  }
+  td.org-left   { text-align: left;   }
+  td.org-center { text-align: center; }
+  dt { font-weight: bold; }
+  .footpara { display: inline; }
+  .footdef  { margin-bottom: 1em; }
+  .figure { padding: 1em; }
+  .figure p { text-align: center; }
+  .equation-container {
+    display: table;
+    text-align: center;
+    width: 100%;
+  }
+  .equation {
+    vertical-align: middle;
+  }
+  .equation-label {
+    display: table-cell;
+    text-align: right;
+    vertical-align: middle;
+  }
+  .inlinetask {
+    padding: 10px;
+    border: 2px solid gray;
+    margin: 10px;
+    background: #ffffcc;
+  }
+  #org-div-home-and-up
+   { text-align: right; font-size: 70%; white-space: nowrap; }
+  textarea { overflow-x: auto; }
+  .linenr { font-size: smaller }
+  .code-highlighted { background-color: #ffff00; }
+  .org-info-js_info-navigation { border-style: none; }
+  #org-info-js_console-label
+    { font-size: 10px; font-weight: bold; white-space: nowrap; }
+  .org-info-js_search-highlight
+    { background-color: #ffff00; color: #000000; font-weight: bold; }
+  .org-svg { width: 90%; }
+  /*]]>*/-->
+</style>
+<style>pre.src {background-color: #303030; color: #e5e5e5;}</style>
+<script type="text/javascript">
+/*
+@licstart  The following is the entire license notice for the
+JavaScript code in this tag.
+
+Copyright (C) 2012-2020 Free Software Foundation, Inc.
+
+The JavaScript code in this tag is free software: you can
+redistribute it and/or modify it under the terms of the GNU
+General Public License (GNU GPL) as published by the Free Software
+Foundation, either version 3 of the License, or (at your option)
+any later version.  The code is distributed WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU GPL for more details.
+
+As additional permission under GNU GPL version 3 section 7, you
+may distribute non-source (e.g., minimized or compacted) forms of
+that code without the copy of the GNU GPL normally required by
+section 4, provided you include this license notice and a URL
+through which recipients can access the Corresponding Source.
+
+
+@licend  The above is the entire license notice
+for the JavaScript code in this tag.
+*/
+<!--/*--><![CDATA[/*><!--*/
+ function CodeHighlightOn(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(null != target) {
+     elem.cacheClassElem = elem.className;
+     elem.cacheClassTarget = target.className;
+     target.className = "code-highlighted";
+     elem.className   = "code-highlighted";
+   }
+ }
+ function CodeHighlightOff(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(elem.cacheClassElem)
+     elem.className = elem.cacheClassElem;
+   if(elem.cacheClassTarget)
+     target.className = elem.cacheClassTarget;
+ }
+/*]]>*///-->
+</script>
+</head>
+<body>
+<div id="content">
+<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#org25aac33">1. Literate rust programming</a>
+<ul>
+<li><a href="#org113ac59">1.1. Translating a program from rust to hacspec</a></li>
+<li><a href="#orged9c31b">1.2. TODO: Describe tests</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-org25aac33" class="outline-2">
+<h2 id="org25aac33"><span class="section-number-2">1</span> Literate rust programming</h2>
+<div class="outline-text-2" id="text-1">
+</div>
+<div id="outline-container-org113ac59" class="outline-3">
+<h3 id="org113ac59"><span class="section-number-3">1.1</span> Translating a program from rust to hacspec</h3>
+<div class="outline-text-3" id="text-1-1">
+<p>
+We want to translate part of the following piece of code, such that we can use hacspec to reason about it.
+</p>
+<div class="org-src-container">
+<pre class="src src-rust"><span style="color: #b3b3b3;">use</span> <span style="color: #87ceeb;">concordium_std</span>::<span style="color: #7d26cd;">{</span><span style="color: #87ceeb;">collections</span>::<span style="color: #00ff00;">BTreeMap</span>, *<span style="color: #7d26cd;">}</span>;
+<span style="color: #b3b3b3;">use</span> <span style="color: #87ceeb;">core</span>::<span style="color: #87ceeb;">fmt</span>::<span style="color: #00ff00;">Debug</span>;
+
+<span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">derive</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">Debug, Serialize, SchemaType, Eq, PartialEq, PartialOrd</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
+<span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">enum</span> <span style="color: #00ff00;">AuctionState</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #00ff00;">NotSoldYet</span>,
+    <span style="color: #00ff00;">Sold</span><span style="color: #cd0000;">(</span><span style="color: #00ff00;">AccountAddress</span><span style="color: #cd0000;">)</span>,
+<span style="color: #7d26cd;">}</span>
+
+<span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">contract_state</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">contract = </span><span style="color: #bdb76b;">"auction"</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
+<span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">derive</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">Debug, Serialize, SchemaType, Eq, PartialEq</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
+<span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">struct</span> <span style="color: #00ff00;">State</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #9acd32;">auction_state</span>: <span style="color: #00ff00;">AuctionState</span>,
+    <span style="color: #9acd32;">highest_bid</span>: <span style="color: #00ff00;">Amount</span>,
+    <span style="color: #9acd32;">item</span>: <span style="color: #00ff00;">Vec</span><span style="color: #cd0000;">&lt;</span><span style="color: #00ff00;">u8</span><span style="color: #cd0000;">&gt;</span>,
+    <span style="color: #9acd32;">expiry</span>: <span style="color: #00ff00;">Timestamp</span>,
+    <span style="color: #4169e1;">#</span><span style="color: #cd0000;">[</span><span style="color: #4169e1;">concordium</span><span style="color: #cd8500;">(</span><span style="color: #4169e1;">size_length = 2</span><span style="color: #cd8500;">)</span><span style="color: #cd0000;">]</span>
+    <span style="color: #9acd32;">bids</span>: <span style="color: #00ff00;">BTreeMap</span><span style="color: #cd0000;">&lt;</span><span style="color: #00ff00;">AccountAddress</span>, <span style="color: #00ff00;">Amount</span><span style="color: #cd0000;">&gt;</span>,
+<span style="color: #7d26cd;">}</span>
+
+<span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">fresh_state</span><span style="color: #7d26cd;">(</span><span style="color: #9acd32;">itm</span>: <span style="color: #00ff00;">Vec</span><span style="color: #cd0000;">&lt;</span><span style="color: #00ff00;">u8</span><span style="color: #cd0000;">&gt;</span>, <span style="color: #9acd32;">exp</span>: <span style="color: #00ff00;">Timestamp</span><span style="color: #7d26cd;">)</span> -&gt; <span style="color: #00ff00;">State</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #00ff00;">State</span> <span style="color: #cd0000;">{</span>
+        <span style="color: #9acd32;">auction_state</span>: <span style="color: #00ff00;">AuctionState</span>::<span style="color: #00ff00;">NotSoldYet</span>,
+        <span style="color: #9acd32;">highest_bid</span>: <span style="color: #00ff00;">Amount</span>::zero<span style="color: #cd8500;">()</span>,
+        <span style="color: #9acd32;">item</span>: itm,
+        <span style="color: #9acd32;">expiry</span>: exp,
+        <span style="color: #9acd32;">bids</span>: <span style="color: #00ff00;">BTreeMap</span>::new<span style="color: #cd8500;">()</span>,
+    <span style="color: #cd0000;">}</span>
+<span style="color: #7d26cd;">}</span>
+
+<span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">derive</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">Serialize, SchemaType</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
+<span style="color: #b3b3b3;">struct</span> <span style="color: #00ff00;">InitParameter</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #9acd32;">item</span>: <span style="color: #00ff00;">Vec</span><span style="color: #cd0000;">&lt;</span><span style="color: #00ff00;">u8</span><span style="color: #cd0000;">&gt;</span>,
+    <span style="color: #9acd32;">expiry</span>: <span style="color: #00ff00;">Timestamp</span>,
+<span style="color: #7d26cd;">}</span>
+
+<span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">derive</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">Debug, PartialEq, Eq, Clone, Reject</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
+<span style="color: #b3b3b3;">enum</span> <span style="color: #00ff00;">BidError</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #00ff00;">ContractSender</span>,
+    <span style="color: #00ff00;">BidTooLow</span>,
+    <span style="color: #00ff00;">BidsOverWaitingForAuctionFinalization</span>,
+    <span style="color: #00ff00;">AuctionFinalized</span>,
+<span style="color: #7d26cd;">}</span>
+
+<span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">derive</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">Debug, PartialEq, Eq, Clone, Reject</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
+<span style="color: #b3b3b3;">enum</span> <span style="color: #00ff00;">FinalizeError</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #00ff00;">BidMapError</span>,
+    <span style="color: #00ff00;">AuctionStillActive</span>,
+    <span style="color: #00ff00;">AuctionFinalized</span>,
+<span style="color: #7d26cd;">}</span>
+
+<span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">init</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">contract = </span><span style="color: #bdb76b;">"auction"</span><span style="color: #4169e1;">, parameter = </span><span style="color: #bdb76b;">"InitParameter"</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
+<span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">auction_init</span><span style="color: #7d26cd;">(</span><span style="color: #9acd32;">ctx</span>: &amp;<span style="color: #b3b3b3;">impl</span> <span style="color: #00ff00;">HasInitContext</span><span style="color: #7d26cd;">)</span> -&gt; <span style="color: #00ff00;">InitResult</span><span style="color: #7d26cd;">&lt;</span><span style="color: #00ff00;">State</span><span style="color: #7d26cd;">&gt;</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">parameter</span>: <span style="color: #00ff00;">InitParameter</span> = ctx.parameter_cursor<span style="color: #cd0000;">()</span>.get<span style="color: #cd0000;">()</span><span style="color: #b0c4de; font-weight: bold;">?</span>;
+    <span style="color: #00ff00;">Ok</span><span style="color: #cd0000;">(</span>fresh_state<span style="color: #cd8500;">(</span>parameter.item, parameter.expiry<span style="color: #cd8500;">)</span><span style="color: #cd0000;">)</span>
+<span style="color: #7d26cd;">}</span>
+
+<span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">receive</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">contract = </span><span style="color: #bdb76b;">"auction"</span><span style="color: #4169e1;">, name = </span><span style="color: #bdb76b;">"bid"</span><span style="color: #4169e1;">, payable</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
+<span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">auction_bid</span><span style="color: #7d26cd;">&lt;</span><span style="color: #9acd32;">A</span>: <span style="color: #00ff00;">HasActions</span><span style="color: #7d26cd;">&gt;(</span>
+    <span style="color: #9acd32;">ctx</span>: &amp;<span style="color: #b3b3b3;">impl</span> <span style="color: #00ff00;">HasReceiveContext</span>,
+    <span style="color: #9acd32;">amount</span>: <span style="color: #00ff00;">Amount</span>,
+    <span style="color: #9acd32;">state</span>: &amp;<span style="color: #b3b3b3;">mut</span> <span style="color: #00ff00;">State</span>,
+<span style="color: #7d26cd;">)</span> -&gt; <span style="color: #00ff00;">Result</span><span style="color: #7d26cd;">&lt;</span><span style="color: #00ff00;">A</span>, <span style="color: #00ff00;">BidError</span><span style="color: #7d26cd;">&gt;</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #4169e1;">ensure!</span><span style="color: #cd0000;">(</span>
+        state.auction_state == <span style="color: #00ff00;">AuctionState</span>::<span style="color: #00ff00;">NotSoldYet</span>,
+        <span style="color: #00ff00;">BidError</span>::<span style="color: #00ff00;">AuctionFinalized</span>
+    <span style="color: #cd0000;">)</span>;
+
+    <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">slot_time</span> = ctx.metadata<span style="color: #cd0000;">()</span>.slot_time<span style="color: #cd0000;">()</span>;
+    <span style="color: #4169e1;">ensure!</span><span style="color: #cd0000;">(</span>
+        slot_time &lt;= state.expiry,
+        <span style="color: #00ff00;">BidError</span>::<span style="color: #00ff00;">BidsOverWaitingForAuctionFinalization</span>
+    <span style="color: #cd0000;">)</span>;
+
+    <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">sender_address</span> = <span style="color: #b3b3b3;">match</span> ctx.sender<span style="color: #cd0000;">()</span> <span style="color: #cd0000;">{</span>
+        <span style="color: #00ff00;">Address</span>::<span style="color: #00ff00;">Contract</span><span style="color: #cd8500;">(</span>_<span style="color: #cd8500;">)</span> =&gt; <span style="color: #4169e1;">bail!</span><span style="color: #cd8500;">(</span><span style="color: #00ff00;">BidError</span>::<span style="color: #00ff00;">ContractSender</span><span style="color: #cd8500;">)</span>,
+        <span style="color: #00ff00;">Address</span>::<span style="color: #00ff00;">Account</span><span style="color: #cd8500;">(</span>account_address<span style="color: #cd8500;">)</span> =&gt; account_address,
+    <span style="color: #cd0000;">}</span>;
+    <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">bid_to_update</span> = state
+        .bids
+        .entry<span style="color: #cd0000;">(</span>sender_address<span style="color: #cd0000;">)</span>
+        .or_insert_with<span style="color: #cd0000;">(</span><span style="color: #00ff00;">Amount</span>::zero<span style="color: #cd0000;">)</span>;
+
+    *bid_to_update += amount;
+
+    <span style="color: #4169e1;">ensure!</span><span style="color: #cd0000;">(</span>*bid_to_update &gt; state.highest_bid, <span style="color: #00ff00;">BidError</span>::<span style="color: #00ff00;">BidTooLow</span><span style="color: #cd0000;">)</span>;
+    state.highest_bid = *bid_to_update;
+
+    <span style="color: #00ff00;">Ok</span><span style="color: #cd0000;">(</span><span style="color: #00ff00;">A</span>::accept<span style="color: #cd8500;">()</span><span style="color: #cd0000;">)</span>
+<span style="color: #7d26cd;">}</span>
+
+<span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">receive</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">contract = </span><span style="color: #bdb76b;">"auction"</span><span style="color: #4169e1;">, name = </span><span style="color: #bdb76b;">"finalize"</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
+<span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">auction_finalize</span><span style="color: #7d26cd;">&lt;</span><span style="color: #9acd32;">A</span>: <span style="color: #00ff00;">HasActions</span><span style="color: #7d26cd;">&gt;(</span>
+    <span style="color: #9acd32;">ctx</span>: &amp;<span style="color: #b3b3b3;">impl</span> <span style="color: #00ff00;">HasReceiveContext</span>,
+    <span style="color: #9acd32;">state</span>: &amp;<span style="color: #b3b3b3;">mut</span> <span style="color: #00ff00;">State</span>,
+<span style="color: #7d26cd;">)</span> -&gt; <span style="color: #00ff00;">Result</span><span style="color: #7d26cd;">&lt;</span><span style="color: #00ff00;">A</span>, <span style="color: #00ff00;">FinalizeError</span><span style="color: #7d26cd;">&gt;</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #4169e1;">ensure!</span><span style="color: #cd0000;">(</span>
+        state.auction_state == <span style="color: #00ff00;">AuctionState</span>::<span style="color: #00ff00;">NotSoldYet</span>,
+        <span style="color: #00ff00;">FinalizeError</span>::<span style="color: #00ff00;">AuctionFinalized</span>
+    <span style="color: #cd0000;">)</span>;
+
+    <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">slot_time</span> = ctx.metadata<span style="color: #cd0000;">()</span>.slot_time<span style="color: #cd0000;">()</span>;
+    <span style="color: #4169e1;">ensure!</span><span style="color: #cd0000;">(</span>slot_time &gt; state.expiry, <span style="color: #00ff00;">FinalizeError</span>::<span style="color: #00ff00;">AuctionStillActive</span><span style="color: #cd0000;">)</span>;
+
+    <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">owner</span> = ctx.owner<span style="color: #cd0000;">()</span>;
+
+    <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">balance</span> = ctx.self_balance<span style="color: #cd0000;">()</span>;
+    <span style="color: #b3b3b3;">if</span> balance == <span style="color: #00ff00;">Amount</span>::zero<span style="color: #cd0000;">()</span> <span style="color: #cd0000;">{</span>
+        <span style="color: #00ff00;">Ok</span><span style="color: #cd8500;">(</span><span style="color: #00ff00;">A</span>::accept<span style="color: #cdcd00;">()</span><span style="color: #cd8500;">)</span>
+    <span style="color: #cd0000;">}</span> <span style="color: #b3b3b3;">else</span> <span style="color: #cd0000;">{</span>
+        <span style="color: #b3b3b3;">let</span> <span style="color: #b3b3b3;">mut</span> <span style="color: #9acd32;">return_action</span> = <span style="color: #00ff00;">A</span>::simple_transfer<span style="color: #cd8500;">(</span>&amp;owner, state.highest_bid<span style="color: #cd8500;">)</span>;
+        <span style="color: #b3b3b3;">let</span> <span style="color: #b3b3b3;">mut</span> <span style="color: #9acd32;">remaining_bid</span> = <span style="color: #00ff00;">None</span>;
+
+        <span style="color: #b3b3b3;">for</span> <span style="color: #cd8500;">(</span>addr, &amp;amnt<span style="color: #cd8500;">)</span> <span style="color: #b3b3b3;">in</span> state.bids.iter<span style="color: #cd8500;">()</span> <span style="color: #cd8500;">{</span>
+            <span style="color: #b3b3b3;">if</span> amnt &lt; state.highest_bid <span style="color: #cdcd00;">{</span>
+                return_action = return_action.and_then<span style="color: #00cd00;">(</span><span style="color: #00ff00;">A</span>::simple_transfer<span style="color: #00cdcd;">(</span>addr, amnt<span style="color: #00cdcd;">)</span><span style="color: #00cd00;">)</span>;
+            <span style="color: #cdcd00;">}</span> <span style="color: #b3b3b3;">else</span> <span style="color: #cdcd00;">{</span>
+                <span style="color: #4169e1;">ensure!</span><span style="color: #00cd00;">(</span>remaining_bid.is_none<span style="color: #00cdcd;">()</span>, <span style="color: #00ff00;">FinalizeError</span>::<span style="color: #00ff00;">BidMapError</span><span style="color: #00cd00;">)</span>;
+                state.auction_state = <span style="color: #00ff00;">AuctionState</span>::<span style="color: #00ff00;">Sold</span><span style="color: #00cd00;">(</span>*addr<span style="color: #00cd00;">)</span>;
+                remaining_bid = <span style="color: #00ff00;">Some</span><span style="color: #00cd00;">(</span><span style="color: #00cdcd;">(</span>addr, amnt<span style="color: #00cdcd;">)</span><span style="color: #00cd00;">)</span>;
+            <span style="color: #cdcd00;">}</span>
+        <span style="color: #cd8500;">}</span>
+
+        <span style="color: #b3b3b3;">match</span> remaining_bid <span style="color: #cd8500;">{</span>
+            <span style="color: #00ff00;">Some</span><span style="color: #cdcd00;">(</span><span style="color: #00cd00;">(</span>_, amount<span style="color: #00cd00;">)</span><span style="color: #cdcd00;">)</span> =&gt; <span style="color: #cdcd00;">{</span>
+                <span style="color: #4169e1;">ensure!</span><span style="color: #00cd00;">(</span>amount == state.highest_bid, <span style="color: #00ff00;">FinalizeError</span>::<span style="color: #00ff00;">BidMapError</span><span style="color: #00cd00;">)</span>;
+                <span style="color: #00ff00;">Ok</span><span style="color: #00cd00;">(</span>return_action<span style="color: #00cd00;">)</span>
+            <span style="color: #cdcd00;">}</span>
+            <span style="color: #00ff00;">None</span> =&gt; <span style="color: #4169e1;">bail!</span><span style="color: #cdcd00;">(</span><span style="color: #00ff00;">FinalizeError</span>::<span style="color: #00ff00;">BidMapError</span><span style="color: #cdcd00;">)</span>,
+        <span style="color: #cd8500;">}</span>
+    <span style="color: #cd0000;">}</span>
+<span style="color: #7d26cd;">}</span>
+
+<span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">cfg</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">test</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
+<span style="color: #b3b3b3;">mod</span> <span style="color: #87ceeb;">tests</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #b3b3b3;">use</span> <span style="color: #b3b3b3;">super</span>::*;
+    <span style="color: #b3b3b3;">use</span> <span style="color: #87ceeb;">std</span>::<span style="color: #87ceeb;">sync</span>::<span style="color: #87ceeb;">atomic</span>::<span style="color: #cd0000;">{</span><span style="color: #00ff00;">AtomicU8</span>, <span style="color: #00ff00;">Ordering</span><span style="color: #cd0000;">}</span>;
+    <span style="color: #b3b3b3;">use</span> <span style="color: #87ceeb;">test_infrastructure</span>::*;
+    <span style="color: #b3b3b3;">static</span> <span style="color: #9acd32;">ADDRESS_COUNTER</span>: <span style="color: #00ff00;">AtomicU8</span> = <span style="color: #00ff00;">AtomicU8</span>::new<span style="color: #cd0000;">(</span>0<span style="color: #cd0000;">)</span>;
+    <span style="color: #b3b3b3;">const</span> <span style="color: #9acd32;">AUCTION_END</span>: <span style="color: #00ff00;">u64</span> = 1;
+    <span style="color: #b3b3b3;">const</span> <span style="color: #9acd32;">ITEM</span>: &amp;<span style="color: #00ff00;">str</span> = <span style="color: #bdb76b;">"Starry night by Van Gogh"</span>;
+
+    <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">dummy_fresh_state</span><span style="color: #cd0000;">()</span> -&gt; <span style="color: #00ff00;">State</span> <span style="color: #cd0000;">{</span>
+        dummy_active_state<span style="color: #cd8500;">(</span><span style="color: #00ff00;">Amount</span>::zero<span style="color: #cdcd00;">()</span>, <span style="color: #00ff00;">BTreeMap</span>::new<span style="color: #cdcd00;">()</span><span style="color: #cd8500;">)</span>
+    <span style="color: #cd0000;">}</span>
+
+    <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">dummy_active_state</span><span style="color: #cd0000;">(</span><span style="color: #9acd32;">highest</span>: <span style="color: #00ff00;">Amount</span>, <span style="color: #9acd32;">bids</span>: <span style="color: #00ff00;">BTreeMap</span><span style="color: #cd8500;">&lt;</span><span style="color: #00ff00;">AccountAddress</span>, <span style="color: #00ff00;">Amount</span><span style="color: #cd8500;">&gt;</span><span style="color: #cd0000;">)</span> -&gt; <span style="color: #00ff00;">State</span> <span style="color: #cd0000;">{</span>
+        <span style="color: #00ff00;">State</span> <span style="color: #cd8500;">{</span>
+            <span style="color: #9acd32;">auction_state</span>: <span style="color: #00ff00;">AuctionState</span>::<span style="color: #00ff00;">NotSoldYet</span>,
+            <span style="color: #9acd32;">highest_bid</span>: highest,
+            <span style="color: #9acd32;">item</span>: <span style="color: #00ff00;">ITEM</span>.as_bytes<span style="color: #cdcd00;">()</span>.to_vec<span style="color: #cdcd00;">()</span>,
+            <span style="color: #9acd32;">expiry</span>: <span style="color: #00ff00;">Timestamp</span>::from_timestamp_millis<span style="color: #cdcd00;">(</span><span style="color: #00ff00;">AUCTION_END</span><span style="color: #cdcd00;">)</span>,
+            bids,
+        <span style="color: #cd8500;">}</span>
+    <span style="color: #cd0000;">}</span>
+
+    <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">expect_error</span><span style="color: #cd0000;">&lt;</span><span style="color: #00ff00;">E</span>, <span style="color: #00ff00;">T</span><span style="color: #cd0000;">&gt;(</span><span style="color: #9acd32;">expr</span>: <span style="color: #00ff00;">Result</span><span style="color: #cd8500;">&lt;</span><span style="color: #00ff00;">T</span>, <span style="color: #00ff00;">E</span><span style="color: #cd8500;">&gt;</span>, <span style="color: #9acd32;">err</span>: <span style="color: #00ff00;">E</span>, <span style="color: #9acd32;">msg</span>: &amp;<span style="color: #00ff00;">str</span><span style="color: #cd0000;">)</span>
+    <span style="color: #b3b3b3;">where</span>
+        <span style="color: #9acd32;">E</span>: <span style="color: #00ff00;">Eq</span> + <span style="color: #00ff00;">Debug</span>,
+        <span style="color: #9acd32;">T</span>: <span style="color: #00ff00;">Debug</span>,
+    <span style="color: #cd0000;">{</span>
+        <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">actual</span> = expr.expect_err<span style="color: #cd8500;">(</span>msg<span style="color: #cd8500;">)</span>;
+        <span style="color: #4169e1;">assert_eq!</span><span style="color: #cd8500;">(</span>actual, err<span style="color: #cd8500;">)</span>;
+    <span style="color: #cd0000;">}</span>
+
+    <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">item_expiry_parameter</span><span style="color: #cd0000;">()</span> -&gt; <span style="color: #00ff00;">InitParameter</span> <span style="color: #cd0000;">{</span>
+        <span style="color: #00ff00;">InitParameter</span> <span style="color: #cd8500;">{</span>
+            <span style="color: #9acd32;">item</span>: <span style="color: #00ff00;">ITEM</span>.as_bytes<span style="color: #cdcd00;">()</span>.to_vec<span style="color: #cdcd00;">()</span>,
+            <span style="color: #9acd32;">expiry</span>: <span style="color: #00ff00;">Timestamp</span>::from_timestamp_millis<span style="color: #cdcd00;">(</span><span style="color: #00ff00;">AUCTION_END</span><span style="color: #cdcd00;">)</span>,
+        <span style="color: #cd8500;">}</span>
+    <span style="color: #cd0000;">}</span>
+
+    <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">create_parameter_bytes</span><span style="color: #cd0000;">(</span><span style="color: #9acd32;">parameter</span>: &amp;<span style="color: #00ff00;">InitParameter</span><span style="color: #cd0000;">)</span> -&gt; <span style="color: #00ff00;">Vec</span><span style="color: #cd0000;">&lt;</span><span style="color: #00ff00;">u8</span><span style="color: #cd0000;">&gt;</span> <span style="color: #cd0000;">{</span>
+        to_bytes<span style="color: #cd8500;">(</span>parameter<span style="color: #cd8500;">)</span>
+    <span style="color: #cd0000;">}</span>
+
+    <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">parametrized_init_ctx</span><span style="color: #cd0000;">&lt;</span>'<span style="color: #9acd32;">a</span><span style="color: #cd0000;">&gt;(</span><span style="color: #9acd32;">parameter_bytes</span>: &amp;'<span style="color: #9acd32;">a</span> <span style="color: #00ff00;">Vec</span><span style="color: #cd8500;">&lt;</span><span style="color: #00ff00;">u8</span><span style="color: #cd8500;">&gt;</span><span style="color: #cd0000;">)</span> -&gt; <span style="color: #00ff00;">InitContextTest</span><span style="color: #cd0000;">&lt;</span>'<span style="color: #9acd32;">a</span><span style="color: #cd0000;">&gt;</span> <span style="color: #cd0000;">{</span>
+        <span style="color: #b3b3b3;">let</span> <span style="color: #b3b3b3;">mut</span> <span style="color: #9acd32;">ctx</span> = <span style="color: #00ff00;">InitContextTest</span>::empty<span style="color: #cd8500;">()</span>;
+        ctx.set_parameter<span style="color: #cd8500;">(</span>parameter_bytes<span style="color: #cd8500;">)</span>;
+        ctx
+    <span style="color: #cd0000;">}</span>
+
+    <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">new_account</span><span style="color: #cd0000;">()</span> -&gt; <span style="color: #00ff00;">AccountAddress</span> <span style="color: #cd0000;">{</span>
+        <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">account</span> = <span style="color: #00ff00;">AccountAddress</span><span style="color: #cd8500;">(</span><span style="color: #cdcd00;">[</span><span style="color: #00ff00;">ADDRESS_COUNTER</span>.load<span style="color: #00cd00;">(</span><span style="color: #00ff00;">Ordering</span>::<span style="color: #00ff00;">SeqCst</span><span style="color: #00cd00;">)</span>; 32<span style="color: #cdcd00;">]</span><span style="color: #cd8500;">)</span>;
+        <span style="color: #00ff00;">ADDRESS_COUNTER</span>.fetch_add<span style="color: #cd8500;">(</span>1, <span style="color: #00ff00;">Ordering</span>::<span style="color: #00ff00;">SeqCst</span><span style="color: #cd8500;">)</span>;
+        account
+    <span style="color: #cd0000;">}</span>
+
+    <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">new_account_ctx</span><span style="color: #cd0000;">&lt;</span>'<span style="color: #9acd32;">a</span><span style="color: #cd0000;">&gt;()</span> -&gt; <span style="color: #cd0000;">(</span><span style="color: #00ff00;">AccountAddress</span>, <span style="color: #00ff00;">ReceiveContextTest</span><span style="color: #cd8500;">&lt;</span>'<span style="color: #9acd32;">a</span><span style="color: #cd8500;">&gt;</span><span style="color: #cd0000;">)</span> <span style="color: #cd0000;">{</span>
+        <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">account</span> = new_account<span style="color: #cd8500;">()</span>;
+        <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">ctx</span> = new_ctx<span style="color: #cd8500;">(</span>account, account, <span style="color: #00ff00;">AUCTION_END</span><span style="color: #cd8500;">)</span>;
+        <span style="color: #cd8500;">(</span>account, ctx<span style="color: #cd8500;">)</span>
+    <span style="color: #cd0000;">}</span>
+
+    <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">new_ctx</span><span style="color: #cd0000;">&lt;</span>'<span style="color: #9acd32;">a</span><span style="color: #cd0000;">&gt;(</span>
+        <span style="color: #9acd32;">owner</span>: <span style="color: #00ff00;">AccountAddress</span>,
+        <span style="color: #9acd32;">sender</span>: <span style="color: #00ff00;">AccountAddress</span>,
+        <span style="color: #9acd32;">slot_time</span>: <span style="color: #00ff00;">u64</span>,
+    <span style="color: #cd0000;">)</span> -&gt; <span style="color: #00ff00;">ReceiveContextTest</span><span style="color: #cd0000;">&lt;</span>'<span style="color: #9acd32;">a</span><span style="color: #cd0000;">&gt;</span> <span style="color: #cd0000;">{</span>
+        <span style="color: #b3b3b3;">let</span> <span style="color: #b3b3b3;">mut</span> <span style="color: #9acd32;">ctx</span> = <span style="color: #00ff00;">ReceiveContextTest</span>::empty<span style="color: #cd8500;">()</span>;
+        ctx.set_sender<span style="color: #cd8500;">(</span><span style="color: #00ff00;">Address</span>::<span style="color: #00ff00;">Account</span><span style="color: #cdcd00;">(</span>sender<span style="color: #cdcd00;">)</span><span style="color: #cd8500;">)</span>;
+        ctx.set_owner<span style="color: #cd8500;">(</span>owner<span style="color: #cd8500;">)</span>;
+        ctx.set_metadata_slot_time<span style="color: #cd8500;">(</span><span style="color: #00ff00;">Timestamp</span>::from_timestamp_millis<span style="color: #cdcd00;">(</span>slot_time<span style="color: #cdcd00;">)</span><span style="color: #cd8500;">)</span>;
+        ctx
+    <span style="color: #cd0000;">}</span>
+
+    <span style="color: #4169e1;">#</span><span style="color: #cd0000;">[</span><span style="color: #4169e1;">test</span><span style="color: #cd0000;">]</span>
+    <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">test_init</span><span style="color: #cd0000;">()</span> <span style="color: #cd0000;">{</span>
+        <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">parameter_bytes</span> = create_parameter_bytes<span style="color: #cd8500;">(</span>&amp;item_expiry_parameter<span style="color: #cdcd00;">()</span><span style="color: #cd8500;">)</span>;
+        <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">ctx</span> = parametrized_init_ctx<span style="color: #cd8500;">(</span>&amp;parameter_bytes<span style="color: #cd8500;">)</span>;
+
+        <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">state_result</span> = auction_init<span style="color: #cd8500;">(</span>&amp;ctx<span style="color: #cd8500;">)</span>;
+        <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">state</span> = state_result.expect<span style="color: #cd8500;">(</span><span style="color: #bdb76b;">"Contract initialization results in error"</span><span style="color: #cd8500;">)</span>;
+        <span style="color: #4169e1;">assert_eq!</span><span style="color: #cd8500;">(</span>
+            state,
+            dummy_fresh_state<span style="color: #cdcd00;">()</span>,
+            <span style="color: #bdb76b;">"Auction state should be new after initialization"</span>
+        <span style="color: #cd8500;">)</span>;
+    <span style="color: #cd0000;">}</span>
+
+    <span style="color: #4169e1;">#</span><span style="color: #cd0000;">[</span><span style="color: #4169e1;">test</span><span style="color: #cd0000;">]</span>
+    <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">test_auction_bid_and_finalize</span><span style="color: #cd0000;">()</span> <span style="color: #cd0000;">{</span>
+        <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">parameter_bytes</span> = create_parameter_bytes<span style="color: #cd8500;">(</span>&amp;item_expiry_parameter<span style="color: #cdcd00;">()</span><span style="color: #cd8500;">)</span>;
+        <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">ctx0</span> = parametrized_init_ctx<span style="color: #cd8500;">(</span>&amp;parameter_bytes<span style="color: #cd8500;">)</span>;
+
+        <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">amount</span> = <span style="color: #00ff00;">Amount</span>::from_micro_gtu<span style="color: #cd8500;">(</span>100<span style="color: #cd8500;">)</span>;
+        <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">winning_amount</span> = <span style="color: #00ff00;">Amount</span>::from_micro_gtu<span style="color: #cd8500;">(</span>300<span style="color: #cd8500;">)</span>;
+        <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">big_amount</span> = <span style="color: #00ff00;">Amount</span>::from_micro_gtu<span style="color: #cd8500;">(</span>500<span style="color: #cd8500;">)</span>;
+
+        <span style="color: #b3b3b3;">let</span> <span style="color: #b3b3b3;">mut</span> <span style="color: #9acd32;">bid_map</span> = <span style="color: #00ff00;">BTreeMap</span>::new<span style="color: #cd8500;">()</span>;
+
+        <span style="color: #b3b3b3;">let</span> <span style="color: #b3b3b3;">mut</span> <span style="color: #9acd32;">state</span> = auction_init<span style="color: #cd8500;">(</span>&amp;ctx0<span style="color: #cd8500;">)</span>.expect<span style="color: #cd8500;">(</span><span style="color: #bdb76b;">"Initialization should pass"</span><span style="color: #cd8500;">)</span>;
+
+        <span style="color: #b3b3b3;">let</span> <span style="color: #cd8500;">(</span>alice, alice_ctx<span style="color: #cd8500;">)</span> = new_account_ctx<span style="color: #cd8500;">()</span>;
+        verify_bid<span style="color: #cd8500;">(</span>&amp;<span style="color: #b3b3b3;">mut</span> state, alice, &amp;alice_ctx, amount, &amp;<span style="color: #b3b3b3;">mut</span> bid_map, amount<span style="color: #cd8500;">)</span>;
+
+        verify_bid<span style="color: #cd8500;">(</span>
+            &amp;<span style="color: #b3b3b3;">mut</span> state,
+            alice,
+            &amp;alice_ctx,
+            amount,
+            &amp;<span style="color: #b3b3b3;">mut</span> bid_map,
+            amount + amount,
+        <span style="color: #cd8500;">)</span>;
+
+        <span style="color: #b3b3b3;">let</span> <span style="color: #cd8500;">(</span>bob, bob_ctx<span style="color: #cd8500;">)</span> = new_account_ctx<span style="color: #cd8500;">()</span>;
+        verify_bid<span style="color: #cd8500;">(</span>
+            &amp;<span style="color: #b3b3b3;">mut</span> state,
+            bob,
+            &amp;bob_ctx,
+            winning_amount,
+            &amp;<span style="color: #b3b3b3;">mut</span> bid_map,
+            winning_amount,
+        <span style="color: #cd8500;">)</span>;
+
+        <span style="color: #b3b3b3;">let</span> <span style="color: #b3b3b3;">mut</span> <span style="color: #9acd32;">ctx4</span> = <span style="color: #00ff00;">ReceiveContextTest</span>::empty<span style="color: #cd8500;">()</span>;
+        ctx4.set_metadata_slot_time<span style="color: #cd8500;">(</span><span style="color: #00ff00;">Timestamp</span>::from_timestamp_millis<span style="color: #cdcd00;">(</span><span style="color: #00ff00;">AUCTION_END</span><span style="color: #cdcd00;">)</span><span style="color: #cd8500;">)</span>;
+        <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">finres</span>: <span style="color: #00ff00;">Result</span><span style="color: #cd8500;">&lt;</span><span style="color: #00ff00;">ActionsTree</span>, _<span style="color: #cd8500;">&gt;</span> = auction_finalize<span style="color: #cd8500;">(</span>&amp;ctx4, &amp;<span style="color: #b3b3b3;">mut</span> state<span style="color: #cd8500;">)</span>;
+        expect_error<span style="color: #cd8500;">(</span>
+            finres,
+            <span style="color: #00ff00;">FinalizeError</span>::<span style="color: #00ff00;">AuctionStillActive</span>,
+            <span style="color: #bdb76b;">"Finalizing auction should fail when it's before auction-end time"</span>,
+        <span style="color: #cd8500;">)</span>;
+
+        <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">carol</span> = new_account<span style="color: #cd8500;">()</span>;
+        <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">dave</span> = new_account<span style="color: #cd8500;">()</span>;
+        <span style="color: #b3b3b3;">let</span> <span style="color: #b3b3b3;">mut</span> <span style="color: #9acd32;">ctx5</span> = new_ctx<span style="color: #cd8500;">(</span>carol, dave, <span style="color: #00ff00;">AUCTION_END</span> + 1<span style="color: #cd8500;">)</span>;
+        ctx5.set_self_balance<span style="color: #cd8500;">(</span>winning_amount<span style="color: #cd8500;">)</span>;
+        <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">finres2</span>: <span style="color: #00ff00;">Result</span><span style="color: #cd8500;">&lt;</span><span style="color: #00ff00;">ActionsTree</span>, _<span style="color: #cd8500;">&gt;</span> = auction_finalize<span style="color: #cd8500;">(</span>&amp;ctx5, &amp;<span style="color: #b3b3b3;">mut</span> state<span style="color: #cd8500;">)</span>;
+        <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">actions</span> = finres2.expect<span style="color: #cd8500;">(</span><span style="color: #bdb76b;">"Finalizing auction should work"</span><span style="color: #cd8500;">)</span>;
+        <span style="color: #4169e1;">assert_eq!</span><span style="color: #cd8500;">(</span>
+            actions,
+            <span style="color: #00ff00;">ActionsTree</span>::simple_transfer<span style="color: #cdcd00;">(</span>&amp;carol, winning_amount<span style="color: #cdcd00;">)</span>
+                .and_then<span style="color: #cdcd00;">(</span><span style="color: #00ff00;">ActionsTree</span>::simple_transfer<span style="color: #00cd00;">(</span>&amp;alice, amount + amount<span style="color: #00cd00;">)</span><span style="color: #cdcd00;">)</span>
+        <span style="color: #cd8500;">)</span>;
+        <span style="color: #4169e1;">assert_eq!</span><span style="color: #cd8500;">(</span>
+            state,
+            <span style="color: #00ff00;">State</span> <span style="color: #cdcd00;">{</span>
+                <span style="color: #9acd32;">auction_state</span>: <span style="color: #00ff00;">AuctionState</span>::<span style="color: #00ff00;">Sold</span><span style="color: #00cd00;">(</span>bob<span style="color: #00cd00;">)</span>,
+                <span style="color: #9acd32;">highest_bid</span>: winning_amount,
+                <span style="color: #9acd32;">item</span>: <span style="color: #00ff00;">ITEM</span>.as_bytes<span style="color: #00cd00;">()</span>.to_vec<span style="color: #00cd00;">()</span>,
+                <span style="color: #9acd32;">expiry</span>: <span style="color: #00ff00;">Timestamp</span>::from_timestamp_millis<span style="color: #00cd00;">(</span><span style="color: #00ff00;">AUCTION_END</span><span style="color: #00cd00;">)</span>,
+                <span style="color: #9acd32;">bids</span>: bid_map,
+            <span style="color: #cdcd00;">}</span>
+        <span style="color: #cd8500;">)</span>;
+
+        <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">finres3</span>: <span style="color: #00ff00;">Result</span><span style="color: #cd8500;">&lt;</span><span style="color: #00ff00;">ActionsTree</span>, _<span style="color: #cd8500;">&gt;</span> = auction_finalize<span style="color: #cd8500;">(</span>&amp;ctx5, &amp;<span style="color: #b3b3b3;">mut</span> state<span style="color: #cd8500;">)</span>;
+        expect_error<span style="color: #cd8500;">(</span>
+            finres3,
+            <span style="color: #00ff00;">FinalizeError</span>::<span style="color: #00ff00;">AuctionFinalized</span>,
+            <span style="color: #bdb76b;">"Finalizing auction a second time should fail"</span>,
+        <span style="color: #cd8500;">)</span>;
+
+        <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">res4</span>: <span style="color: #00ff00;">Result</span><span style="color: #cd8500;">&lt;</span><span style="color: #00ff00;">ActionsTree</span>, _<span style="color: #cd8500;">&gt;</span> = auction_bid<span style="color: #cd8500;">(</span>&amp;bob_ctx, big_amount, &amp;<span style="color: #b3b3b3;">mut</span> state<span style="color: #cd8500;">)</span>;
+        expect_error<span style="color: #cd8500;">(</span>
+            res4,
+            <span style="color: #00ff00;">BidError</span>::<span style="color: #00ff00;">AuctionFinalized</span>,
+            <span style="color: #bdb76b;">"Bidding should fail because the auction is finalized"</span>,
+        <span style="color: #cd8500;">)</span>;
+    <span style="color: #cd0000;">}</span>
+
+    <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">verify_bid</span><span style="color: #cd0000;">(</span>
+        <span style="color: #b3b3b3;">mut</span> <span style="color: #9acd32;">state</span>: &amp;<span style="color: #b3b3b3;">mut</span> <span style="color: #00ff00;">State</span>,
+        <span style="color: #9acd32;">account</span>: <span style="color: #00ff00;">AccountAddress</span>,
+        <span style="color: #9acd32;">ctx</span>: &amp;<span style="color: #00ff00;">ContextTest</span><span style="color: #cd8500;">&lt;</span><span style="color: #00ff00;">ReceiveOnlyDataTest</span><span style="color: #cd8500;">&gt;</span>,
+        <span style="color: #9acd32;">amount</span>: <span style="color: #00ff00;">Amount</span>,
+        <span style="color: #9acd32;">bid_map</span>: &amp;<span style="color: #b3b3b3;">mut</span> <span style="color: #00ff00;">BTreeMap</span><span style="color: #cd8500;">&lt;</span><span style="color: #00ff00;">AccountAddress</span>, <span style="color: #00ff00;">Amount</span><span style="color: #cd8500;">&gt;</span>,
+        <span style="color: #9acd32;">highest_bid</span>: <span style="color: #00ff00;">Amount</span>,
+    <span style="color: #cd0000;">)</span> <span style="color: #cd0000;">{</span>
+        <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">res</span>: <span style="color: #00ff00;">Result</span><span style="color: #cd8500;">&lt;</span><span style="color: #00ff00;">ActionsTree</span>, _<span style="color: #cd8500;">&gt;</span> = auction_bid<span style="color: #cd8500;">(</span>ctx, amount, &amp;<span style="color: #b3b3b3;">mut</span> state<span style="color: #cd8500;">)</span>;
+        res.expect<span style="color: #cd8500;">(</span><span style="color: #bdb76b;">"Bidding should pass"</span><span style="color: #cd8500;">)</span>;
+        bid_map.insert<span style="color: #cd8500;">(</span>account, highest_bid<span style="color: #cd8500;">)</span>;
+        <span style="color: #4169e1;">assert_eq!</span><span style="color: #cd8500;">(</span>*state, dummy_active_state<span style="color: #cdcd00;">(</span>highest_bid, bid_map.clone<span style="color: #00cd00;">()</span><span style="color: #cdcd00;">)</span><span style="color: #cd8500;">)</span>;
+    <span style="color: #cd0000;">}</span>
+
+    <span style="color: #4169e1;">#</span><span style="color: #cd0000;">[</span><span style="color: #4169e1;">test</span><span style="color: #cd0000;">]</span>
+    <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">test_auction_bid_repeated_bid</span><span style="color: #cd0000;">()</span> <span style="color: #cd0000;">{</span>
+        <span style="color: #b3b3b3;">let</span> <span style="color: #cd8500;">(</span>account1, ctx1<span style="color: #cd8500;">)</span> = new_account_ctx<span style="color: #cd8500;">()</span>;
+        <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">ctx2</span> = new_account_ctx<span style="color: #cd8500;">()</span>.1;
+
+        <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">parameter_bytes</span> = create_parameter_bytes<span style="color: #cd8500;">(</span>&amp;item_expiry_parameter<span style="color: #cdcd00;">()</span><span style="color: #cd8500;">)</span>;
+        <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">ctx0</span> = parametrized_init_ctx<span style="color: #cd8500;">(</span>&amp;parameter_bytes<span style="color: #cd8500;">)</span>;
+
+        <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">amount</span> = <span style="color: #00ff00;">Amount</span>::from_micro_gtu<span style="color: #cd8500;">(</span>100<span style="color: #cd8500;">)</span>;
+
+        <span style="color: #b3b3b3;">let</span> <span style="color: #b3b3b3;">mut</span> <span style="color: #9acd32;">bid_map</span> = <span style="color: #00ff00;">BTreeMap</span>::new<span style="color: #cd8500;">()</span>;
+
+        <span style="color: #b3b3b3;">let</span> <span style="color: #b3b3b3;">mut</span> <span style="color: #9acd32;">state</span> = auction_init<span style="color: #cd8500;">(</span>&amp;ctx0<span style="color: #cd8500;">)</span>.expect<span style="color: #cd8500;">(</span><span style="color: #bdb76b;">"Init results in error"</span><span style="color: #cd8500;">)</span>;
+
+        verify_bid<span style="color: #cd8500;">(</span>&amp;<span style="color: #b3b3b3;">mut</span> state, account1, &amp;ctx1, amount, &amp;<span style="color: #b3b3b3;">mut</span> bid_map, amount<span style="color: #cd8500;">)</span>;
+
+        <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">res2</span>: <span style="color: #00ff00;">Result</span><span style="color: #cd8500;">&lt;</span><span style="color: #00ff00;">ActionsTree</span>, _<span style="color: #cd8500;">&gt;</span> = auction_bid<span style="color: #cd8500;">(</span>&amp;ctx2, amount, &amp;<span style="color: #b3b3b3;">mut</span> state<span style="color: #cd8500;">)</span>;
+        expect_error<span style="color: #cd8500;">(</span>
+            res2,
+            <span style="color: #00ff00;">BidError</span>::<span style="color: #00ff00;">BidTooLow</span>, <span style="color: #7f7f7f;">/* </span><span style="color: #7f7f7f;">{ bid: amount, highest_bid: amount } */</span>
+            <span style="color: #bdb76b;">"Bidding 2 should fail because bid amount must be higher than highest bid"</span>,
+        <span style="color: #cd8500;">)</span>;
+    <span style="color: #cd0000;">}</span>
+
+    <span style="color: #4169e1;">#</span><span style="color: #cd0000;">[</span><span style="color: #4169e1;">test</span><span style="color: #cd0000;">]</span>
+    <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">test_auction_bid_zero</span><span style="color: #cd0000;">()</span> <span style="color: #cd0000;">{</span>
+        <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">ctx1</span> = new_account_ctx<span style="color: #cd8500;">()</span>.1;
+        <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">parameter_bytes</span> = create_parameter_bytes<span style="color: #cd8500;">(</span>&amp;item_expiry_parameter<span style="color: #cdcd00;">()</span><span style="color: #cd8500;">)</span>;
+        <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">ctx</span> = parametrized_init_ctx<span style="color: #cd8500;">(</span>&amp;parameter_bytes<span style="color: #cd8500;">)</span>;
+
+        <span style="color: #b3b3b3;">let</span> <span style="color: #b3b3b3;">mut</span> <span style="color: #9acd32;">state</span> = auction_init<span style="color: #cd8500;">(</span>&amp;ctx<span style="color: #cd8500;">)</span>.expect<span style="color: #cd8500;">(</span><span style="color: #bdb76b;">"Init results in error"</span><span style="color: #cd8500;">)</span>;
+
+        <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">res</span>: <span style="color: #00ff00;">Result</span><span style="color: #cd8500;">&lt;</span><span style="color: #00ff00;">ActionsTree</span>, _<span style="color: #cd8500;">&gt;</span> = auction_bid<span style="color: #cd8500;">(</span>&amp;ctx1, <span style="color: #00ff00;">Amount</span>::zero<span style="color: #cdcd00;">()</span>, &amp;<span style="color: #b3b3b3;">mut</span> state<span style="color: #cd8500;">)</span>;
+        expect_error<span style="color: #cd8500;">(</span>
+            res,
+            <span style="color: #00ff00;">BidError</span>::<span style="color: #00ff00;">BidTooLow</span>, <span style="color: #7f7f7f;">/* </span><span style="color: #7f7f7f;">{ bid: Amount::zero(), highest_bid: Amount::zero()} */</span>
+            <span style="color: #bdb76b;">"Bidding zero should fail"</span>,
+        <span style="color: #cd8500;">)</span>;
+    <span style="color: #cd0000;">}</span>
+<span style="color: #7d26cd;">}</span>
+</pre>
+</div>
+<p>
+We will end up with two files, one being the rust wrapper and one being the hacspec code. 
+</p>
+
+<p>
+We have all the usal imports for the file
+</p>
+<div class="org-src-container">
+<pre class="src src-rust"><span style="color: #b3b3b3;">use</span> <span style="color: #87ceeb;">concordium_std</span>::<span style="color: #7d26cd;">{</span><span style="color: #87ceeb;">collections</span>::<span style="color: #00ff00;">BTreeMap</span>, *<span style="color: #7d26cd;">}</span>;
+<span style="color: #b3b3b3;">use</span> <span style="color: #87ceeb;">core</span>::<span style="color: #87ceeb;">fmt</span>::<span style="color: #00ff00;">Debug</span>;
+<span style="color: #b3b3b3;">use</span> <span style="color: #b3b3b3;">crate</span>::<span style="color: #87ceeb;">provider</span>::<span style="color: #00ff00;">Action</span>;
+</pre>
+</div>
+
+<p>
+And then the hacspec speciffic imports
+</p>
+<div class="org-src-container">
+<pre class="src src-rust"><span style="color: #b3b3b3;">use</span> <span style="color: #87ceeb;">auction</span>::*;
+<span style="color: #b3b3b3;">use</span> <span style="color: #87ceeb;">hacspec_lib</span>::*;
+</pre>
+</div>
+
+<p>
+and in the hacspec file we only import the hacspec library
+</p>
+<div class="org-src-container">
+<pre class="src src-rust"><span style="color: #b3b3b3;">use</span> <span style="color: #87ceeb;">hacspec_lib</span>::*;
+</pre>
+</div>
+
+<p>
+We then translate enums, by first translating all types used by the enum, and then 
+defining the corresponding enum, using the translated types.
+</p>
+<div class="org-src-container">
+<pre class="src src-rust"><span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">derive</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">Debug, Serialize, SchemaType, Eq, PartialEq, PartialOrd, Clone</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
+<span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">enum</span> <span style="color: #00ff00;">AuctionState</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #00ff00;">NotSoldYet</span>,
+    <span style="color: #00ff00;">Sold</span><span style="color: #cd0000;">(</span><span style="color: #00ff00;">AccountAddress</span><span style="color: #cd0000;">)</span>,
+<span style="color: #7d26cd;">}</span>
+</pre>
+</div>
+<p>
+here we had to change the argument for one of the enums since AccountAddress is not in hacspec. 
+We represent AccountAddress by UserAddress defined as
+</p>
+<div class="org-src-container">
+<pre class="src src-rust"><span style="color: #4169e1;">array!</span><span style="color: #7d26cd;">(</span><span style="color: #00ff00;">UserAddress</span>, 32, <span style="color: #00ff00;">u8</span><span style="color: #7d26cd;">)</span>;
+</pre>
+</div>
+<p>
+for which we have the following coercion functions
+</p>
+<div class="org-src-container">
+<pre class="src src-rust"><span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">user_address_to_accout_address</span><span style="color: #7d26cd;">(</span><span style="color: #9acd32;">acc</span>: <span style="color: #00ff00;">UserAddress</span><span style="color: #7d26cd;">)</span> -&gt; <span style="color: #00ff00;">AccountAddress</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #00ff00;">AccountAddress</span><span style="color: #cd0000;">(</span><span style="color: #cd8500;">[</span>
+        acc<span style="color: #cdcd00;">[</span>0<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>1<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>2<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>3<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>4<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>5<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>6<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>7<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>8<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>9<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>10<span style="color: #cdcd00;">]</span>,
+        acc<span style="color: #cdcd00;">[</span>11<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>12<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>13<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>14<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>15<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>16<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>17<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>18<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>19<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>20<span style="color: #cdcd00;">]</span>,
+        acc<span style="color: #cdcd00;">[</span>21<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>22<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>23<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>24<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>25<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>26<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>27<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>28<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>29<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>30<span style="color: #cdcd00;">]</span>,
+        acc<span style="color: #cdcd00;">[</span>31<span style="color: #cdcd00;">]</span>,
+    <span style="color: #cd8500;">]</span><span style="color: #cd0000;">)</span>
+<span style="color: #7d26cd;">}</span>
+
+<span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">u8x32_to_user_address</span><span style="color: #7d26cd;">(</span><span style="color: #9acd32;">acc</span>: <span style="color: #cd0000;">[</span><span style="color: #00ff00;">u8</span>; 32<span style="color: #cd0000;">]</span><span style="color: #7d26cd;">)</span> -&gt; <span style="color: #00ff00;">UserAddress</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #00ff00;">UserAddress</span><span style="color: #cd0000;">(</span><span style="color: #cd8500;">[</span>
+        acc<span style="color: #cdcd00;">[</span>0<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>1<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>2<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>3<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>4<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>5<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>6<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>7<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>8<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>9<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>10<span style="color: #cdcd00;">]</span>,
+        acc<span style="color: #cdcd00;">[</span>11<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>12<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>13<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>14<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>15<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>16<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>17<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>18<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>19<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>20<span style="color: #cdcd00;">]</span>,
+        acc<span style="color: #cdcd00;">[</span>21<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>22<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>23<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>24<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>25<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>26<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>27<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>28<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>29<span style="color: #cdcd00;">]</span>, acc<span style="color: #cdcd00;">[</span>30<span style="color: #cdcd00;">]</span>,
+        acc<span style="color: #cdcd00;">[</span>31<span style="color: #cdcd00;">]</span>,
+    <span style="color: #cd8500;">]</span><span style="color: #cd0000;">)</span>
+<span style="color: #7d26cd;">}</span>
+</pre>
+</div>
+<p>
+we then get the hacspec enum
+</p>
+<div class="org-src-container">
+<pre class="src src-rust"><span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">enum</span> <span style="color: #00ff00;">AuctionState</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #00ff00;">NotSoldYet</span>,
+    <span style="color: #00ff00;">Sold</span><span style="color: #cd0000;">(</span><span style="color: #00ff00;">UserAddress</span><span style="color: #cd0000;">)</span>,
+<span style="color: #7d26cd;">}</span>
+</pre>
+</div>
+<p>
+the enum types also get a pair of coercion functions
+</p>
+<div class="org-src-container">
+<pre class="src src-rust"><span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">my_auction_state_to_their_auction_state</span><span style="color: #7d26cd;">(</span><span style="color: #9acd32;">s</span>: <span style="color: #87ceeb;">auction</span>::<span style="color: #00ff00;">AuctionState</span><span style="color: #7d26cd;">)</span> -&gt; <span style="color: #00ff00;">AuctionState</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #b3b3b3;">match</span> s <span style="color: #cd0000;">{</span>
+        <span style="color: #87ceeb;">auction</span>::<span style="color: #00ff00;">AuctionState</span>::<span style="color: #00ff00;">NotSoldYet</span> =&gt; <span style="color: #00ff00;">AuctionState</span>::<span style="color: #00ff00;">NotSoldYet</span>,
+        <span style="color: #87ceeb;">auction</span>::<span style="color: #00ff00;">AuctionState</span>::<span style="color: #00ff00;">Sold</span><span style="color: #cd8500;">(</span>a<span style="color: #cd8500;">)</span> =&gt; <span style="color: #00ff00;">AuctionState</span>::<span style="color: #00ff00;">Sold</span><span style="color: #cd8500;">(</span>user_address_to_accout_address<span style="color: #cdcd00;">(</span>a<span style="color: #cdcd00;">)</span><span style="color: #cd8500;">)</span>,
+    <span style="color: #cd0000;">}</span>
+<span style="color: #7d26cd;">}</span>
+
+<span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">their_auction_state_to_my_auction_state</span><span style="color: #7d26cd;">(</span><span style="color: #9acd32;">s</span>: <span style="color: #00ff00;">AuctionState</span><span style="color: #7d26cd;">)</span> -&gt; <span style="color: #87ceeb;">auction</span>::<span style="color: #00ff00;">AuctionState</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #b3b3b3;">match</span> s <span style="color: #cd0000;">{</span>
+        <span style="color: #00ff00;">AuctionState</span>::<span style="color: #00ff00;">NotSoldYet</span> =&gt; <span style="color: #87ceeb;">auction</span>::<span style="color: #00ff00;">AuctionState</span>::<span style="color: #00ff00;">NotSoldYet</span>,
+        <span style="color: #00ff00;">AuctionState</span>::<span style="color: #00ff00;">Sold</span><span style="color: #cd8500;">(</span>a<span style="color: #cd8500;">)</span> =&gt; <span style="color: #87ceeb;">auction</span>::<span style="color: #00ff00;">AuctionState</span>::<span style="color: #00ff00;">Sold</span><span style="color: #cd8500;">(</span>u8x32_to_user_address<span style="color: #cdcd00;">(</span>a.0<span style="color: #cdcd00;">)</span><span style="color: #cd8500;">)</span>,
+    <span style="color: #cd0000;">}</span>
+<span style="color: #7d26cd;">}</span>
+</pre>
+</div>
+<p>
+when translating structs we need to convert them to tuples, but again we must first convert the inner types to hacspec types.
+We convert Amount and Timestamp to u64, while BTreeMaps are converted to a pair of binary sequences, representing a list of key value pairs:
+</p>
+<div class="org-src-container">
+<pre class="src src-rust"><span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">type</span> <span style="color: #00ff00;">SeqMap</span> = <span style="color: #7d26cd;">(</span><span style="color: #00ff00;">PublicByteSeq</span>, <span style="color: #00ff00;">PublicByteSeq</span><span style="color: #7d26cd;">)</span>;
+</pre>
+</div>
+<p>
+with the coercion functions
+</p>
+<div class="org-src-container">
+<pre class="src src-rust"><span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">seq_map_to_btree_map</span><span style="color: #7d26cd;">(</span><span style="color: #9acd32;">m</span>: <span style="color: #00ff00;">SeqMap</span><span style="color: #7d26cd;">)</span> -&gt; <span style="color: #00ff00;">BTreeMap</span><span style="color: #7d26cd;">&lt;</span><span style="color: #00ff00;">AccountAddress</span>, <span style="color: #87ceeb;">concordium_std</span>::<span style="color: #00ff00;">Amount</span><span style="color: #7d26cd;">&gt;</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #b3b3b3;">let</span> <span style="color: #cd0000;">(</span>m1, m2<span style="color: #cd0000;">)</span> = m;
+
+    <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">m1prime</span> = <span style="color: #cd0000;">(</span>0..m1.len<span style="color: #cd8500;">()</span> / 32<span style="color: #cd0000;">)</span>.map<span style="color: #cd0000;">(</span>|x| <span style="color: #00ff00;">UserAddress</span>::from_seq<span style="color: #cd8500;">(</span>&amp;m1.clone<span style="color: #cdcd00;">()</span>.slice<span style="color: #cdcd00;">(</span>x * 32, 32<span style="color: #cdcd00;">)</span><span style="color: #cd8500;">)</span><span style="color: #cd0000;">)</span>;
+    <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">m2prime</span> =
+        <span style="color: #cd0000;">(</span>0..m2.len<span style="color: #cd8500;">()</span> / 8<span style="color: #cd0000;">)</span>.map<span style="color: #cd0000;">(</span>|x| u64_from_be_bytes<span style="color: #cd8500;">(</span>u64<span style="color: #00ff00;">Word</span>::from_seq<span style="color: #cdcd00;">(</span>&amp;m2.slice<span style="color: #00cd00;">(</span>x * 8, 8<span style="color: #00cd00;">)</span><span style="color: #cdcd00;">)</span><span style="color: #cd8500;">)</span><span style="color: #cd0000;">)</span>;
+
+    <span style="color: #cd0000;">(</span>m1prime.zip<span style="color: #cd8500;">(</span>m2prime<span style="color: #cd8500;">)</span><span style="color: #cd0000;">)</span>.fold<span style="color: #cd0000;">(</span><span style="color: #00ff00;">BTreeMap</span>::new<span style="color: #cd8500;">()</span>, |<span style="color: #b3b3b3;">mut</span> t, <span style="color: #cd8500;">(</span>x, y<span style="color: #cd8500;">)</span>| <span style="color: #cd8500;">{</span>
+        t.insert<span style="color: #cdcd00;">(</span>
+            user_address_to_accout_address<span style="color: #00cd00;">(</span>x<span style="color: #00cd00;">)</span>,
+            <span style="color: #87ceeb;">concordium_std</span>::<span style="color: #00ff00;">Amount</span> <span style="color: #00cd00;">{</span> <span style="color: #9acd32;">micro_gtu</span>: y <span style="color: #00cd00;">}</span>,
+        <span style="color: #cdcd00;">)</span>;
+        t
+    <span style="color: #cd8500;">}</span><span style="color: #cd0000;">)</span>
+<span style="color: #7d26cd;">}</span>
+
+<span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">btree_map_to_seq_map</span><span style="color: #7d26cd;">(</span><span style="color: #9acd32;">m</span>: <span style="color: #00ff00;">BTreeMap</span><span style="color: #cd0000;">&lt;</span><span style="color: #00ff00;">AccountAddress</span>, <span style="color: #87ceeb;">concordium_std</span>::<span style="color: #00ff00;">Amount</span><span style="color: #cd0000;">&gt;</span><span style="color: #7d26cd;">)</span> -&gt; <span style="color: #00ff00;">SeqMap</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #cd0000;">(</span>
+        m.keys<span style="color: #cd8500;">()</span>
+            .map<span style="color: #cd8500;">(</span>|x| u8x32_to_user_address<span style="color: #cdcd00;">(</span>x.0<span style="color: #cdcd00;">)</span><span style="color: #cd8500;">)</span>
+            .fold<span style="color: #cd8500;">(</span><span style="color: #00ff00;">PublicByteSeq</span>::new<span style="color: #cdcd00;">(</span>0_usize<span style="color: #cdcd00;">)</span>, |v, x| v.concat<span style="color: #cdcd00;">(</span>&amp;x<span style="color: #cdcd00;">)</span><span style="color: #cd8500;">)</span>,
+        m.values<span style="color: #cd8500;">()</span>
+            .map<span style="color: #cd8500;">(</span>|x| x.micro_gtu<span style="color: #cd8500;">)</span>
+            .fold<span style="color: #cd8500;">(</span><span style="color: #00ff00;">PublicSeq</span>::new<span style="color: #cdcd00;">(</span>0_usize<span style="color: #cdcd00;">)</span>, |v, x| <span style="color: #cdcd00;">{</span>
+                v.concat<span style="color: #00cd00;">(</span>&amp;u64_to_be_bytes<span style="color: #00cdcd;">(</span>x<span style="color: #00cdcd;">)</span><span style="color: #00cd00;">)</span>
+            <span style="color: #cdcd00;">}</span><span style="color: #cd8500;">)</span>,
+    <span style="color: #cd0000;">)</span>
+<span style="color: #7d26cd;">}</span>
+</pre>
+</div>
+<p>
+and we have to implement the functions for the data structure in hacspec
+</p>
+<div class="org-src-container">
+<pre class="src src-rust"><span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">enum</span> <span style="color: #00ff00;">MapEntry</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #00ff00;">Entry</span><span style="color: #cd0000;">(</span><span style="color: #00ff00;">u64</span>, <span style="color: #00ff00;">SeqMap</span><span style="color: #cd0000;">)</span>,
+<span style="color: #7d26cd;">}</span>
+
+<span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">seq_map_entry</span><span style="color: #7d26cd;">(</span><span style="color: #9acd32;">m</span>: <span style="color: #00ff00;">SeqMap</span>, <span style="color: #9acd32;">sender_address</span>: <span style="color: #00ff00;">UserAddress</span><span style="color: #7d26cd;">)</span> -&gt; <span style="color: #00ff00;">MapEntry</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #b3b3b3;">let</span> <span style="color: #cd0000;">(</span>m1, m2<span style="color: #cd0000;">)</span> = m.clone<span style="color: #cd0000;">()</span>;
+    <span style="color: #b3b3b3;">let</span> <span style="color: #b3b3b3;">mut</span> <span style="color: #9acd32;">res</span> = <span style="color: #00ff00;">MapEntry</span>::<span style="color: #00ff00;">Entry</span><span style="color: #cd0000;">(</span>
+        0_u64,
+        <span style="color: #cd8500;">(</span>
+            m1.clone<span style="color: #cdcd00;">()</span>.concat<span style="color: #cdcd00;">(</span>&amp;sender_address<span style="color: #cdcd00;">)</span>,
+            m2.clone<span style="color: #cdcd00;">()</span>.concat<span style="color: #cdcd00;">(</span>&amp;u64_to_be_bytes<span style="color: #00cd00;">(</span>0_u64<span style="color: #00cd00;">)</span><span style="color: #cdcd00;">)</span>,
+        <span style="color: #cd8500;">)</span>,
+    <span style="color: #cd0000;">)</span>;
+
+    <span style="color: #b3b3b3;">for</span> <span style="color: #9acd32;">x</span> <span style="color: #b3b3b3;">in</span> 0..m1.clone<span style="color: #cd0000;">()</span>.len<span style="color: #cd0000;">()</span> / 32 <span style="color: #cd0000;">{</span>
+        <span style="color: #b3b3b3;">if</span> <span style="color: #00ff00;">UserAddress</span>::from_seq<span style="color: #cd8500;">(</span>&amp;m1.clone<span style="color: #cdcd00;">()</span>.slice<span style="color: #cdcd00;">(</span>x * 32, 32<span style="color: #cdcd00;">)</span><span style="color: #cd8500;">)</span> == sender_address <span style="color: #cd8500;">{</span>
+            res = <span style="color: #00ff00;">MapEntry</span>::<span style="color: #00ff00;">Entry</span><span style="color: #cdcd00;">(</span>
+                u64_from_be_bytes<span style="color: #00cd00;">(</span>u64<span style="color: #00ff00;">Word</span>::from_seq<span style="color: #00cdcd;">(</span>&amp;m2.slice<span style="color: #0000cd;">(</span>x * 8, 8<span style="color: #0000cd;">)</span><span style="color: #00cdcd;">)</span><span style="color: #00cd00;">)</span>,
+                m.clone<span style="color: #00cd00;">()</span>,
+            <span style="color: #cdcd00;">)</span>;
+        <span style="color: #cd8500;">}</span>
+    <span style="color: #cd0000;">}</span>
+
+    res
+<span style="color: #7d26cd;">}</span>
+
+<span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">enum</span> <span style="color: #00ff00;">MapUpdate</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #00ff00;">Update</span><span style="color: #cd0000;">(</span><span style="color: #00ff00;">u64</span>, <span style="color: #00ff00;">SeqMap</span><span style="color: #cd0000;">)</span>,
+<span style="color: #7d26cd;">}</span>
+
+<span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">seq_map_update_entry</span><span style="color: #7d26cd;">(</span><span style="color: #9acd32;">m</span>: <span style="color: #00ff00;">SeqMap</span>, <span style="color: #9acd32;">sender_address</span>: <span style="color: #00ff00;">UserAddress</span>, <span style="color: #9acd32;">amount</span>: <span style="color: #00ff00;">u64</span><span style="color: #7d26cd;">)</span> -&gt; <span style="color: #00ff00;">MapUpdate</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #b3b3b3;">let</span> <span style="color: #cd0000;">(</span>m1, m2<span style="color: #cd0000;">)</span> = m;
+
+    <span style="color: #b3b3b3;">let</span> <span style="color: #b3b3b3;">mut</span> <span style="color: #9acd32;">res</span> = <span style="color: #00ff00;">MapUpdate</span>::<span style="color: #00ff00;">Update</span><span style="color: #cd0000;">(</span>
+        amount,
+        <span style="color: #cd8500;">(</span>
+            m1.concat<span style="color: #cdcd00;">(</span>&amp;sender_address<span style="color: #cdcd00;">)</span>,
+            m2.concat<span style="color: #cdcd00;">(</span>&amp;u64_to_be_bytes<span style="color: #00cd00;">(</span>amount<span style="color: #00cd00;">)</span><span style="color: #cdcd00;">)</span>,
+        <span style="color: #cd8500;">)</span>,
+    <span style="color: #cd0000;">)</span>;
+
+    <span style="color: #b3b3b3;">for</span> <span style="color: #9acd32;">x</span> <span style="color: #b3b3b3;">in</span> 0..m1.clone<span style="color: #cd0000;">()</span>.len<span style="color: #cd0000;">()</span> / 32 <span style="color: #cd0000;">{</span>
+        <span style="color: #b3b3b3;">if</span> <span style="color: #00ff00;">UserAddress</span>::from_seq<span style="color: #cd8500;">(</span>&amp;m1.clone<span style="color: #cdcd00;">()</span>.slice<span style="color: #cdcd00;">(</span>x * 32, 32<span style="color: #cdcd00;">)</span><span style="color: #cd8500;">)</span> == sender_address <span style="color: #cd8500;">{</span>
+            res = <span style="color: #00ff00;">MapUpdate</span>::<span style="color: #00ff00;">Update</span><span style="color: #cdcd00;">(</span>
+                amount,
+                <span style="color: #00cd00;">(</span>
+                    m1.clone<span style="color: #00cdcd;">()</span>.update<span style="color: #00cdcd;">(</span>x * 32, &amp;sender_address<span style="color: #00cdcd;">)</span>,
+                    m2.clone<span style="color: #00cdcd;">()</span>.update<span style="color: #00cdcd;">(</span>x * 8, &amp;u64_to_be_bytes<span style="color: #0000cd;">(</span>amount<span style="color: #0000cd;">)</span><span style="color: #00cdcd;">)</span>,
+                <span style="color: #00cd00;">)</span>,
+            <span style="color: #cdcd00;">)</span>;
+        <span style="color: #cd8500;">}</span>
+    <span style="color: #cd0000;">}</span>
+
+    res
+<span style="color: #7d26cd;">}</span>
+</pre>
+</div>
+<p>
+Then the struct
+</p>
+<div class="org-src-container">
+<pre class="src src-rust"><span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">contract_state</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">contract = </span><span style="color: #bdb76b;">"auction"</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
+<span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">derive</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">Debug, Serialize, SchemaType, Eq, PartialEq</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
+<span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">struct</span> <span style="color: #00ff00;">State</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #9acd32;">auction_state</span>: <span style="color: #00ff00;">AuctionState</span>,
+    <span style="color: #9acd32;">highest_bid</span>:   <span style="color: #87ceeb;">concordium_std</span>::<span style="color: #00ff00;">Amount</span>,
+    <span style="color: #9acd32;">item</span>:          <span style="color: #00ff00;">Vec</span><span style="color: #cd0000;">&lt;</span><span style="color: #00ff00;">u8</span><span style="color: #cd0000;">&gt;</span>,
+    <span style="color: #9acd32;">expiry</span>:        <span style="color: #87ceeb;">concordium_std</span>::<span style="color: #00ff00;">Timestamp</span>,
+    <span style="color: #4169e1;">#</span><span style="color: #cd0000;">[</span><span style="color: #4169e1;">concordium</span><span style="color: #cd8500;">(</span><span style="color: #4169e1;">size_length = 2</span><span style="color: #cd8500;">)</span><span style="color: #cd0000;">]</span>
+    <span style="color: #9acd32;">bids</span>:          <span style="color: #00ff00;">BTreeMap</span><span style="color: #cd0000;">&lt;</span><span style="color: #00ff00;">AccountAddress</span>, <span style="color: #87ceeb;">concordium_std</span>::<span style="color: #00ff00;">Amount</span><span style="color: #cd0000;">&gt;</span>,
+<span style="color: #7d26cd;">}</span>
+</pre>
+</div>
+<p>
+simply becomes the type
+</p>
+<div class="org-src-container">
+<pre class="src src-rust"><span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">type</span> <span style="color: #00ff00;">State</span> = <span style="color: #7d26cd;">(</span><span style="color: #00ff00;">AuctionState</span>, <span style="color: #00ff00;">u64</span>, <span style="color: #00ff00;">Seq</span><span style="color: #cd0000;">&lt;</span><span style="color: #00ff00;">u8</span><span style="color: #cd0000;">&gt;</span>, <span style="color: #00ff00;">u64</span>, <span style="color: #00ff00;">SeqMap</span><span style="color: #7d26cd;">)</span>;
+</pre>
+</div>
+<p>
+we again define a pair of coercion functions
+</p>
+<div class="org-src-container">
+<pre class="src src-rust"><span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">my_state_to_their_state</span><span style="color: #7d26cd;">(</span><span style="color: #9acd32;">s</span>: <span style="color: #87ceeb;">auction</span>::<span style="color: #00ff00;">State</span><span style="color: #7d26cd;">)</span> -&gt; <span style="color: #00ff00;">State</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #b3b3b3;">let</span> <span style="color: #cd0000;">(</span>a, b, c, d, e<span style="color: #cd0000;">)</span> = s;
+    <span style="color: #00ff00;">State</span> <span style="color: #cd0000;">{</span>
+        <span style="color: #9acd32;">auction_state</span>: my_auction_state_to_their_auction_state<span style="color: #cd8500;">(</span>a<span style="color: #cd8500;">)</span>,
+        <span style="color: #9acd32;">highest_bid</span>: <span style="color: #87ceeb;">concordium_std</span>::<span style="color: #00ff00;">Amount</span> <span style="color: #cd8500;">{</span> <span style="color: #9acd32;">micro_gtu</span>: b <span style="color: #cd8500;">}</span>,
+        <span style="color: #9acd32;">item</span>: c.native_slice<span style="color: #cd8500;">()</span>.to_vec<span style="color: #cd8500;">()</span>,
+        <span style="color: #9acd32;">expiry</span>: <span style="color: #87ceeb;">concordium_std</span>::<span style="color: #00ff00;">Timestamp</span>::from_timestamp_millis<span style="color: #cd8500;">(</span>d<span style="color: #cd8500;">)</span>,
+        <span style="color: #9acd32;">bids</span>: seq_map_to_btree_map<span style="color: #cd8500;">(</span>e<span style="color: #cd8500;">)</span>,
+    <span style="color: #cd0000;">}</span>
+<span style="color: #7d26cd;">}</span>
+
+<span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">their_state_to_my_state</span><span style="color: #7d26cd;">(</span><span style="color: #9acd32;">s</span>: &amp;<span style="color: #b3b3b3;">mut</span> <span style="color: #00ff00;">State</span><span style="color: #7d26cd;">)</span> -&gt; <span style="color: #87ceeb;">auction</span>::<span style="color: #00ff00;">State</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #cd0000;">(</span>
+        their_auction_state_to_my_auction_state<span style="color: #cd8500;">(</span>s.auction_state.clone<span style="color: #cdcd00;">()</span><span style="color: #cd8500;">)</span>,
+        s.highest_bid.micro_gtu,
+        <span style="color: #00ff00;">Seq</span>::from_vec<span style="color: #cd8500;">(</span>s.item.clone<span style="color: #cdcd00;">()</span><span style="color: #cd8500;">)</span>,
+        s.expiry.timestamp_millis<span style="color: #cd8500;">()</span>,
+        btree_map_to_seq_map<span style="color: #cd8500;">(</span>s.bids.clone<span style="color: #cdcd00;">()</span><span style="color: #cd8500;">)</span>,
+    <span style="color: #cd0000;">)</span>
+<span style="color: #7d26cd;">}</span>
+</pre>
+</div>
+<p>
+Then for each function we translate it fully to hacspec, and do coercion
+</p>
+<div class="org-src-container">
+<pre class="src src-rust"><span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">fresh_state</span><span style="color: #7d26cd;">(</span><span style="color: #9acd32;">itm</span>: <span style="color: #00ff00;">Vec</span><span style="color: #cd0000;">&lt;</span><span style="color: #00ff00;">u8</span><span style="color: #cd0000;">&gt;</span>, <span style="color: #9acd32;">exp</span>: <span style="color: #87ceeb;">concordium_std</span>::<span style="color: #00ff00;">Timestamp</span><span style="color: #7d26cd;">)</span> -&gt; <span style="color: #00ff00;">State</span> <span style="color: #7d26cd;">{</span>
+    my_state_to_their_state<span style="color: #cd0000;">(</span><span style="color: #87ceeb;">auction</span>::fresh_state<span style="color: #cd8500;">(</span>
+        <span style="color: #00ff00;">Seq</span>::from_vec<span style="color: #cdcd00;">(</span>itm<span style="color: #cdcd00;">)</span>,
+        exp.timestamp_millis<span style="color: #cdcd00;">()</span>,
+    <span style="color: #cd8500;">)</span><span style="color: #cd0000;">)</span>
+<span style="color: #7d26cd;">}</span>
+</pre>
+</div>
+<p>
+the translated function is
+</p>
+<div class="org-src-container">
+<pre class="src src-rust"><span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">fresh_state</span><span style="color: #7d26cd;">(</span><span style="color: #9acd32;">itm</span>: <span style="color: #00ff00;">Seq</span><span style="color: #cd0000;">&lt;</span><span style="color: #00ff00;">u8</span><span style="color: #cd0000;">&gt;</span>, <span style="color: #9acd32;">exp</span>: <span style="color: #00ff00;">u64</span><span style="color: #7d26cd;">)</span> -&gt; <span style="color: #00ff00;">State</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #cd0000;">(</span>
+        <span style="color: #00ff00;">AuctionState</span>::<span style="color: #00ff00;">NotSoldYet</span>,
+        0_u64,
+        itm,
+        exp,
+        <span style="color: #cd8500;">(</span><span style="color: #00ff00;">PublicByteSeq</span>::new<span style="color: #cdcd00;">(</span>0_usize<span style="color: #cdcd00;">)</span>, <span style="color: #00ff00;">PublicByteSeq</span>::new<span style="color: #cdcd00;">(</span>0_usize<span style="color: #cdcd00;">)</span><span style="color: #cd8500;">)</span>,
+    <span style="color: #cd0000;">)</span>
+<span style="color: #7d26cd;">}</span>
+</pre>
+</div>
+<p>
+Next we have another struct which is not translated since it is only used to define the input structure of auction<sub>init</sub>
+</p>
+<div class="org-src-container">
+<pre class="src src-rust"><span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">derive</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">Serialize, SchemaType</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
+<span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">struct</span> <span style="color: #00ff00;">InitParameter</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #9acd32;">item</span>: <span style="color: #00ff00;">Vec</span><span style="color: #cd0000;">&lt;</span><span style="color: #00ff00;">u8</span><span style="color: #cd0000;">&gt;</span>,
+    <span style="color: #9acd32;">expiry</span>: <span style="color: #87ceeb;">concordium_std</span>::<span style="color: #00ff00;">Timestamp</span>,
+<span style="color: #7d26cd;">}</span>
+
+<span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">init</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">contract = </span><span style="color: #bdb76b;">"auction"</span><span style="color: #4169e1;">, parameter = </span><span style="color: #bdb76b;">"InitParameter"</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
+<span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">auction_init</span><span style="color: #7d26cd;">(</span><span style="color: #9acd32;">ctx</span>: &amp;<span style="color: #b3b3b3;">impl</span> <span style="color: #00ff00;">HasInitContext</span><span style="color: #7d26cd;">)</span> -&gt; <span style="color: #00ff00;">InitResult</span><span style="color: #7d26cd;">&lt;</span><span style="color: #00ff00;">State</span><span style="color: #7d26cd;">&gt;</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">parameter</span>: <span style="color: #00ff00;">InitParameter</span> = ctx.parameter_cursor<span style="color: #cd0000;">()</span>.get<span style="color: #cd0000;">()</span><span style="color: #b0c4de; font-weight: bold;">?</span>;
+    <span style="color: #00ff00;">Ok</span><span style="color: #cd0000;">(</span>fresh_state<span style="color: #cd8500;">(</span>parameter.item, parameter.expiry<span style="color: #cd8500;">)</span><span style="color: #cd0000;">)</span>
+<span style="color: #7d26cd;">}</span>
+</pre>
+</div>
+<p>
+Here a context is used and passed around so we need to represent this somehow in hacspec, which we do by making a
+ type for each set of relevant context variables we want to take as input or return
+</p>
+<div class="org-src-container">
+<pre class="src src-rust"><span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">type</span> <span style="color: #00ff00;">Context</span> = <span style="color: #7d26cd;">(</span><span style="color: #00ff00;">u64</span>, <span style="color: #00ff00;">UserAddressSet</span><span style="color: #7d26cd;">)</span>;
+</pre>
+</div>
+<p>
+again we need to define coercions for this (however we only need one direction, as the context is never updated)
+</p>
+<div class="org-src-container">
+<pre class="src src-rust"><span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">their_context_to_my_context</span><span style="color: #7d26cd;">(</span><span style="color: #9acd32;">ctx</span>: &amp;<span style="color: #b3b3b3;">impl</span> <span style="color: #00ff00;">HasReceiveContext</span><span style="color: #7d26cd;">)</span> -&gt; <span style="color: #87ceeb;">auction</span>::<span style="color: #00ff00;">Context</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #cd0000;">(</span>
+        ctx.metadata<span style="color: #cd8500;">()</span>.slot_time<span style="color: #cd8500;">()</span>.timestamp_millis<span style="color: #cd8500;">()</span>,
+        <span style="color: #b3b3b3;">match</span> ctx.sender<span style="color: #cd8500;">()</span> <span style="color: #cd8500;">{</span>
+            <span style="color: #00ff00;">Address</span>::<span style="color: #00ff00;">Contract</span><span style="color: #cdcd00;">(</span>_<span style="color: #cdcd00;">)</span> =&gt; <span style="color: #00ff00;">UserAddressSet</span>::<span style="color: #00ff00;">UserAddressNone</span>,
+            <span style="color: #00ff00;">Address</span>::<span style="color: #00ff00;">Account</span><span style="color: #cdcd00;">(</span>account_address<span style="color: #cdcd00;">)</span> =&gt; <span style="color: #cdcd00;">{</span>
+                <span style="color: #00ff00;">UserAddressSet</span>::<span style="color: #00ff00;">UserAddressSome</span><span style="color: #00cd00;">(</span>u8x32_to_user_address<span style="color: #00cdcd;">(</span>account_address.0<span style="color: #00cdcd;">)</span>, <span style="color: #00cdcd;">()</span><span style="color: #00cd00;">)</span>
+            <span style="color: #cdcd00;">}</span>
+        <span style="color: #cd8500;">}</span>,
+    <span style="color: #cd0000;">)</span>
+<span style="color: #7d26cd;">}</span>
+</pre>
+</div>
+<p>
+We then define some return / error types
+</p>
+<div class="org-src-container">
+<pre class="src src-rust"><span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">derive</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">Debug, PartialEq, Eq, Clone, Reject</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
+<span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">enum</span> <span style="color: #00ff00;">BidError</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #00ff00;">ContractSender</span>,
+    <span style="color: #00ff00;">BidTooLow</span>,
+    <span style="color: #00ff00;">BidsOverWaitingForAuctionFinalization</span>,
+    <span style="color: #00ff00;">AuctionFinalized</span>,
+<span style="color: #7d26cd;">}</span>
+</pre>
+</div>
+<p>
+which translate direcly to hacspec
+</p>
+<div class="org-src-container">
+<pre class="src src-rust"><span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">enum</span> <span style="color: #00ff00;">BidError</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #00ff00;">ContractSender</span>,
+    <span style="color: #00ff00;">BidTooLow</span>,
+    <span style="color: #00ff00;">BidsOverWaitingForAuctionFinalization</span>,
+    <span style="color: #00ff00;">AuctionIsFinalized</span>,
+<span style="color: #7d26cd;">}</span>
+</pre>
+</div>
+<p>
+Since this is only used once we do the coercion inline in the auction<sub>bid</sub> function
+</p>
+<div class="org-src-container">
+<pre class="src src-rust"><span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">receive</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">contract = </span><span style="color: #bdb76b;">"auction"</span><span style="color: #4169e1;">, name = </span><span style="color: #bdb76b;">"bid"</span><span style="color: #4169e1;">, payable</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
+<span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">auction_bid</span><span style="color: #7d26cd;">&lt;</span><span style="color: #9acd32;">A</span>: <span style="color: #00ff00;">HasActions</span><span style="color: #7d26cd;">&gt;(</span>
+    <span style="color: #9acd32;">ctx</span>: &amp;<span style="color: #b3b3b3;">impl</span> <span style="color: #00ff00;">HasReceiveContext</span>,
+    <span style="color: #9acd32;">amount</span>: <span style="color: #87ceeb;">concordium_std</span>::<span style="color: #00ff00;">Amount</span>,
+    <span style="color: #9acd32;">state</span>: &amp;<span style="color: #b3b3b3;">mut</span> <span style="color: #00ff00;">State</span>,
+<span style="color: #7d26cd;">)</span> -&gt; <span style="color: #00ff00;">Result</span><span style="color: #7d26cd;">&lt;</span><span style="color: #00ff00;">A</span>, <span style="color: #00ff00;">BidError</span><span style="color: #7d26cd;">&gt;</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #b3b3b3;">let</span> <span style="color: #cd0000;">(</span>new_state, res<span style="color: #cd0000;">)</span> = <span style="color: #87ceeb;">auction</span>::auction_bid<span style="color: #cd0000;">(</span>
+        their_context_to_my_context<span style="color: #cd8500;">(</span>ctx<span style="color: #cd8500;">)</span>,
+        amount.micro_gtu,
+        their_state_to_my_state<span style="color: #cd8500;">(</span>state<span style="color: #cd8500;">)</span>,
+    <span style="color: #cd0000;">)</span>;
+    *state = my_state_to_their_state<span style="color: #cd0000;">(</span>new_state<span style="color: #cd0000;">)</span>;
+
+    <span style="color: #b3b3b3;">match</span> res <span style="color: #cd0000;">{</span>
+        <span style="color: #00ff00;">Ok</span><span style="color: #cd8500;">(</span>_<span style="color: #cd8500;">)</span> =&gt; <span style="color: #00ff00;">Ok</span><span style="color: #cd8500;">(</span><span style="color: #00ff00;">A</span>::accept<span style="color: #cdcd00;">()</span><span style="color: #cd8500;">)</span>,
+        <span style="color: #00ff00;">Err</span><span style="color: #cd8500;">(</span><span style="color: #87ceeb;">auction</span>::<span style="color: #00ff00;">BidError</span>::<span style="color: #00ff00;">ContractSender</span><span style="color: #cd8500;">)</span> =&gt; <span style="color: #00ff00;">Err</span><span style="color: #cd8500;">(</span><span style="color: #00ff00;">BidError</span>::<span style="color: #00ff00;">ContractSender</span><span style="color: #cd8500;">)</span>,
+        <span style="color: #00ff00;">Err</span><span style="color: #cd8500;">(</span><span style="color: #87ceeb;">auction</span>::<span style="color: #00ff00;">BidError</span>::<span style="color: #00ff00;">BidTooLow</span><span style="color: #cd8500;">)</span> =&gt; <span style="color: #00ff00;">Err</span><span style="color: #cd8500;">(</span><span style="color: #00ff00;">BidError</span>::<span style="color: #00ff00;">BidTooLow</span><span style="color: #cd8500;">)</span>,
+        <span style="color: #00ff00;">Err</span><span style="color: #cd8500;">(</span><span style="color: #87ceeb;">auction</span>::<span style="color: #00ff00;">BidError</span>::<span style="color: #00ff00;">BidsOverWaitingForAuctionFinalization</span><span style="color: #cd8500;">)</span> =&gt; <span style="color: #cd8500;">{</span>
+            <span style="color: #00ff00;">Err</span><span style="color: #cdcd00;">(</span><span style="color: #00ff00;">BidError</span>::<span style="color: #00ff00;">BidsOverWaitingForAuctionFinalization</span><span style="color: #cdcd00;">)</span>
+        <span style="color: #cd8500;">}</span>
+        <span style="color: #00ff00;">Err</span><span style="color: #cd8500;">(</span><span style="color: #87ceeb;">auction</span>::<span style="color: #00ff00;">BidError</span>::<span style="color: #00ff00;">AuctionIsFinalized</span><span style="color: #cd8500;">)</span> =&gt; <span style="color: #00ff00;">Err</span><span style="color: #cd8500;">(</span><span style="color: #00ff00;">BidError</span>::<span style="color: #00ff00;">AuctionFinalized</span><span style="color: #cd8500;">)</span>,
+    <span style="color: #cd0000;">}</span>
+<span style="color: #7d26cd;">}</span>
+</pre>
+</div>
+<p>
+and the implementation in hacspec is
+</p>
+<div class="org-src-container">
+<pre class="src src-rust"><span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">enum</span> <span style="color: #00ff00;">Boolean</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #00ff00;">True</span>,
+    <span style="color: #00ff00;">False</span>,
+<span style="color: #7d26cd;">}</span>
+
+<span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">auction_bid</span><span style="color: #7d26cd;">(</span><span style="color: #9acd32;">ctx</span>: <span style="color: #00ff00;">Context</span>, <span style="color: #9acd32;">amount</span>: <span style="color: #00ff00;">u64</span>, <span style="color: #9acd32;">state</span>: <span style="color: #00ff00;">State</span><span style="color: #7d26cd;">)</span> -&gt; <span style="color: #7d26cd;">(</span><span style="color: #00ff00;">State</span>, <span style="color: #00ff00;">AuctionBidResult</span><span style="color: #7d26cd;">)</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #7f7f7f;">// </span><span style="color: #7f7f7f;">ensure!(state.auction_state == AuctionState::NotSoldYet, BidError::AuctionFinalized);</span>
+    <span style="color: #b3b3b3;">let</span> <span style="color: #cd0000;">(</span>auction_state, b, c, expiry, e<span style="color: #cd0000;">)</span> = state;
+    <span style="color: #b3b3b3;">let</span> <span style="color: #cd0000;">(</span>slot_time, sender<span style="color: #cd0000;">)</span> = ctx;
+
+    <span style="color: #b3b3b3;">let</span> <span style="color: #cd0000;">(</span><span style="color: #cd8500;">(</span>acs, upb, ce, expirye, <span style="color: #cdcd00;">(</span>updated1_mape, updated2_mape<span style="color: #cdcd00;">)</span><span style="color: #cd8500;">)</span>, rese<span style="color: #cd0000;">)</span> = <span style="color: #b3b3b3;">match</span> auction_state <span style="color: #cd0000;">{</span>
+        <span style="color: #00ff00;">AuctionState</span>::<span style="color: #00ff00;">NotSoldYet</span> =&gt; <span style="color: #b3b3b3;">match</span> <span style="color: #b3b3b3;">if</span> slot_time &lt;= expiry <span style="color: #cd8500;">{</span>
+            <span style="color: #00ff00;">Boolean</span>::<span style="color: #00ff00;">True</span>
+        <span style="color: #cd8500;">}</span> <span style="color: #b3b3b3;">else</span> <span style="color: #cd8500;">{</span>
+            <span style="color: #00ff00;">Boolean</span>::<span style="color: #00ff00;">False</span>
+        <span style="color: #cd8500;">}</span> <span style="color: #cd8500;">{</span>
+            <span style="color: #00ff00;">Boolean</span>::<span style="color: #00ff00;">True</span> =&gt; <span style="color: #b3b3b3;">match</span> sender <span style="color: #cdcd00;">{</span>
+                <span style="color: #00ff00;">UserAddressSet</span>::<span style="color: #00ff00;">UserAddressNone</span> =&gt; <span style="color: #00cd00;">(</span>
+                    <span style="color: #00cdcd;">(</span>auction_state, b, c, expiry, e<span style="color: #00cdcd;">)</span>,
+                    <span style="color: #00ff00;">AuctionBidResult</span>::<span style="color: #00ff00;">Err</span><span style="color: #00cdcd;">(</span><span style="color: #00ff00;">BidError</span>::<span style="color: #00ff00;">ContractSender</span><span style="color: #00cdcd;">)</span>,
+                <span style="color: #00cd00;">)</span>,
+                <span style="color: #00ff00;">UserAddressSet</span>::<span style="color: #00ff00;">UserAddressSome</span><span style="color: #00cd00;">(</span>sender_address, _<span style="color: #00cd00;">)</span> =&gt; <span style="color: #00cd00;">{</span>
+                    <span style="color: #b3b3b3;">match</span> seq_map_entry<span style="color: #00cdcd;">(</span>e.clone<span style="color: #0000cd;">()</span>, sender_address<span style="color: #00cdcd;">)</span> <span style="color: #00cdcd;">{</span>
+                        <span style="color: #00ff00;">MapEntry</span>::<span style="color: #00ff00;">Entry</span><span style="color: #0000cd;">(</span>bid_to_update, new_map<span style="color: #0000cd;">)</span> =&gt; <span style="color: #b3b3b3;">match</span> seq_map_update_entry<span style="color: #0000cd;">(</span>
+                            new_map.clone<span style="color: #cd00cd;">()</span>,
+                            sender_address,
+                            bid_to_update + amount,
+                        <span style="color: #0000cd;">)</span> <span style="color: #0000cd;">{</span>
+                            <span style="color: #00ff00;">MapUpdate</span>::<span style="color: #00ff00;">Update</span><span style="color: #cd00cd;">(</span>updated_bid, updated_map<span style="color: #cd00cd;">)</span> =&gt; <span style="color: #b3b3b3;">match</span> <span style="color: #b3b3b3;">if</span> updated_bid &gt; b
+                            <span style="color: #cd00cd;">{</span>
+                                <span style="color: #00ff00;">Boolean</span>::<span style="color: #00ff00;">True</span>
+                            <span style="color: #cd00cd;">}</span> <span style="color: #b3b3b3;">else</span> <span style="color: #cd00cd;">{</span>
+                                <span style="color: #00ff00;">Boolean</span>::<span style="color: #00ff00;">False</span>
+                            <span style="color: #cd00cd;">}</span> <span style="color: #cd00cd;">{</span>
+                                <span style="color: #00ff00;">Boolean</span>::<span style="color: #00ff00;">True</span> =&gt; <span style="color: #cd1076;">(</span>
+                                    <span style="color: #7d26cd;">(</span>auction_state, updated_bid, c, expiry, updated_map<span style="color: #7d26cd;">)</span>,
+                                    <span style="color: #00ff00;">AuctionBidResult</span>::<span style="color: #00ff00;">Ok</span><span style="color: #7d26cd;">(</span><span style="color: #cd0000;">()</span><span style="color: #7d26cd;">)</span>,
+                                <span style="color: #cd1076;">)</span>,
+                                <span style="color: #00ff00;">Boolean</span>::<span style="color: #00ff00;">False</span> =&gt; <span style="color: #cd1076;">(</span>
+                                    <span style="color: #7d26cd;">(</span>auction_state, b, c, expiry, updated_map<span style="color: #7d26cd;">)</span>,
+                                    <span style="color: #00ff00;">AuctionBidResult</span>::<span style="color: #00ff00;">Err</span><span style="color: #7d26cd;">(</span><span style="color: #00ff00;">BidError</span>::<span style="color: #00ff00;">BidTooLow</span><span style="color: #7d26cd;">)</span>,
+                                <span style="color: #cd1076;">)</span>,
+                            <span style="color: #cd00cd;">}</span>,
+                        <span style="color: #0000cd;">}</span>,
+                    <span style="color: #00cdcd;">}</span>
+                <span style="color: #00cd00;">}</span>
+            <span style="color: #cdcd00;">}</span>,
+            <span style="color: #00ff00;">Boolean</span>::<span style="color: #00ff00;">False</span> =&gt; <span style="color: #cdcd00;">(</span>
+                <span style="color: #00cd00;">(</span>auction_state, b, c, expiry, e<span style="color: #00cd00;">)</span>,
+                <span style="color: #00ff00;">AuctionBidResult</span>::<span style="color: #00ff00;">Err</span><span style="color: #00cd00;">(</span><span style="color: #00ff00;">BidError</span>::<span style="color: #00ff00;">BidsOverWaitingForAuctionFinalization</span><span style="color: #00cd00;">)</span>,
+            <span style="color: #cdcd00;">)</span>,
+        <span style="color: #cd8500;">}</span>,
+        <span style="color: #00ff00;">AuctionState</span>::<span style="color: #00ff00;">Sold</span><span style="color: #cd8500;">(</span>_<span style="color: #cd8500;">)</span> =&gt; <span style="color: #cd8500;">(</span>
+            <span style="color: #cdcd00;">(</span>auction_state, b, c, expiry, e<span style="color: #cdcd00;">)</span>,
+            <span style="color: #00ff00;">AuctionBidResult</span>::<span style="color: #00ff00;">Err</span><span style="color: #cdcd00;">(</span><span style="color: #00ff00;">BidError</span>::<span style="color: #00ff00;">AuctionIsFinalized</span><span style="color: #cdcd00;">)</span>,
+        <span style="color: #cd8500;">)</span>,
+    <span style="color: #cd0000;">}</span>;
+
+    <span style="color: #cd0000;">(</span>
+        <span style="color: #cd8500;">(</span>acs, upb, ce, expirye, <span style="color: #cdcd00;">(</span>updated1_mape, updated2_mape<span style="color: #cdcd00;">)</span><span style="color: #cd8500;">)</span>,
+        rese,
+    <span style="color: #cd0000;">)</span>
+<span style="color: #7d26cd;">}</span>
+</pre>
+</div>
+<p>
+we continue with the context for the finalize function
+</p>
+<div class="org-src-container">
+<pre class="src src-rust"><span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">type</span> <span style="color: #00ff00;">FinalizeContext</span> = <span style="color: #7d26cd;">(</span><span style="color: #00ff00;">u64</span>, <span style="color: #00ff00;">UserAddress</span>, <span style="color: #00ff00;">u64</span><span style="color: #7d26cd;">)</span>;
+</pre>
+</div>
+<p>
+with translation function
+</p>
+<div class="org-src-container">
+<pre class="src src-rust"><span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">their_context_to_my_finalize_context</span><span style="color: #7d26cd;">(</span><span style="color: #9acd32;">ctx</span>: &amp;<span style="color: #b3b3b3;">impl</span> <span style="color: #00ff00;">HasReceiveContext</span><span style="color: #7d26cd;">)</span> -&gt; <span style="color: #87ceeb;">auction</span>::<span style="color: #00ff00;">FinalizeContext</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #cd0000;">(</span>
+        ctx.metadata<span style="color: #cd8500;">()</span>.slot_time<span style="color: #cd8500;">()</span>.timestamp_millis<span style="color: #cd8500;">()</span>,
+        u8x32_to_user_address<span style="color: #cd8500;">(</span>ctx.owner<span style="color: #cdcd00;">()</span>.0<span style="color: #cd8500;">)</span>,
+        ctx.self_balance<span style="color: #cd8500;">()</span>.micro_gtu,
+    <span style="color: #cd0000;">)</span>
+<span style="color: #7d26cd;">}</span>
+</pre>
+</div>
+<p>
+The error types for the finalize function
+</p>
+<div class="org-src-container">
+<pre class="src src-rust"><span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">derive</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">Debug, PartialEq, Eq, Clone, Reject</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
+<span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">enum</span> <span style="color: #00ff00;">FinalizeError</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #00ff00;">BidMapError</span>,
+    <span style="color: #00ff00;">AuctionStillActive</span>,
+    <span style="color: #00ff00;">AuctionFinalized</span>,
+<span style="color: #7d26cd;">}</span>
+</pre>
+</div>
+<p>
+translates to
+</p>
+<div class="org-src-container">
+<pre class="src src-rust"><span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">enum</span> <span style="color: #00ff00;">FinalizeError</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #00ff00;">BidMapError</span>,
+    <span style="color: #00ff00;">AuctionStillActive</span>,
+    <span style="color: #00ff00;">AuctionFinalized</span>,
+<span style="color: #7d26cd;">}</span>
+</pre>
+</div>
+<p>
+which is again handled inline. We then define the some intermediate tyeps and the result type
+</p>
+<div class="org-src-container">
+<pre class="src src-rust"><span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">enum</span> <span style="color: #00ff00;">BidRemain</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #00ff00;">None</span>,
+    <span style="color: #00ff00;">Some</span><span style="color: #cd0000;">(</span><span style="color: #00ff00;">u64</span>, <span style="color: #cd8500;">()</span><span style="color: #cd0000;">)</span>,
+<span style="color: #7d26cd;">}</span>
+
+<span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">enum</span> <span style="color: #00ff00;">FinalizeAction</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #00ff00;">Accept</span>,
+    <span style="color: #00ff00;">SimpleTransfer</span><span style="color: #cd0000;">(</span><span style="color: #00ff00;">UserAddress</span>, <span style="color: #00ff00;">u64</span>, <span style="color: #00ff00;">PublicByteSeq</span><span style="color: #cd0000;">)</span>,
+<span style="color: #7d26cd;">}</span>
+
+<span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">type</span> <span style="color: #00ff00;">AuctionFinalizeResult</span> = <span style="color: #00ff00;">Result</span><span style="color: #7d26cd;">&lt;</span><span style="color: #00ff00;">FinalizeAction</span>, <span style="color: #00ff00;">FinalizeError</span><span style="color: #7d26cd;">&gt;</span>;
+</pre>
+</div>
+<p>
+then the finalize wrapper function becomes
+</p>
+<div class="org-src-container">
+<pre class="src src-rust"><span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">receive</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">contract = </span><span style="color: #bdb76b;">"auction"</span><span style="color: #4169e1;">, name = </span><span style="color: #bdb76b;">"finalize"</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
+<span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">auction_finalize</span><span style="color: #7d26cd;">&lt;</span><span style="color: #9acd32;">A</span>: <span style="color: #00ff00;">HasActions</span><span style="color: #7d26cd;">&gt;(</span>
+    <span style="color: #9acd32;">ctx</span>: &amp;<span style="color: #b3b3b3;">impl</span> <span style="color: #00ff00;">HasReceiveContext</span>,
+    <span style="color: #9acd32;">state</span>: &amp;<span style="color: #b3b3b3;">mut</span> <span style="color: #00ff00;">State</span>,
+<span style="color: #7d26cd;">)</span> -&gt; <span style="color: #00ff00;">Result</span><span style="color: #7d26cd;">&lt;</span><span style="color: #00ff00;">A</span>, <span style="color: #00ff00;">FinalizeError</span><span style="color: #7d26cd;">&gt;</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #b3b3b3;">let</span> <span style="color: #cd0000;">(</span>new_state, res<span style="color: #cd0000;">)</span> = <span style="color: #87ceeb;">auction</span>::auction_finalize<span style="color: #cd0000;">(</span>
+        their_context_to_my_finalize_context<span style="color: #cd8500;">(</span>ctx<span style="color: #cd8500;">)</span>,
+        their_state_to_my_state<span style="color: #cd8500;">(</span>state<span style="color: #cd8500;">)</span>,
+    <span style="color: #cd0000;">)</span>;
+    *state = my_state_to_their_state<span style="color: #cd0000;">(</span>new_state<span style="color: #cd0000;">)</span>;
+
+    <span style="color: #b3b3b3;">match</span> res <span style="color: #cd0000;">{</span>
+        <span style="color: #00ff00;">Ok</span><span style="color: #cd8500;">(</span><span style="color: #00ff00;">FinalizeAction</span>::<span style="color: #00ff00;">Accept</span><span style="color: #cd8500;">)</span> =&gt; <span style="color: #00ff00;">Ok</span><span style="color: #cd8500;">(</span><span style="color: #00ff00;">A</span>::accept<span style="color: #cdcd00;">()</span><span style="color: #cd8500;">)</span>,
+        <span style="color: #00ff00;">Ok</span><span style="color: #cd8500;">(</span><span style="color: #00ff00;">FinalizeAction</span>::<span style="color: #00ff00;">SimpleTransfer</span><span style="color: #cdcd00;">(</span>owner, b, s<span style="color: #cdcd00;">)</span><span style="color: #cd8500;">)</span> =&gt; <span style="color: #00ff00;">Ok</span><span style="color: #cd8500;">(</span><span style="color: #cdcd00;">(</span>0..s.len<span style="color: #00cd00;">()</span> / <span style="color: #00cd00;">(</span>32 + 8<span style="color: #00cd00;">)</span><span style="color: #cdcd00;">)</span>.fold<span style="color: #cdcd00;">(</span>
+            <span style="color: #00ff00;">A</span>::simple_transfer<span style="color: #00cd00;">(</span>
+                &amp;user_address_to_accout_address<span style="color: #00cdcd;">(</span>owner<span style="color: #00cdcd;">)</span>,
+                <span style="color: #87ceeb;">concordium_std</span>::<span style="color: #00ff00;">Amount</span> <span style="color: #00cdcd;">{</span> <span style="color: #9acd32;">micro_gtu</span>: b <span style="color: #00cdcd;">}</span>,
+            <span style="color: #00cd00;">)</span>,
+            |t, x| <span style="color: #00cd00;">{</span>
+                t.and_then<span style="color: #00cdcd;">(</span><span style="color: #00ff00;">A</span>::simple_transfer<span style="color: #0000cd;">(</span>
+                    &amp;user_address_to_accout_address<span style="color: #cd00cd;">(</span><span style="color: #00ff00;">UserAddress</span>::from_seq<span style="color: #cd1076;">(</span>
+                        &amp;s.slice<span style="color: #7d26cd;">(</span>x * <span style="color: #cd0000;">(</span>32 + 8<span style="color: #cd0000;">)</span>, 32<span style="color: #7d26cd;">)</span>,
+                    <span style="color: #cd1076;">)</span><span style="color: #cd00cd;">)</span>,
+                    <span style="color: #87ceeb;">concordium_std</span>::<span style="color: #00ff00;">Amount</span> <span style="color: #cd00cd;">{</span>
+                        <span style="color: #9acd32;">micro_gtu</span>: u64_from_be_bytes<span style="color: #cd1076;">(</span>u64<span style="color: #00ff00;">Word</span>::from_seq<span style="color: #7d26cd;">(</span>
+                            &amp;s.slice<span style="color: #cd0000;">(</span>x * <span style="color: #cd8500;">(</span>32 + 8<span style="color: #cd8500;">)</span> + 32, 8<span style="color: #cd0000;">)</span>,
+                        <span style="color: #7d26cd;">)</span><span style="color: #cd1076;">)</span>,
+                    <span style="color: #cd00cd;">}</span>,
+                <span style="color: #0000cd;">)</span><span style="color: #00cdcd;">)</span>
+            <span style="color: #00cd00;">}</span>,
+        <span style="color: #cdcd00;">)</span><span style="color: #cd8500;">)</span>,
+        <span style="color: #00ff00;">Err</span><span style="color: #cd8500;">(</span><span style="color: #87ceeb;">auction</span>::<span style="color: #00ff00;">FinalizeError</span>::<span style="color: #00ff00;">BidMapError</span><span style="color: #cd8500;">)</span> =&gt; <span style="color: #00ff00;">Err</span><span style="color: #cd8500;">(</span><span style="color: #00ff00;">FinalizeError</span>::<span style="color: #00ff00;">BidMapError</span><span style="color: #cd8500;">)</span>,
+        <span style="color: #00ff00;">Err</span><span style="color: #cd8500;">(</span><span style="color: #87ceeb;">auction</span>::<span style="color: #00ff00;">FinalizeError</span>::<span style="color: #00ff00;">AuctionStillActive</span><span style="color: #cd8500;">)</span> =&gt; <span style="color: #00ff00;">Err</span><span style="color: #cd8500;">(</span><span style="color: #00ff00;">FinalizeError</span>::<span style="color: #00ff00;">AuctionStillActive</span><span style="color: #cd8500;">)</span>,
+        <span style="color: #00ff00;">Err</span><span style="color: #cd8500;">(</span><span style="color: #87ceeb;">auction</span>::<span style="color: #00ff00;">FinalizeError</span>::<span style="color: #00ff00;">AuctionFinalized</span><span style="color: #cd8500;">)</span> =&gt; <span style="color: #00ff00;">Err</span><span style="color: #cd8500;">(</span><span style="color: #00ff00;">FinalizeError</span>::<span style="color: #00ff00;">AuctionFinalized</span><span style="color: #cd8500;">)</span>,
+    <span style="color: #cd0000;">}</span>
+<span style="color: #7d26cd;">}</span>
+</pre>
+</div>
+<p>
+with the hacspec translation
+</p>
+<div class="org-src-container">
+<pre class="src src-rust"><span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">auction_finalize</span><span style="color: #7d26cd;">(</span><span style="color: #9acd32;">ctx</span>: <span style="color: #00ff00;">FinalizeContext</span>, <span style="color: #9acd32;">state</span>: <span style="color: #00ff00;">State</span><span style="color: #7d26cd;">)</span> -&gt; <span style="color: #7d26cd;">(</span><span style="color: #00ff00;">State</span>, <span style="color: #00ff00;">AuctionFinalizeResult</span><span style="color: #7d26cd;">)</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #b3b3b3;">let</span> <span style="color: #cd0000;">(</span><span style="color: #b3b3b3;">mut</span> auction_state, b, c, expiry, <span style="color: #cd8500;">(</span>m1, m2<span style="color: #cd8500;">)</span><span style="color: #cd0000;">)</span> = state;
+    <span style="color: #b3b3b3;">let</span> <span style="color: #cd0000;">(</span>slot_time, owner, balance<span style="color: #cd0000;">)</span> = ctx;
+
+    <span style="color: #b3b3b3;">let</span> <span style="color: #cd0000;">(</span>continues, <span style="color: #b3b3b3;">mut</span> return_action<span style="color: #cd0000;">)</span> = <span style="color: #b3b3b3;">match</span> auction_state <span style="color: #cd0000;">{</span>
+        <span style="color: #00ff00;">AuctionState</span>::<span style="color: #00ff00;">NotSoldYet</span> =&gt; <span style="color: #cd8500;">{</span>
+            <span style="color: #b3b3b3;">if</span> slot_time &gt; expiry <span style="color: #cdcd00;">{</span>
+                <span style="color: #b3b3b3;">if</span> balance == 0_u64 <span style="color: #00cd00;">{</span>
+                    <span style="color: #00cdcd;">(</span><span style="color: #b3b3b3;">false</span>, <span style="color: #00ff00;">AuctionFinalizeResult</span>::<span style="color: #00ff00;">Ok</span><span style="color: #0000cd;">(</span><span style="color: #00ff00;">FinalizeAction</span>::<span style="color: #00ff00;">Accept</span><span style="color: #0000cd;">)</span><span style="color: #00cdcd;">)</span>
+                <span style="color: #00cd00;">}</span> <span style="color: #b3b3b3;">else</span> <span style="color: #00cd00;">{</span>
+                    <span style="color: #00cdcd;">(</span>
+                        <span style="color: #b3b3b3;">true</span>,
+                        <span style="color: #00ff00;">AuctionFinalizeResult</span>::<span style="color: #00ff00;">Ok</span><span style="color: #0000cd;">(</span><span style="color: #00ff00;">FinalizeAction</span>::<span style="color: #00ff00;">SimpleTransfer</span><span style="color: #cd00cd;">(</span>
+                            owner,
+                            b,
+                            <span style="color: #00ff00;">PublicByteSeq</span>::new<span style="color: #cd1076;">(</span>0_usize<span style="color: #cd1076;">)</span>,
+                        <span style="color: #cd00cd;">)</span><span style="color: #0000cd;">)</span>,
+                    <span style="color: #00cdcd;">)</span>
+                <span style="color: #00cd00;">}</span>
+            <span style="color: #cdcd00;">}</span> <span style="color: #b3b3b3;">else</span> <span style="color: #cdcd00;">{</span>
+                <span style="color: #00cd00;">(</span>
+                    <span style="color: #b3b3b3;">false</span>,
+                    <span style="color: #00ff00;">AuctionFinalizeResult</span>::<span style="color: #00ff00;">Err</span><span style="color: #00cdcd;">(</span><span style="color: #00ff00;">FinalizeError</span>::<span style="color: #00ff00;">AuctionStillActive</span><span style="color: #00cdcd;">)</span>,
+                <span style="color: #00cd00;">)</span>
+            <span style="color: #cdcd00;">}</span>
+        <span style="color: #cd8500;">}</span>
+        <span style="color: #00ff00;">AuctionState</span>::<span style="color: #00ff00;">Sold</span><span style="color: #cd8500;">(</span>_<span style="color: #cd8500;">)</span> =&gt; <span style="color: #cd8500;">(</span>
+            <span style="color: #b3b3b3;">false</span>,
+            <span style="color: #00ff00;">AuctionFinalizeResult</span>::<span style="color: #00ff00;">Err</span><span style="color: #cdcd00;">(</span><span style="color: #00ff00;">FinalizeError</span>::<span style="color: #00ff00;">AuctionFinalized</span><span style="color: #cdcd00;">)</span>,
+        <span style="color: #cd8500;">)</span>,
+    <span style="color: #cd0000;">}</span>;
+
+    <span style="color: #b3b3b3;">let</span> <span style="color: #b3b3b3;">mut</span> <span style="color: #9acd32;">remaining_bid</span> = <span style="color: #00ff00;">BidRemain</span>::<span style="color: #00ff00;">None</span>;
+
+    <span style="color: #b3b3b3;">if</span> continues <span style="color: #cd0000;">{</span>
+        <span style="color: #b3b3b3;">for</span> <span style="color: #9acd32;">x</span> <span style="color: #b3b3b3;">in</span> 0..m1.clone<span style="color: #cd8500;">()</span>.len<span style="color: #cd8500;">()</span> / 32 <span style="color: #cd8500;">{</span>
+            <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">amnt</span> = u64_from_be_bytes<span style="color: #cdcd00;">(</span>u64<span style="color: #00ff00;">Word</span>::from_seq<span style="color: #00cd00;">(</span>&amp;m2.slice<span style="color: #00cdcd;">(</span>x * 8, 8<span style="color: #00cdcd;">)</span><span style="color: #00cd00;">)</span><span style="color: #cdcd00;">)</span>;
+            <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">addr</span> = <span style="color: #00ff00;">UserAddress</span>::from_seq<span style="color: #cdcd00;">(</span>&amp;m1.clone<span style="color: #00cd00;">()</span>.slice<span style="color: #00cd00;">(</span>x * 32, 32<span style="color: #00cd00;">)</span><span style="color: #cdcd00;">)</span>;
+            <span style="color: #b3b3b3;">if</span> amnt &lt; b <span style="color: #cdcd00;">{</span>
+                return_action = <span style="color: #b3b3b3;">match</span> return_action <span style="color: #00cd00;">{</span>
+                    <span style="color: #00ff00;">AuctionFinalizeResult</span>::<span style="color: #00ff00;">Ok</span><span style="color: #00cdcd;">(</span>a<span style="color: #00cdcd;">)</span> =&gt; <span style="color: #b3b3b3;">match</span> a <span style="color: #00cdcd;">{</span>
+                        <span style="color: #00ff00;">FinalizeAction</span>::<span style="color: #00ff00;">SimpleTransfer</span><span style="color: #0000cd;">(</span>o, b, a<span style="color: #0000cd;">)</span> =&gt; <span style="color: #0000cd;">{</span>
+                            <span style="color: #00ff00;">AuctionFinalizeResult</span>::<span style="color: #00ff00;">Ok</span><span style="color: #cd00cd;">(</span><span style="color: #00ff00;">FinalizeAction</span>::<span style="color: #00ff00;">SimpleTransfer</span><span style="color: #cd1076;">(</span>
+                                o,
+                                b,
+                                a.concat<span style="color: #7d26cd;">(</span>&amp;addr<span style="color: #7d26cd;">)</span>.concat<span style="color: #7d26cd;">(</span>&amp;u64_to_be_bytes<span style="color: #cd0000;">(</span>amnt<span style="color: #cd0000;">)</span><span style="color: #7d26cd;">)</span>,
+                            <span style="color: #cd1076;">)</span><span style="color: #cd00cd;">)</span>
+                        <span style="color: #0000cd;">}</span>
+                        <span style="color: #00ff00;">FinalizeAction</span>::<span style="color: #00ff00;">Accept</span> =&gt; <span style="color: #00ff00;">AuctionFinalizeResult</span>::<span style="color: #00ff00;">Ok</span><span style="color: #0000cd;">(</span><span style="color: #00ff00;">FinalizeAction</span>::<span style="color: #00ff00;">Accept</span><span style="color: #0000cd;">)</span>,
+                    <span style="color: #00cdcd;">}</span>,
+                    <span style="color: #00ff00;">AuctionFinalizeResult</span>::<span style="color: #00ff00;">Err</span><span style="color: #00cdcd;">(</span>e<span style="color: #00cdcd;">)</span> =&gt; <span style="color: #00ff00;">AuctionFinalizeResult</span>::<span style="color: #00ff00;">Err</span><span style="color: #00cdcd;">(</span>e<span style="color: #00cdcd;">)</span>,
+                <span style="color: #00cd00;">}</span>;
+            <span style="color: #cdcd00;">}</span> <span style="color: #b3b3b3;">else</span> <span style="color: #cdcd00;">{</span>
+                <span style="color: #b3b3b3;">if</span> <span style="color: #b3b3b3;">match</span> remaining_bid <span style="color: #00cd00;">{</span>
+                    <span style="color: #00ff00;">BidRemain</span>::<span style="color: #00ff00;">None</span> =&gt; <span style="color: #b3b3b3;">true</span>,
+                    <span style="color: #00ff00;">BidRemain</span>::<span style="color: #00ff00;">Some</span><span style="color: #00cdcd;">(</span>_, _<span style="color: #00cdcd;">)</span> =&gt; <span style="color: #b3b3b3;">false</span>,
+                <span style="color: #00cd00;">}</span> <span style="color: #00cd00;">{</span>
+                    auction_state = <span style="color: #00ff00;">AuctionState</span>::<span style="color: #00ff00;">Sold</span><span style="color: #00cdcd;">(</span>addr<span style="color: #00cdcd;">)</span>;
+                    remaining_bid = <span style="color: #00ff00;">BidRemain</span>::<span style="color: #00ff00;">Some</span><span style="color: #00cdcd;">(</span>amnt, <span style="color: #0000cd;">()</span><span style="color: #00cdcd;">)</span>;
+                <span style="color: #00cd00;">}</span> <span style="color: #b3b3b3;">else</span> <span style="color: #00cd00;">{</span>
+                    return_action = <span style="color: #00ff00;">AuctionFinalizeResult</span>::<span style="color: #00ff00;">Err</span><span style="color: #00cdcd;">(</span><span style="color: #00ff00;">FinalizeError</span>::<span style="color: #00ff00;">BidMapError</span><span style="color: #00cdcd;">)</span>;
+                <span style="color: #00cd00;">}</span>
+            <span style="color: #cdcd00;">}</span>
+        <span style="color: #cd8500;">}</span>
+    <span style="color: #cd0000;">}</span>;
+
+    <span style="color: #b3b3b3;">if</span> continues <span style="color: #cd0000;">{</span>
+        return_action = <span style="color: #b3b3b3;">match</span> remaining_bid <span style="color: #cd8500;">{</span>
+            <span style="color: #00ff00;">BidRemain</span>::<span style="color: #00ff00;">Some</span><span style="color: #cdcd00;">(</span>amount, _<span style="color: #cdcd00;">)</span> =&gt; <span style="color: #b3b3b3;">match</span> <span style="color: #b3b3b3;">if</span> amount == b <span style="color: #cdcd00;">{</span>
+                <span style="color: #00ff00;">Boolean</span>::<span style="color: #00ff00;">True</span>
+            <span style="color: #cdcd00;">}</span> <span style="color: #b3b3b3;">else</span> <span style="color: #cdcd00;">{</span>
+                <span style="color: #00ff00;">Boolean</span>::<span style="color: #00ff00;">False</span>
+            <span style="color: #cdcd00;">}</span> <span style="color: #cdcd00;">{</span>
+                <span style="color: #00ff00;">Boolean</span>::<span style="color: #00ff00;">True</span> =&gt; return_action,
+                <span style="color: #00ff00;">Boolean</span>::<span style="color: #00ff00;">False</span> =&gt; <span style="color: #00ff00;">AuctionFinalizeResult</span>::<span style="color: #00ff00;">Err</span><span style="color: #00cd00;">(</span><span style="color: #00ff00;">FinalizeError</span>::<span style="color: #00ff00;">BidMapError</span><span style="color: #00cd00;">)</span>,
+            <span style="color: #cdcd00;">}</span>,
+            <span style="color: #00ff00;">BidRemain</span>::<span style="color: #00ff00;">None</span> =&gt; <span style="color: #00ff00;">AuctionFinalizeResult</span>::<span style="color: #00ff00;">Err</span><span style="color: #cdcd00;">(</span><span style="color: #00ff00;">FinalizeError</span>::<span style="color: #00ff00;">BidMapError</span><span style="color: #cdcd00;">)</span>,
+        <span style="color: #cd8500;">}</span>;
+    <span style="color: #cd0000;">}</span>;
+
+    <span style="color: #cd0000;">(</span><span style="color: #cd8500;">(</span>auction_state, b, c, expiry, <span style="color: #cdcd00;">(</span>m1, m2<span style="color: #cdcd00;">)</span><span style="color: #cd8500;">)</span>, return_action<span style="color: #cd0000;">)</span>
+<span style="color: #7d26cd;">}</span>
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-orged9c31b" class="outline-3">
+<h3 id="orged9c31b"><span class="section-number-3">1.2</span> TODO: Describe tests</h3>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+<p class="author">Author: Lasse Letager Hansen</p>
+<p class="date">Created: 2021-10-14 Thu 18:24</p>
+<p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
+</div>
+</body>
+</html>
