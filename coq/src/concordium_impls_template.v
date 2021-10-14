@@ -5,15 +5,13 @@ Import List.ListNotations.
 Open Scope Z_scope.
 Open Scope bool_scope.
 Open Scope hacspec_scope.
-Require Import Hacspec.Lib.
-
 Notation "'reject'" := (int32) : hacspec_scope.
 
-Definition iint32_min : int32 :=
+Definition iint32_min  : int32 :=
   (not (repr 0)) .^ (@cast _ int32 _ ((not (repr 0)) shift_right (usize 1))).
 
 Definition reject_impl_default  : reject :=
-  iint32_min.
+  iint32_min .
 
 Inductive option_reject :=
 | SomeReject : reject -> option_reject
@@ -31,33 +29,14 @@ Instance eq_dec_option_reject : EqDec (option_reject) :=
 Build_EqDec (option_reject) (eqb_option_reject) (eqb_leibniz_option_reject).
 
 
-Inductive bool_emum :=
-| is_true : bool_emum
-| is_false : bool_emum.
-
-Definition eqb_bool_emum (x y : bool_emum) : bool := match x with
-   | is_true => match y with | is_true=> true | _ => false end
-   | is_false => match y with | is_false=> true | _ => false end
-   end.
-
-Definition eqb_leibniz_bool_emum (x y : bool_emum) : eqb_bool_emum x y = true -> x = y.
-Proof. intros. destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. Qed.
-
-Instance eq_dec_bool_emum : EqDec (bool_emum) :=
-Build_EqDec (bool_emum) (eqb_bool_emum) (eqb_leibniz_bool_emum).
-
-
-Definition is_lt (x_0 : int32) : bool_emum :=
-  (if ((x_0) <.? (repr 0)):bool then (is_true) else (is_false)).
-
-Definition new_reject_impl (x_1 : int32) : option_reject :=
-  (if ((x_1) <.? (repr 0)):bool then (SomeReject (x_1)) else (NoneReject)).
+Definition new_reject_impl (x_0 : int32) : option_reject :=
+  (if ((x_0) <.? (repr 0)):bool then (SomeReject (x_0)) else (NoneReject)).
 
 Definition reject_impl_convert_from_unit  : reject :=
-  (iint32_min) .+ (repr 1).
+  (iint32_min ) .+ (repr 1).
 
 Definition reject_impl_convert_from_parse_error  : reject :=
-  (iint32_min) .+ (repr 2).
+  (iint32_min ) .+ (repr 2).
 
 Inductive log_error :=
 | Full : log_error
@@ -75,10 +54,10 @@ Instance eq_dec_log_error : EqDec (log_error) :=
 Build_EqDec (log_error) (eqb_log_error) (eqb_leibniz_log_error).
 
 
-Definition reject_impl_from_log_error (le_2 : log_error) : reject :=
-  match le_2 with
-  | Full => (iint32_min) .+ (repr 3)
-  | Malformed => (iint32_min) .+ (repr 4) end.
+Definition reject_impl_from_log_error (le_1 : log_error) : reject :=
+  match le_1 with
+  | Full => (iint32_min ) .+ (repr 3)
+  | Malformed => (iint32_min ) .+ (repr 4) end.
 
 Inductive new_contract_name_error :=
 | NewContractNameErrorMissingInitPrefix : new_contract_name_error
@@ -117,13 +96,13 @@ Build_EqDec (new_contract_name_error) (eqb_new_contract_name_error) (eqb_leibniz
 
 
 Definition reject_impl_from_new_contract_name_error
-  (nre_3 : new_contract_name_error)
+  (nre_2 : new_contract_name_error)
   : reject :=
-  match nre_3 with
-  | NewContractNameErrorMissingInitPrefix => (iint32_min) .+ (repr 5)
-  | NewContractNameErrorTooLong => (iint32_min) .+ (repr 6)
-  | NewContractNameErrorContainsDot => (iint32_min) .+ (repr 9)
-  | NewContractNameErrorInvalidCharacters => (iint32_min) .+ (repr 10) end.
+  match nre_2 with
+  | NewContractNameErrorMissingInitPrefix => (iint32_min ) .+ (repr 5)
+  | NewContractNameErrorTooLong => (iint32_min ) .+ (repr 6)
+  | NewContractNameErrorContainsDot => (iint32_min ) .+ (repr 9)
+  | NewContractNameErrorInvalidCharacters => (iint32_min ) .+ (repr 10) end.
 
 Inductive new_receive_name_error :=
 | NewReceiveNameErrorMissingDotSeparator : new_receive_name_error
@@ -156,16 +135,34 @@ Build_EqDec (new_receive_name_error) (eqb_new_receive_name_error) (eqb_leibniz_n
 
 
 Definition reject_impl_from_new_receive_name_error
-  (nre_4 : new_receive_name_error)
+  (nre_3 : new_receive_name_error)
   : reject :=
-  match nre_4 with
-  | NewReceiveNameErrorMissingDotSeparator => (iint32_min) .+ (repr 7)
-  | NewReceiveNameErrorTooLong => (iint32_min) .+ (repr 8)
-  | NewReceiveNameErrorInvalidCharacters => (iint32_min) .+ (repr 11) end.
+  match nre_3 with
+  | NewReceiveNameErrorMissingDotSeparator => (iint32_min ) .+ (repr 7)
+  | NewReceiveNameErrorTooLong => (iint32_min ) .+ (repr 8)
+  | NewReceiveNameErrorInvalidCharacters => (iint32_min ) .+ (repr 11) end.
 
 Notation "'contract_state'" := (int32) : hacspec_scope.
 
-Notation "'seek_result'" := ((result int64 unit)) : hacspec_scope.
+Inductive seek_result :=
+| SeekResultOk : int64 -> seek_result
+| SeekResultErr : unit -> seek_result.
+
+Definition eqb_seek_result (x y : seek_result) : bool := match x with
+   | SeekResultOk a => match y with | SeekResultOk b => a =.? b | _ => false end
+   | SeekResultErr a =>
+       match y with
+       | SeekResultErr b => a =.? b
+       | _ => false
+       end
+   end.
+
+Definition eqb_leibniz_seek_result (x y : seek_result) : eqb_seek_result x y = true -> x = y.
+Proof. intros. destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. Qed.
+
+Instance eq_dec_seek_result : EqDec (seek_result) :=
+Build_EqDec (seek_result) (eqb_seek_result) (eqb_leibniz_seek_result).
+
 
 Inductive seek_from :=
 | Start : int64 -> seek_from
@@ -185,135 +182,135 @@ Instance eq_dec_seek_from : EqDec (seek_from) :=
 Build_EqDec (seek_from) (eqb_seek_from) (eqb_leibniz_seek_from).
 
 
-Notation "'u32_option'" := ((option int32)) : hacspec_scope.
+Notation "'uint32_option'" := ((option int32)) : hacspec_scope.
 
-Notation "'i64_option'" := ((option int64)) : hacspec_scope.
+Notation "'iint64_option'" := ((option int64)) : hacspec_scope.
 
 Definition contract_state_impl_seek
-  (current_position_5 : contract_state)
-  (pos_6 : seek_from)
+  (current_position_4 : contract_state)
+  (pos_5 : seek_from)
   : (contract_state × seek_result) :=
-  match pos_6 with
-  | Start offset_7 => (@cast _ uint32 _ (offset_7), Ok (offset_7))
-  | End delta_8 => (if ((delta_8) >=.? (repr 0)):bool then (
-    match pub_uint32_checked_add (current_position_5) (
-      @cast _ uint32 _ (delta_8)) with
-    | Some b_9 => (b_9, Ok (@cast _ uint64 _ (delta_8)))
-    | None => (current_position_5, Err (tt)) end) else (
-    match pub_int64_checked_abs (delta_8) with
-    | Some b_10 => (
-      (repr 4) .- (@cast _ uint32 _ (b_10)),
-      Ok (@cast _ uint64 _ ((repr 4) .- (@cast _ uint32 _ (b_10))))
+  match pos_5 with
+  | Start offset_6 => (@cast _ uint32 _ (offset_6), SeekResultOk (offset_6))
+  | End delta_7 => (if ((delta_7) >=.? (repr 0)):bool then (
+    match pub_uint32_checked_add (current_position_4) (
+      @cast _ uint32 _ (delta_7)) with
+    | Some b_8 => (b_8, SeekResultOk (@cast _ uint64 _ (delta_7)))
+    | None => (current_position_4, SeekResultErr (tt)) end) else (
+    match pub_int64_checked_abs (delta_7) with
+    | Some b_9 => (
+      (repr 4) .- (@cast _ uint32 _ (b_9)),
+      SeekResultOk (@cast _ uint64 _ ((repr 4) .- (@cast _ uint32 _ (b_9))))
     )
-    | None => (current_position_5, Err (tt)) end))
-  | Current delta_11 => (if ((delta_11) >=.? (repr 0)):bool then (
-    match pub_uint32_checked_add (current_position_5) (
-      @cast _ uint32 _ (delta_11)) with
-    | Some offset_12 => (offset_12, Ok (@cast _ uint64 _ (offset_12)))
-    | None => (current_position_5, Err (tt)) end) else (
-    match pub_int64_checked_abs (delta_11) with
-    | Some b_13 => match pub_uint32_checked_sub (current_position_5) (
-      @cast _ uint32 _ (b_13)) with
-    | Some offset_14 => (offset_14, Ok (@cast _ uint64 _ (offset_14)))
-    | None => (current_position_5, Err (tt)) end
-    | None => (current_position_5, Err (tt)) end)) end.
+    | None => (current_position_4, SeekResultErr (tt)) end))
+  | Current delta_10 => (if ((delta_10) >=.? (repr 0)):bool then (
+    match pub_uint32_checked_add (current_position_4) (
+      @cast _ uint32 _ (delta_10)) with
+    | Some offset_11 => (offset_11, SeekResultOk (@cast _ uint64 _ (offset_11)))
+    | None => (current_position_4, SeekResultErr (tt)) end) else (
+    match pub_int64_checked_abs (delta_10) with
+    | Some b_12 => match pub_uint32_checked_sub (current_position_4) (
+      @cast _ uint32 _ (b_12)) with
+    | Some offset_13 => (offset_13, SeekResultOk (@cast _ uint64 _ (offset_13)))
+    | None => (current_position_4, SeekResultErr (tt)) end
+    | None => (current_position_4, SeekResultErr (tt)) end)) end.
 
 Definition contract_state_impl_read_read
-  (current_position_15 : contract_state)
-  (num_read_16 : int32)
+  (current_position_14 : contract_state)
+  (num_read_15 : int32)
   : (contract_state × uint_size) :=
-  ((current_position_15) .+ (num_read_16), @cast _ uint32 _ (num_read_16)).
+  ((current_position_14) .+ (num_read_15), @cast _ uint32 _ (num_read_15)).
 
 Definition contract_state_impl_read_read_u64
-  (current_position_17 : contract_state)
-  (num_read_18 : int32)
+  (current_position_16 : contract_state)
+  (num_read_17 : int32)
   : (contract_state × bool) :=
-  ((current_position_17) .+ (num_read_18), (num_read_18) =.? (repr 8)).
+  ((current_position_16) .+ (num_read_17), (num_read_17) =.? (repr 8)).
 
 Definition contract_state_impl_read_read_u32
-  (current_position_19 : contract_state)
-  (num_read_20 : int32)
+  (current_position_18 : contract_state)
+  (num_read_19 : int32)
   : (contract_state × bool) :=
-  ((current_position_19) .+ (num_read_20), (num_read_20) =.? (repr 4)).
+  ((current_position_18) .+ (num_read_19), (num_read_19) =.? (repr 4)).
 
 Definition contract_state_impl_read_read_u8
-  (current_position_21 : contract_state)
-  (num_read_22 : int32)
+  (current_position_20 : contract_state)
+  (num_read_21 : int32)
   : (contract_state × bool) :=
-  ((current_position_21) .+ (num_read_22), (num_read_22) =.? (repr 1)).
+  ((current_position_20) .+ (num_read_21), (num_read_21) =.? (repr 1)).
 
 Definition write_impl_for_contract_state_test
-  (current_position_23 : contract_state)
-  (len_24 : int32)
+  (current_position_22 : contract_state)
+  (len_23 : int32)
   : bool :=
-  option_is_none (pub_uint32_checked_add (current_position_23) (len_24)).
+  option_is_none (pub_uint32_checked_add (current_position_22) (len_23)).
 
 Definition write_impl_for_contract_state
-  (current_position_25 : contract_state)
-  (num_bytes_26 : int32)
+  (current_position_24 : contract_state)
+  (num_bytes_25 : int32)
   : (contract_state × uint_size) :=
-  ((current_position_25) .+ (num_bytes_26), @cast _ uint32 _ (num_bytes_26)).
+  ((current_position_24) .+ (num_bytes_25), @cast _ uint32 _ (num_bytes_25)).
 
 Definition has_contract_state_impl_for_contract_state_open  : contract_state :=
   repr 0.
 
 Definition has_contract_state_impl_for_contract_state_reserve_0
-  (len_27 : int32)
-  (cur_size_28 : int32)
+  (len_26 : int32)
+  (cur_size_27 : int32)
   : bool :=
-  (cur_size_28) <.? (len_27).
+  (cur_size_27) <.? (len_26).
 
 Definition has_contract_state_impl_for_contract_state_reserve_1
-  (res_29 : int32)
+  (res_28 : int32)
   : bool :=
-  (res_29) =.? (repr 1).
+  (res_28) =.? (repr 1).
 
 Definition has_contract_state_impl_for_contract_state_truncate_0
-  (cur_size_30 : int32)
-  (new_size_31 : int32)
+  (cur_size_29 : int32)
+  (new_size_30 : int32)
   : bool :=
-  (cur_size_30) >.? (new_size_31).
+  (cur_size_29) >.? (new_size_30).
 
 Definition has_contract_state_impl_for_contract_state_truncate_1
-  (current_position_32 : contract_state)
-  (new_size_33 : int32)
+  (current_position_31 : contract_state)
+  (new_size_32 : int32)
   : contract_state :=
-  (if ((new_size_33) <.? (current_position_32)):bool then (new_size_33) else (
-    current_position_32)).
+  (if ((new_size_32) <.? (current_position_31)):bool then (new_size_32) else (
+    current_position_31)).
 
 Notation "'parameter'" := (int32) : hacspec_scope.
 
 Definition read_impl_for_parameter_read
-  (current_position_34 : parameter)
-  (num_read_35 : int32)
+  (current_position_33 : parameter)
+  (num_read_34 : int32)
   : (parameter × uint_size) :=
-  ((current_position_34) .+ (num_read_35), @cast _ uint32 _ (num_read_35)).
+  ((current_position_33) .+ (num_read_34), @cast _ uint32 _ (num_read_34)).
 
 Notation "'attributes_cursor'" := ((int32 × int16)) : hacspec_scope.
 
 Definition has_policy_impl_for_policy_attributes_cursor_next_test
-  (policy_attribute_items_36 : attributes_cursor)
+  (policy_attribute_items_35 : attributes_cursor)
   : bool :=
-  let '(_, remaining_items_37) :=
-    policy_attribute_items_36 in 
-  (remaining_items_37) =.? (repr 0).
+  let '(_, remaining_items_36) :=
+    policy_attribute_items_35 in 
+  (remaining_items_36) =.? (repr 0).
 
 Definition has_policy_impl_for_policy_attributes_cursor_next_tag_invalid
-  (policy_attribute_items_38 : attributes_cursor)
-  (tag_value_len_1_39 : int8)
-  (num_read_40 : int32)
+  (policy_attribute_items_37 : attributes_cursor)
+  (tag_value_len_1_38 : int8)
+  (num_read_39 : int32)
   : (attributes_cursor × bool) :=
-  let '(current_position_41, remaining_items_42) :=
-    policy_attribute_items_38 in 
-  let policy_attribute_items_43 :=
-    ((current_position_41) .+ (num_read_40), remaining_items_42) in 
-  (policy_attribute_items_43, (tag_value_len_1_39) >.? (repr 31)).
+  let '(current_position_40, remaining_items_41) :=
+    policy_attribute_items_37 in 
+  let policy_attribute_items_42 :=
+    ((current_position_40) .+ (num_read_39), remaining_items_41) in 
+  (policy_attribute_items_42, (tag_value_len_1_38) >.? (repr 31)).
 
 Definition has_policy_impl_for_policy_attributes_cursor_next
-  (policy_attribute_items_44 : attributes_cursor)
-  (num_read_45 : int32)
+  (policy_attribute_items_43 : attributes_cursor)
+  (num_read_44 : int32)
   : attributes_cursor :=
-  let '(current_position_46, remaining_items_47) :=
-    policy_attribute_items_44 in 
-  ((current_position_46) .+ (num_read_45), (remaining_items_47) .- (repr 1)).
+  let '(current_position_45, remaining_items_46) :=
+    policy_attribute_items_43 in 
+  ((current_position_45) .+ (num_read_44), (remaining_items_46) .- (repr 1)).
 

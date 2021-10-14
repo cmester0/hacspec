@@ -129,8 +129,8 @@ impl Seek for ContractState {
         let (offset, res) = contract_state_impl_seek (self.current_position, pos_our);
         self.current_position += offset;
         match res {
-            SeekResult::Ok (a) => Ok (a),
-            SeekResult::Err (()) => Err (())
+            SeekResult::SeekResultOk (a) => Ok (a),
+            SeekResult::SeekResultErr (()) => Err (())
         }
     }
 }

@@ -8,9 +8,13 @@ edition = "2021"
 
 [dependencies]
 hacspec-lib = { path = "../../lib" }
+hacspec-attributes = { path = "../../utils/attributes" }
 creusot-contracts = { path = "../../../../creusot/creusot-contracts" }
 # # creusot = { path = "../../../../creusot/creusot" }
 pearlite-syn = { path = "../../../../creusot/pearlite-syn" }
 
 [lib]
 path = "src/lib.rs"
+
+[features]
+use_attributes = []
