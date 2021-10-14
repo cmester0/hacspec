@@ -248,25 +248,25 @@ pub fn read_impl_for_parameter_read(current_position : Parameter, num_read : u32
 // pub struct AttributeTag(pub u8);
 pub type AttributesCursor = (u32, u16);
 
-// #[logic]
-// fn has_policy_impl_for_policy_attributes_cursor_next_test (policy_attribute_items : AttributesCursor) -> bool {
-//     let (_,remaining_items) = policy_attribute_items;
-//     remaining_items == 0_u16
-// }
+#[trusted]
+pub fn has_policy_impl_for_policy_attributes_cursor_next_test (policy_attribute_items : AttributesCursor) -> bool {
+    let (_,remaining_items) = policy_attribute_items;
+    remaining_items == 0_u16
+}
 
-// #[logic]
-// fn has_policy_impl_for_policy_attributes_cursor_next_tag_invalid (policy_attribute_items : AttributesCursor, tag_value_len_1 : u8, num_read : u32) -> (AttributesCursor, bool) {
-//     let (current_position,remaining_items) = policy_attribute_items;
-//     let policy_attribute_items = (current_position + num_read, remaining_items);
-//     (policy_attribute_items, tag_value_len_1 > 31_u8)
-// }
+#[trusted]
+pub fn has_policy_impl_for_policy_attributes_cursor_next_tag_invalid (policy_attribute_items : AttributesCursor, tag_value_len_1 : u8, num_read : u32) -> (AttributesCursor, bool) {
+    let (current_position,remaining_items) = policy_attribute_items;
+    let policy_attribute_items = (current_position + num_read, remaining_items);
+    (policy_attribute_items, tag_value_len_1 > 31_u8)
+}
 
 
-// #[logic]
-// fn has_policy_impl_for_policy_attributes_cursor_next (policy_attribute_items : AttributesCursor, num_read : u32) -> AttributesCursor {
-//     let (current_position,remaining_items) = policy_attribute_items;
-//     (current_position + num_read, remaining_items - 1_u16)
-// }
+#[trusted]
+pub fn has_policy_impl_for_policy_attributes_cursor_next (policy_attribute_items : AttributesCursor, num_read : u32) -> AttributesCursor {
+    let (current_position,remaining_items) = policy_attribute_items;
+    (current_position + num_read, remaining_items - 1_u16)
+}
 
 // fn main () {}
 
