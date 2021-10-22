@@ -1,62 +1,61 @@
+#![feature(register_tool, rustc_attrs)]
+#![register_tool(creusot)]
+#![feature(proc_macro_hygiene, stmt_expr_attributes)]
+// #![feature(use_attributes)]
+
+// #[cfg(feature = "hacspec_unsafe")]
 // use hacspec_lib::*;
+// use hacspec_attributes::*;
 
-// use crate collections::{BTreeMap, BTreeSet};
-// use convert::{self, TryFrom, TryInto};
-// use hash::Hash;
-
-// use crate::{
-//     // collections::{BTreeMap, BTreeSet},
-//     // convert::{self, TryFrom, TryInto},
-//     // hash::Hash,
-//     // mem, num, prims,
-//     prims::*,
-//     traits::*,
-//     types::*,
-//     vec::Vec,
-//     String,
-// };
-// // use concordium_contracts_common::*;
-// use std::mem::*; // MaybeUninit
-// use std::num::*;
-
-
-// impl convert::From<()> for Reject {
-//     #[inline(always)]
-//     fn from(_: ()) -> Self {
-//         Reject {
-//             error_code: unsafe { num::NonZeroI32::new_unchecked(i32::MIN + 1) },
-//         }
-//     }
-// }
-
-/// An error message, signalling rejection of a smart contract invocation.
-/// The client will see the error code as a reject reason; if a schema is
-/// provided, the error message corresponding to the error code will be
-/// displayed. The valid range for an error code is from i32::MIN to  -1.
-// #[derive(Eq, PartialEq, Debug)]
-// #[repr(transparent)]
-
-// use std::i32::{MIN as i32min};
+#[cfg(creusot)]
+#[cfg(test)]
+extern crate creusot_contracts;
+#[cfg(creusot)]
+#[cfg(test)]
+use creusot_contracts::*;
 
 pub type Reject = i32;
 
-pub const I32MIN : i32 = (!(0_i32)) ^ (((!(0_u32)) >> 1) as i32);
 
-pub fn reject_impl_convert_from_parse_error() -> Reject {
-    I32MIN + 1_i32
+// #[cfg_attr(feature = "use_attributes", unsafe_hacspec)]
+#[cfg_attr(feature = "creusot", trusted)]
+// #[ensures(forall<n:i32> result <= n)]
+pub fn I32MIN () -> i32 {
+    (!(0_i32)) ^ (((!(0_u32)) >> 1) as i32)
 }
 
-// impl convert::From<ParseError> for Reject {
-//     #[inline(always)]
-//     fn from(_: ParseError) -> Self {
-//         Reject {
-//             error_code: unsafe { num::NonZeroI32::new_unchecked(i32::MIN + 2) },
-//         }
-//     }
-// }
+#[cfg_attr(feature = "creusot", logic)]
+pub fn reject_impl_default() -> Reject {
+    I32MIN ()
+}
+
+// pub type OptionReject = Option<i32>;
+pub enum OptionReject {
+    SomeReject(Reject),
+    NoneReject,
+}
+
+#[cfg_attr(feature = "creusot", logic)]
+pub fn new_reject_impl(x : i32) -> OptionReject {
+    if x < 0_i32 {
+        OptionReject::SomeReject (x)
+    } else {
+        OptionReject::NoneReject
+    }
+}
+
+#[cfg_attr(feature = "creusot", logic)]
+pub fn reject_impl_convert_from_unit() -> Reject {
+    I32MIN () + 1_i32
+}
+
+#[cfg_attr(feature = "creusot", logic)]
+pub fn reject_impl_convert_from_parse_error() -> Reject {
+    I32MIN () + 2_i32
+}
 
 /// Errors that can occur during logging.
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Copy, Clone)] // , Debug, Eq, PartialEq
 #[repr(u8)]
 pub enum LogError {
     /// The log is full.
@@ -65,498 +64,335 @@ pub enum LogError {
     Malformed,
 }
 
+
+#[cfg_attr(feature = "creusot", logic)]
 pub fn reject_impl_from_log_error(le: LogError) -> Reject {
     match le {
-        LogError::Full => I32MIN + 3_i32,
-        LogError::Malformed => I32MIN + 4_i32 ,
+        LogError::Full => I32MIN () + 3_i32,
+        LogError::Malformed => I32MIN () + 4_i32 ,
     }
 }
 
-// /// Full is mapped to i32::MIN+3, Malformed is mapped to i32::MIN+4.
-// impl From<LogError> for Reject {
-//     #[inline(always)]
-//     fn from(le: LogError) -> Self {
-//         let error_code = match le {
-//             LogError::Full => unsafe { crate::num::NonZeroI32::new_unchecked(i32::MIN + 3) },
-//             LogError::Malformed => unsafe { crate::num::NonZeroI32::new_unchecked(i32::MIN + 4) },
-//         };
-//         Self {
-//             error_code,
-//         }
-//     }
-// }
-
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone)] // , Debug, PartialEq, Eq
 pub enum NewContractNameError {
-    MissingInitPrefix,
-    TooLong,
-    ContainsDot,
-    InvalidCharacters,
+    NewContractNameErrorMissingInitPrefix,
+    NewContractNameErrorTooLong,
+    NewContractNameErrorContainsDot,
+    NewContractNameErrorInvalidCharacters,
 }
 
+#[cfg_attr(feature = "creusot", logic)]
 pub fn reject_impl_from_new_contract_name_error(nre: NewContractNameError) -> Reject {
     match nre {
-        NewContractNameError::MissingInitPrefix => I32MIN + 5_i32,
-        NewContractNameError::TooLong => I32MIN + 6_i32,
-        NewContractNameError::ContainsDot => I32MIN + 9_i32,
-        NewContractNameError::InvalidCharacters => I32MIN + 10_i32,
+        NewContractNameError::NewContractNameErrorMissingInitPrefix => I32MIN () + 5_i32,
+        NewContractNameError::NewContractNameErrorTooLong => I32MIN () + 6_i32,
+        NewContractNameError::NewContractNameErrorContainsDot => I32MIN () + 9_i32,
+        NewContractNameError::NewContractNameErrorInvalidCharacters => I32MIN () + 10_i32,
     }
 }
 
-// /// MissingInitPrefix is mapped to i32::MIN + 5,
-// /// TooLong to i32::MIN + 6,
-// /// ContainsDot to i32::MIN + 9, and
-// /// InvalidCharacters to i32::MIN + 10.
-// impl From<NewContractNameError> for Reject {
-//     fn from(nre: NewContractNameError) -> Self {
-//         let error_code = match nre {
-//             NewContractNameError::MissingInitPrefix => unsafe {
-//                 crate::num::NonZeroI32::new_unchecked(i32::MIN + 5)
-//             },
-//             NewContractNameError::TooLong => unsafe {
-//                 crate::num::NonZeroI32::new_unchecked(i32::MIN + 6)
-//             },
-//             NewContractNameError::ContainsDot => unsafe {
-//                 crate::num::NonZeroI32::new_unchecked(i32::MIN + 9)
-//             },
-//             NewContractNameError::InvalidCharacters => unsafe {
-//                 crate::num::NonZeroI32::new_unchecked(i32::MIN + 10)
-//             },
-//         };
-//         Self {
-//             error_code,
-//         }
-//     }
-// }
-
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone)] // , Debug, PartialEq, Eq
 pub enum NewReceiveNameError {
-    MissingDotSeparator,
-    TooLong,
-    InvalidCharacters,
+    NewReceiveNameErrorMissingDotSeparator,
+    NewReceiveNameErrorTooLong,
+    NewReceiveNameErrorInvalidCharacters,
 }
 
+#[cfg_attr(feature = "creusot", logic)]
 pub fn reject_impl_from_new_receive_name_error(nre: NewReceiveNameError) -> Reject {
     match nre {
-            NewReceiveNameError::MissingDotSeparator => I32MIN + 7_i32,
-            NewReceiveNameError::TooLong => I32MIN + 8_i32,
-            NewReceiveNameError::InvalidCharacters => I32MIN + 11_i32,
+        NewReceiveNameError::NewReceiveNameErrorMissingDotSeparator => I32MIN () + 7_i32,
+        NewReceiveNameError::NewReceiveNameErrorTooLong => I32MIN () + 8_i32,
+        NewReceiveNameError::NewReceiveNameErrorInvalidCharacters => I32MIN () + 11_i32,
     }
 }
-
-// /// MissingDotSeparator is mapped to i32::MIN + 7,
-// /// TooLong to i32::MIN + 8, and
-// /// InvalidCharacters to i32::MIN + 11.
-// impl From<NewReceiveNameError> for Reject {
-//     fn from(nre: NewReceiveNameError) -> Self {
-//         let error_code = match nre {
-//             NewReceiveNameError::MissingDotSeparator => unsafe {
-//                 crate::num::NonZeroI32::new_unchecked(i32::MIN + 7)
-//             },
-//             NewReceiveNameError::TooLong => unsafe {
-//                 crate::num::NonZeroI32::new_unchecked(i32::MIN + 8)
-//             },
-//             NewReceiveNameError::InvalidCharacters => unsafe {
-//                 crate::num::NonZeroI32::new_unchecked(i32::MIN + 11)
-//             },
-//         };
-//         Self {
-//             error_code,
-//         }
-//     }
-// }
 
 pub type ContractState = u32;
 
+// /// A type representing the constract state bytes.
+// // #[derive(Default)]
+// #[cfg_attr(feature = "test", logic)]
+// pub fn try_from_u64_to_u32 (inp : i64) -> Result<u32, std::num::TryFromIntError> {
+//     std::convert::TryFrom::try_from(inp)
+// }
+// #[cfg_attr(feature = "test", logic)]
+// pub fn try_from_i64_to_u32 (inp : i64) -> Result<u32, std::num::TryFromIntError> {
+//     std::convert::TryFrom::try_from(inp)
+// }
 
-// Ignore until tuple issue is fixed!
-#[cfg(test)]
-mod test {
-    /// A type representing the constract state bytes.
-    // #[derive(Default)]
+// pub type SeekResult = Result<u64, ()>;
+pub enum SeekResult {
+    SeekResultOk (u64),
+    SeekResultErr (()),
+}
 
-    // pub fn try_from_u64_to_u32 (inp : i64) -> Result<u32, std::num::TryFromIntError> {
-    //     std::convert::TryFrom::try_from(inp)
-    // }
+#[derive(Copy, Clone)] // , Debug, PartialEq, Eq
+pub enum SeekFrom {
+    /// Sets the offset to the provided number of bytes.
+    Start(u64),
 
-    // pub fn try_from_i64_to_u32 (inp : i64) -> Result<u32, std::num::TryFromIntError> {
-    //     std::convert::TryFrom::try_from(inp)
-    // }
+    /// Sets the offset to the size of this object plus the specified number of
+    /// bytes.
+    ///
+    /// It is possible to seek beyond the end of an object, but it's an error to
+    /// seek before byte 0.
+    End(i64),
 
-    pub enum SeekResult {
-	SeekResultOk (u64),
-	SeekResultErr,
-    }
+    /// Sets the offset to the current position plus the specified number of
+    /// bytes.
+    ///
+    /// It is possible to seek beyond the end of an object, but it's an error to
+    /// seek before byte 0.
+    Current(i64),
+}
 
-    #[derive(Copy, PartialEq, Eq, Clone, Debug)]
-    pub enum SeekFrom {
-	/// Sets the offset to the provided number of bytes.
-	Start(u64),
+pub type U32Option = Option<u32>;
+pub type I64Option = Option<i64>;
 
-	/// Sets the offset to the size of this object plus the specified number of
-	/// bytes.
-	///
-	/// It is possible to seek beyond the end of an object, but it's an error to
-	/// seek before byte 0.
-	End(i64),
-
-	/// Sets the offset to the current position plus the specified number of
-	/// bytes.
-	///
-	/// It is possible to seek beyond the end of an object, but it's an error to
-	/// seek before byte 0.
-	Current(i64),
-    }
-
-    pub fn contract_state_impl_seek(current_position : ContractState, pos: SeekFrom) -> (ContractState, SeekResult) { // (ContractState, SeekResult)
-	match pos {
-            SeekFrom::Start (offset) => (offset as u32, SeekResult::SeekResultOk (offset)),
-            SeekFrom::End(delta) => 
-		if delta >= 0 {
-		    match current_position.checked_add(delta as u32) {
-			Option::Some (b) => (b, SeekResult::SeekResultOk(delta as u64)),
-			Option::None => (current_position, SeekResult::SeekResultErr),
-		    }
-		} else {
-		    match delta.checked_abs() {
-			Option::Some (b) => // {
-			// let new_pos = 4_u32 - (b as u32);
-			    ((4_u32 - (b as u32)), SeekResult::SeekResultOk((4_u32 - (b as u32)) as u64)),
-			// }
-			Option::None => (current_position, SeekResult::SeekResultErr),
-		    }
-		},
-            SeekFrom::Current(delta) => 
-		if delta >= 0 {
-		    match current_position.checked_add(delta as u32) {
-			Option::Some(offset) => (offset, SeekResult::SeekResultOk(offset as u64)),
-			Option::None => (current_position, SeekResult::SeekResultErr),
-		    }
-		} else {
-		    match delta.checked_abs() {
-			Option::Some (b) => match current_position.checked_sub(b as u32) {
-			    Option::Some(offset) => (offset, SeekResult::SeekResultOk(offset as u64)),
-			    Option::None => (current_position, SeekResult::SeekResultErr),
-			},
-			Option::None => (current_position, SeekResult::SeekResultErr),
-		    }
-		},
-	}
+#[cfg_attr(feature = "creusot", trusted)]
+pub fn contract_state_impl_seek(current_position :ContractState, pos: SeekFrom) -> (ContractState, SeekResult) {
+    match pos {
+        SeekFrom::Start (offset) => (offset as u32, SeekResult::SeekResultOk (offset)),
+        SeekFrom::End(delta) => 
+	    if delta >= 0_i64 {
+		match current_position.checked_add(delta as u32) {
+		    U32Option::Some (b) => (b, SeekResult::SeekResultOk(delta as u64)),
+		    U32Option::None => (current_position, SeekResult::SeekResultErr (())),
+		}
+	    } else {
+		match delta.checked_abs() {
+		    I64Option::Some (b) => // {
+		    // let new_pos = 4_u32 - (b as u32);
+			((4_u32 - (b as u32)), SeekResult::SeekResultOk((4_u32 - (b as u32)) as u64)),
+		    // }
+		    I64Option::None => (current_position, SeekResult::SeekResultErr (())),
+		}
+	    },
+        SeekFrom::Current(delta) => 
+	    if delta >= 0_i64 {
+		match current_position.checked_add(delta as u32) {
+		    U32Option::Some(offset) => (offset, SeekResult::SeekResultOk(offset as u64)),
+		    U32Option::None => (current_position, SeekResult::SeekResultErr (())),
+		}
+	    } else {
+		match delta.checked_abs() {
+		    I64Option::Some (b) => match current_position.checked_sub(b as u32) {
+			U32Option::Some(offset) => (offset, SeekResult::SeekResultOk(offset as u64)),
+			U32Option::None => (current_position, SeekResult::SeekResultErr (())),
+		    },
+		    I64Option::None => (current_position, SeekResult::SeekResultErr (())),
+		}
+	    },
     }
 }
+
+// , load_state : &dyn Fn(*mut u8, u32, u32) -> ([u8], u32)
+#[cfg_attr(feature = "creusot", trusted)]
+pub fn contract_state_impl_read_read(current_position : ContractState, num_read: u32) -> (ContractState, usize) {
+    (current_position + num_read, num_read as usize)
+}
+
+/// Read a `u32` in little-endian format. This is optimized to not
+/// initialize a dummy value before calling an external function.
+#[cfg_attr(feature = "creusot", logic)]
+pub fn contract_state_impl_read_read_u64(current_position : ContractState, num_read : u32) -> (ContractState, bool) {
+    (current_position + num_read, num_read == 8_u32)
+}
+
+/// Read a `u32` in little-endian format. This is optimized to not
+/// initialize a dummy value before calling an external function.
+#[cfg_attr(feature = "creusot", logic)]
+pub fn contract_state_impl_read_read_u32(current_position : ContractState, num_read : u32) -> (ContractState, bool) {    
+    (current_position + num_read, num_read == 4_u32)
+}
+
+/// Read a `u8` in little-endian format. This is optimized to not
+/// initialize a dummy value before calling an external function.
+#[cfg_attr(feature = "creusot", logic)]
+pub fn contract_state_impl_read_read_u8(current_position : ContractState, num_read : u32) -> (ContractState, bool) {
+    (current_position + num_read, num_read == 1_u32)
+}
+
+#[cfg_attr(feature = "creusot", logic)]
+pub fn write_impl_for_contract_state_test(current_position : ContractState, len : u32) -> bool {
+    current_position.checked_add(len).is_none() // Check for overflow
+}
+#[cfg_attr(feature = "creusot", trusted)]
+pub fn write_impl_for_contract_state(current_position : ContractState, num_bytes : u32) -> (ContractState, usize) {
+    (current_position + num_bytes, num_bytes as usize)
+}
+
+#[cfg_attr(feature = "creusot", logic)]
+pub fn has_contract_state_impl_for_contract_state_open() -> ContractState {
+    0_u32
+}
+
+#[cfg_attr(feature = "creusot", logic)]
+pub fn has_contract_state_impl_for_contract_state_reserve_0(len : u32, cur_size : u32) -> bool {
+    cur_size < len
+}
+#[cfg_attr(feature = "creusot", logic)]
+pub fn has_contract_state_impl_for_contract_state_reserve_1(res : u32) -> bool {
+    res == 1_u32
+}
+
+#[cfg_attr(feature = "creusot", logic)]
+pub fn has_contract_state_impl_for_contract_state_truncate_0(cur_size : u32, new_size : u32) -> bool {
+    cur_size > new_size
+}
+#[cfg_attr(feature = "creusot", logic)]
+pub fn has_contract_state_impl_for_contract_state_truncate_1(current_position : ContractState, new_size : u32) -> ContractState {
+    if new_size < current_position {
+	new_size
+    } else {
+	current_position
+    }	
+}
+
+pub type Parameter = u32;
+
+#[cfg_attr(feature = "creusot", trusted)]
+pub fn read_impl_for_parameter_read(current_position : Parameter, num_read : u32) -> (Parameter, usize) {
+    (current_position + num_read, num_read as usize)
+}
+
+// pub struct AttributeTag(pub u8);
+pub type AttributesCursor = (u32, u16);
+
+#[cfg_attr(feature = "creusot", trusted)]
+pub fn has_policy_impl_for_policy_attributes_cursor_next_test (policy_attribute_items : AttributesCursor) -> bool {
+    let (_,remaining_items) = policy_attribute_items;
+    remaining_items == 0_u16
+}
+
+#[cfg_attr(feature = "creusot", trusted)]
+pub fn has_policy_impl_for_policy_attributes_cursor_next_tag_invalid (policy_attribute_items : AttributesCursor, tag_value_len_1 : u8, num_read : u32) -> (AttributesCursor, bool) {
+    let (current_position,remaining_items) = policy_attribute_items;
+    let policy_attribute_items = (current_position + num_read, remaining_items);
+    (policy_attribute_items, tag_value_len_1 > 31_u8)
+}
+
+
+#[cfg_attr(feature = "creusot", trusted)]
+pub fn has_policy_impl_for_policy_attributes_cursor_next (policy_attribute_items : AttributesCursor, num_read : u32) -> AttributesCursor {
+    let (current_position,remaining_items) = policy_attribute_items;
+    (current_position + num_read, remaining_items - 1_u16)
+}
+
+// fn main () {}
+
+
+// #[test]
+// // Perform a number of operations from Seek, Read, Write and HasContractState
+// // classes on the ContractStateTest structure and check that they behave as
+// // specified.
+// fn test_contract_state() {
+//     let data = vec![1; 100];
+//     let mut state = ContractStateTest::open(data);
+//     assert_eq!(state.seek(SeekFrom::Start(100)), Ok(100), "Seeking to the end failed.");
+//     assert_eq!(
+//         state.seek(SeekFrom::Current(0)),
+//         Ok(100),
+//         "Seeking from current position with offset 0 failed."
+//     );
+//     assert!(
+//         state.seek(SeekFrom::Current(1)).is_err(),
+//         "Seeking from current position with offset 1 succeeded."
+//     );
+//     assert_eq!(state.cursor.offset, 100, "Cursor position changed on failed seek.");
+//     assert_eq!(
+//         state.seek(SeekFrom::Current(-1)),
+//         Ok(99),
+//         "Seeking from current position backwards with offset 1 failed."
+//     );
+//     assert!(state.seek(SeekFrom::Current(-100)).is_err(), "Seeking beyond beginning succeeds");
+//     assert_eq!(state.seek(SeekFrom::Current(-99)), Ok(0), "Seeking to the beginning fails.");
+//     assert_eq!(state.seek(SeekFrom::End(0)), Ok(100), "Seeking from end fails.");
+//     assert!(
+//         state.seek(SeekFrom::End(1)).is_err(),
+//         "Seeking beyond the end succeeds but should fail."
+//     );
+//     assert_eq!(state.cursor.offset, 100, "Cursor position changed on failed seek.");
+//     assert_eq!(
+//         state.seek(SeekFrom::End(-20)),
+//         Ok(80),
+//         "Seeking from end leads to incorrect position."
+//     );
+//     assert_eq!(state.write(&[0; 21]), Ok(21), "Writing writes an incorrect amount of data.");
+//     assert_eq!(state.cursor.offset, 101, "After writing the cursor is at the end.");
+//     assert_eq!(state.write(&[0; 21]), Ok(21), "Writing again writes incorrect amount of data.");
+//     let mut buf = [0; 30];
+//     assert_eq!(state.read(&mut buf), Ok(0), "Reading from the end should read 0 bytes.");
+//     assert_eq!(state.seek(SeekFrom::End(-20)), Ok(102));
+//     assert_eq!(state.read(&mut buf), Ok(20), "Reading from offset 80 should read 20 bytes.");
+//     assert_eq!(&buf[0..20], &state.cursor.data[80..100], "Incorrect data was read.");
+//     assert_eq!(
+//         state.cursor.offset, 122,
+//         "After reading the offset is in the correct position."
+//     );
+//     assert!(state.reserve(222), "Could not increase state to 222.");
+//     assert!(
+//         !state.reserve(constants::MAX_CONTRACT_STATE_SIZE + 1),
+//         "State should not be resizable beyond max limit."
+//     );
+//     assert_eq!(state.write(&[2; 100]), Ok(100), "Should have written 100 bytes.");
+//     assert_eq!(state.cursor.offset, 222, "After writing the offset should be 200.");
+//     state.truncate(50);
+//     assert_eq!(state.cursor.offset, 50, "After truncation the state should be 50.");
+//     assert!(state.reserve(constants::MAX_CONTRACT_STATE_SIZE), "Could not increase state MAX.");
+//     assert_eq!(
+//         state.seek(SeekFrom::End(0)),
+//         Ok(u64::from(constants::MAX_CONTRACT_STATE_SIZE)),
+//         "State should be full now."
+//     );
+//     assert_eq!(
+//         state.write(&[1; 1000]),
+//         Ok(0),
+//         "Writing at the end after truncation should do nothing."
+//     );
+//     assert_eq!(
+//         state.cursor.data.len(),
+//         constants::MAX_CONTRACT_STATE_SIZE as usize,
+//         "State size should not increase beyond max."
+//     )
+// }
+
+// #[cfg(proof)]
+// #[test]
+// fn test_contract_state_write() {
+//     let data = [0u8,0u8,0u8,0u8,0u8,0u8,0u8,0u8,0u8,0u8];
+//     let mut state = ContractStateTest::open(data);
+//     let test0 = state.write(&1u64.to_le_bytes()) == Ok(8);
+//     // , "Incorrect number of bytes written."
     
-// /// # Contract state trait implementations.
-// impl Seek for ContractState {
-//     type Err = ();
-
-//     fn seek(&mut self, pos: SeekFrom) -> Result<u64, Self::Err> {
-//         use SeekFrom::*;
-//         match pos {
-//             Start(offset) => match u32::try_from(offset) {
-//                 Ok(offset_u32) => {
-//                     self.current_position = offset_u32;
-//                     Ok(offset)
-//                 }
-//                 _ => Err(()),
-//             },
-//             End(delta) => {
-//                 let end = self.size();
-//                 if delta >= 0 {
-//                     match u32::try_from(delta)
-//                         .ok()
-//                         .and_then(|x| self.current_position.checked_add(x))
-//                     {
-//                         Some(offset_u32) => {
-//                             self.current_position = offset_u32;
-//                             Ok(u64::from(offset_u32))
-//                         }
-//                         _ => Err(()),
-//                     }
-//                 } else {
-//                     match delta.checked_abs().and_then(|x| u32::try_from(x).ok()) {
-//                         Some(before) if before <= end => {
-//                             let new_pos = end - before;
-//                             self.current_position = new_pos;
-//                             Ok(u64::from(new_pos))
-//                         }
-//                         _ => Err(()),
-//                     }
-//                 }
-//             }
-//             Current(delta) => {
-//                 let new_offset = if delta >= 0 {
-//                     u32::try_from(delta).ok().and_then(|x| self.current_position.checked_add(x))
-//                 } else {
-//                     delta
-//                         .checked_abs()
-//                         .and_then(|x| u32::try_from(x).ok())
-//                         .and_then(|x| self.current_position.checked_sub(x))
-//                 };
-//                 match new_offset {
-//                     Some(offset) => {
-//                         self.current_position = offset;
-//                         Ok(u64::from(offset))
-//                     }
-//                     _ => Err(()),
-//                 }
-//             }
-//         }
-//     }
-// }
-
-// #[derive(Debug, Default, PartialEq, Eq)]
-// pub struct ParseError {}
-
-// pub type ParseResult<A> = Result<A, ParseError>;
-
-
-// mod missing_extern_c {
-//     pub enum ParseResultUsize {
-//         ParseResultUsizeOk (usize),
-//         ParseResultUsizeError,
-//     };
-
-
-//     // #[cfg_attr(target_arch = "wasm32", link(wasm_import_module = "concordium"))]
-//     extern "C" {
-//         pub(crate) fn load_state(start: *mut u8, length: u32, offset: u32) -> u32;
-//     }
-
-//     fn contract_state_impl_read_read(current_position : ContractState, buf: &mut [u8]) -> (ContractState, ParseResultUsize) {
-//         let len: u32 = buf.len() as u32; // {
-//         //     match  {
-//         //         Ok(v) => v,
-//         //         _ => return Err(ParseError::default()),
-//         //     }
-//         // };
-//         let num_read = unsafe { load_state(buf.as_mut_ptr(), len, current_position) };
-        
-//         (current_position + num_read, ParseResultUsize::ParseResultUsizeOk(num_read as usize))
-//     }
-
+//     // assert_eq!(
+//     //     state.write(&2u64.to_le_bytes()),
+//     //     Ok(8),
+//     //     "State should be resized automatically."
+//     // );
+//     // assert_eq!(state.cursor.offset, 16, "Pos should be at the end.");
+//     // assert_eq!(
+//     //     state.cursor.data,
+//     //     vec![1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0],
+//     //     "Correct data was written."
+//     // );
 // }
 
 
-// /// Read a `u32` in little-endian format. This is optimized to not
-// /// initialize a dummy value before calling an external function.
-// fn contract_state_impl_read_read_u64(&mut self) -> ParseResult<u64> {
-//     let mut bytes: MaybeUninit<[u8; 8]> = MaybeUninit::uninit();
-//     let num_read =
-//         unsafe { load_state(bytes.as_mut_ptr() as *mut u8, 8, self.current_position) };
-//     self.current_position += num_read;
-//     if num_read == 8 {
-//         unsafe { Ok(u64::from_le_bytes(bytes.assume_init())) }
-//     } else {
-//         Err(ParseError::default())
-//     }
-// }
-
-// /// Read a `u32` in little-endian format. This is optimized to not
-// /// initialize a dummy value before calling an external function.
-// fn contract_state_impl_read_read_u32(&mut self) -> ParseResult<u32> {
-//     let mut bytes: MaybeUninit<[u8; 4]> = MaybeUninit::uninit();
-//     let num_read =
-//         unsafe { load_state(bytes.as_mut_ptr() as *mut u8, 4, self.current_position) };
-//     self.current_position += num_read;
-//     if num_read == 4 {
-//         unsafe { Ok(u32::from_le_bytes(bytes.assume_init())) }
-//     } else {
-//         Err(ParseError::default())
-//     }
-// }
-
-// /// Read a `u8` in little-endian format. This is optimized to not
-// /// initialize a dummy value before calling an external function.
-// fn contract_state_impl_read_read_u8(&mut self) -> ParseResult<u8> {
-//     let mut bytes: MaybeUninit<[u8; 1]> = MaybeUninit::uninit();
-//     let num_read =
-//         unsafe { load_state(bytes.as_mut_ptr() as *mut u8, 1, self.current_position) };
-//     self.current_position += num_read;
-//     if num_read == 1 {
-//         unsafe { Ok(bytes.assume_init()[0]) }
-//     } else {
-//         Err(ParseError::default())
-//     }
-// }
-
-////////////////////
 
 
-// impl Read for ContractState {
-//     fn read(&mut self, buf: &mut [u8]) -> ParseResult<usize> {
-//         let len: u32 = {
-//             match buf.len().try_into() {
-//                 Ok(v) => v,
-//                 _ => return Err(ParseError::default()),
-//             }
-//         };
-//         let num_read = unsafe { load_state(buf.as_mut_ptr(), len, self.current_position) };
-//         self.current_position += num_read;
-//         Ok(num_read as usize)
-//     }
 
-//     /// Read a `u32` in little-endian format. This is optimized to not
-//     /// initialize a dummy value before calling an external function.
-//     fn read_u64(&mut self) -> ParseResult<u64> {
-//         let mut bytes: MaybeUninit<[u8; 8]> = MaybeUninit::uninit();
-//         let num_read =
-//             unsafe { load_state(bytes.as_mut_ptr() as *mut u8, 8, self.current_position) };
-//         self.current_position += num_read;
-//         if num_read == 8 {
-//             unsafe { Ok(u64::from_le_bytes(bytes.assume_init())) }
-//         } else {
-//             Err(ParseError::default())
-//         }
-//     }
 
-//     /// Read a `u32` in little-endian format. This is optimized to not
-//     /// initialize a dummy value before calling an external function.
-//     fn read_u32(&mut self) -> ParseResult<u32> {
-//         let mut bytes: MaybeUninit<[u8; 4]> = MaybeUninit::uninit();
-//         let num_read =
-//             unsafe { load_state(bytes.as_mut_ptr() as *mut u8, 4, self.current_position) };
-//         self.current_position += num_read;
-//         if num_read == 4 {
-//             unsafe { Ok(u32::from_le_bytes(bytes.assume_init())) }
-//         } else {
-//             Err(ParseError::default())
-//         }
-//     }
 
-//     /// Read a `u8` in little-endian format. This is optimized to not
-//     /// initialize a dummy value before calling an external function.
-//     fn read_u8(&mut self) -> ParseResult<u8> {
-//         let mut bytes: MaybeUninit<[u8; 1]> = MaybeUninit::uninit();
-//         let num_read =
-//             unsafe { load_state(bytes.as_mut_ptr() as *mut u8, 1, self.current_position) };
-//         self.current_position += num_read;
-//         if num_read == 1 {
-//             unsafe { Ok(bytes.assume_init()[0]) }
-//         } else {
-//             Err(ParseError::default())
-//         }
-//     }
-// }
 
-// impl Write for ContractState {
-//     type Err = ();
 
-//     fn write(&mut self, buf: &[u8]) -> Result<usize, Self::Err> {
-//         let len: u32 = {
-//             match buf.len().try_into() {
-//                 Ok(v) => v,
-//                 _ => return Err(()),
-//             }
-//         };
-//         if self.current_position.checked_add(len).is_none() {
-//             return Err(());
-//         }
-//         let num_bytes = unsafe { write_state(buf.as_ptr(), len, self.current_position) };
-//         self.current_position += num_bytes; // safe because of check above that len + pos is small enough
-//         Ok(num_bytes as usize)
-//     }
-// }
 
-// impl HasContractState<()> for ContractState {
-//     type ContractStateData = ();
 
-//     #[inline(always)]
-//     fn open(_: Self::ContractStateData) -> Self {
-//         ContractState {
-//             current_position: 0,
-//         }
-//     }
 
-//     fn reserve(&mut self, len: u32) -> bool {
-//         let cur_size = unsafe { state_size() };
-//         if cur_size < len {
-//             let res = unsafe { resize_state(len) };
-//             res == 1
-//         } else {
-//             true
-//         }
-//     }
 
-//     #[inline(always)]
-//     fn size(&self) -> u32 { unsafe { state_size() } }
 
-//     fn truncate(&mut self, new_size: u32) {
-//         let cur_size = self.size();
-//         if cur_size > new_size {
-//             unsafe { resize_state(new_size) };
-//         }
-//         if new_size < self.current_position {
-//             self.current_position = new_size
-//         }
-//     }
-// }
 
-// /// # Trait implementations for Parameter
-// impl Read for Parameter {
-//     fn read(&mut self, buf: &mut [u8]) -> ParseResult<usize> {
-//         let len: u32 = {
-//             match buf.len().try_into() {
-//                 Ok(v) => v,
-//                 _ => return Err(ParseError::default()),
-//             }
-//         };
-//         let num_read =
-//             unsafe { get_parameter_section(buf.as_mut_ptr(), len, self.current_position) };
-//         self.current_position += num_read;
-//         Ok(num_read as usize)
-//     }
-// }
 
-// impl HasParameter for Parameter {
-//     #[inline(always)]
-//     fn size(&self) -> u32 { unsafe { get_parameter_size() } }
-// }
-
-// /// # Trait implementations for the chain metadata.
-// impl HasChainMetadata for ChainMetaExtern {
-//     #[inline(always)]
-//     fn slot_time(&self) -> SlotTime { Timestamp::from_timestamp_millis(unsafe { get_slot_time() }) }
-// }
-
-// impl HasPolicy for Policy<AttributesCursor> {
-//     fn identity_provider(&self) -> IdentityProvider { self.identity_provider }
-
-//     fn created_at(&self) -> Timestamp { self.created_at }
-
-//     fn valid_to(&self) -> Timestamp { self.valid_to }
-
-//     fn next_item(&mut self, buf: &mut [u8; 31]) -> Option<(AttributeTag, u8)> {
-//         if self.items.remaining_items == 0 {
-//             return None;
-//         }
-
-//         let (tag_value_len, num_read) = unsafe {
-//             let mut tag_value_len = MaybeUninit::<[u8; 2]>::uninit();
-//             // Should succeed, otherwise host violated precondition.
-//             let num_read = get_policy_section(
-//                 tag_value_len.as_mut_ptr() as *mut u8,
-//                 2,
-//                 self.items.current_position,
-//             );
-//             (tag_value_len.assume_init(), num_read)
-//         };
-//         self.items.current_position += num_read;
-//         if tag_value_len[1] > 31 {
-//             // Should not happen because all attributes fit into 31 bytes.
-//             return None;
-//         }
-//         let num_read = unsafe {
-//             get_policy_section(
-//                 buf.as_mut_ptr(),
-//                 u32::from(tag_value_len[1]),
-//                 self.items.current_position,
-//             )
-//         };
-//         self.items.current_position += num_read;
-//         self.items.remaining_items -= 1;
-//         Some((AttributeTag(tag_value_len[0]), tag_value_len[1]))
-//     }
-// }
 
 // /// An iterator over policies using host functions to supply the data.
 // /// The main interface to using this type is via the methods of the [Iterator](https://doc.rust-lang.org/std/iter/trait.Iterator.html)

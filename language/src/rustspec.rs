@@ -403,6 +403,9 @@ pub enum Statement {
         Spanned<Expression>,    // Upper bound
         Spanned<Block>,         // Loop body
     ),
+    Unsafe(
+	Spanned<Block>,
+    ),
     ArrayUpdate(
         Spanned<Ident>,      // Array variable
         Spanned<Expression>, // Index value

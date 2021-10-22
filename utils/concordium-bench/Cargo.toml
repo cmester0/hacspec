@@ -1,0 +1,21 @@
+cargo-features = ["edition2021"]
+
+[package]
+name = "concordium-bench"
+version = "0.1.0"
+# edition = "2018"
+edition = "2021"
+
+[dependencies]
+
+[dev-dependencies]
+concordium-provider = { path = "../../concordium-provider" }
+concordium-std = { path = "../../../../concordium-rust-smart-contracts/concordium-std" }
+# creusot-contracts = { path = "../../../../creusot/creusot-contracts" }
+# # creusot = { path = "../../../../creusot/creusot" }
+# pearlite-syn = { path = "../../../../creusot/pearlite-syn" }
+
+
+[[bench]]
+name = "benchmarks"
+harness = false
