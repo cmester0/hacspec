@@ -4,7 +4,7 @@
 // #![feature(use_attributes)]
 
 // #[cfg(feature = "hacspec_unsafe")]
-// use hacspec_lib::*;
+use hacspec_lib::*;
 // use hacspec_attributes::*;
 
 #[cfg(creusot)]
@@ -282,6 +282,7 @@ pub fn has_policy_impl_for_policy_attributes_cursor_next (policy_attribute_items
 // fn main () {}
 
 
+// #[cfg(proof)]
 // #[test]
 // // Perform a number of operations from Seek, Read, Write and HasContractState
 // // classes on the ContractStateTest structure and check that they behave as
@@ -360,7 +361,7 @@ pub fn has_policy_impl_for_policy_attributes_cursor_next (policy_attribute_items
 // #[cfg(proof)]
 // #[test]
 // fn test_contract_state_write() {
-//     let data = [0u8,0u8,0u8,0u8,0u8,0u8,0u8,0u8,0u8,0u8];
+//     let data = data_array([0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8,0_u8]);
 //     let mut state = ContractStateTest::open(data);
 //     let test0 = state.write(&1u64.to_le_bytes()) == Ok(8);
 //     // , "Incorrect number of bytes written."

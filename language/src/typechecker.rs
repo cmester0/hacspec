@@ -2338,7 +2338,7 @@ fn typecheck_statement(
                 new_mutated,
             ))
 	}
-        Statement::ForLoop((x, x_span), e1, e2, (b, b_span)) => {
+        Statement::ForLoop(x, e1, e2, (b, b_span)) => {
             let original_var_context = var_context;
             let (new_e1, t_e1, var_context) =
                 typecheck_expression(sess, e1, top_level_context, var_context)?;

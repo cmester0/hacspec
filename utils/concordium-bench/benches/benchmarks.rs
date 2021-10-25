@@ -2,11 +2,12 @@
 // #![register_tool(creusot)]
 // #![feature(proc_macro_hygiene, stmt_expr_attributes)]
 
-use concordium_std::{collections::BTreeMap, *};
-// use concordium_provider::provider::*;
-use concordium_provider::piggy_provider::*;
+use concordium_std::{collections::BTreeMap, *}; // claim_eq, fail, claim
+use concordium_provider::provider::*;
 use concordium_provider::auction_provider::*;
-use std::convert::TryInto;
+use concordium_provider::piggy_provider::*;
+// use std::convert::TryInto;
+use std::convert::*;
 
 // #[macro_use]
 // use pearlite_syn::*;
@@ -15,7 +16,7 @@ use std::convert::TryInto;
 // use creusot_contracts::*;
 
 ////////////////////////////////////////////////////////////
- 
+
 #[derive(Default, Clone)]
 pub struct ChainMetaTest {
     pub(crate) slot_time: Option<SlotTime>,
@@ -29,7 +30,7 @@ pub struct TestPolicy {
     /// Current position in the vector of policies. Used to implement
     /// `next_item`.
     position: usize,
-    policy:   OwnedPolicy,
+    policy: OwnedPolicy,
 }
 
 impl TestPolicy {
@@ -44,9 +45,9 @@ impl TestPolicy {
 #[derive(Default, Clone)]
 #[doc(hidden)]
 pub struct CommonDataTest<'a> {
-    pub(crate) metadata:  ChainMetaTest,
+    pub(crate) metadata: ChainMetaTest,
     pub(crate) parameter: Option<&'a [u8]>,
-    pub(crate) policies:  Option<Vec<TestPolicy>>,
+    pub(crate) policies: Option<Vec<TestPolicy>>,
 }
 
 #[derive(Default, Clone)]
@@ -60,7 +61,7 @@ pub type InitContextTest<'a> = ContextTest<'a, InitOnlyDataTest>;
 #[derive(Default)]
 #[doc(hidden)]
 pub struct InitOnlyDataTest {
-    init_origin: Option<AccountAddress>,
+    init_origin: Option<concordium_std::AccountAddress>,
 }
 
 pub type ReceiveContextTest<'a> = ContextTest<'a, ReceiveOnlyDataTest>;
@@ -68,18 +69,20 @@ pub type ReceiveContextTest<'a> = ContextTest<'a, ReceiveOnlyDataTest>;
 #[derive(Default)]
 #[doc(hidden)]
 pub struct ReceiveOnlyDataTest {
-    pub(crate) invoker:      Option<AccountAddress>,
+    pub(crate) invoker: Option<concordium_std::AccountAddress>,
     pub(crate) self_address: Option<ContractAddress>,
-    pub(crate) self_balance: Option<Amount>,
-    pub(crate) sender:       Option<Address>,
-    pub(crate) owner:        Option<AccountAddress>,
+    pub(crate) self_balance: Option<concordium_std::Amount>,
+    pub(crate) sender: Option<concordium_std::Address>,
+    pub(crate) owner: Option<concordium_std::AccountAddress>,
 }
 
 // Setters for testing-context
 impl ChainMetaTest {
     /// Create an `ChainMetaTest` where every field is unset, and getting any of
     /// the fields will result in [`fail!`](../macro.fail.html).
-    pub fn empty() -> Self { Default::default() }
+    pub fn empty() -> Self {
+        Default::default()
+    }
 
     /// Set the block slot time
     pub fn set_slot_time(&mut self, value: SlotTime) -> &mut Self {
@@ -116,7 +119,9 @@ impl<'a, C> ContextTest<'a, C> {
     }
 
     /// Get a mutable reference to the chain meta data placeholder
-    pub fn metadata_mut(&mut self) -> &mut ChainMetaTest { &mut self.common.metadata }
+    pub fn metadata_mut(&mut self) -> &mut ChainMetaTest {
+        &mut self.common.metadata
+    }
 
     /// Set the metadata block slot time
     pub fn set_metadata_slot_time(&mut self, value: SlotTime) -> &mut Self {
@@ -128,10 +133,12 @@ impl<'a, C> ContextTest<'a, C> {
 impl<'a> InitContextTest<'a> {
     /// Create an `InitContextTest` where every field is unset, and getting any
     /// of the fields will result in [`fail!`](../macro.fail.html).
-    pub fn empty() -> Self { Default::default() }
+    pub fn empty() -> Self {
+        Default::default()
+    }
 
     /// Set `init_origin` in the `InitContextTest`
-    pub fn set_init_origin(&mut self, value: AccountAddress) -> &mut Self {
+    pub fn set_init_origin(&mut self, value: concordium_std::AccountAddress) -> &mut Self {
         self.custom.init_origin = Some(value);
         self
     }
@@ -140,9 +147,11 @@ impl<'a> InitContextTest<'a> {
 impl<'a> ReceiveContextTest<'a> {
     /// Create a `ReceiveContextTest` where every field is unset, and getting
     /// any of the fields will result in [`fail!`](../macro.fail.html).
-    pub fn empty() -> Self { Default::default() }
+    pub fn empty() -> Self {
+        Default::default()
+    }
 
-    pub fn set_invoker(&mut self, value: AccountAddress) -> &mut Self {
+    pub fn set_invoker(&mut self, value: concordium_std::AccountAddress) -> &mut Self {
         self.custom.invoker = Some(value);
         self
     }
@@ -152,7 +161,7 @@ impl<'a> ReceiveContextTest<'a> {
         self
     }
 
-    pub fn set_self_balance(&mut self, value: Amount) -> &mut Self {
+    pub fn set_self_balance(&mut self, value: concordium_std::Amount) -> &mut Self {
         self.custom.self_balance = Some(value);
         self
     }
@@ -183,19 +192,29 @@ fn unwrap_ctx_field<A>(opt: Option<A>, name: &str) -> A {
 impl<'a> HasReceiveContext for ReceiveContextTest<'a> {
     type ReceiveData = ();
 
-    fn open(_data: Self::ReceiveData) -> Self { ReceiveContextTest::default() }
+    fn open(_data: Self::ReceiveData) -> Self {
+        ReceiveContextTest::default()
+    }
 
-    fn invoker(&self) -> AccountAddress { unwrap_ctx_field(self.custom.invoker, "invoker") }
+    fn invoker(&self) -> AccountAddress {
+        unwrap_ctx_field(self.custom.invoker, "invoker")
+    }
 
     fn self_address(&self) -> ContractAddress {
         unwrap_ctx_field(self.custom.self_address, "self_address")
     }
 
-    fn self_balance(&self) -> Amount { unwrap_ctx_field(self.custom.self_balance, "self_balance") }
+    fn self_balance(&self) -> concordium_std::Amount {
+        unwrap_ctx_field(self.custom.self_balance, "self_balance")
+    }
 
-    fn sender(&self) -> Address { unwrap_ctx_field(self.custom.sender, "sender") }
+    fn sender(&self) -> Address {
+        unwrap_ctx_field(self.custom.sender, "sender")
+    }
 
-    fn owner(&self) -> AccountAddress { unwrap_ctx_field(self.custom.owner, "owner") }
+    fn owner(&self) -> AccountAddress {
+        unwrap_ctx_field(self.custom.owner, "owner")
+    }
 }
 
 /// An actions tree, used to provide a simpler presentation for testing.
@@ -203,21 +222,21 @@ impl<'a> HasReceiveContext for ReceiveContextTest<'a> {
 pub enum ActionsTree {
     Accept,
     SimpleTransfer {
-        to:     AccountAddress,
-        amount: Amount,
+        to: AccountAddress,
+        amount: concordium_std::Amount,
     },
     Send {
-        to:           ContractAddress,
+        to: ContractAddress,
         receive_name: OwnedReceiveName,
-        amount:       Amount,
-        parameter:    Vec<u8>,
+        amount: concordium_std::Amount,
+        parameter: Vec<u8>,
     },
     AndThen {
-        left:  Box<ActionsTree>,
+        left: Box<ActionsTree>,
         right: Box<ActionsTree>,
     },
     OrElse {
-        left:  Box<ActionsTree>,
+        left: Box<ActionsTree>,
         right: Box<ActionsTree>,
     },
 }
@@ -232,7 +251,9 @@ impl<'a, C> HasCommonData for ContextTest<'a, C> {
         Cursor::new(unwrap_ctx_field(self.common.parameter, "parameter"))
     }
 
-    fn metadata(&self) -> &Self::MetadataType { &self.common.metadata }
+    fn metadata(&self) -> &Self::MetadataType {
+        &self.common.metadata
+    }
 
     fn policies(&self) -> Self::PolicyIteratorType {
         unwrap_ctx_field(self.common.policies.clone(), "policies").into_iter()
@@ -240,11 +261,17 @@ impl<'a, C> HasCommonData for ContextTest<'a, C> {
 }
 
 impl HasPolicy for TestPolicy {
-    fn identity_provider(&self) -> IdentityProvider { self.policy.identity_provider }
+    fn identity_provider(&self) -> IdentityProvider {
+        self.policy.identity_provider
+    }
 
-    fn created_at(&self) -> Timestamp { self.policy.created_at }
+    fn created_at(&self) -> concordium_std::Timestamp {
+        self.policy.created_at
+    }
 
-    fn valid_to(&self) -> Timestamp { self.policy.valid_to }
+    fn valid_to(&self) -> concordium_std::Timestamp {
+        self.policy.valid_to
+    }
 
     fn next_item(&mut self, buf: &mut [u8; 31]) -> Option<(AttributeTag, u8)> {
         if let Some(item) = self.policy.items.get(self.position) {
@@ -260,23 +287,24 @@ impl HasPolicy for TestPolicy {
 
 // Getters for testing-context
 impl HasChainMetadata for ChainMetaTest {
-    fn slot_time(&self) -> SlotTime { unwrap_ctx_field(self.slot_time, "metadata.slot_time") }
+    fn slot_time(&self) -> SlotTime {
+        unwrap_ctx_field(self.slot_time, "metadata.slot_time")
+    }
 }
 
 impl HasActions for ActionsTree {
-    fn accept() -> Self { ActionsTree::Accept }
+    fn accept() -> Self {
+        ActionsTree::Accept
+    }
 
-    fn simple_transfer(acc: &AccountAddress, amount: Amount) -> Self {
-        ActionsTree::SimpleTransfer {
-            to: *acc,
-            amount,
-        }
+    fn simple_transfer(acc: &AccountAddress, amount: concordium_std::Amount) -> Self {
+        ActionsTree::SimpleTransfer { to: *acc, amount }
     }
 
     fn send_raw(
         ca: &ContractAddress,
         receive_name: ReceiveName,
-        amount: Amount,
+        amount: concordium_std::Amount,
         parameter: &[u8],
     ) -> Self {
         ActionsTree::Send {
@@ -289,14 +317,14 @@ impl HasActions for ActionsTree {
 
     fn and_then(self, then: Self) -> Self {
         ActionsTree::AndThen {
-            left:  Box::new(self),
+            left: Box::new(self),
             right: Box::new(then),
         }
     }
 
     fn or_else(self, el: Self) -> Self {
         ActionsTree::OrElse {
-            left:  Box::new(self),
+            left: Box::new(self),
             right: Box::new(el),
         }
     }
@@ -305,7 +333,9 @@ impl HasActions for ActionsTree {
 impl<'a> HasInitContext for InitContextTest<'a> {
     type InitData = ();
 
-    fn open(_data: Self::InitData) -> Self { InitContextTest::default() }
+    fn open(_data: Self::InitData) -> Self {
+        InitContextTest::default()
+    }
 
     fn init_origin(&self) -> AccountAddress {
         unwrap_ctx_field(self.custom.init_origin, "init_origin")
@@ -339,61 +369,139 @@ pub enum ContractStateError {
     Default,
 }
 
-// impl<T: AsRef<[u8]>> Seek for ContractStateTest<T> {
-//     type Err = TryFromIntError; // ContractStateError;
+impl<T: convert::AsRef<[u8]>> Read for ContractStateTest<T> {
+    fn read(&mut self, buf: &mut [u8]) -> ParseResult<usize> {
+        self.cursor.read(buf)
+    }
+}
 
-//     fn seek(&mut self, pos: SeekFrom) -> Result<u64, Self::Err> {
-//         use ContractStateError::*;
-//         match pos {
-//             SeekFrom::Start(x) => {
-//                 // We can set the position to just after the end of the current length.
-//                 let new_offset = x.try_into()?;
-//                 if new_offset <= self.cursor.data.as_ref().len() {
-//                     self.cursor.offset = new_offset;
-//                     Ok(x)
-//                 } else {
-//                     Err(Offset)
-//                 }
-//             }
-//             SeekFrom::End(x) => {
-//                 // cannot seek beyond end, nor before beginning
-//                 if x <= 0 {
-//                     let end: u32 = self.cursor.data.as_ref().len().try_into()?;
-//                     let minus_x = x.checked_abs().ok_or(Overflow)?;
-//                     if let Some(new_pos) = end.checked_sub(minus_x.try_into()?) {
-//                         self.cursor.offset = new_pos.try_into()?;
-//                         Ok(u64::from(new_pos))
-//                     } else {
-//                         Err(Offset)
-//                     }
-//                 } else {
-//                     Err(Offset)
-//                 }
-//             }
-//             SeekFrom::Current(x) => match x {
-//                 0 => Ok(self.cursor.offset.try_into()?),
-//                 x if x > 0 => {
-//                     let x = x.try_into()?;
-//                     let new_pos = self.cursor.offset.checked_add(x).ok_or(Overflow)?;
-//                     if new_pos <= self.cursor.data.as_ref().len() {
-//                         self.cursor.offset = new_pos;
-//                         new_pos.try_into().map_err(Self::Err::from)
-//                     } else {
-//                         Err(Offset)
-//                     }
-//                 }
-//                 x => {
-//                     let x = (-x).try_into()?;
-//                     let new_pos = self.cursor.offset.checked_sub(x).ok_or(Overflow)?;
-//                     self.cursor.offset = new_pos;
-//                     new_pos.try_into().map_err(Self::Err::from)
-//                 }
-//             },
-//         }
-//     }
-// }
+/// Maximum size of the contract state in bytes.
+pub const MAX_CONTRACT_STATE_SIZE: u32 = 16384;
 
+impl<T: convert::AsMut<Vec<u8>>> Write for ContractStateTest<T> {
+    type Err = ContractStateError;
 
+    fn write(&mut self, buf: &[u8]) -> Result<usize, Self::Err> {
+        // The chain automatically resizes the state up until MAX_CONTRACT_STATE_SIZE.
+        let end = std::cmp::min(
+            MAX_CONTRACT_STATE_SIZE as usize,
+            self.cursor.offset + buf.len(),
+        );
+        if self.cursor.data.as_mut().len() < end {
+            self.cursor.data.as_mut().resize(end as usize, 0u8);
+        }
+        let data = &mut self.cursor.data.as_mut()[self.cursor.offset..];
+        let to_write = std::cmp::min(data.len(), buf.len());
+        data[..to_write].copy_from_slice(&buf[..to_write]);
+        self.cursor.offset += to_write;
+        Ok(to_write)
+    }
+}
+
+impl<T: AsMut<Vec<u8>> + AsMut<[u8]> + AsRef<[u8]>> HasContractState<ContractStateError>
+    for ContractStateTest<T>
+{
+    type ContractStateData = T;
+
+    fn open(data: Self::ContractStateData) -> Self {
+        Self {
+            cursor: Cursor::new(data),
+        }
+    }
+
+    fn size(&self) -> u32 {
+        self.cursor.data.as_ref().len() as u32
+    }
+
+    fn truncate(&mut self, new_size: u32) {
+        if self.size() > new_size {
+            let new_size = new_size as usize;
+            let data: &mut Vec<u8> = self.cursor.data.as_mut();
+            data.truncate(new_size);
+            if self.cursor.offset > new_size {
+                self.cursor.offset = new_size
+            }
+        }
+    }
+
+    fn reserve(&mut self, len: u32) -> bool {
+        if len <= constants::MAX_CONTRACT_STATE_SIZE {
+            if self.size() < len {
+                let data: &mut Vec<u8> = self.cursor.data.as_mut();
+                data.resize(len as usize, 0u8);
+            }
+            true
+        } else {
+            false
+        }
+    }
+}
+
+impl Default for ContractStateError {
+    fn default() -> Self {
+        Self::Default
+    }
+}
+
+impl From<num::TryFromIntError> for ContractStateError {
+    fn from(_: num::TryFromIntError) -> Self {
+        ContractStateError::Overflow
+    }
+}
+
+impl<T: AsRef<[u8]>> Seek for ContractStateTest<T> {
+    type Err = ContractStateError;
+
+    fn seek(&mut self, pos: concordium_std::SeekFrom) -> Result<u64, Self::Err> {
+        use ContractStateError::*;
+        match pos {
+            concordium_std::SeekFrom::Start(x) => {
+                // We can set the position to just after the end of the current length.
+                let new_offset = x.try_into()?;
+                if new_offset <= self.cursor.data.as_ref().len() {
+                    self.cursor.offset = new_offset;
+                    Ok(x)
+                } else {
+                    Err(Offset)
+                }
+            }
+            concordium_std::SeekFrom::End(x) => {
+                // cannot seek beyond end, nor before beginning
+                if x <= 0 {
+                    let end: u32 = self.cursor.data.as_ref().len().try_into()?;
+                    let minus_x = x.checked_abs().ok_or(Overflow)?;
+                    if let Some(new_pos) = end.checked_sub(minus_x.try_into()?) {
+                        self.cursor.offset = new_pos.try_into()?;
+                        Ok(u64::from(new_pos))
+                    } else {
+                        Err(Offset)
+                    }
+                } else {
+                    Err(Offset)
+                }
+            }
+            concordium_std::SeekFrom::Current(x) => match x {
+                0 => Ok(self.cursor.offset.try_into()?),
+                x if x > 0 => {
+                    let x = x.try_into()?;
+                    let new_pos = self.cursor.offset.checked_add(x).ok_or(Overflow)?;
+                    if new_pos <= self.cursor.data.as_ref().len() {
+                        self.cursor.offset = new_pos;
+                        new_pos.try_into().map_err(Self::Err::from)
+                    } else {
+                        Err(Offset)
+                    }
+                }
+                x => {
+                    let x = (-x).try_into()?;
+                    let new_pos = self.cursor.offset.checked_sub(x).ok_or(Overflow)?;
+                    self.cursor.offset = new_pos;
+                    new_pos.try_into().map_err(Self::Err::from)
+                }
+            },
+        }
+    }
+}
 
 ////////////////////////////////////////////////////////////
 
@@ -416,61 +524,72 @@ fn test_init() -> bool {
 
     state == PiggyBankState::Intact
 }
-    
+
 fn test_insert_intact() {
     // Setup
     let mut ctx = ReceiveContextTest::empty();
 
-    let owner = AccountAddress([0u8; 32]);
+    let owner = concordium_std::AccountAddress([0u8; 32]);
     ctx.set_owner(owner);
-    let sender = Address::Account(owner);
+    let sender = concordium_std::Address::Account(owner);
     ctx.set_sender(sender);
-    let balance = Amount::from_micro_gtu(100);
+    let balance = concordium_std::Amount::from_micro_gtu(100);
     ctx.set_self_balance(balance);
-    
-    let amount = Amount::from_micro_gtu(100);
+
+    let amount = concordium_std::Amount::from_micro_gtu(100);
     let mut state = PiggyBankState::Intact;
-    
+
     // Trigger the insert
-    let actions_result: ReceiveResult<ActionsTree> = piggy_insert(&ctx, amount, &mut state);
-    
+    let actions_result: provider::ReceiveResult<ActionsTree> = piggy_insert(&ctx, amount, &mut state);
+
     // Inspect the result
     let actions = actions_result.expect_report("Inserting GTU results in error.");
-    
-    claim_eq!(actions, ActionsTree::accept(), "No action should be produced.");
-    claim_eq!(state, PiggyBankState::Intact, "Piggy bank state should still be intact.");
+
+    claim_eq!(
+        actions,
+        ActionsTree::accept(),
+        "No action should be produced."
+    );
+    claim_eq!(
+        state,
+        PiggyBankState::Intact,
+        "Piggy bank state should still be intact."
+    );
 }
 
 fn test_insert_smashed() {
     // Setup
     let mut ctx = ReceiveContextTest::empty();
 
-    let owner = AccountAddress([0u8; 32]);
+    let owner = concordium_std::AccountAddress([0u8; 32]);
     ctx.set_owner(owner);
-    let sender = Address::Account(owner);
+    let sender = concordium_std::Address::Account(owner);
     ctx.set_sender(sender);
-    let balance = Amount::from_micro_gtu(100);
+    let balance = concordium_std::Amount::from_micro_gtu(100);
     ctx.set_self_balance(balance);
-    
-    let amount = Amount::from_micro_gtu(100);
+
+    let amount = concordium_std::Amount::from_micro_gtu(100);
     let mut state = PiggyBankState::Smashed;
 
     // Trigger the insert
-    let actions_result: ReceiveResult<ActionsTree> = piggy_insert(&ctx, amount, &mut state);
+    let actions_result: provider::ReceiveResult<ActionsTree> = piggy_insert(&ctx, amount, &mut state);
 
     // Inspect the result
-    claim!(actions_result.is_err(), "Should failed when piggy bank is smashed.");
+    claim!(
+        actions_result.is_err(),
+        "Should failed when piggy bank is smashed."
+    );
 }
 
 fn test_smash_intact() {
     // Setup the context
 
     let mut ctx = ReceiveContextTest::empty();
-    let owner = AccountAddress([0u8; 32]);
+    let owner = concordium_std::AccountAddress([0u8; 32]);
     ctx.set_owner(owner);
-    let sender = Address::Account(owner);
+    let sender = concordium_std::Address::Account(owner);
     ctx.set_sender(sender);
-    let balance = Amount::from_micro_gtu(100);
+    let balance = concordium_std::Amount::from_micro_gtu(100);
     ctx.set_self_balance(balance);
 
     let mut state = PiggyBankState::Intact;
@@ -488,11 +607,11 @@ fn test_smash_intact_not_owner() {
     // Setup the context
 
     let mut ctx = ReceiveContextTest::empty();
-    let owner = AccountAddress([0u8; 32]);
+    let owner = concordium_std::AccountAddress([0u8; 32]);
     ctx.set_owner(owner);
-    let sender = Address::Account(AccountAddress([1u8; 32]));
+    let sender = concordium_std::Address::Account(provider::AccountAddress([1u8; 32]));
     ctx.set_sender(sender);
-    let balance = Amount::from_micro_gtu(100);
+    let balance = concordium_std::Amount::from_micro_gtu(100);
     ctx.set_self_balance(balance);
 
     let mut state = PiggyBankState::Intact;
@@ -501,17 +620,23 @@ fn test_smash_intact_not_owner() {
     let actions_result: Result<ActionsTree, _> = piggy_smash(&ctx, &mut state);
 
     let err = actions_result.expect_err_report("Contract is expected to fail.");
-    claim_eq!(err, Reject {error_code: unsafe { std::num::NonZeroI32::new_unchecked(4) }}, "Expected to fail with error NotOwner") // SmashError::NotOwner // TODO: ??
+    claim_eq!(
+        err,
+        Reject {
+            error_code: unsafe { std::num::NonZeroI32::new_unchecked(4) }
+        },
+        "Expected to fail with error NotOwner"
+    ) // SmashError::NotOwner // TODO: ??
 }
 
 fn test_smash_smashed() {
     // Setup the context
     let mut ctx = ReceiveContextTest::empty();
-    let owner = AccountAddress([0u8; 32]);
+    let owner = concordium_std::AccountAddress([0u8; 32]);
     ctx.set_owner(owner);
-    let sender = Address::Account(owner);
+    let sender = concordium_std::Address::Account(owner);
     ctx.set_sender(sender);
-    let balance = Amount::from_micro_gtu(100);
+    let balance = concordium_std::Amount::from_micro_gtu(100);
     ctx.set_self_balance(balance);
 
     let mut state = PiggyBankState::Smashed;
@@ -520,12 +645,17 @@ fn test_smash_smashed() {
     let actions_result: Result<ActionsTree, _> = piggy_smash(&ctx, &mut state);
 
     let err = actions_result.expect_err_report("Contract is expected to fail.");
-    claim_eq!(err, Reject {error_code: unsafe { std::num::NonZeroI32::new_unchecked(5) }}, "Expected  to fail with error AlreadySmashed") // TODO: ??
+    claim_eq!(
+        err,
+        Reject {
+            error_code: unsafe { std::num::NonZeroI32::new_unchecked(5) }
+        },
+        "Expected  to fail with error AlreadySmashed"
+    ) // TODO: ??
 }
 
-
-use std::sync::atomic::{AtomicU8, Ordering};
 use core::fmt::Debug;
+use std::sync::atomic::{AtomicU8, Ordering};
 
 // // A counter for generating new account addresses
 static ADDRESS_COUNTER: AtomicU8 = AtomicU8::new(0);
@@ -542,7 +672,7 @@ const ITEM: &str = "Starry night by Van Gogh";
 //     //     expiry: Timestamp::from_timestamp_millis(d),
 //     //     bids: seq_map_to_btree_map(e),
 //     // }
-    
+
 //     State {
 //         auction_state: AuctionState::NotSoldYet,
 //         highest_bid: highest,
@@ -555,12 +685,15 @@ const ITEM: &str = "Starry night by Van Gogh";
 fn expect_error<E, T>(expr: Result<T, E>, err: E, msg: &str)
 where
     E: Eq + Debug,
-    T: Debug, {
+    T: Debug,
+{
     let actual = expr.expect_err(msg);
     assert_eq!(actual, err);
 }
 
-fn create_parameter_bytes(parameter: &InitParameter) -> Vec<u8> { to_bytes(parameter) }
+fn create_parameter_bytes(parameter: &InitParameter) -> Vec<u8> {
+    concordium_std::to_bytes(parameter)
+}
 
 fn parametrized_init_ctx<'a>(parameter_bytes: &'a Vec<u8>) -> InitContextTest<'a> {
     let mut ctx = InitContextTest::empty();
@@ -568,27 +701,27 @@ fn parametrized_init_ctx<'a>(parameter_bytes: &'a Vec<u8>) -> InitContextTest<'a
     ctx
 }
 
-fn new_account() -> AccountAddress {
-    let account = AccountAddress([ADDRESS_COUNTER.load(Ordering::SeqCst); 32]);
+fn new_account() -> concordium_std::AccountAddress {
+    let account = concordium_std::AccountAddress([ADDRESS_COUNTER.load(Ordering::SeqCst); 32]);
     ADDRESS_COUNTER.fetch_add(1, Ordering::SeqCst);
     account
 }
 
-fn new_account_ctx<'a>() -> (AccountAddress, ReceiveContextTest<'a>) {
+fn new_account_ctx<'a>() -> (concordium_std::AccountAddress, ReceiveContextTest<'a>) {
     let account = new_account();
     let ctx = new_ctx(account, account, AUCTION_END);
     (account, ctx)
 }
 
 fn new_ctx<'a>(
-    owner: AccountAddress,
-    sender: AccountAddress,
+    owner: concordium_std::AccountAddress,
+    sender: concordium_std::AccountAddress,
     slot_time: u64,
 ) -> ReceiveContextTest<'a> {
     let mut ctx = ReceiveContextTest::empty();
-    ctx.set_sender(Address::Account(sender));
+    ctx.set_sender(concordium_std::Address::Account(sender));
     ctx.set_owner(owner);
-    ctx.set_metadata_slot_time(Timestamp::from_timestamp_millis(slot_time));
+    ctx.set_metadata_slot_time(concordium_std::Timestamp::from_timestamp_millis(slot_time));
     ctx
 }
 
@@ -601,24 +734,26 @@ pub fn auction_test_init() {
 
     let state_result = auction_init(&ctx);
     let state = state_result.expect("Contract initialization results in error");
-    assert_eq!(state, dummy_fresh_state(), "Auction state should be new after initialization");
+    assert_eq!(
+        state,
+        dummy_fresh_state(),
+        "Auction state should be new after initialization"
+    );
 }
-
 
 fn verify_bid(
     mut state: &mut State,
-    account: AccountAddress,
+    account: concordium_std::AccountAddress,
     ctx: &ContextTest<ReceiveOnlyDataTest>,
-    amount: Amount,
-    bid_map: &mut BTreeMap<AccountAddress, Amount>,
-    highest_bid: Amount,
+    amount: concordium_std::Amount,
+    bid_map: &mut BTreeMap<concordium_std::AccountAddress, concordium_std::Amount>,
+    highest_bid: concordium_std::Amount,
 ) {
     let res: Result<ActionsTree, _> = auction_bid(ctx, amount, &mut state);
     res.expect("Bidding should pass");
     bid_map.insert(account, highest_bid);
     assert_eq!(*state, dummy_active_state(highest_bid, bid_map.clone()));
 }
-
 
 // #[test]
 /// Test a sequence of bids and finalizations:
@@ -635,48 +770,62 @@ fn test_auction_bid_and_finalize() {
     let parameter_bytes = create_parameter_bytes(&item_expiry_parameter());
     let ctx0 = parametrized_init_ctx(&parameter_bytes);
 
-    let amount = Amount::from_micro_gtu(100);
-    let winning_amount = Amount::from_micro_gtu(300);
-    let big_amount = Amount::from_micro_gtu(500);
+    let amount = concordium_std::Amount::from_micro_gtu(100);
+    let winning_amount = concordium_std::Amount::from_micro_gtu(300);
+    let big_amount = concordium_std::Amount::from_micro_gtu(500);
 
     let mut bid_map = BTreeMap::new();
 
     // initializing auction
     let mut state = auction_init(&ctx0).expect("Initialization should pass");
-    
+
     // 1st bid: account1 bids amount1
     let (alice, mut alice_ctx) = new_account_ctx();
 
-    let balance = Amount::from_micro_gtu(100);
+    let balance = concordium_std::Amount::from_micro_gtu(100);
     alice_ctx.set_self_balance(balance);
-    
+
     verify_bid(&mut state, alice, &alice_ctx, amount, &mut bid_map, amount);
-    
+
     // 2nd bid: account1 bids `amount` again
     // should work even though it's the same amount because account1 simply
     // increases their bid
-    verify_bid(&mut state, alice, &alice_ctx, amount, &mut bid_map, amount + amount);
-    
+    verify_bid(
+        &mut state,
+        alice,
+        &alice_ctx,
+        amount,
+        &mut bid_map,
+        amount + amount,
+    );
+
     // 3rd bid: second account
     let (bob, mut bob_ctx) = new_account_ctx();
 
     bob_ctx.set_self_balance(balance);
-    
-    verify_bid(&mut state, bob, &bob_ctx, winning_amount, &mut bid_map, winning_amount);
-    
+
+    verify_bid(
+        &mut state,
+        bob,
+        &bob_ctx,
+        winning_amount,
+        &mut bid_map,
+        winning_amount,
+    );
+
     // trying to finalize auction that is still active
     // (specifically, the bid is submitted at the last moment, at the AUCTION_END
     // time)
     let mut ctx4 = ReceiveContextTest::empty();
 
-    let owner = AccountAddress([0u8; 32]);
+    let owner = concordium_std::AccountAddress([0u8; 32]);
     ctx4.set_owner(owner);
-    let sender = Address::Account(owner);
+    let sender = concordium_std::Address::Account(owner);
     ctx4.set_sender(sender);
-    let balance = Amount::from_micro_gtu(100);
+    let balance = concordium_std::Amount::from_micro_gtu(100);
     ctx4.set_self_balance(balance);
-    
-    ctx4.set_metadata_slot_time(Timestamp::from_timestamp_millis(AUCTION_END));
+
+    ctx4.set_metadata_slot_time(concordium_std::Timestamp::from_timestamp_millis(AUCTION_END));
     let finres: Result<ActionsTree, _> = auction_finalize(&ctx4, &mut state);
     expect_error(
         finres,
@@ -697,13 +846,16 @@ fn test_auction_bid_and_finalize() {
         ActionsTree::simple_transfer(&carol, winning_amount)
             .and_then(ActionsTree::simple_transfer(&alice, amount + amount))
     );
-    assert_eq!(state, make_state (
-        AuctionState::Sold(bob),
-        winning_amount,
-        ITEM.as_bytes().to_vec(),
-        Timestamp::from_timestamp_millis(AUCTION_END),
-        bid_map,
-    ));
+    assert_eq!(
+        state,
+        make_state(
+            AuctionState::Sold(bob),
+            winning_amount,
+            ITEM.as_bytes().to_vec(),
+            concordium_std::Timestamp::from_timestamp_millis(AUCTION_END),
+            bid_map,
+        )
+    );
 
     // attempting to finalize auction again should fail
     let finres3: Result<ActionsTree, _> = auction_finalize(&ctx5, &mut state);
@@ -731,7 +883,7 @@ fn test_auction_bid_repeated_bid() {
     let parameter_bytes = create_parameter_bytes(&item_expiry_parameter());
     let ctx0 = parametrized_init_ctx(&parameter_bytes);
 
-    let amount = Amount::from_micro_gtu(100);
+    let amount = concordium_std::Amount::from_micro_gtu(100);
 
     let mut bid_map = BTreeMap::new();
 
@@ -760,7 +912,7 @@ fn test_auction_bid_zero() {
 
     let mut state = auction_init(&ctx).expect("Init results in error");
 
-    let res: Result<ActionsTree, _> = auction_bid(&ctx1, Amount::zero(), &mut state);
+    let res: Result<ActionsTree, _> = auction_bid(&ctx1, concordium_std::Amount::zero(), &mut state);
     expect_error(
         res,
         BidError::BidTooLow, /* { bid: Amount::zero(), highest_bid: Amount::zero()} */
@@ -768,109 +920,161 @@ fn test_auction_bid_zero() {
     );
 }
 
-
-// use concordium_contracts_common::{Read, Seek, SeekFrom, Write};
-// use concordium_contracts_common::{Read, Seek, SeekFrom, Write};
-
-// use crate::{constants, traits::HasContractState};
-
-// // #[test]
-// // Perform a number of operations from Seek, Read, Write and HasContractState
-// // classes on the ContractStateTest structure and check that they behave as
-// // specified.
-// fn test_contract_state() {
-//     let data = vec![1; 100];
-//     let mut state = ContractStateTest::open(data);
-//     assert_eq!(state.seek(SeekFrom::Start(100)), Ok(100), "Seeking to the end failed.");
-//     assert_eq!(
-//         state.seek(SeekFrom::Current(0)),
-//         Ok(100),
-//         "Seeking from current position with offset 0 failed."
-//     );
-//     assert!(
-//         state.seek(SeekFrom::Current(1)).is_err(),
-//         "Seeking from current position with offset 1 succeeded."
-//     );
-//     assert_eq!(state.cursor.offset, 100, "Cursor position changed on failed seek.");
-//     assert_eq!(
-//         state.seek(SeekFrom::Current(-1)),
-//         Ok(99),
-//         "Seeking from current position backwards with offset 1 failed."
-//     );
-//     assert!(state.seek(SeekFrom::Current(-100)).is_err(), "Seeking beyond beginning succeeds");
-//     assert_eq!(state.seek(SeekFrom::Current(-99)), Ok(0), "Seeking to the beginning fails.");
-//     assert_eq!(state.seek(SeekFrom::End(0)), Ok(100), "Seeking from end fails.");
-//     assert!(
-//         state.seek(SeekFrom::End(1)).is_err(),
-//         "Seeking beyond the end succeeds but should fail."
-//     );
-//     assert_eq!(state.cursor.offset, 100, "Cursor position changed on failed seek.");
-//     assert_eq!(
-//         state.seek(SeekFrom::End(-20)),
-//         Ok(80),
-//         "Seeking from end leads to incorrect position."
-//     );
-//     assert_eq!(state.write(&[0; 21]), Ok(21), "Writing writes an incorrect amount of data.");
-//     assert_eq!(state.cursor.offset, 101, "After writing the cursor is at the end.");
-//     assert_eq!(state.write(&[0; 21]), Ok(21), "Writing again writes incorrect amount of data.");
-//     let mut buf = [0; 30];
-//     assert_eq!(state.read(&mut buf), Ok(0), "Reading from the end should read 0 bytes.");
-//     assert_eq!(state.seek(SeekFrom::End(-20)), Ok(102));
-//     assert_eq!(state.read(&mut buf), Ok(20), "Reading from offset 80 should read 20 bytes.");
-//     assert_eq!(&buf[0..20], &state.cursor.data[80..100], "Incorrect data was read.");
-//     assert_eq!(
-//         state.cursor.offset, 122,
-//         "After reading the offset is in the correct position."
-//     );
-//     assert!(state.reserve(222), "Could not increase state to 222.");
-//     assert!(
-//         !state.reserve(constants::MAX_CONTRACT_STATE_SIZE + 1),
-//         "State should not be resizable beyond max limit."
-//     );
-//     assert_eq!(state.write(&[2; 100]), Ok(100), "Should have written 100 bytes.");
-//     assert_eq!(state.cursor.offset, 222, "After writing the offset should be 200.");
-//     state.truncate(50);
-//     assert_eq!(state.cursor.offset, 50, "After truncation the state should be 50.");
-//     assert!(state.reserve(constants::MAX_CONTRACT_STATE_SIZE), "Could not increase state MAX.");
-//     assert_eq!(
-//         state.seek(SeekFrom::End(0)),
-//         Ok(u64::from(constants::MAX_CONTRACT_STATE_SIZE)),
-//         "State should be full now."
-//     );
-//     assert_eq!(
-//         state.write(&[1; 1000]),
-//         Ok(0),
-//         "Writing at the end after truncation should do nothing."
-//     );
-//     assert_eq!(
-//         state.cursor.data.len(),
-//         constants::MAX_CONTRACT_STATE_SIZE as usize,
-//         "State size should not increase beyond max."
-//     )
-// }
-
-// #[cfg(proof)]
 // #[test]
-// fn test_contract_state_write() {
-//     let data = [0u8,0u8,0u8,0u8,0u8,0u8,0u8,0u8,0u8,0u8];
-//     let mut state = ContractStateTest::open(data);
-//     let test0 = state.write(&1u64.to_le_bytes()) == Ok(8);
-//     // , "Incorrect number of bytes written."
-    
-//     // assert_eq!(
-//     //     state.write(&2u64.to_le_bytes()),
-//     //     Ok(8),
-//     //     "State should be resized automatically."
-//     // );
-//     // assert_eq!(state.cursor.offset, 16, "Pos should be at the end.");
-//     // assert_eq!(
-//     //     state.cursor.data,
-//     //     vec![1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0],
-//     //     "Correct data was written."
-//     // );
-// }
+// Perform a number of operations from Seek, Read, Write and HasContractState
+// classes on the ContractStateTest structure and check that they behave as
+// specified.
+fn test_contract_state() {
+    let data = vec![1; 100];
+    let mut state = ContractStateTest::open(data);
+    assert_eq!(
+        state.seek(concordium_std::SeekFrom::Start(100)),
+        Ok(100),
+        "Seeking to the end failed."
+    );
+    assert_eq!(
+        state.seek(concordium_std::SeekFrom::Current(0)),
+        Ok(100),
+        "Seeking from current position with offset 0 failed."
+    );
+    assert!(
+        state.seek(concordium_std::SeekFrom::Current(1)).is_err(),
+        "Seeking from current position with offset 1 succeeded."
+    );
+    assert_eq!(
+        state.cursor.offset, 100,
+        "Cursor position changed on failed seek."
+    );
+    assert_eq!(
+        state.seek(concordium_std::SeekFrom::Current(-1)),
+        Ok(99),
+        "Seeking from current position backwards with offset 1 failed."
+    );
+    assert!(
+        state.seek(concordium_std::SeekFrom::Current(-100)).is_err(),
+        "Seeking beyond beginning succeeds"
+    );
+    assert_eq!(
+        state.seek(concordium_std::SeekFrom::Current(-99)),
+        Ok(0),
+        "Seeking to the beginning fails."
+    );
+    assert_eq!(
+        state.seek(concordium_std::SeekFrom::End(0)),
+        Ok(100),
+        "Seeking from end fails."
+    );
+    assert!(
+        state.seek(concordium_std::SeekFrom::End(1)).is_err(),
+        "Seeking beyond the end succeeds but should fail."
+    );
+    assert_eq!(
+        state.cursor.offset, 100,
+        "Cursor position changed on failed seek."
+    );
+    assert_eq!(
+        state.seek(concordium_std::SeekFrom::End(-20)),
+        Ok(80),
+        "Seeking from end leads to incorrect position."
+    );
+    assert_eq!(
+        state.write(&[0; 21]),
+        Ok(21),
+        "Writing writes an incorrect amount of data."
+    );
+    assert_eq!(
+        state.cursor.offset, 101,
+        "After writing the cursor is at the end."
+    );
+    assert_eq!(
+        state.write(&[0; 21]),
+        Ok(21),
+        "Writing again writes incorrect amount of data."
+    );
+    let mut buf = [0; 30];
+    assert_eq!(
+        state.read(&mut buf),
+        Ok(0),
+        "Reading from the end should read 0 bytes."
+    );
+    assert_eq!(state.seek(concordium_std::SeekFrom::End(-20)), Ok(102));
+    assert_eq!(
+        state.read(&mut buf),
+        Ok(20),
+        "Reading from offset 80 should read 20 bytes."
+    );
+    assert_eq!(
+        &buf[0..20],
+        &state.cursor.data[80..100],
+        "Incorrect data was read."
+    );
+    assert_eq!(
+        state.cursor.offset, 122,
+        "After reading the offset is in the correct position."
+    );
+    assert!(state.reserve(222), "Could not increase state to 222.");
+    assert!(
+        !state.reserve(constants::MAX_CONTRACT_STATE_SIZE + 1),
+        "State should not be resizable beyond max limit."
+    );
+    assert_eq!(
+        state.write(&[2; 100]),
+        Ok(100),
+        "Should have written 100 bytes."
+    );
+    assert_eq!(
+        state.cursor.offset, 222,
+        "After writing the offset should be 200."
+    );
+    state.truncate(50);
+    assert_eq!(
+        state.cursor.offset, 50,
+        "After truncation the state should be 50."
+    );
+    assert!(
+        state.reserve(constants::MAX_CONTRACT_STATE_SIZE),
+        "Could not increase state MAX."
+    );
+    assert_eq!(
+        state.seek(concordium_std::SeekFrom::End(0)),
+        Ok(u64::from(constants::MAX_CONTRACT_STATE_SIZE)),
+        "State should be full now."
+    );
+    assert_eq!(
+        state.write(&[1; 1000]),
+        Ok(0),
+        "Writing at the end after truncation should do nothing."
+    );
+    assert_eq!(
+        state.cursor.data.len(),
+        constants::MAX_CONTRACT_STATE_SIZE as usize,
+        "State size should not increase beyond max."
+    )
+}
 
-fn main () {
+// #[test]
+fn test_contract_state_write() {
+    let data = vec![0u8; 10];
+    let mut state = ContractStateTest::open(data);
+    assert_eq!(
+        state.write(&1u64.to_le_bytes()),
+        Ok(8),
+        "Incorrect number of bytes written."
+    );
+    assert_eq!(
+        state.write(&2u64.to_le_bytes()),
+        Ok(8),
+        "State should be resized automatically."
+    );
+    assert_eq!(state.cursor.offset, 16, "Pos should be at the end.");
+    assert_eq!(
+        state.cursor.data,
+        vec![1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0],
+        "Correct data was written."
+    );
+}
+
+fn main() {
     println!("\n\n\tConcordium benchmark tests\n\n");
 
     println!("\n\n\tTest Piggybank\n\n");
@@ -887,7 +1091,7 @@ fn main () {
     test_smash_intact_not_owner();
     println!("test_smash_smashed");
     test_smash_smashed();
-    
+
     println!("\n\n\tTest Auction\n\n");
 
     println!("test_init");
@@ -899,9 +1103,12 @@ fn main () {
     println!("test_auction_bid_zero");
     test_auction_bid_zero();
 
-    // println!("\n\n\tTest Impls\n\n");
-    // test_contract_state();
-    
+    println!("\n\n\tTest Impls\n\n");
+
+    println!("test_contract_state");
+    test_contract_state();    
+    println!("test_contract_state_write");
+    test_contract_state_write();
+
     println!("\n\n\tDONE\n\n");
 }
-

@@ -25,19 +25,154 @@ Instance eq_dec_auction_state : EqDec (auction_state) :=
 Build_EqDec (auction_state) (eqb_auction_state) (eqb_leibniz_auction_state).
 
 
-Notation "'seq_map'" := ((public_byte_seq × public_byte_seq)) : hacspec_scope.
+Inductive seq_map :=
+| SeqMap : (public_byte_seq × public_byte_seq) -> seq_map.
 
-Notation "'state'" := ((auction_state × int64 × seq int8 × int64 × seq_map
-)) : hacspec_scope.
+Definition eqb_seq_map (x y : seq_map) : bool := match x with
+   | SeqMap a => match y with | SeqMap b => a =.? b end
+   end.
+
+Definition eqb_leibniz_seq_map (x y : seq_map) : eqb_seq_map x y = true -> x = y.
+Proof. intros. destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. Qed.
+
+Instance eq_dec_seq_map : EqDec (seq_map) :=
+Build_EqDec (seq_map) (eqb_seq_map) (eqb_leibniz_seq_map).
+
+
+Notation "'amount'" := (int64) : hacspec_scope.
+
+Notation "'timestamp'" := (int64) : hacspec_scope.
+
+Inductive state :=
+| State : (auction_state × int64 × seq int8 × int64 × seq_map) -> state.
+
+Definition eqb_state (x y : state) : bool := match x with
+   | State a => match y with | State b => a =.? b end
+   end.
+
+Definition eqb_leibniz_state (x y : state) : eqb_state x y = true -> x = y.
+Proof. intros. destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. Qed.
+
+Instance eq_dec_state : EqDec (state) :=
+Build_EqDec (state) (eqb_state) (eqb_leibniz_state).
+
 
 Definition fresh_state (itm_0 : seq int8) (exp_1 : int64) : state :=
-  (
-    NotSoldYet,
-    repr 0,
-    itm_0,
-    exp_1,
-    (seq_new_ (repr 0) (usize 0), seq_new_ (repr 0) (usize 0))
-  ).
+  State (
+    (
+      NotSoldYet,
+      repr 0,
+      itm_0,
+      exp_1,
+      SeqMap ((seq_new_ (repr 0) (usize 0), seq_new_ (repr 0) (usize 0)))
+    )).
+
+Inductive map_entry :=
+| Entry : (int64 × seq_map) -> map_entry.
+
+Definition eqb_map_entry (x y : map_entry) : bool := match x with
+   | Entry a => match y with | Entry b => a =.? b end
+   end.
+
+Definition eqb_leibniz_map_entry (x y : map_entry) : eqb_map_entry x y = true -> x = y.
+Proof. intros. destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. Qed.
+
+Instance eq_dec_map_entry : EqDec (map_entry) :=
+Build_EqDec (map_entry) (eqb_map_entry) (eqb_leibniz_map_entry).
+
+
+Definition seq_map_entry
+  (m_2 : seq_map)
+  (sender_address_3 : user_address)
+  : map_entry :=
+  match  (m_2) with SeqMap ((m0_4, m1_5)) => 
+  match 
+    Entry (
+      (
+        repr 0,
+        SeqMap (
+          (
+            seq_concat ((m0_4)) (sender_address_3),
+            seq_concat ((m1_5)) (u64_to_be_bytes (repr 0))
+          ))
+      )) with res_6 => 
+  let res_6 :=
+    foldi (usize 0) ((seq_len ((m0_4))) / (usize 32)) (fun x_7 res_6 =>
+      let '(res_6) :=
+        if (
+          array_from_seq (32) (
+            seq_slice ((m0_4)) ((x_7) * (usize 32)) (usize 32))) array_eq (
+          sender_address_3):bool then (
+          let res_6 :=
+            Entry (
+              (
+                u64_from_be_bytes (
+                  array_from_seq (8) (
+                    seq_slice (m1_5) ((x_7) * (usize 8)) (usize 8))),
+                (m_2)
+              )) in 
+          (res_6)
+        ) else ( (res_6)
+        ) in 
+      (res_6))
+    res_6 in 
+  res_6 end end.
+
+Inductive map_update :=
+| Update : (int64 × seq_map) -> map_update.
+
+Definition eqb_map_update (x y : map_update) : bool := match x with
+   | Update a => match y with | Update b => a =.? b end
+   end.
+
+Definition eqb_leibniz_map_update (x y : map_update) : eqb_map_update x y = true -> x = y.
+Proof. intros. destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. Qed.
+
+Instance eq_dec_map_update : EqDec (map_update) :=
+Build_EqDec (map_update) (eqb_map_update) (eqb_leibniz_map_update).
+
+
+Definition seq_map_update_entry
+  (m_8 : seq_map)
+  (sender_address_9 : user_address)
+  (amount_10 : int64)
+  : map_update :=
+  match  (m_8) with SeqMap ((m0_11, m1_12)) => 
+  match 
+    Update (
+      (
+        amount_10,
+        SeqMap (
+          (
+            seq_concat (m0_11) (sender_address_9),
+            seq_concat (m1_12) (u64_to_be_bytes (amount_10))
+          ))
+      )) with res_13 => 
+  let res_13 :=
+    foldi (usize 0) ((seq_len ((m0_11))) / (usize 32)) (fun x_14 res_13 =>
+      let '(res_13) :=
+        if (
+          array_from_seq (32) (
+            seq_slice ((m0_11)) ((x_14) * (usize 32)) (usize 32))) array_eq (
+          sender_address_9):bool then (
+          let res_13 :=
+            Update (
+              (
+                amount_10,
+                SeqMap (
+                  (
+                    seq_update ((m0_11)) ((x_14) * (usize 32)) (
+                      sender_address_9),
+                    seq_update ((m1_12)) ((x_14) * (usize 8)) (
+                      u64_to_be_bytes (amount_10))
+                  ))
+              )) in 
+          (res_13)
+        ) else ( (res_13)
+        ) in 
+      (res_13))
+    res_13 in 
+  res_13 end end.
 
 Inductive bid_error :=
 | ContractSender : bid_error
@@ -89,117 +224,6 @@ Build_EqDec (user_address_set) (eqb_user_address_set) (eqb_leibniz_user_address_
 
 Notation "'context'" := ((int64 × user_address_set)) : hacspec_scope.
 
-Notation "'finalize_context'" := ((int64 × user_address × int64
-)) : hacspec_scope.
-
-Inductive map_entry :=
-| Entry : (int64 × seq_map) -> map_entry.
-
-Definition eqb_map_entry (x y : map_entry) : bool := match x with
-   | Entry a => match y with | Entry b => a =.? b end
-   end.
-
-Definition eqb_leibniz_map_entry (x y : map_entry) : eqb_map_entry x y = true -> x = y.
-Proof. intros. destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. Qed.
-
-Instance eq_dec_map_entry : EqDec (map_entry) :=
-Build_EqDec (map_entry) (eqb_map_entry) (eqb_leibniz_map_entry).
-
-
-Definition seq_map_entry
-  (m_2 : seq_map)
-  (sender_address_3 : user_address)
-  : map_entry :=
-  let '(m1_4, m2_5) :=
-    tuple_clone (m_2) in 
-  let res_6 :=
-    Entry (
-      (
-        repr 0,
-        (
-          seq_concat (seq_clone (m1_4)) (sender_address_3),
-          seq_concat (seq_clone (m2_5)) (u64_to_be_bytes (repr 0))
-        )
-      )) in 
-  let res_6 :=
-    foldi (usize 0) (
-        (seq_len (seq_clone (m1_4))) / (usize 32)) (fun x_7 res_6 =>
-      let '(res_6) :=
-        if (
-          array_from_seq (32) (
-            seq_slice (seq_clone (m1_4)) ((x_7) * (usize 32)) (
-              usize 32))) array_eq (sender_address_3):bool then (
-          let res_6 :=
-            Entry (
-              (
-                u64_from_be_bytes (
-                  array_from_seq (8) (
-                    seq_slice (m2_5) ((x_7) * (usize 8)) (usize 8))),
-                tuple_clone (m_2)
-              )) in 
-          (res_6)
-        ) else ( (res_6)
-        ) in 
-      (res_6))
-    res_6 in 
-  res_6.
-
-Inductive map_update :=
-| Update : (int64 × seq_map) -> map_update.
-
-Definition eqb_map_update (x y : map_update) : bool := match x with
-   | Update a => match y with | Update b => a =.? b end
-   end.
-
-Definition eqb_leibniz_map_update (x y : map_update) : eqb_map_update x y = true -> x = y.
-Proof. intros. destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. Qed.
-
-Instance eq_dec_map_update : EqDec (map_update) :=
-Build_EqDec (map_update) (eqb_map_update) (eqb_leibniz_map_update).
-
-
-Definition seq_map_update_entry
-  (m_8 : seq_map)
-  (sender_address_9 : user_address)
-  (amount_10 : int64)
-  : map_update :=
-  let '(m1_11, m2_12) :=
-    m_8 in 
-  let res_13 :=
-    Update (
-      (
-        amount_10,
-        (
-          seq_concat (m1_11) (sender_address_9),
-          seq_concat (m2_12) (u64_to_be_bytes (amount_10))
-        )
-      )) in 
-  let res_13 :=
-    foldi (usize 0) (
-        (seq_len (seq_clone (m1_11))) / (usize 32)) (fun x_14 res_13 =>
-      let '(res_13) :=
-        if (
-          array_from_seq (32) (
-            seq_slice (seq_clone (m1_11)) ((x_14) * (usize 32)) (
-              usize 32))) array_eq (sender_address_9):bool then (
-          let res_13 :=
-            Update (
-              (
-                amount_10,
-                (
-                  seq_update (seq_clone (m1_11)) ((x_14) * (usize 32)) (
-                    sender_address_9),
-                  seq_update (seq_clone (m2_12)) ((x_14) * (usize 8)) (
-                    u64_to_be_bytes (amount_10))
-                )
-              )) in 
-          (res_13)
-        ) else ( (res_13)
-        ) in 
-      (res_13))
-    res_13 in 
-  res_13.
-
 Notation "'auction_bid_result'" := ((result unit bid_error)) : hacspec_scope.
 
 Inductive boolean :=
@@ -223,49 +247,35 @@ Definition auction_bid
   (amount_16 : int64)
   (state_17 : state)
   : (state × auction_bid_result) :=
-  let '(auction_state_18, b_19, c_20, expiry_21, e_22) :=
-    state_17 in 
-  let '(slot_time_23, sender_24) :=
+  let '(slot_time_18, sender_19) :=
     ctx_15 in 
-  let '(
-      (acs_25, upb_26, ce_27, expirye_28, (updated1_mape_29, updated2_mape_30)),
-      rese_31
-    ) :=
-    match auction_state_18 with
-    | NotSoldYet => match (if ((slot_time_23) <=.? (expiry_21)):bool then (
+  match  (state_17) with State ((st0_20, st1_21, st2_22, st3_23, st4_24)) => 
+  let '(new_state_25, rese_26) :=
+    match st0_20 with
+    | NotSoldYet => match (if ((slot_time_18) <=.? (st3_23)):bool then (
       True) else (False)) with
-    | True => match sender_24 with
-    | UserAddressNone => (
-      (auction_state_18, b_19, c_20, expiry_21, e_22),
-      Err (ContractSender)
-    )
-    | UserAddressSome (sender_address_32, _) => match seq_map_entry (
-      tuple_clone (e_22)) (sender_address_32) with
-    | Entry (bid_to_update_33, new_map_34) => match seq_map_update_entry (
-      tuple_clone (new_map_34)) (sender_address_32) (
-      (bid_to_update_33) .+ (amount_16)) with
-    | Update (updated_bid_35, updated_map_36) => match (if (
-      (updated_bid_35) >.? (b_19)):bool then (True) else (False)) with
+    | True => match sender_19 with
+    | UserAddressNone => (state_17, Err (ContractSender))
+    | UserAddressSome (sender_address_27, _) => match seq_map_entry ((st4_24)) (
+      sender_address_27) with
+    | Entry (bid_to_update_28, new_map_29) => match seq_map_update_entry (
+      (new_map_29)) (sender_address_27) ((bid_to_update_28) .+ (amount_16)) with
+    | Update (updated_bid_30, updated_map_31) => match (if (
+      (updated_bid_30) >.? (st1_21)):bool then (True) else (False)) with
     | True => (
-      (auction_state_18, updated_bid_35, c_20, expiry_21, updated_map_36),
+      State ((st0_20, updated_bid_30, st2_22, st3_23, updated_map_31)),
       Ok (tt)
     )
     | False => (
-      (auction_state_18, b_19, c_20, expiry_21, updated_map_36),
+      State ((st0_20, st1_21, st2_22, st3_23, updated_map_31)),
       Err (BidTooLow)
     ) end end end end
-    | False => (
-      (auction_state_18, b_19, c_20, expiry_21, e_22),
-      Err (BidsOverWaitingForAuctionFinalization)
-    ) end
-    | Sold _ => (
-      (auction_state_18, b_19, c_20, expiry_21, e_22),
-      Err (AuctionIsFinalized)
-    ) end in 
-  (
-    (acs_25, upb_26, ce_27, expirye_28, (updated1_mape_29, updated2_mape_30)),
-    rese_31
-  ).
+    | False => (state_17, Err (BidsOverWaitingForAuctionFinalization)) end
+    | Sold _ => (state_17, Err (AuctionIsFinalized)) end in 
+  (new_state_25, rese_26) end.
+
+Notation "'finalize_context'" := ((int64 × user_address × int64
+)) : hacspec_scope.
 
 Inductive finalize_error :=
 | BidMapError : finalize_error
@@ -330,153 +340,141 @@ Notation "'auction_finalize_result'" := ((
   result finalize_action finalize_error)) : hacspec_scope.
 
 Definition auction_finalize
-  (ctx_37 : finalize_context)
-  (state_38 : state)
+  (ctx_32 : finalize_context)
+  (state_33 : state)
   : (state × auction_finalize_result) :=
-  let '(auction_state_39, b_40, c_41, expiry_42, (m1_43, m2_44)) :=
-    state_38 in 
-  let '(slot_time_45, owner_46, balance_47) :=
-    ctx_37 in 
-  let '(continues_48, return_action_49) :=
-    match auction_state_39 with
-    | NotSoldYet => (if ((slot_time_45) >.? (expiry_42)):bool then (
-      (if ((balance_47) =.? (repr 0)):bool then ((false, Ok (Accept))) else (
+  match  (state_33) with State ((st0_34, st1_35, st2_36, st3_37, st4_38)) => 
+  let '(slot_time_39, owner_40, balance_41) :=
+    ctx_32 in 
+  let '(continues_42, return_action_43) :=
+    match st0_34 with
+    | NotSoldYet => (if ((slot_time_39) >.? (st3_37)):bool then (
+      (if ((balance_41) =.? (repr 0)):bool then ((false, Ok (Accept))) else (
         (
           true,
-          Ok (SimpleTransfer ((owner_46, b_40, seq_new_ (repr 0) (usize 0))))
+          Ok (SimpleTransfer ((owner_40, st1_35, seq_new_ (repr 0) (usize 0))))
         )))) else ((false, Err (AuctionStillActive))))
     | Sold _ => (false, Err (AuctionFinalized)) end in 
-  let remaining_bid_50 :=
-    None in 
-  let '(auction_state_39, return_action_49, remaining_bid_50) :=
-    if continues_48:bool then (
-      let '(auction_state_39, return_action_49, remaining_bid_50) :=
-        foldi (usize 0) (
-            (seq_len (seq_clone (m1_43))) / (usize 32)) (fun x_51 '(
-            auction_state_39,
-            return_action_49,
-            remaining_bid_50
+  match  None with remaining_bid_44 => 
+  match  (st4_38) with SeqMap ((m0_45, m1_46)) => 
+  let '(st0_34, return_action_43, remaining_bid_44) :=
+    if continues_42:bool then (
+      let '(st0_34, return_action_43, remaining_bid_44) :=
+        foldi (usize 0) ((seq_len ((m0_45))) / (usize 32)) (fun x_47 '(
+            st0_34,
+            return_action_43,
+            remaining_bid_44
           ) =>
-          let amnt_52 :=
+          match 
             u64_from_be_bytes (
               array_from_seq (8) (
-                seq_slice (m2_44) ((x_51) * (usize 8)) (usize 8))) in 
-          let addr_53 :=
+                seq_slice (m1_46) ((x_47) * (usize 8)) (
+                  usize 8))) with amnt_48 => 
+          match 
             array_from_seq (32) (
-              seq_slice (seq_clone (m1_43)) ((x_51) * (usize 32)) (
-                usize 32)) in 
-          let '(auction_state_39, return_action_49, remaining_bid_50) :=
-            if (amnt_52) <.? (b_40):bool then (
-              let return_action_49 :=
-                match return_action_49 with
-                | Ok a_54 => match a_54 with
-                | SimpleTransfer (o_55, b_56, a_57) => Ok (
+              seq_slice ((m0_45)) ((x_47) * (usize 32)) (
+                usize 32)) with addr_49 => 
+          let '(st0_34, return_action_43, remaining_bid_44) :=
+            if (amnt_48) <.? (st1_35):bool then (
+              let return_action_43 :=
+                match return_action_43 with
+                | Ok a_50 => match a_50 with
+                | SimpleTransfer (o_51, b_52, a_53) => Ok (
                   SimpleTransfer (
                     (
-                      o_55,
-                      b_56,
-                      seq_concat (seq_concat (a_57) (addr_53)) (
-                        u64_to_be_bytes (amnt_52))
+                      o_51,
+                      b_52,
+                      seq_concat (seq_concat (a_53) (addr_49)) (
+                        u64_to_be_bytes (amnt_48))
                     )))
                 | Accept => Ok (Accept) end
-                | Err e_58 => Err (e_58) end in 
-              (auction_state_39, return_action_49, remaining_bid_50)
+                | Err e_54 => Err (e_54) end in 
+              (st0_34, return_action_43, remaining_bid_44)
             ) else (
-              let '(auction_state_39, return_action_49, remaining_bid_50) :=
-                if match remaining_bid_50 with
+              let '(st0_34, return_action_43, remaining_bid_44) :=
+                if match remaining_bid_44 with
                 | None => true
                 | Some (_, _) => false end:bool then (
-                  let auction_state_39 :=
-                    Sold (addr_53) in 
-                  let remaining_bid_50 :=
-                    Some ((amnt_52, tt)) in 
-                  (auction_state_39, return_action_49, remaining_bid_50)
+                  let st0_34 :=
+                    Sold (addr_49) in 
+                  let remaining_bid_44 :=
+                    Some ((amnt_48, tt)) in 
+                  (st0_34, return_action_43, remaining_bid_44)
                 ) else (
-                  let return_action_49 :=
+                  let return_action_43 :=
                     Err (BidMapError) in 
-                  (auction_state_39, return_action_49, remaining_bid_50)
+                  (st0_34, return_action_43, remaining_bid_44)
                 ) in 
-              (auction_state_39, return_action_49, remaining_bid_50)
+              (st0_34, return_action_43, remaining_bid_44)
             ) in 
-          (auction_state_39, return_action_49, remaining_bid_50))
-        (auction_state_39, return_action_49, remaining_bid_50) in 
-      (auction_state_39, return_action_49, remaining_bid_50)
-    ) else ( (auction_state_39, return_action_49, remaining_bid_50)
+          (st0_34, return_action_43, remaining_bid_44) end end)
+        (st0_34, return_action_43, remaining_bid_44) in 
+      (st0_34, return_action_43, remaining_bid_44)
+    ) else ( (st0_34, return_action_43, remaining_bid_44)
     ) in 
-  let '(return_action_49) :=
-    if continues_48:bool then (
-      let return_action_49 :=
-        match remaining_bid_50 with
-        | Some (amount_59, _) => match (if ((amount_59) =.? (b_40)):bool then (
-          True) else (False)) with
-        | True => return_action_49
+  let '(return_action_43) :=
+    if continues_42:bool then (
+      let return_action_43 :=
+        match remaining_bid_44 with
+        | Some (amount_55, _) => match (if (
+          (amount_55) =.? (st1_35)):bool then (True) else (False)) with
+        | True => return_action_43
         | False => Err (BidMapError) end
         | None => Err (BidMapError) end in 
-      (return_action_49)
-    ) else ( (return_action_49)
+      (return_action_43)
+    ) else ( (return_action_43)
     ) in 
-  ((auction_state_39, b_40, c_41, expiry_42, (m1_43, m2_44)), return_action_49).
+  (State ((st0_34, st1_35, st2_36, st3_37, st4_38)), return_action_43
+  ) end end end.
 
 Definition auction_test_init  : bool :=
-  let item_60 :=
-    seq_new_ (repr 0) (usize 0) in 
-  let time_61 :=
-    repr 100 in 
-  (fresh_state (seq_clone (item_60)) (time_61)) =.? (
-    (
-      NotSoldYet,
-      repr 0,
-      seq_clone (item_60),
-      time_61,
-      (seq_new_ (repr 0) (usize 0), seq_new_ (repr 0) (usize 0))
-    )).
+  match  seq_new_ (repr 0) (usize 0) with item_56 => 
+  match  repr 100 with time_57 => 
+  (fresh_state ((item_56)) (time_57)) =.? (
+    State (
+      (
+        NotSoldYet,
+        repr 0,
+        (item_56),
+        time_57,
+        SeqMap ((seq_new_ (repr 0) (usize 0), seq_new_ (repr 0) (usize 0)))
+      ))) end end.
 
 Theorem auction_test_init_correct : auction_test_init = true.
 Proof. Admitted.
 
 
 Definition verify_bid
-  (state_62 : state)
-  (account_63 : user_address)
-  (ctx_64 : context)
-  (amount_65 : int64)
-  (bid_map_66 : seq_map)
-  (highest_bid_67 : int64)
+  (state_58 : state)
+  (account_59 : user_address)
+  (ctx_60 : context)
+  (amount_61 : int64)
+  (bid_map_62 : seq_map)
+  (highest_bid_63 : int64)
   : (state × bool) :=
-  let item_68 :=
-    seq_new_ (repr 0) (usize 0) in 
-  let time_69 :=
-    repr 100 in 
-  let '((auc_st_70, hb_71, its_72, tm_73, bm_74), res_75) :=
-    auction_bid (ctx_64) (amount_65) (state_62) in 
-  let bid_map_76 :=
-    match seq_map_update_entry (tuple_clone (bid_map_66)) (account_63) (
-      highest_bid_67) with
-    | Update (_, updated_map_77) => updated_map_77 end in 
+  match  seq_new_ (repr 0) (usize 0) with item_64 => 
+  match  repr 100 with time_65 => 
+  let '(State ((auc_st_66, hb_67, its_68, tm_69, bm_70)), res_71) :=
+    auction_bid (ctx_60) (amount_61) (state_58) in 
+  match 
+    match seq_map_update_entry ((bid_map_62)) (account_59) (highest_bid_63) with
+    | Update (_, updated_map_73) => updated_map_73 end with bid_map_72 => 
   (
-    (auc_st_70, hb_71, seq_clone (its_72), tm_73, tuple_clone (bm_74)),
-    ((auc_st_70, hb_71, seq_clone (its_72), tm_73, tuple_clone (bm_74))) =.? (
-      (
-        NotSoldYet,
-        highest_bid_67,
-        seq_clone (item_68),
-        time_69,
-        tuple_clone (bid_map_76)
-      ))
-  ).
+    State ((auc_st_66, hb_67, (its_68), tm_69, (bm_70))),
+    (State ((auc_st_66, hb_67, (its_68), tm_69, (bm_70)))) =.? (
+      State ((NotSoldYet, highest_bid_63, (item_64), time_65, (bid_map_72))))
+  ) end end end.
 
 Definition test_auction_bid_and_finalize  : bool :=
-  let item_78 :=
-    seq_new_ (repr 0) (usize 0) in 
-  let time_79 :=
-    repr 100 in 
-  let amount_80 :=
-    repr 100 in 
-  let bid_map_81 :=
-    (seq_new_ (repr 0) (usize 0), seq_new_ (repr 0) (usize 0)) in 
-  let state_82 :=
-    fresh_state (seq_clone (item_78)) (time_79) in 
-  let alice_83 :=
+  match  seq_new_ (repr 0) (usize 0) with item_74 => 
+  match  repr 100 with time_75 => 
+  match  repr 100 with amount_76 => 
+  match 
+    SeqMap (
+      (seq_new_ (repr 0) (usize 0), seq_new_ (repr 0) (usize 0)
+      )) with bid_map_77 => 
+  match  fresh_state ((item_74)) (time_75) with state_78 => 
+  match 
     array_from_list int8 (
       let l :=
         [
@@ -512,13 +510,12 @@ Definition test_auction_bid_and_finalize  : bool :=
           repr 0;
           repr 0;
           repr 0
-        ] in  l) in 
-  let alice_ctx_84 :=
-    (repr 1, UserAddressSome ((alice_83, tt))) in 
-  let '(state_85, result_0_86) :=
-    verify_bid (state_82) (alice_83) (alice_ctx_84) (amount_80) (
-      tuple_clone (bid_map_81)) (amount_80) in 
-  result_0_86.
+        ] in  l) with alice_79 => 
+  match  (repr 1, UserAddressSome ((alice_79, tt))) with alice_ctx_80 => 
+  let '(state_81, result_0_82) :=
+    verify_bid (state_78) (alice_79) (alice_ctx_80) (amount_76) ((bid_map_77)) (
+      amount_76) in 
+  result_0_82 end end end end end end end.
 
 Theorem test_auction_bid_and_finalize_correct : test_auction_bid_and_finalize = true.
 Proof. Admitted.

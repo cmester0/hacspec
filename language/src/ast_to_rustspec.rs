@@ -1280,14 +1280,20 @@ fn translate_expr(
         }
         ExprKind::Block(a, _) => {
             match a.rules {
-                BlockCheckMode::Unsafe (_) => {
+                BlockCheckMode::Unsafe(_) => {
                     let r_f_e = translate_block(sess, specials, a)?;
-                    Ok((ExprTranslationResult::TransStmt(Statement::Unsafe(r_f_e)), e.span.into()))
-                },
+                    Ok((
+                        ExprTranslationResult::TransStmt(Statement::Unsafe(r_f_e)),
+                        e.span.into(),
+                    ))
+                }
                 _ => {
-                    sess.span_rustspec_err(e.span.clone(), "inline blocks are not allowed in Hacspec");
+                    sess.span_rustspec_err(
+                        e.span.clone(),
+                        "inline blocks are not allowed in Hacspec",
+                    );
                     Err(())
-                },
+                }
             }
             // sess.span_rustspec_err(e.span.clone(), "inline blocks are not allowed in Hacspec");
             // Err(())
@@ -1810,6 +1816,75 @@ fn translate_simplified_natural_integer_decl(
             Ok((
                 (ItemTranslationResult::Item(DecoratedItem {
                     item: Item::NaturalIntegerDecl(typ_ident, secrecy, canvas_size, None),
+                    tags: ItemTagSet(HashSet::unit(ItemTag::Code)),
+                })),
+                SpecialNames {
+                    arrays: specials.arrays.update(typ_ident_string),
+                    ..specials.clone()
+                },
+            ))
+        }
+        _ => {
+            sess.span_rustspec_err(i.span.clone(), "expected delimited macro arguments");
+            Err(())
+        }
+    }
+}
+
+fn translate_struct_unfold(
+    sess: &Session,
+    i: &ast::Item,
+    specials: &SpecialNames,
+    call: &MacCall,
+) -> TranslationResult<(ItemTranslationResult, SpecialNames)> {
+    match &*call.args {
+        MacArgs::Delimited(_, _, tokens) => {
+            let mut it = tokens.trees();
+            let first_arg = {
+                let first_arg = it.next().map_or(Err(()), |x| Ok(x));
+                Ok(first_arg?)
+            }?;
+            let (typ_ident, typ_ident_string) = check_for_toplevel_ident(sess, &first_arg)?;
+            let cell_t = {
+                let fifth_arg = {
+                    let fifth_arg = it.next().map_or(Err(()), |x| Ok(x));
+                    Ok(fifth_arg?)
+                }?;
+                let cell_t = match fifth_arg {
+                    TokenTree::Token(tok) => match tok.kind {
+                        TokenKind::Ident(id, _) => translate_base_typ(
+                            sess,
+                            &Ty {
+                                tokens: None,
+                                id: NodeId::MAX,
+                                kind: TyKind::Path(
+                                    None,
+                                    ast::Path::from_ident(symbol::Ident {
+                                        name: id,
+                                        span: tok.span.clone(),
+                                    }),
+                                ),
+                                span: tok.span.clone(),
+                            },
+                        ),
+                        _ => {
+                            sess.span_rustspec_err(tok.span.clone(), "expected an identifier");
+                            return Err(());
+                        }
+                    },
+                    _ => {
+                        sess.span_rustspec_err(
+                            i.span.clone(),
+                            "expected first argument to be a single token",
+                        );
+                        return Err(());
+                    }
+                }?;
+                cell_t
+            };
+            Ok((
+                (ItemTranslationResult::Item(DecoratedItem {
+                    item: Item::AliasDecl(typ_ident, cell_t),
                     tags: ItemTagSet(HashSet::unit(ItemTag::Code)),
                 })),
                 SpecialNames {
@@ -2385,6 +2460,7 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
                     call,
                     Secrecy::Public,
                 ),
+                ("unfold_struct", None) => translate_struct_unfold(sess, i, specials, call),
                 (_, None) => {
                     sess.span_rustspec_err(name.ident.span.clone(), "unknown Hacspec macro");
                     Err(())
