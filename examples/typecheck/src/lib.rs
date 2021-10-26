@@ -99,7 +99,7 @@ pub fn si128 () -> i128 {
 // }
 
 
-// Never not allowed in hacspec
+// Never is not allowed in hacspec
 
 // pub fn a () -> ! {
 //     panic!()

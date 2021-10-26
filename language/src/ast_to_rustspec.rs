@@ -1835,7 +1835,7 @@ fn translate_struct_unfold_helper(
     sess: &Session,
     i: &ast::Item,
     // it : &mut rustc_ast::tokenstream::Cursor,
-    first_arg : TokenTree
+    first_arg: TokenTree,
 ) -> Result<Spanned<BaseTyp>, ()> {
     let cell_t = match first_arg {
         TokenTree::Token(tok) => match tok.kind {
@@ -1869,7 +1869,7 @@ fn translate_struct_unfold_helper(
     }?;
     Ok(cell_t)
 }
-    
+
 fn translate_struct_unfold(
     sess: &Session,
     i: &ast::Item,
@@ -1878,42 +1878,40 @@ fn translate_struct_unfold(
 ) -> TranslationResult<(ItemTranslationResult, SpecialNames)> {
     match &*call.args {
         MacArgs::Delimited(_, _, tokens) => {
-            let mut it = tokens.trees();
+            let mut it = tokens.trees().skip(1);
             let first_arg = {
-                let first_arg = it.next().map_or(Err(()), |x| Ok(x));
-                let first_arg = it.next().map_or(Err(()), |x| Ok(x));
                 let first_arg = it.next().map_or(Err(()), |x| Ok(x));
                 Ok(first_arg?)
             }?;
-            println!("CellTyp: {:?}", first_arg);
-            let (typ_ident, _) = check_for_toplevel_ident(sess, &first_arg)?;
-            // println!("CellTyp: {:?},{:?}", cell_t, typ_ident);
-
+            let (typ_ident, typ_ident_string) = check_for_toplevel_ident(sess, &first_arg)?;
+            
             match it.next().map_or(Err(()), |x| Ok(x))? {
                 TokenTree::Delimited(_, _, inner) => {
-                    let mut it = inner.trees();
+                    let tuple_types: Vec<Spanned<BaseTyp>> = inner
+                        .trees()
+                        .skip(2)
+                        .step_by(4)
+                        .map(|x| translate_struct_unfold_helper(sess, i, x).unwrap())
+                        .collect();
 
-		    // let mut tuple_types = Vec::new();
-
-                    let first_arg = {
-                        let first_arg = it.next().map_or(Err(()), |x| Ok(x));
-                        println!("CellTyp: {:?}", first_arg);
-                        let first_arg = it.next().map_or(Err(()), |x| Ok(x));
-                        println!("CellTyp: {:?}", first_arg);
-                        let first_arg = it.next().map_or(Err(()), |x| Ok(x));
-                        println!("CellTyp: {:?}", first_arg);
-                        Ok(first_arg?)
-                    }?;
-                    let tuple_types : Vec<Spanned<BaseTyp>> = it.step_by(5).map(|x| { println!("CellTM: {:?}", x); translate_struct_unfold_helper(sess,i,x).unwrap() }).collect();
-		    
-                    println!("CellT: {:?} <<,>> {:?}", typ_ident, (BaseTyp::Tuple(tuple_types.clone()), RustspecSpan(i.span.clone())));
-                    
                     Ok((
                         (ItemTranslationResult::Item(DecoratedItem {
-                            item: Item::AliasDecl(typ_ident, (BaseTyp::Tuple(tuple_types), RustspecSpan(i.span.clone())) ),
+                            item: Item::EnumDecl(
+                                typ_ident.clone(),
+                                vec![(
+                                    typ_ident.clone(),
+                                    Some((
+                                        BaseTyp::Tuple(tuple_types.clone()),
+                                        RustspecSpan(i.span.clone()),
+                                    )),
+                                )],
+                            ),
                             tags: ItemTagSet(HashSet::unit(ItemTag::Code)),
-                        })),
-                        specials.clone(),
+                        })),                        
+                        SpecialNames {
+                            enums: specials.enums.update(typ_ident_string),
+                            ..specials.clone()
+                        },
                     ))
                 }
                 _ => {
@@ -1928,7 +1926,7 @@ fn translate_struct_unfold(
         }
     }
 }
-                               
+
 fn translate_natural_integer_decl(
     sess: &Session,
     i: &ast::Item,
@@ -2558,8 +2556,6 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
                         .insert(ty_alias_name_string.clone(), ty.0.clone());
                     let ty_alias_name = (TopLevelIdent(ty_alias_name_string), i.span.into());
 
-                    println!("TyAlias: {:?} <<>> {:?}",ty_alias_name, ty);
-                    
                     Ok((
                         ItemTranslationResult::Item(DecoratedItem {
                             item: Item::AliasDecl(ty_alias_name, ty),
@@ -2696,6 +2692,7 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
                     } else {
                         tuple_args.into_iter().next().unwrap()
                     };
+
                     Ok((
                         ItemTranslationResult::Item(DecoratedItem {
                             item: Item::EnumDecl(id.clone(), vec![(id, Some(payload))]),

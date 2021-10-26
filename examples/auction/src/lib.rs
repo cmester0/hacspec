@@ -13,36 +13,27 @@ pub enum AuctionState {
     Sold(UserAddress), // winning account's address
 }
 
-// #[derive(Clone)]
-// pub struct SeqMap(pub PublicByteSeq, pub PublicByteSeq);
-
-// pub type SeqMap = (PublicByteSeq, PublicByteSeq,);
-
 unfold_struct! {
-    pub struct SeqMap {
-        pub a : PublicByteSeq,
-        pub b : PublicByteSeq,
+    struct SeqMap {
+        a : PublicByteSeq,
+        b : PublicByteSeq,
     }
 }
     
 pub type Amount = u64;
 pub type Timestamp = u64;
 
-#[derive(Clone)]
-pub struct State(pub AuctionState, pub u64, pub Seq<u8>, pub u64, pub SeqMap);
+pub type Itemtyp = Seq<u8>;
 
-// unfold_struct! {
-//     pub struct State {
-//         pub auction_state: AuctionState,
-//         pub highest_bid: Amount,
-//         pub item: Seq<u8>, // Vec<u8>
-//         pub expiry: Timestamp,
-//         pub bids: SeqMap, // BTreeMap<AccountAddress, Amount>,
-//     }
-// }
-
-// // auction_state, highest_bid, item, expiry, bids
-// pub type State = (AuctionState, u64, Seq<u8>, u64, SeqMap);
+unfold_struct! {
+    struct State {
+        auction_state: AuctionState,
+        highest_bid: Amount,
+        item: Itemtyp, // Vec<u8>
+        expiry: Timestamp,
+        bids: SeqMap, // BTreeMap<AccountAddress, Amount>,
+    }
+}
 
 pub fn fresh_state(itm: Seq<u8>, exp: u64) -> State {
     State(
@@ -50,7 +41,7 @@ pub fn fresh_state(itm: Seq<u8>, exp: u64) -> State {
         0_u64,
         itm,
         exp,
-        (PublicByteSeq::new(0_usize), PublicByteSeq::new(0_usize)),
+        SeqMap (PublicByteSeq::new(0_usize), PublicByteSeq::new(0_usize)),
     )
 }
 
@@ -60,11 +51,11 @@ pub enum MapEntry {
 
 // .entry(sender_address).or_insert_with(Amount::zero)
 fn seq_map_entry(m: SeqMap, sender_address: UserAddress) -> MapEntry {
-    let (m0, m1) = m;
+    let SeqMap (m0, m1) = m;
 
     let mut res = MapEntry::Entry(
         0_u64,
-        (
+        SeqMap (
             m0.clone().concat(&sender_address),
             m1.clone().concat(&u64_to_be_bytes(0_u64)),
         ),
@@ -74,7 +65,7 @@ fn seq_map_entry(m: SeqMap, sender_address: UserAddress) -> MapEntry {
         if UserAddress::from_seq(&m0.clone().slice(x * 32, 32)) == sender_address {
             res = MapEntry::Entry(
                 u64_from_be_bytes(u64Word::from_seq(&m1.slice(x * 8, 8))),
-                (m0.clone(), m1.clone()),
+                SeqMap (m0.clone(), m1.clone()),
             );
         }
     }
@@ -87,11 +78,11 @@ pub enum MapUpdate {
 }
 
 fn seq_map_update_entry(m: SeqMap, sender_address: UserAddress, amount: u64) -> MapUpdate {
-    let (m0, m1) = m;
+    let SeqMap (m0, m1) = m;
 
     let mut res = MapUpdate::Update(
         amount,
-        (
+        SeqMap (
             m0.concat(&sender_address),
             m1.concat(&u64_to_be_bytes(amount)),
         ),
@@ -101,7 +92,7 @@ fn seq_map_update_entry(m: SeqMap, sender_address: UserAddress, amount: u64) -> 
         if UserAddress::from_seq(&m0.clone().slice(x * 32, 32)) == sender_address {
             res = MapUpdate::Update(
                 amount,
-                (
+                SeqMap (
                     m0.clone().update(x * 32, &sender_address),
                     m1.clone().update(x * 8, &u64_to_be_bytes(amount)),
                 ),
@@ -247,7 +238,7 @@ pub fn auction_finalize(ctx: FinalizeContext, state: State) -> (State, AuctionFi
 
     let mut remaining_bid = BidRemain::None;
 
-    let (m0, m1) = st4.clone();
+    let SeqMap (m0, m1) = st4.clone();
 
     if continues {
         // Return bids that are smaller than highest
@@ -319,7 +310,7 @@ pub fn auction_test_init() -> bool {
             0_u64,
             item.clone(),
             time,
-            (PublicByteSeq::new(0_usize), PublicByteSeq::new(0_usize)),
+            SeqMap (PublicByteSeq::new(0_usize), PublicByteSeq::new(0_usize)),
         )
 }
 
@@ -405,7 +396,7 @@ fn test_auction_bid_and_finalize() -> bool {
     // let winning_amount = 300_u64;
     // let big_amount = 500_u64;
 
-    let mut bid_map = (PublicByteSeq::new(0_usize), PublicByteSeq::new(0_usize)); // BTreeMap::new();
+    let mut bid_map = SeqMap (PublicByteSeq::new(0_usize), PublicByteSeq::new(0_usize)); // BTreeMap::new();
 
     // initializing auction
     let state = fresh_state(item.clone(), time); // mut

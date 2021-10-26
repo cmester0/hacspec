@@ -5,7 +5,7 @@ use piggybank::*;
 use crate::provider::Action;
 
 /// The state of the piggy bank
-#[derive(Debug, Serialize, PartialEq, Eq)]
+#[derive(Debug, Serialize, PartialEq, Eq, Clone, Copy)]
 pub enum PiggyBankState {
     /// Alive and well, allows for GTU to be inserted.
     Intact,
@@ -13,6 +13,8 @@ pub enum PiggyBankState {
     Smashed,
 }
 
+translate_field! (their_to_my_piggybank_state, PiggyBankState, piggybank::PiggyBankState, Intact, Smashed);
+translate_field! (my_to_their_piggybank_state, piggybank::PiggyBankState, PiggyBankState, Intact, Smashed);
 
 #[init(contract = "PiggyBank")]
 pub fn piggy_init(_ctx: &impl HasInitContext) -> InitResult<PiggyBankState> {
@@ -73,10 +75,13 @@ pub fn piggy_insert<A: HasActions>(
     };
     let balance = ctx.self_balance().micro_gtu;
     let addition = amount.micro_gtu;
-    let piggybank_state = match *state {
-	PiggyBankState::Intact => piggybank::PiggyBankState::Intact,
-	PiggyBankState::Smashed => piggybank::PiggyBankState::Smashed,
-    };
+
+    let piggybank_state = their_to_my_piggybank_state(*state);
+    
+    // let piggybank_state = match *state {
+    // 	PiggyBankState::Intact => piggybank::PiggyBankState::Intact,
+    // 	PiggyBankState::Smashed => piggybank::PiggyBankState::Smashed,
+    // };
     
     match piggybank::piggy_insert((owner, sender, balance, piggybank_state), addition) {
 	PiggyInsertResult::PiggyInsertResultInl (_) => Ok(A::accept()),
