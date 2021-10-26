@@ -1831,6 +1831,45 @@ fn translate_simplified_natural_integer_decl(
     }
 }
 
+fn translate_struct_unfold_helper(
+    sess: &Session,
+    i: &ast::Item,
+    // it : &mut rustc_ast::tokenstream::Cursor,
+    first_arg : TokenTree
+) -> Result<Spanned<BaseTyp>, ()> {
+    let cell_t = match first_arg {
+        TokenTree::Token(tok) => match tok.kind {
+            TokenKind::Ident(id, _) => translate_base_typ(
+                sess,
+                &Ty {
+                    tokens: None,
+                    id: NodeId::MAX,
+                    kind: TyKind::Path(
+                        None,
+                        ast::Path::from_ident(symbol::Ident {
+                            name: id,
+                            span: tok.span.clone(),
+                        }),
+                    ),
+                    span: tok.span.clone(),
+                },
+            ),
+            _ => {
+                sess.span_rustspec_err(tok.span.clone(), "expected an identifier");
+                return Err(());
+            }
+        },
+        _ => {
+            sess.span_rustspec_err(
+                i.span.clone(),
+                "expected first argument to be a single token",
+            );
+            return Err(());
+        }
+    }?;
+    Ok(cell_t)
+}
+    
 fn translate_struct_unfold(
     sess: &Session,
     i: &ast::Item,
@@ -1842,56 +1881,46 @@ fn translate_struct_unfold(
             let mut it = tokens.trees();
             let first_arg = {
                 let first_arg = it.next().map_or(Err(()), |x| Ok(x));
+                let first_arg = it.next().map_or(Err(()), |x| Ok(x));
+                let first_arg = it.next().map_or(Err(()), |x| Ok(x));
                 Ok(first_arg?)
             }?;
-            let (typ_ident, typ_ident_string) = check_for_toplevel_ident(sess, &first_arg)?;
-            let cell_t = {
-                let fifth_arg = {
-                    let fifth_arg = it.next().map_or(Err(()), |x| Ok(x));
-                    Ok(fifth_arg?)
-                }?;
-                let cell_t = match fifth_arg {
-                    TokenTree::Token(tok) => match tok.kind {
-                        TokenKind::Ident(id, _) => translate_base_typ(
-                            sess,
-                            &Ty {
-                                tokens: None,
-                                id: NodeId::MAX,
-                                kind: TyKind::Path(
-                                    None,
-                                    ast::Path::from_ident(symbol::Ident {
-                                        name: id,
-                                        span: tok.span.clone(),
-                                    }),
-                                ),
-                                span: tok.span.clone(),
-                            },
-                        ),
-                        _ => {
-                            sess.span_rustspec_err(tok.span.clone(), "expected an identifier");
-                            return Err(());
-                        }
-                    },
-                    _ => {
-                        sess.span_rustspec_err(
-                            i.span.clone(),
-                            "expected first argument to be a single token",
-                        );
-                        return Err(());
-                    }
-                }?;
-                cell_t
-            };
-            Ok((
-                (ItemTranslationResult::Item(DecoratedItem {
-                    item: Item::AliasDecl(typ_ident, cell_t),
-                    tags: ItemTagSet(HashSet::unit(ItemTag::Code)),
-                })),
-                SpecialNames {
-                    arrays: specials.arrays.update(typ_ident_string),
-                    ..specials.clone()
-                },
-            ))
+            println!("CellTyp: {:?}", first_arg);
+            let (typ_ident, _) = check_for_toplevel_ident(sess, &first_arg)?;
+            // println!("CellTyp: {:?},{:?}", cell_t, typ_ident);
+
+            match it.next().map_or(Err(()), |x| Ok(x))? {
+                TokenTree::Delimited(_, _, inner) => {
+                    let mut it = inner.trees();
+
+		    // let mut tuple_types = Vec::new();
+
+                    let first_arg = {
+                        let first_arg = it.next().map_or(Err(()), |x| Ok(x));
+                        println!("CellTyp: {:?}", first_arg);
+                        let first_arg = it.next().map_or(Err(()), |x| Ok(x));
+                        println!("CellTyp: {:?}", first_arg);
+                        let first_arg = it.next().map_or(Err(()), |x| Ok(x));
+                        println!("CellTyp: {:?}", first_arg);
+                        Ok(first_arg?)
+                    }?;
+                    let tuple_types : Vec<Spanned<BaseTyp>> = it.step_by(5).map(|x| { println!("CellTM: {:?}", x); translate_struct_unfold_helper(sess,i,x).unwrap() }).collect();
+		    
+                    println!("CellT: {:?} <<,>> {:?}", typ_ident, (BaseTyp::Tuple(tuple_types.clone()), RustspecSpan(i.span.clone())));
+                    
+                    Ok((
+                        (ItemTranslationResult::Item(DecoratedItem {
+                            item: Item::AliasDecl(typ_ident, (BaseTyp::Tuple(tuple_types), RustspecSpan(i.span.clone())) ),
+                            tags: ItemTagSet(HashSet::unit(ItemTag::Code)),
+                        })),
+                        specials.clone(),
+                    ))
+                }
+                _ => {
+                    sess.span_rustspec_err(i.span.clone(), "expected delimited macro arguments");
+                    Err(())
+                }
+            }
         }
         _ => {
             sess.span_rustspec_err(i.span.clone(), "expected delimited macro arguments");
@@ -1899,7 +1928,7 @@ fn translate_struct_unfold(
         }
     }
 }
-
+                               
 fn translate_natural_integer_decl(
     sess: &Session,
     i: &ast::Item,
@@ -2528,6 +2557,9 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
                         .aliases
                         .insert(ty_alias_name_string.clone(), ty.0.clone());
                     let ty_alias_name = (TopLevelIdent(ty_alias_name_string), i.span.into());
+
+                    println!("TyAlias: {:?} <<>> {:?}",ty_alias_name, ty);
+                    
                     Ok((
                         ItemTranslationResult::Item(DecoratedItem {
                             item: Item::AliasDecl(ty_alias_name, ty),

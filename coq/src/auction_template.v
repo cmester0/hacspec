@@ -25,19 +25,7 @@ Instance eq_dec_auction_state : EqDec (auction_state) :=
 Build_EqDec (auction_state) (eqb_auction_state) (eqb_leibniz_auction_state).
 
 
-Inductive seq_map :=
-| SeqMap : (public_byte_seq × public_byte_seq) -> seq_map.
-
-Definition eqb_seq_map (x y : seq_map) : bool := match x with
-   | SeqMap a => match y with | SeqMap b => a =.? b end
-   end.
-
-Definition eqb_leibniz_seq_map (x y : seq_map) : eqb_seq_map x y = true -> x = y.
-Proof. intros. destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. Qed.
-
-Instance eq_dec_seq_map : EqDec (seq_map) :=
-Build_EqDec (seq_map) (eqb_seq_map) (eqb_leibniz_seq_map).
-
+Notation "'seq_map'" := ((public_byte_seq × public_byte_seq)) : hacspec_scope.
 
 Notation "'amount'" := (int64) : hacspec_scope.
 
@@ -64,7 +52,7 @@ Definition fresh_state (itm_0 : seq int8) (exp_1 : int64) : state :=
       repr 0,
       itm_0,
       exp_1,
-      SeqMap ((seq_new_ (repr 0) (usize 0), seq_new_ (repr 0) (usize 0)))
+      (seq_new_ (repr 0) (usize 0), seq_new_ (repr 0) (usize 0))
     )).
 
 Inductive map_entry :=
@@ -85,16 +73,16 @@ Definition seq_map_entry
   (m_2 : seq_map)
   (sender_address_3 : user_address)
   : map_entry :=
-  match  (m_2) with SeqMap ((m0_4, m1_5)) => 
+  let '(m0_4, m1_5) :=
+    m_2 in 
   match 
     Entry (
       (
         repr 0,
-        SeqMap (
-          (
-            seq_concat ((m0_4)) (sender_address_3),
-            seq_concat ((m1_5)) (u64_to_be_bytes (repr 0))
-          ))
+        (
+          seq_concat ((m0_4)) (sender_address_3),
+          seq_concat ((m1_5)) (u64_to_be_bytes (repr 0))
+        )
       )) with res_6 => 
   let res_6 :=
     foldi (usize 0) ((seq_len ((m0_4))) / (usize 32)) (fun x_7 res_6 =>
@@ -109,14 +97,14 @@ Definition seq_map_entry
                 u64_from_be_bytes (
                   array_from_seq (8) (
                     seq_slice (m1_5) ((x_7) * (usize 8)) (usize 8))),
-                (m_2)
+                ((m0_4), (m1_5))
               )) in 
           (res_6)
         ) else ( (res_6)
         ) in 
       (res_6))
     res_6 in 
-  res_6 end end.
+  res_6 end.
 
 Inductive map_update :=
 | Update : (int64 × seq_map) -> map_update.
@@ -137,16 +125,16 @@ Definition seq_map_update_entry
   (sender_address_9 : user_address)
   (amount_10 : int64)
   : map_update :=
-  match  (m_8) with SeqMap ((m0_11, m1_12)) => 
+  let '(m0_11, m1_12) :=
+    m_8 in 
   match 
     Update (
       (
         amount_10,
-        SeqMap (
-          (
-            seq_concat (m0_11) (sender_address_9),
-            seq_concat (m1_12) (u64_to_be_bytes (amount_10))
-          ))
+        (
+          seq_concat (m0_11) (sender_address_9),
+          seq_concat (m1_12) (u64_to_be_bytes (amount_10))
+        )
       )) with res_13 => 
   let res_13 :=
     foldi (usize 0) ((seq_len ((m0_11))) / (usize 32)) (fun x_14 res_13 =>
@@ -159,20 +147,18 @@ Definition seq_map_update_entry
             Update (
               (
                 amount_10,
-                SeqMap (
-                  (
-                    seq_update ((m0_11)) ((x_14) * (usize 32)) (
-                      sender_address_9),
-                    seq_update ((m1_12)) ((x_14) * (usize 8)) (
-                      u64_to_be_bytes (amount_10))
-                  ))
+                (
+                  seq_update ((m0_11)) ((x_14) * (usize 32)) (sender_address_9),
+                  seq_update ((m1_12)) ((x_14) * (usize 8)) (
+                    u64_to_be_bytes (amount_10))
+                )
               )) in 
           (res_13)
         ) else ( (res_13)
         ) in 
       (res_13))
     res_13 in 
-  res_13 end end.
+  res_13 end.
 
 Inductive bid_error :=
 | ContractSender : bid_error
@@ -356,7 +342,8 @@ Definition auction_finalize
         )))) else ((false, Err (AuctionStillActive))))
     | Sold _ => (false, Err (AuctionFinalized)) end in 
   match  None with remaining_bid_44 => 
-  match  (st4_38) with SeqMap ((m0_45, m1_46)) => 
+  let '(m0_45, m1_46) :=
+    (st4_38) in 
   let '(st0_34, return_action_43, remaining_bid_44) :=
     if continues_42:bool then (
       let '(st0_34, return_action_43, remaining_bid_44) :=
@@ -424,8 +411,7 @@ Definition auction_finalize
       (return_action_43)
     ) else ( (return_action_43)
     ) in 
-  (State ((st0_34, st1_35, st2_36, st3_37, st4_38)), return_action_43
-  ) end end end.
+  (State ((st0_34, st1_35, st2_36, st3_37, st4_38)), return_action_43) end end.
 
 Definition auction_test_init  : bool :=
   match  seq_new_ (repr 0) (usize 0) with item_56 => 
@@ -437,7 +423,7 @@ Definition auction_test_init  : bool :=
         repr 0,
         (item_56),
         time_57,
-        SeqMap ((seq_new_ (repr 0) (usize 0), seq_new_ (repr 0) (usize 0)))
+        (seq_new_ (repr 0) (usize 0), seq_new_ (repr 0) (usize 0))
       ))) end end.
 
 Theorem auction_test_init_correct : auction_test_init = true.
@@ -470,9 +456,8 @@ Definition test_auction_bid_and_finalize  : bool :=
   match  repr 100 with time_75 => 
   match  repr 100 with amount_76 => 
   match 
-    SeqMap (
-      (seq_new_ (repr 0) (usize 0), seq_new_ (repr 0) (usize 0)
-      )) with bid_map_77 => 
+    (seq_new_ (repr 0) (usize 0), seq_new_ (repr 0) (usize 0)
+    ) with bid_map_77 => 
   match  fresh_state ((item_74)) (time_75) with state_78 => 
   match 
     array_from_list int8 (

@@ -1,16 +1,15 @@
 #[macro_export]
 macro_rules! unfold_struct {
     (
-     struct $struct_name:ident {
-        $(
-        $field_name:ident : $field_type:ty
-        ),*$(,)+
-    }
+        $vis:vis struct $struct_name:ident {
+            $($field_vis:vis $field_name:ident : $field_type:ty),*$(,)+
+        }
     ) => {
-            pub type $struct_name = (
-                $(
-                    $field_type
-                ),*
-            );
-    }
+        $vis type $struct_name = ($($field_type),*);
+    };
 }
+
+// #[allow(non_camel_case_types)]
+// #[derive(Clone)]
+// $vis struct $struct_name ($($field_vis $field_type),*);
+

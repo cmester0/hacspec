@@ -88,12 +88,13 @@ fn seq_map_to_btree_map(m: SeqMap) -> BTreeMap<AccountAddress, concordium_std::A
 }
 
 fn my_state_to_their_state(s: auction::State) -> State {
+    let auction::State (st0, st1, st2, st3, st4) = s;
     State {
-        auction_state: my_auction_state_to_their_auction_state(s.0),
-        highest_bid: concordium_std::Amount { micro_gtu: s.1 },
-        item: s.2.native_slice().to_vec(),
-        expiry: concordium_std::Timestamp::from_timestamp_millis(s.3),
-        bids: seq_map_to_btree_map(s.4),
+        auction_state: my_auction_state_to_their_auction_state(st0),
+        highest_bid: concordium_std::Amount { micro_gtu: st1 },
+        item: st2.native_slice().to_vec(),
+        expiry: concordium_std::Timestamp::from_timestamp_millis(st3),
+        bids: seq_map_to_btree_map(st4),
     }
 }
 
@@ -158,7 +159,7 @@ fn their_auction_state_to_my_auction_state(s: AuctionState) -> auction::AuctionS
 }
 
 fn btree_map_to_seq_map(m: BTreeMap<AccountAddress, concordium_std::Amount>) -> SeqMap {
-    SeqMap(
+    (
         m.keys()
             .map(|x| u8x32_to_user_address(x.0))
             .fold(PublicByteSeq::new(0_usize), |v, x| v.concat(&x)),
@@ -173,7 +174,7 @@ fn btree_map_to_seq_map(m: BTreeMap<AccountAddress, concordium_std::Amount>) -> 
 }
 
 fn their_state_to_my_state(s: &mut State) -> auction::State {
-    State (
+    auction::State (
         their_auction_state_to_my_auction_state(s.auction_state.clone()),
         s.highest_bid.micro_gtu,
         Seq::from_vec(s.item.clone()),
