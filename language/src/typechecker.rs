@@ -205,7 +205,8 @@ fn is_index(t: &BaseTyp, top_ctxt: &TopLevelContext) -> bool {
     }
 }
 
-fn is_castable_integer(t: &BaseTyp) -> bool {
+fn is_castable_integer(t: &BaseTyp, top_ctxt: &TopLevelContext) -> bool {
+    let t = dealias_type(t.clone(), top_ctxt);
     match t {
         BaseTyp::UInt128 => true,
         BaseTyp::Int128 => true,
@@ -1037,10 +1038,14 @@ fn typecheck_expression(
                 &HashMap::new(),
                 top_level_context,
             )?;
-            let (new_e_t, t_e_t, var_context) =
+            let (new_e_t, t_e_t, var_context_true_branch) =
                 typecheck_expression(sess, e_t, top_level_context, &var_context)?;
-            let (new_e_f, t_e_f, var_context) =
+            let (new_e_f, t_e_f, var_context_false_branch) =
                 typecheck_expression(sess, e_f, top_level_context, &var_context)?;
+            let final_var_context = var_context
+                .clone()
+                .intersection(var_context_true_branch)
+                .intersection(var_context_false_branch);
             unify_types_default_error_message(
                 sess,
                 &t_e_t,
@@ -1055,7 +1060,7 @@ fn typecheck_expression(
                     Box::new((new_e_f, e_f.1.clone())),
                 ),
                 t_e_t,
-                var_context,
+                final_var_context,
             ))
         }
         Expression::Binary((op, op_span), e1, e2, _) => {
@@ -1718,7 +1723,7 @@ fn typecheck_expression(
                 sess.span_rustspec_err(e1.1.clone(), "cannot cast borrowed expression");
                 return Err(());
             }
-            if !is_castable_integer(&(e1_typ.1).0) {
+            if !is_castable_integer(&(e1_typ.1).0, top_level_context) {
                 sess.span_rustspec_err(
                     e1.1.clone(),
                     format!(
@@ -1730,7 +1735,7 @@ fn typecheck_expression(
                 );
                 return Err(());
             }
-            if !is_castable_integer(&t1.0) {
+            if !is_castable_integer(&t1.0, top_level_context) {
                 sess.span_rustspec_err(e1.1.clone(), "impossible to cast to this type");
                 return Err(());
             }
@@ -2344,13 +2349,16 @@ fn typecheck_statement(
                 typecheck_expression(sess, e1, top_level_context, var_context)?;
             let (new_e2, t_e2, var_context) =
                 typecheck_expression(sess, e2, top_level_context, &var_context)?;
-            match &t_e1 {
-                ((Borrowing::Consumed, _), (BaseTyp::Usize, _)) => (),
+            match (
+                t_e1.0.clone(),
+                dealias_type(t_e1.1 .0.clone(), top_level_context),
+            ) {
+                ((Borrowing::Consumed, _), BaseTyp::Usize) => (),
                 _ => {
                     sess.span_rustspec_err(
                         e1.1,
                         format!(
-                            "loop range bound should be an integer but has type {}{}",
+                            "loop range bound should be an usize but has type {}{}",
                             (t_e1.0).0,
                             (t_e1.1).0
                         )
@@ -2359,13 +2367,16 @@ fn typecheck_statement(
                     return Err(());
                 }
             };
-            match &t_e2 {
-                ((Borrowing::Consumed, _), (BaseTyp::Usize, _)) => (),
+            match (
+                t_e2.0.clone(),
+                dealias_type(t_e2.1 .0.clone(), top_level_context),
+            ) {
+                ((Borrowing::Consumed, _), BaseTyp::Usize) => (),
                 _ => {
                     sess.span_rustspec_err(
                         e2.1,
                         format!(
-                            "loop range bound should be an integer but has type {}{}",
+                            "loop range bound should be an usize but has type {}{}",
                             (t_e2.0).0,
                             (t_e2.1).0
                         )
