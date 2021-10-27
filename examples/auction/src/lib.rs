@@ -19,7 +19,7 @@ unfold_struct! {
         b : PublicByteSeq,
     }
 }
-    
+
 pub type Amount = u64;
 pub type Timestamp = u64;
 
@@ -49,7 +49,6 @@ pub enum MapEntry {
     Entry(u64, SeqMap),
 }
 
-// .entry(sender_address).or_insert_with(Amount::zero)
 fn seq_map_entry(m: SeqMap, sender_address: UserAddress) -> MapEntry {
     let SeqMap (m0, m1) = m;
 
@@ -175,10 +174,8 @@ pub fn auction_bid(ctx: Context, amount: u64, state: State) -> (State, AuctionBi
         AuctionState::Sold(_) => (state, AuctionBidResult::Err(BidError::AuctionIsFinalized)),
     };
 
-    // (acs, upb, ce, expirye, (updated1_mape, updated2_mape))
-
     (
-        new_state, // (acs, upb, ce, expirye, (updated1_mape, updated2_mape)),
+        new_state,
         rese,
     )
 }
@@ -320,16 +317,13 @@ fn verify_bid(
     account: UserAddress,
     ctx: Context,
     amount: u64,
-    bid_map: SeqMap,
     highest_bid: u64,
 ) -> (State, bool) {
     let item = PublicByteSeq::new(0_usize);
     let time = 100_u64;
 
     let (State(auc_st, hb, its, tm, bm), res) = auction_bid(ctx, amount, state);
-    // res.expect("Bidding should pass");
-    // bid_map.insert(account, highest_bid);
-    let bid_map = match seq_map_update_entry(bid_map.clone(), account, highest_bid) {
+    let bm = match seq_map_update_entry(bm.clone(), account, highest_bid) {
         MapUpdate::Update(_, updated_map) => updated_map,
     };
 
@@ -341,10 +335,9 @@ fn verify_bid(
                 highest_bid,
                 item.clone(),
                 time,
-                bid_map.clone(),
+                bm.clone(),
             ),
     )
-    // assert_eq!(*state, dummy_active_state(highest_bid, bid_map.clone()));
 }
 
 // const AUCTION_END: u64 = 1;
@@ -393,10 +386,8 @@ fn test_auction_bid_and_finalize() -> bool {
     let time = 100_u64;
 
     let amount = 100_u64;
-    // let winning_amount = 300_u64;
+    let winning_amount = 300_u64;
     // let big_amount = 500_u64;
-
-    let mut bid_map = SeqMap (PublicByteSeq::new(0_usize), PublicByteSeq::new(0_usize)); // BTreeMap::new();
 
     // initializing auction
     let state = fresh_state(item.clone(), time); // mut
@@ -409,54 +400,72 @@ fn test_auction_bid_and_finalize() -> bool {
     ]));
     let alice_ctx = (1_u64, UserAddressSet::UserAddressSome(alice, ()));
 
-    // let balance = 100_u64;
-    // alice_ctx.set_self_balance(balance);
-
-    // )
-
-    let (state, result_0) = verify_bid(state, alice, alice_ctx, amount, bid_map.clone(), amount);
-    result_0
+    let (state, result_0) =
+	verify_bid(state, alice, alice_ctx, amount, amount);
 
     // // 2nd bid: account1 bids `amount` again
     // // should work even though it's the same amount because account1 simply
     // // increases their bid
-    // let (state, result_1) =
-    //     verify_bid(state, alice, alice_ctx, amount, bid_map.clone(), amount + amount);
+    let (state, result_1) =
+        verify_bid(state, alice, alice_ctx, amount, amount + amount);
 
     // // 3rd bid: second account
-    // let (bob, mut bob_ctx) = new_account_ctx();
+    let bob = (UserAddress([
+        1_u8, 1_u8, 1_u8, 1_u8, 1_u8, 1_u8, 1_u8, 1_u8, 1_u8, 1_u8, 1_u8, 1_u8, 1_u8, 1_u8, 1_u8,
+        1_u8, 1_u8, 1_u8, 1_u8, 1_u8, 1_u8, 1_u8, 1_u8, 1_u8, 1_u8, 1_u8, 1_u8, 1_u8, 1_u8, 1_u8,
+        1_u8, 1_u8,
+    ]));
+    let bob_ctx = (2_u64, UserAddressSet::UserAddressSome(bob, ()));
 
-    // bob_ctx.set_self_balance(balance);
+    let (state, result_2) =
+	verify_bid(state, bob, bob_ctx, winning_amount, winning_amount);
 
-    // verify_bid(&mut state, bob, &bob_ctx, winning_amount, &mut bid_map, winning_amount);
+    let owner = (UserAddress([
+        0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8,
+        0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8,
+        0_u8, 0_u8,
+    ]));
 
-    // // trying to finalize auction that is still active
-    // // (specifically, the bid is submitted at the last moment, at the AUCTION_END
-    // // time)
-    // let mut ctx4 = ReceiveContextTest::empty();
+    let sender = owner;
+    let balance = 100_u64;
+    let ctx4 = (1_u64, owner, balance);
 
-    // let owner = AccountAddress([0u8; 32]);
-    // ctx4.set_owner(owner);
-    // let sender = Address::Account(owner);
-    // ctx4.set_sender(sender);
-    // let balance = Amount::from_micro_gtu(100);
-    // ctx4.set_self_balance(balance);
+    let (state, finres) = auction_finalize(ctx4, state);
 
-    // ctx4.set_metadata_slot_time(Timestamp::from_timestamp_millis(AUCTION_END));
-    // let finres: Result<ActionsTree, _> = auction_finalize(&ctx4, &mut state);
-    // expect_error(
-    //     finres,
-    //     FinalizeError::AuctionStillActive,
-    //     "Finalizing auction should fail when it's before auction-end time",
-    // );
+    let result_3 = match finres {
+	AuctionFinalizeResult::Err(err) =>
+	    match err {
+		FinalizeError::AuctionStillActive => true,
+		FinalizeError::BidMapError => false,
+		FinalizeError::AuctionFinalized => false,
+	    },
+	AuctionFinalizeResult::Ok(_) => false,
+    };
 
     // // finalizing auction
     // let carol = new_account();
-    // let dave = new_account();
-    // let mut ctx5 = new_ctx(carol, dave, AUCTION_END + 1);
+    let carol = (UserAddress([
+        2_u8, 2_u8, 2_u8, 2_u8, 2_u8, 2_u8, 2_u8, 2_u8, 2_u8, 2_u8, 2_u8, 2_u8, 2_u8, 2_u8, 2_u8,
+        2_u8, 2_u8, 2_u8, 2_u8, 2_u8, 2_u8, 2_u8, 2_u8, 2_u8, 2_u8, 2_u8, 2_u8, 2_u8, 2_u8, 2_u8,
+        2_u8, 2_u8,
+    ]));
+    let carol_ctx = (2_u64, UserAddressSet::UserAddressSome(carol, ()));
 
-    // ctx5.set_self_balance(winning_amount);
-    // let finres2: Result<ActionsTree, _> = auction_finalize(&ctx5, &mut state);
+    // // let dave = new_account();
+    // let dave = (UserAddress([
+    //     3_u8, 3_u8, 3_u8, 3_u8, 3_u8, 3_u8, 3_u8, 3_u8, 3_u8, 3_u8, 3_u8, 3_u8, 3_u8, 3_u8, 3_u8,
+    //     3_u8, 3_u8, 3_u8, 3_u8, 3_u8, 3_u8, 3_u8, 3_u8, 3_u8, 3_u8, 3_u8, 3_u8, 3_u8, 3_u8, 3_u8,
+    //     3_u8, 3_u8,
+    // ]));
+    // let dave_ctx = (3_u64, UserAddressSet::UserAddressSome(dave, ()));
+
+    let ctx5 = (2_u64, carol, winning_amount);
+
+    let (state, finres2) = auction_finalize(ctx5, state);
+
+
+    
+    
     // let actions = finres2.expect("Finalizing auction should work");
     // assert_eq!(
     //     actions,
@@ -487,5 +496,5 @@ fn test_auction_bid_and_finalize() -> bool {
     //     "Bidding should fail because the auction is finalized",
     // );
 
-    // result_0 // && result_1
+    result_0 && result_1 && result_2 && result_3
 }

@@ -451,31 +451,27 @@ Definition verify_bid
   (account_59 : user_address)
   (ctx_60 : context)
   (amount_61 : int64)
-  (bid_map_62 : seq_map)
-  (highest_bid_63 : int64)
+  (highest_bid_62 : int64)
   : (state × bool) :=
-  match  seq_new_ (repr 0) (usize 0) with item_64 => 
-  match  repr 100 with time_65 => 
-  let '(State ((auc_st_66, hb_67, its_68, tm_69, bm_70)), res_71) :=
+  match  seq_new_ (repr 0) (usize 0) with item_63 => 
+  match  repr 100 with time_64 => 
+  let '(State ((auc_st_65, hb_66, its_67, tm_68, bm_69)), res_70) :=
     auction_bid (ctx_60) (amount_61) (state_58) in 
   match 
-    match seq_map_update_entry ((bid_map_62)) (account_59) (highest_bid_63) with
-    | Update (_, updated_map_73) => updated_map_73 end with bid_map_72 => 
+    match seq_map_update_entry ((bm_69)) (account_59) (highest_bid_62) with
+    | Update (_, updated_map_72) => updated_map_72 end with bm_71 => 
   (
-    State ((auc_st_66, hb_67, (its_68), tm_69, (bm_70))),
-    (State ((auc_st_66, hb_67, (its_68), tm_69, (bm_70)))) =.? (
-      State ((NotSoldYet, highest_bid_63, (item_64), time_65, (bid_map_72))))
+    State ((auc_st_65, hb_66, (its_67), tm_68, (bm_71))),
+    (State ((auc_st_65, hb_66, (its_67), tm_68, (bm_71)))) =.? (
+      State ((NotSoldYet, highest_bid_62, (item_63), time_64, (bm_71))))
   ) end end end.
 
 Definition test_auction_bid_and_finalize  : bool :=
-  match  seq_new_ (repr 0) (usize 0) with item_74 => 
-  match  repr 100 with time_75 => 
-  match  repr 100 with amount_76 => 
-  match 
-    SeqMap (
-      (seq_new_ (repr 0) (usize 0), seq_new_ (repr 0) (usize 0)
-      )) with bid_map_77 => 
-  match  fresh_state ((item_74)) (time_75) with state_78 => 
+  match  seq_new_ (repr 0) (usize 0) with item_73 => 
+  match  repr 100 with time_74 => 
+  match  repr 100 with amount_75 => 
+  match  repr 300 with winning_amount_76 => 
+  match  fresh_state ((item_73)) (time_74) with state_77 => 
   match 
     array_from_list int8 (
       let l :=
@@ -512,12 +508,146 @@ Definition test_auction_bid_and_finalize  : bool :=
           repr 0;
           repr 0;
           repr 0
-        ] in  l) with alice_79 => 
-  match  (repr 1, UserAddressSome ((alice_79, tt))) with alice_ctx_80 => 
-  let '(state_81, result_0_82) :=
-    verify_bid (state_78) (alice_79) (alice_ctx_80) (amount_76) ((bid_map_77)) (
-      amount_76) in 
-  result_0_82 end end end end end end end.
+        ] in  l) with alice_78 => 
+  match  (repr 1, UserAddressSome ((alice_78, tt))) with alice_ctx_79 => 
+  let '(state_80, result_0_81) :=
+    verify_bid (state_77) (alice_78) (alice_ctx_79) (amount_75) (amount_75) in 
+  let '(state_82, result_1_83) :=
+    verify_bid (state_80) (alice_78) (alice_ctx_79) (amount_75) (
+      (amount_75) .+ (amount_75)) in 
+  match 
+    array_from_list int8 (
+      let l :=
+        [
+          repr 1;
+          repr 1;
+          repr 1;
+          repr 1;
+          repr 1;
+          repr 1;
+          repr 1;
+          repr 1;
+          repr 1;
+          repr 1;
+          repr 1;
+          repr 1;
+          repr 1;
+          repr 1;
+          repr 1;
+          repr 1;
+          repr 1;
+          repr 1;
+          repr 1;
+          repr 1;
+          repr 1;
+          repr 1;
+          repr 1;
+          repr 1;
+          repr 1;
+          repr 1;
+          repr 1;
+          repr 1;
+          repr 1;
+          repr 1;
+          repr 1;
+          repr 1
+        ] in  l) with bob_84 => 
+  match  (repr 2, UserAddressSome ((bob_84, tt))) with bob_ctx_85 => 
+  let '(state_86, result_2_87) :=
+    verify_bid (state_82) (bob_84) (bob_ctx_85) (winning_amount_76) (
+      winning_amount_76) in 
+  match 
+    array_from_list int8 (
+      let l :=
+        [
+          repr 0;
+          repr 0;
+          repr 0;
+          repr 0;
+          repr 0;
+          repr 0;
+          repr 0;
+          repr 0;
+          repr 0;
+          repr 0;
+          repr 0;
+          repr 0;
+          repr 0;
+          repr 0;
+          repr 0;
+          repr 0;
+          repr 0;
+          repr 0;
+          repr 0;
+          repr 0;
+          repr 0;
+          repr 0;
+          repr 0;
+          repr 0;
+          repr 0;
+          repr 0;
+          repr 0;
+          repr 0;
+          repr 0;
+          repr 0;
+          repr 0;
+          repr 0
+        ] in  l) with owner_88 => 
+  match  owner_88 with sender_89 => 
+  match  repr 100 with balance_90 => 
+  match  (repr 1, owner_88, balance_90) with ctx4_91 => 
+  let '(state_92, finres_93) :=
+    auction_finalize (ctx4_91) (state_86) in 
+  match 
+    match finres_93 with
+    | Err err_95 => match err_95 with
+    | AuctionStillActive => true
+    | BidMapError => false
+    | AuctionFinalized => false end
+    | Ok _ => false end with result_3_94 => 
+  match 
+    array_from_list int8 (
+      let l :=
+        [
+          repr 2;
+          repr 2;
+          repr 2;
+          repr 2;
+          repr 2;
+          repr 2;
+          repr 2;
+          repr 2;
+          repr 2;
+          repr 2;
+          repr 2;
+          repr 2;
+          repr 2;
+          repr 2;
+          repr 2;
+          repr 2;
+          repr 2;
+          repr 2;
+          repr 2;
+          repr 2;
+          repr 2;
+          repr 2;
+          repr 2;
+          repr 2;
+          repr 2;
+          repr 2;
+          repr 2;
+          repr 2;
+          repr 2;
+          repr 2;
+          repr 2;
+          repr 2
+        ] in  l) with carol_96 => 
+  match  (repr 2, UserAddressSome ((carol_96, tt))) with carol_ctx_97 => 
+  match  (repr 2, carol_96, winning_amount_76) with ctx5_98 => 
+  let '(state_99, finres2_100) :=
+    auction_finalize (ctx5_98) (state_92) in 
+  (((result_0_81) && (result_1_83)) && (result_2_87)) && (
+    result_3_94) end end end end end end end end end end end end end end end end end.
 
 Theorem test_auction_bid_and_finalize_correct : test_auction_bid_and_finalize = true.
 Proof. Admitted.
