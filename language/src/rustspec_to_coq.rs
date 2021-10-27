@@ -64,39 +64,6 @@ fn make_let_binding<'a>(
         })
 }
 
-fn make_match_binding<'a>(
-    pat: RcDoc<'a, ()>,
-    typ: Option<RcDoc<'a, ()>>,
-    expr: RcDoc<'a, ()>,
-    toplevel: bool,
-) -> RcDoc<'a, ()> {
-    RcDoc::as_string(if toplevel { "Definition" } else { "match" })
-        .append(RcDoc::space())
-        .append(RcDoc::line().append(expr.group()))
-        .append(RcDoc::space())
-        .append(RcDoc::as_string("with"))
-        .append(RcDoc::space())
-        .group()
-        .append(
-            pat.append(match typ {
-                None => RcDoc::nil(),
-                Some(tau) => RcDoc::space()
-                    .append(RcDoc::as_string(":"))
-                    .append(RcDoc::space())
-                    .append(tau),
-            })
-            .group(),
-        )
-        .nest(2)
-        .append(if toplevel {
-            RcDoc::as_string(".")
-        } else {
-            RcDoc::space()
-                .append(RcDoc::as_string("=>"))
-                .append(RcDoc::space())
-        })
-}
-
 fn make_uint_size_coercion<'a>(pat: RcDoc<'a, ()>) -> RcDoc<'a, ()> {
     RcDoc::as_string("Definition")
         .append(RcDoc::space())
@@ -327,16 +294,16 @@ fn translate_literal<'a>(lit: Literal) -> RcDoc<'a, ()> {
         Literal::Unit => RcDoc::as_string("tt"),
         Literal::Bool(true) => RcDoc::as_string("true"),
         Literal::Bool(false) => RcDoc::as_string("false"),
-        Literal::Int128(x) => RcDoc::as_string(format!("repr {}", x)),
-        Literal::UInt128(x) => RcDoc::as_string(format!("repr {}", x)),
-        Literal::Int64(x) => RcDoc::as_string(format!("repr {}", x)),
-        Literal::UInt64(x) => RcDoc::as_string(format!("repr {}", x)),
-        Literal::Int32(x) => RcDoc::as_string(format!("repr {}", x)),
-        Literal::UInt32(x) => RcDoc::as_string(format!("repr {}", x)),
-        Literal::Int16(x) => RcDoc::as_string(format!("repr {}", x)),
-        Literal::UInt16(x) => RcDoc::as_string(format!("repr {}", x)),
-        Literal::Int8(x) => RcDoc::as_string(format!("repr {}", x)),
-        Literal::UInt8(x) => RcDoc::as_string(format!("repr {}", x)),
+        Literal::Int128(x) => RcDoc::as_string(format!("@repr WORDSIZE128 {}", x)),
+        Literal::UInt128(x) => RcDoc::as_string(format!("@repr WORDSIZE128 {}", x)),
+        Literal::Int64(x) => RcDoc::as_string(format!("@repr WORDSIZE64 {}", x)),
+        Literal::UInt64(x) => RcDoc::as_string(format!("@repr WORDSIZE64 {}", x)),
+        Literal::Int32(x) => RcDoc::as_string(format!("@repr WORDSIZE32 {}", x)),
+        Literal::UInt32(x) => RcDoc::as_string(format!("@repr WORDSIZE32 {}", x)),
+        Literal::Int16(x) => RcDoc::as_string(format!("@repr WORDSIZE16 {}", x)),
+        Literal::UInt16(x) => RcDoc::as_string(format!("@repr WORDSIZE16 {}", x)),
+        Literal::Int8(x) => RcDoc::as_string(format!("@repr WORDSIZE8 {}", x)),
+        Literal::UInt8(x) => RcDoc::as_string(format!("@repr WORDSIZE8 {}", x)),
         Literal::Isize(x) => RcDoc::as_string(format!("isize {}", x)),
         Literal::Usize(x) => RcDoc::as_string(format!("usize {}", x)),
         Literal::Str(msg) => RcDoc::as_string(format!("\"{}\"", msg)),
@@ -1050,26 +1017,24 @@ fn translate_statements<'a>(
                 unimplemented!()
             } else {
                 match pat.clone() {
-                    Pattern::SingleCaseEnum(_, _) => make_match_binding(
-                        translate_pattern_tick(pat.clone()),
+                    Pattern::SingleCaseEnum(_, _) => make_let_binding(
+                        RcDoc::as_string("'").append(translate_pattern_tick(pat.clone())),
                         typ.map(|(typ, _)| translate_typ(typ)),
                         translate_expression(expr.clone(), top_ctx),
                         false,
                     )
                     .append(RcDoc::hardline())
-                    .append(translate_statements(statements, top_ctx))
-                    .append(RcDoc::space())
-                    .append(RcDoc::as_string("end")),
-                    Pattern::IdentPat(_) => make_match_binding(
-                        translate_pattern_tick(pat.clone()),
+                    .append(translate_statements(statements, top_ctx)),
+                    Pattern::IdentPat(_) => make_let_binding(
+                        // RcDoc::as_string("'").append(
+                            translate_pattern_tick(pat.clone())// )
+                        ,
                         typ.map(|(typ, _)| translate_typ(typ)),
                         translate_expression(expr.clone(), top_ctx),
                         false,
                     )
                     .append(RcDoc::hardline())
-                    .append(translate_statements(statements, top_ctx))
-                    .append(RcDoc::space())
-                    .append(RcDoc::as_string("end")),
+                    .append(translate_statements(statements, top_ctx)),
                     _ => make_let_binding(
                         translate_pattern_tick(pat.clone()),
                         typ.map(|(typ, _)| translate_typ(typ)),

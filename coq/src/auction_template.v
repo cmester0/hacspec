@@ -63,10 +63,14 @@ Definition fresh_state (itm_0 : seq int8) (exp_1 : int64) : state :=
   State (
     (
       NotSoldYet,
-      repr 0,
+      @repr WORDSIZE64 0,
       itm_0,
       exp_1,
-      SeqMap ((seq_new_ (repr 0) (usize 0), seq_new_ (repr 0) (usize 0)))
+      SeqMap (
+        (
+          seq_new_ (@repr WORDSIZE8 0) (usize 0),
+          seq_new_ (@repr WORDSIZE8 0) (usize 0)
+        ))
     )).
 
 Inductive map_entry :=
@@ -87,17 +91,18 @@ Definition seq_map_entry
   (m_2 : seq_map)
   (sender_address_3 : user_address)
   : map_entry :=
-  match  m_2 with SeqMap ((m0_4, m1_5)) => 
-  match 
+  let 'SeqMap ((m0_4, m1_5)) :=
+    m_2 in 
+  let res_6 :=
     Entry (
       (
-        repr 0,
+        @repr WORDSIZE64 0,
         SeqMap (
           (
             seq_concat ((m0_4)) (sender_address_3),
-            seq_concat ((m1_5)) (u64_to_be_bytes (repr 0))
+            seq_concat ((m1_5)) (u64_to_be_bytes (@repr WORDSIZE64 0))
           ))
-      )) with res_6 => 
+      )) in 
   let res_6 :=
     foldi (usize 0) ((seq_len ((m0_4))) / (usize 32)) (fun x_7 res_6 =>
       let '(res_6) :=
@@ -118,7 +123,7 @@ Definition seq_map_entry
         ) in 
       (res_6))
     res_6 in 
-  res_6 end end.
+  res_6.
 
 Inductive map_update :=
 | Update : (int64 × seq_map) -> map_update.
@@ -139,8 +144,9 @@ Definition seq_map_update_entry
   (sender_address_9 : user_address)
   (amount_10 : int64)
   : map_update :=
-  match  m_8 with SeqMap ((m0_11, m1_12)) => 
-  match 
+  let 'SeqMap ((m0_11, m1_12)) :=
+    m_8 in 
+  let res_13 :=
     Update (
       (
         amount_10,
@@ -149,7 +155,7 @@ Definition seq_map_update_entry
             seq_concat (m0_11) (sender_address_9),
             seq_concat (m1_12) (u64_to_be_bytes (amount_10))
           ))
-      )) with res_13 => 
+      )) in 
   let res_13 :=
     foldi (usize 0) ((seq_len ((m0_11))) / (usize 32)) (fun x_14 res_13 =>
       let '(res_13) :=
@@ -174,7 +180,7 @@ Definition seq_map_update_entry
         ) in 
       (res_13))
     res_13 in 
-  res_13 end end.
+  res_13.
 
 Inductive bid_error :=
 | ContractSender : bid_error
@@ -251,7 +257,8 @@ Definition auction_bid
   : (state × auction_bid_result) :=
   let '(slot_time_18, sender_19) :=
     ctx_15 in 
-  match  (state_17) with State ((st0_20, st1_21, st2_22, st3_23, st4_24)) => 
+  let 'State ((st0_20, st1_21, st2_22, st3_23, st4_24)) :=
+    (state_17) in 
   let '(new_state_25, rese_26) :=
     match st0_20 with
     | NotSoldYet => match (if ((slot_time_18) <=.? (st3_23)):bool then (
@@ -274,7 +281,7 @@ Definition auction_bid
     ) end end end end
     | False => (state_17, Err (BidsOverWaitingForAuctionFinalization)) end
     | Sold _ => (state_17, Err (AuctionIsFinalized)) end in 
-  (new_state_25, rese_26) end.
+  (new_state_25, rese_26).
 
 Notation "'finalize_context'" := ((int64 × user_address × int64
 )) : hacspec_scope.
@@ -345,20 +352,26 @@ Definition auction_finalize
   (ctx_32 : finalize_context)
   (state_33 : state)
   : (state × auction_finalize_result) :=
-  match  (state_33) with State ((st0_34, st1_35, st2_36, st3_37, st4_38)) => 
+  let 'State ((st0_34, st1_35, st2_36, st3_37, st4_38)) :=
+    (state_33) in 
   let '(slot_time_39, owner_40, balance_41) :=
     ctx_32 in 
   let '(continues_42, return_action_43) :=
     match st0_34 with
     | NotSoldYet => (if ((slot_time_39) >.? (st3_37)):bool then (
-      (if ((balance_41) =.? (repr 0)):bool then ((false, Ok (Accept))) else (
+      (if ((balance_41) =.? (@repr WORDSIZE64 0)):bool then (
+        (false, Ok (Accept))) else (
         (
           true,
-          Ok (SimpleTransfer ((owner_40, st1_35, seq_new_ (repr 0) (usize 0))))
+          Ok (
+            SimpleTransfer (
+              (owner_40, st1_35, seq_new_ (@repr WORDSIZE8 0) (usize 0))))
         )))) else ((false, Err (AuctionStillActive))))
     | Sold _ => (false, Err (AuctionFinalized)) end in 
-  match  None with remaining_bid_44 => 
-  match  (st4_38) with SeqMap ((m0_45, m1_46)) => 
+  let remaining_bid_44 :=
+    None in 
+  let 'SeqMap ((m0_45, m1_46)) :=
+    (st4_38) in 
   let '(st0_34, return_action_43, remaining_bid_44) :=
     if continues_42:bool then (
       let '(st0_34, return_action_43, remaining_bid_44) :=
@@ -367,15 +380,13 @@ Definition auction_finalize
             return_action_43,
             remaining_bid_44
           ) =>
-          match 
+          let amnt_48 :=
             u64_from_be_bytes (
               array_from_seq (8) (
-                seq_slice (m1_46) ((x_47) * (usize 8)) (
-                  usize 8))) with amnt_48 => 
-          match 
+                seq_slice (m1_46) ((x_47) * (usize 8)) (usize 8))) in 
+          let addr_49 :=
             array_from_seq (32) (
-              seq_slice ((m0_45)) ((x_47) * (usize 32)) (
-                usize 32)) with addr_49 => 
+              seq_slice ((m0_45)) ((x_47) * (usize 32)) (usize 32)) in 
           let '(st0_34, return_action_43, remaining_bid_44) :=
             if (amnt_48) <.? (st1_35):bool then (
               let return_action_43 :=
@@ -409,7 +420,7 @@ Definition auction_finalize
                 ) in 
               (st0_34, return_action_43, remaining_bid_44)
             ) in 
-          (st0_34, return_action_43, remaining_bid_44) end end)
+          (st0_34, return_action_43, remaining_bid_44))
         (st0_34, return_action_43, remaining_bid_44) in 
       (st0_34, return_action_43, remaining_bid_44)
     ) else ( (st0_34, return_action_43, remaining_bid_44)
@@ -426,21 +437,26 @@ Definition auction_finalize
       (return_action_43)
     ) else ( (return_action_43)
     ) in 
-  (State ((st0_34, st1_35, st2_36, st3_37, st4_38)), return_action_43
-  ) end end end.
+  (State ((st0_34, st1_35, st2_36, st3_37, st4_38)), return_action_43).
 
 Definition auction_test_init  : bool :=
-  match  seq_new_ (repr 0) (usize 0) with item_56 => 
-  match  repr 100 with time_57 => 
+  let item_56 :=
+    seq_new_ (@repr WORDSIZE8 0) (usize 0) in 
+  let time_57 :=
+    @repr WORDSIZE64 100 in 
   (fresh_state ((item_56)) (time_57)) =.? (
     State (
       (
         NotSoldYet,
-        repr 0,
+        @repr WORDSIZE64 0,
         (item_56),
         time_57,
-        SeqMap ((seq_new_ (repr 0) (usize 0), seq_new_ (repr 0) (usize 0)))
-      ))) end end.
+        SeqMap (
+          (
+            seq_new_ (@repr WORDSIZE8 0) (usize 0),
+            seq_new_ (@repr WORDSIZE8 0) (usize 0)
+          ))
+      ))).
 
 Theorem auction_test_init_correct : auction_test_init = true.
 Proof. Admitted.
@@ -453,201 +469,214 @@ Definition verify_bid
   (amount_61 : int64)
   (highest_bid_62 : int64)
   : (state × bool) :=
-  match  seq_new_ (repr 0) (usize 0) with item_63 => 
-  match  repr 100 with time_64 => 
+  let item_63 :=
+    seq_new_ (@repr WORDSIZE8 0) (usize 0) in 
+  let time_64 :=
+    @repr WORDSIZE64 100 in 
   let '(State ((auc_st_65, hb_66, its_67, tm_68, bm_69)), res_70) :=
     auction_bid (ctx_60) (amount_61) (state_58) in 
-  match 
+  let bm_71 :=
     match seq_map_update_entry ((bm_69)) (account_59) (highest_bid_62) with
-    | Update (_, updated_map_72) => updated_map_72 end with bm_71 => 
+    | Update (_, updated_map_72) => updated_map_72 end in 
   (
     State ((auc_st_65, hb_66, (its_67), tm_68, (bm_71))),
     (State ((auc_st_65, hb_66, (its_67), tm_68, (bm_71)))) =.? (
       State ((NotSoldYet, highest_bid_62, (item_63), time_64, (bm_71))))
-  ) end end end.
+  ).
 
 Definition test_auction_bid_and_finalize  : bool :=
-  match  seq_new_ (repr 0) (usize 0) with item_73 => 
-  match  repr 100 with time_74 => 
-  match  repr 100 with amount_75 => 
-  match  repr 300 with winning_amount_76 => 
-  match  fresh_state ((item_73)) (time_74) with state_77 => 
-  match 
+  let item_73 :=
+    seq_new_ (@repr WORDSIZE8 0) (usize 0) in 
+  let time_74 :=
+    @repr WORDSIZE64 100 in 
+  let amount_75 :=
+    @repr WORDSIZE64 100 in 
+  let winning_amount_76 :=
+    @repr WORDSIZE64 300 in 
+  let state_77 :=
+    fresh_state ((item_73)) (time_74) in 
+  let alice_78 :=
     array_from_list int8 (
       let l :=
         [
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0
-        ] in  l) with alice_78 => 
-  match  (repr 1, UserAddressSome ((alice_78, tt))) with alice_ctx_79 => 
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0
+        ] in  l) in 
+  let alice_ctx_79 :=
+    (@repr WORDSIZE64 1, UserAddressSome ((alice_78, tt))) in 
   let '(state_80, result_0_81) :=
     verify_bid (state_77) (alice_78) (alice_ctx_79) (amount_75) (amount_75) in 
   let '(state_82, result_1_83) :=
     verify_bid (state_80) (alice_78) (alice_ctx_79) (amount_75) (
       (amount_75) .+ (amount_75)) in 
-  match 
+  let bob_84 :=
     array_from_list int8 (
       let l :=
         [
-          repr 1;
-          repr 1;
-          repr 1;
-          repr 1;
-          repr 1;
-          repr 1;
-          repr 1;
-          repr 1;
-          repr 1;
-          repr 1;
-          repr 1;
-          repr 1;
-          repr 1;
-          repr 1;
-          repr 1;
-          repr 1;
-          repr 1;
-          repr 1;
-          repr 1;
-          repr 1;
-          repr 1;
-          repr 1;
-          repr 1;
-          repr 1;
-          repr 1;
-          repr 1;
-          repr 1;
-          repr 1;
-          repr 1;
-          repr 1;
-          repr 1;
-          repr 1
-        ] in  l) with bob_84 => 
-  match  (repr 2, UserAddressSome ((bob_84, tt))) with bob_ctx_85 => 
+          @repr WORDSIZE8 1;
+          @repr WORDSIZE8 1;
+          @repr WORDSIZE8 1;
+          @repr WORDSIZE8 1;
+          @repr WORDSIZE8 1;
+          @repr WORDSIZE8 1;
+          @repr WORDSIZE8 1;
+          @repr WORDSIZE8 1;
+          @repr WORDSIZE8 1;
+          @repr WORDSIZE8 1;
+          @repr WORDSIZE8 1;
+          @repr WORDSIZE8 1;
+          @repr WORDSIZE8 1;
+          @repr WORDSIZE8 1;
+          @repr WORDSIZE8 1;
+          @repr WORDSIZE8 1;
+          @repr WORDSIZE8 1;
+          @repr WORDSIZE8 1;
+          @repr WORDSIZE8 1;
+          @repr WORDSIZE8 1;
+          @repr WORDSIZE8 1;
+          @repr WORDSIZE8 1;
+          @repr WORDSIZE8 1;
+          @repr WORDSIZE8 1;
+          @repr WORDSIZE8 1;
+          @repr WORDSIZE8 1;
+          @repr WORDSIZE8 1;
+          @repr WORDSIZE8 1;
+          @repr WORDSIZE8 1;
+          @repr WORDSIZE8 1;
+          @repr WORDSIZE8 1;
+          @repr WORDSIZE8 1
+        ] in  l) in 
+  let bob_ctx_85 :=
+    (@repr WORDSIZE64 2, UserAddressSome ((bob_84, tt))) in 
   let '(state_86, result_2_87) :=
     verify_bid (state_82) (bob_84) (bob_ctx_85) (winning_amount_76) (
       winning_amount_76) in 
-  match 
+  let owner_88 :=
     array_from_list int8 (
       let l :=
         [
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0;
-          repr 0
-        ] in  l) with owner_88 => 
-  match  owner_88 with sender_89 => 
-  match  repr 100 with balance_90 => 
-  match  (repr 1, owner_88, balance_90) with ctx4_91 => 
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0;
+          @repr WORDSIZE8 0
+        ] in  l) in 
+  let sender_89 :=
+    owner_88 in 
+  let balance_90 :=
+    @repr WORDSIZE64 100 in 
+  let ctx4_91 :=
+    (@repr WORDSIZE64 1, owner_88, balance_90) in 
   let '(state_92, finres_93) :=
     auction_finalize (ctx4_91) (state_86) in 
-  match 
+  let result_3_94 :=
     match finres_93 with
     | Err err_95 => match err_95 with
     | AuctionStillActive => true
     | BidMapError => false
     | AuctionFinalized => false end
-    | Ok _ => false end with result_3_94 => 
-  match 
+    | Ok _ => false end in 
+  let carol_96 :=
     array_from_list int8 (
       let l :=
         [
-          repr 2;
-          repr 2;
-          repr 2;
-          repr 2;
-          repr 2;
-          repr 2;
-          repr 2;
-          repr 2;
-          repr 2;
-          repr 2;
-          repr 2;
-          repr 2;
-          repr 2;
-          repr 2;
-          repr 2;
-          repr 2;
-          repr 2;
-          repr 2;
-          repr 2;
-          repr 2;
-          repr 2;
-          repr 2;
-          repr 2;
-          repr 2;
-          repr 2;
-          repr 2;
-          repr 2;
-          repr 2;
-          repr 2;
-          repr 2;
-          repr 2;
-          repr 2
-        ] in  l) with carol_96 => 
-  match  (repr 2, UserAddressSome ((carol_96, tt))) with carol_ctx_97 => 
-  match  (repr 2, carol_96, winning_amount_76) with ctx5_98 => 
+          @repr WORDSIZE8 2;
+          @repr WORDSIZE8 2;
+          @repr WORDSIZE8 2;
+          @repr WORDSIZE8 2;
+          @repr WORDSIZE8 2;
+          @repr WORDSIZE8 2;
+          @repr WORDSIZE8 2;
+          @repr WORDSIZE8 2;
+          @repr WORDSIZE8 2;
+          @repr WORDSIZE8 2;
+          @repr WORDSIZE8 2;
+          @repr WORDSIZE8 2;
+          @repr WORDSIZE8 2;
+          @repr WORDSIZE8 2;
+          @repr WORDSIZE8 2;
+          @repr WORDSIZE8 2;
+          @repr WORDSIZE8 2;
+          @repr WORDSIZE8 2;
+          @repr WORDSIZE8 2;
+          @repr WORDSIZE8 2;
+          @repr WORDSIZE8 2;
+          @repr WORDSIZE8 2;
+          @repr WORDSIZE8 2;
+          @repr WORDSIZE8 2;
+          @repr WORDSIZE8 2;
+          @repr WORDSIZE8 2;
+          @repr WORDSIZE8 2;
+          @repr WORDSIZE8 2;
+          @repr WORDSIZE8 2;
+          @repr WORDSIZE8 2;
+          @repr WORDSIZE8 2;
+          @repr WORDSIZE8 2
+        ] in  l) in 
+  let carol_ctx_97 :=
+    (@repr WORDSIZE64 2, UserAddressSome ((carol_96, tt))) in 
+  let ctx5_98 :=
+    (@repr WORDSIZE64 2, carol_96, winning_amount_76) in 
   let '(state_99, finres2_100) :=
     auction_finalize (ctx5_98) (state_92) in 
-  (((result_0_81) && (result_1_83)) && (result_2_87)) && (
-    result_3_94) end end end end end end end end end end end end end end end end end.
+  (((result_0_81) && (result_1_83)) && (result_2_87)) && (result_3_94).
 
 Theorem test_auction_bid_and_finalize_correct : test_auction_bid_and_finalize = true.
 Proof. Admitted.
