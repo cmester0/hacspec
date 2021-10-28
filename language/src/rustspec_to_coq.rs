@@ -1318,6 +1318,203 @@ fn translate_block<'a>(
     translate_statements(statements.iter(), top_ctx).group()
 }
 
+fn translate_pearlite_binop<'a>(b: syn::BinOp) -> RcDoc<'a, ()> {
+    match b {
+        syn::BinOp::Add(_) => RcDoc::as_string(".+"),
+        syn::BinOp::Sub(_) => RcDoc::as_string(".-"),
+        syn::BinOp::Mul(_) => RcDoc::as_string(".*"),
+        syn::BinOp::Eq(_) => RcDoc::as_string("="),
+        _ => RcDoc::as_string("TODO"),
+    }
+}
+
+fn translate_pearlite_lit<'a>(l: syn::Lit) -> RcDoc<'a, ()> {
+    match l {
+        syn::Lit::Int(lit) => RcDoc::as_string(format!("repr {}", lit.base10_digits())),
+        _ => RcDoc::as_string(format!("TODO: {:?}", l)),
+    }
+}
+
+fn translate_pearlite<'a>(t: pearlite_syn::term::Term) -> RcDoc<'a, ()> {
+    match t {
+        pearlite_syn::term::Term::Array(_) => {
+            println!("Array");
+            RcDoc::nil()
+        }
+        pearlite_syn::term::Term::Binary(pearlite_syn::term::TermBinary { left, op, right }) => {
+            println!("Binary");
+
+            make_paren(translate_pearlite(*left))
+                .append(RcDoc::space())
+                .append(translate_pearlite_binop(op))
+                .append(RcDoc::space())
+                .append(make_paren(translate_pearlite(*right)))
+        }
+        pearlite_syn::term::Term::Block(pearlite_syn::term::TermBlock { block, .. }) => {
+            println!("Block");
+            RcDoc::nil()
+        }
+        pearlite_syn::term::Term::Call(pearlite_syn::term::TermCall { func, args, .. }) => {
+            println!("Call");
+            RcDoc::nil()
+        }
+        pearlite_syn::term::Term::Cast(_) => {
+            println!("Cast");
+            RcDoc::nil()
+        }
+        pearlite_syn::term::Term::Field(pearlite_syn::term::TermField { base, member, .. }) => {
+            println!("Field");
+            RcDoc::nil()
+        }
+        pearlite_syn::term::Term::Group(_) => {
+            println!("Group");
+            RcDoc::nil()
+        }
+        pearlite_syn::term::Term::If(pearlite_syn::term::TermIf {
+            cond,
+            then_branch,
+            else_branch,
+            ..
+        }) => {
+            println!("If");
+            RcDoc::nil()
+        }
+        pearlite_syn::term::Term::Index(pearlite_syn::term::TermIndex { expr, index, .. }) => {
+            println!("Index");
+            RcDoc::nil()
+        }
+        pearlite_syn::term::Term::Let(_) => {
+            println!("Let");
+            RcDoc::nil()
+        }
+        pearlite_syn::term::Term::Lit(pearlite_syn::term::TermLit { ref lit }) => {
+            println!("Lit");
+            translate_pearlite_lit(lit.clone())
+        }
+        pearlite_syn::term::Term::Match(pearlite_syn::term::TermMatch { expr, arms, .. }) => {
+            println!("Match");
+            RcDoc::nil()
+        }
+        pearlite_syn::term::Term::MethodCall(pearlite_syn::term::TermMethodCall {
+            receiver,
+            method,
+            turbofish,
+            args,
+            ..
+        }) => {
+            println!("MethodCall");
+            RcDoc::nil()
+        }
+        pearlite_syn::term::Term::Paren(pearlite_syn::term::TermParen { expr, .. }) => {
+            println!("Paren");
+            make_paren(translate_pearlite(*expr))
+        }
+        pearlite_syn::term::Term::Path(pearlite_syn::term::TermPath {
+            inner:
+                syn::ExprPath {
+                    attrs: _,
+                    qself: _,
+                    path:
+                        syn::Path {
+                            leading_colon: _,
+                            segments: s,
+                        },
+                },
+        }) => {
+            println!("Path {:?}", s);
+            s.iter().fold(RcDoc::nil(), |rc, x| match x {
+                syn::PathSegment { ident: id, .. } => rc.append(RcDoc::as_string(id.to_string())),
+            })
+            // RcDoc::as_string(t.to_string())
+        }
+        pearlite_syn::term::Term::Range(_) => {
+            println!("Range");
+            RcDoc::nil()
+        }
+        pearlite_syn::term::Term::Repeat(_) => {
+            println!("Repeat");
+            RcDoc::nil()
+        }
+        pearlite_syn::term::Term::Struct(_) => {
+            println!("Struct");
+            RcDoc::nil()
+        }
+        pearlite_syn::term::Term::Tuple(pearlite_syn::term::TermTuple { elems, .. }) => {
+            println!("Tuple");
+            RcDoc::nil()
+        }
+        pearlite_syn::term::Term::Type(ty) => {
+            println!("Type");
+            RcDoc::nil()
+        }
+        pearlite_syn::term::Term::Unary(pearlite_syn::term::TermUnary { op, expr }) => {
+            println!("Unary");
+            RcDoc::nil()
+        }
+        pearlite_syn::term::Term::Final(pearlite_syn::term::TermFinal { term, .. }) => {
+            println!("Final");
+            RcDoc::nil()
+        }
+        pearlite_syn::term::Term::Model(pearlite_syn::term::TermModel { term, .. }) => {
+            println!("Model");
+            RcDoc::nil()
+        }
+        pearlite_syn::term::Term::Verbatim(_) => {
+            println!("Verbatim");
+            RcDoc::nil()
+        }
+        pearlite_syn::term::Term::LogEq(pearlite_syn::term::TermLogEq { lhs, rhs, .. }) => {
+            println!("LogEq");
+            make_paren(translate_pearlite(*lhs))
+                .append(RcDoc::space())
+                .append(RcDoc::as_string("="))
+                .append(RcDoc::space())
+                .append(make_paren(translate_pearlite(*rhs)))
+        }
+        pearlite_syn::term::Term::Impl(pearlite_syn::term::TermImpl { hyp, cons, .. }) => {
+            println!("Impl");
+            make_paren(translate_pearlite(*hyp))
+                .append(RcDoc::space())
+                .append(RcDoc::as_string("->"))
+                .append(RcDoc::space())
+                .append(make_paren(translate_pearlite(*cons)))
+        }
+        pearlite_syn::term::Term::Forall(pearlite_syn::term::TermForall { args, term, .. }) => {
+            println!("Forall");
+            RcDoc::as_string("forall")
+                .append(RcDoc::space())
+                // .append(translate_pearlite(args))
+                .append(RcDoc::as_string(","))
+                .append(RcDoc::space())
+                .append(translate_pearlite(*term))
+        }
+        pearlite_syn::term::Term::Exists(pearlite_syn::term::TermExists { args, term, .. }) => {
+            println!("Exists");
+            RcDoc::as_string("exists")
+                .append(RcDoc::space())
+                .append(
+                    args.iter()
+                        .fold(RcDoc::nil(), |rs, x| rs.append(x.ident.to_string())),
+                )
+                .append(RcDoc::as_string(","))
+                .append(RcDoc::space())
+                .append(translate_pearlite(*term))
+        }
+        pearlite_syn::term::Term::Absurd(_) => {
+            println!("Absurd");
+            RcDoc::nil()
+        }
+        pearlite_syn::term::Term::Pearlite(term) => {
+            println!("Pearlite");
+            RcDoc::nil()
+        }
+        pearlite_syn::term::Term::__Nonexhaustive => {
+            println!("Nonexhaustive");
+            RcDoc::nil()
+        }
+    }
+}
+
 fn translate_item<'a>(
     item: &'a DecoratedItem,
     top_ctx: &'a TopLevelContext,
@@ -1360,6 +1557,57 @@ fn translate_item<'a>(
                 .group(),
             true,
         )
+        .append(item.tags.0.iter().fold(RcDoc::nil(), |rc, x| {
+	    match x.as_str() {
+	        "code" | "test" | "proof" | "Clone" | "PartialEq" => rc,
+	        s => {
+		    let t : pearlite_syn::term::Term = syn::parse_str(s).unwrap();
+		    rc
+                        .append(RcDoc::hardline())
+                        .append(RcDoc::as_string("Theorem asdf : forall result"))
+                        .append(RcDoc::space())
+                        .append(RcDoc::intersperse(
+                            sig.args.iter().map(|((x, _), (tau, _))| {
+                                make_paren(
+                                    match x.clone() {
+                                        Ident::Local(LocalIdent { id, name: s }) => {
+                                            RcDoc::as_string(s)
+                                                .append(RcDoc::space())
+                                                .append(RcDoc::as_string(":"))
+                                                .append(RcDoc::space())
+                                                .append(translate_typ(tau.clone()))
+                                        }
+                                        _ => RcDoc::nil(),
+                                    }
+                                )
+                            }),
+                            RcDoc::space()
+                        ))
+                        .append(RcDoc::as_string(","))
+                        .append(RcDoc::line())
+                        .append(translate_ident(Ident::TopLevel(f.clone())))
+                        .append(RcDoc::space())
+                        .append(RcDoc::intersperse(
+                            sig.args.iter().map(|((x, _), (tau, _))| {
+                                match x.clone() {
+                                    Ident::Local(LocalIdent { id, name: s }) => RcDoc::as_string(s),
+                                    _ => RcDoc::nil(),
+                                }
+                            }),
+                            RcDoc::space()
+                        ))
+                        .append(RcDoc::space())
+                        .append(RcDoc::as_string("= result"))
+                        .append(RcDoc::as_string("->"))
+                        .append(RcDoc::line())
+                        .append(RcDoc::space())
+                        .append(translate_pearlite(t))
+                        .append(RcDoc::as_string("."))
+                        .append(RcDoc::line())
+                        .append(RcDoc::as_string("Proof. Admitted."))
+	        }
+	    }
+        }))
         .append({
             if item.tags.0.contains(&"quickcheck".to_string()) {
                 RcDoc::hardline()

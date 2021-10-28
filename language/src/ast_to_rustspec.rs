@@ -2210,10 +2210,237 @@ fn attribute_is_test(attr: &Attribute) -> bool {
     }
 }
 
+// pub fn encode_term(term: RT) -> Result<TokenStream, ()> {
+//     match term {
+//         RT::Array(_) => todo!("Array"),
+//         RT::Binary(TermBinary { left, op, right }) => {
+//             let left = encode_term(*left)?;
+//             let right = encode_term(*right)?;
+//             Ok(quote! { #left #op #right })
+//         }
+//         RT::Block(TermBlock { block, .. }) => {
+//             let stmts: Vec<_> =
+//                 block.stmts.into_iter().map(encode_stmt).collect::<Result<_, _>>()?;
+//             Ok(quote! { { #(#stmts)* } })
+//         }
+//         RT::Call(TermCall { func, args, .. }) => {
+//             let func = encode_term(*func)?;
+//             let args: Vec<_> = args.into_iter().map(encode_term).collect::<Result<_, _>>()?;
+//             Ok(quote! { #func (#(#args),*)})
+//         }
+//         RT::Cast(_) => todo!("Cast"),
+//         RT::Field(TermField { base, member, .. }) => {
+//             let base = encode_term(*base)?;
+//             Ok(quote!({ #base . #member }))
+//         }
+//         RT::Group(_) => todo!("Group"),
+//         RT::If(TermIf { cond, then_branch, else_branch, .. }) => {
+//             let cond = encode_term(*cond)?;
+//             let then_branch: Vec<_> =
+//                 then_branch.stmts.into_iter().map(encode_stmt).collect::<Result<_, _>>()?;
+//             let else_branch = match else_branch {
+//                 Some((_, t)) => {
+//                     let term = encode_term(*t)?;
+//                     Some(quote! { else #term })
+//                 }
+//                 None => None,
+//             };
+//             Ok(quote! { if #cond { #(#then_branch)* } #else_branch })
+//         }
+//         RT::Index(TermIndex { expr, index, .. }) => {
+//             let expr = encode_term(*expr)?;
+//             let index = encode_term(*index)?;
+
+//             Ok(quote! {
+//                 #expr [#index]
+//             })
+//         }
+//         RT::Let(_) => todo!("Let"),
+//         RT::Lit(TermLit { ref lit }) => match lit {
+//             Lit::Int(int) if int.suffix() == "" => Ok(quote! { Int::from(#lit) }),
+//             _ => Ok(quote! { #lit }),
+//         },
+//         RT::Match(TermMatch { expr, arms, .. }) => {
+//             let arms: Vec<_> = arms.into_iter().map(encode_arm).collect::<Result<_, _>>()?;
+//             let expr = encode_term(*expr)?;
+//             Ok(quote! { match #expr { #(#arms)* } })
+//         }
+//         RT::MethodCall(TermMethodCall { receiver, method, turbofish, args, .. }) => {
+//             let receiver = encode_term(*receiver)?;
+//             let args: Vec<_> = args.into_iter().map(encode_term).collect::<Result<_, _>>()?;
+
+//             Ok(quote! { #receiver . #method #turbofish ( #(#args),*) })
+//         }
+//         RT::Paren(TermParen { expr, .. }) => {
+//             let term = encode_term(*expr)?;
+//             Ok(quote! { (#term) })
+//         }
+//         RT::Path(_) => Ok(quote! { #term }),
+//         RT::Range(_) => todo!("Range"),
+//         RT::Repeat(_) => todo!("Repeat"),
+//         RT::Struct(_) => todo!("Struct"),
+//         RT::Tuple(TermTuple { elems, .. }) => {
+//             let elems: Vec<_> = elems.into_iter().map(encode_term).collect::<Result<_, _>>()?;
+//             Ok(quote! { (#(#elems),*) })
+//         }
+//         RT::Type(ty) => Ok(quote! { #ty }),
+//         RT::Unary(TermUnary { op, expr }) => {
+//             let term = encode_term(*expr)?;
+//             Ok(quote! {
+//                 #op #term
+//             })
+//         }
+//         RT::Final(TermFinal { term, .. }) => {
+//             let term = encode_term(*term)?;
+//             Ok(quote! {
+//                 creusot_contracts::stubs::fin(#term)
+//             })
+//         }
+//         RT::Model(TermModel { term, .. }) => {
+//             let term = encode_term(*term)?;
+//             Ok(quote! {
+//                 creusot_contracts::builtins::Model::model(#term)
+//             })
+//         }
+//         RT::Verbatim(_) => todo!(),
+//         RT::LogEq(TermLogEq { lhs, rhs, .. }) => {
+//             let lhs = encode_term(*lhs)?;
+//             let rhs = encode_term(*rhs)?;
+//             Ok(quote! {
+//                 creusot_contracts::stubs::equal(#lhs, #rhs)
+//             })
+//         }
+//         RT::Impl(TermImpl { hyp, cons, .. }) => {
+//             let hyp = encode_term(*hyp)?;
+//             let cons = encode_term(*cons)?;
+//             Ok(quote! {
+//                 creusot_contracts::stubs::implication(#hyp, #cons)
+//             })
+//         }
+//         RT::Forall(TermForall { args, term, .. }) => {
+//             let mut ts = encode_term(*term)?;
+//             for arg in args {
+//                 ts = quote! {
+//                     creusot_contracts::stubs::forall(
+//                         #[creusot::spec::no_translate]
+//                         |#arg|{ #ts }
+//                     )
+//                 }
+//             }
+//             Ok(ts)
+//         }
+//         RT::Exists(TermExists { args, term, .. }) => {
+//             let mut ts = encode_term(*term)?;
+//             for arg in args {
+//                 ts = quote! {
+//                     creusot_contracts::stubs::exists(
+//                         #[creusot::spec::no_translate]
+//                         |#arg|{ #ts }
+//                     )
+//                 }
+//             }
+//             Ok(ts)
+//         }
+//         RT::Absurd(_) => Ok(quote! { creusot_contracts::stubs::abs() }),
+//         RT::Pearlite(term) => Ok(quote! { (#term) }),
+//         RT::__Nonexhaustive => todo!(),
+//     }
+// }
+
+// fn encode_stmt(stmt: TermStmt) -> Result<TokenStream, ()> {
+//     match stmt {
+//         TermStmt::Local(TLocal { pat, init, .. }) => {
+//             if let Some((_, init)) = init {
+//                 let pat = encode_pattern(pat)?;
+//                 let init = encode_term(*init)?;
+//                 Ok(quote! { let #pat = #init ; })
+//             } else {
+//                 Err(())
+//             }
+//         }
+//         TermStmt::Expr(e) => encode_term(e),
+//         TermStmt::Semi(t, s) => {
+//             let term = encode_term(t)?;
+//             Ok(quote! { #term #s })
+//         }
+//     }
+// }
+
+// fn encode_pattern(pat: SynPat) -> Result<TokenStream, ()> {
+//     Ok(quote! { #pat })
+// }
+
+// fn encode_arm(arm: TermArm) -> Result<TokenStream, ()> {
+//     let body = encode_term(*arm.body)?;
+//     let pat = arm.pat;
+//     // let (if_tok, guard) = arm.guard;
+//     let comma = arm.comma;
+//     Ok(quote! { #pat  => #body #comma })
+// }
+
 fn attribute_tag(attr: &Attribute) -> Option<Vec<ItemTag>> {
     let attr_name = attr.name_or_empty().to_ident_string();
     match attr_name.as_str() {
         "quickcheck" | "test" => Some(vec![attr_name]),
+        "ensures" => {
+            let inner_tokens = attr.tokens().to_tokenstream();
+            if inner_tokens.len() != 2 {
+                return None;
+            }
+            let mut it = inner_tokens.trees();
+            let first_token = it.next().unwrap();
+            let second_token = it.next().unwrap();
+            match (first_token, second_token) {
+                (TokenTree::Token(first_tok), TokenTree::Delimited(_, _, inner)) => {
+                    match first_tok.kind {
+                        TokenKind::Pound => {
+                            if inner.len() != 2 {
+                                return None;
+                            }
+                            let mut it = inner.trees();
+                            let _first_token = it.next().unwrap();
+                            // First is derive
+                            let second_token = it.next().unwrap();
+                            match second_token {
+                                TokenTree::Delimited(_, _, inner) => {
+                                    Some(inner.trees().fold(Vec::new(), |mut a, x| match x {
+                                        TokenTree::Token(tok) => match tok.kind {
+                                            TokenKind::Literal(rustc_ast::token::Lit {
+                                                kind: rustc_ast::token::LitKind::Str,
+                                                symbol: sym,
+                                                suffix: suf,
+                                            }) => {
+                                                // println!("Literal {:?}", lit);
+
+                                                let b = sym.to_ident_string();
+                                                println!("ensures: {:?}", b);
+                                                a.push(b);
+
+                                                // println!("ensures: {:?}", b);
+
+                                                // let t : pearlite_syn::term::Term = syn::parse_str(b.as_str()).unwrap();
+
+                                                // println!("parse: {:?}", t);
+
+                                                // let e = encode_term(t).unwrap();
+                                                // println!("encode: {:?}", e);
+
+                                                a
+                                            }
+                                            _ => a,
+                                        },
+                                        _ => a,
+                                    }))
+                                }
+                                _ => None,
+                            }
+                        }
+                        _ => None,
+                    }
+                }
+                _ => None,
+            }
+        }
         "derive" => {
             let inner_tokens = attr.tokens().to_tokenstream();
             if inner_tokens.len() != 2 {
