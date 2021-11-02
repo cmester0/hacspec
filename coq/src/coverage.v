@@ -49,7 +49,7 @@ Inductive tuple_struct_typ :=
 | TupleStructTyp : (int64 × enum_typ × map) -> tuple_struct_typ.
 
 Definition eqb_tuple_struct_typ (x y : tuple_struct_typ) : bool :=
-match x with
+  match x with
    | TupleStructTyp a => match y with | TupleStructTyp b => a =.? b end
    end.
 

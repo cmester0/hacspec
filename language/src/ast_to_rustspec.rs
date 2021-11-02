@@ -1902,7 +1902,7 @@ fn translate_simplified_natural_integer_decl(
             Ok((
                 (ItemTranslationResult::Item(DecoratedItem {
                     item: Item::NaturalIntegerDecl(typ_ident, secrecy, canvas_size, None),
-                    tags: ItemTagSet(HashSet::unit("code".to_string())),
+                    tags: ItemTagSet(HashSet::unit(ItemTag::Tag("code".to_string()))),
                 })),
                 SpecialNames {
                     arrays: specials.arrays.update(typ_ident_string),
@@ -2024,7 +2024,7 @@ fn translate_natural_integer_decl(
                         canvas_size,
                         Some((canvas_typ_ident, modulo_string)),
                     ),
-                    tags: ItemTagSet(HashSet::unit("code".to_string())),
+                    tags: ItemTagSet(HashSet::unit(ItemTag::Tag("code".to_string()))),
                 })),
                 SpecialNames {
                     arrays: specials.arrays.update(typ_ident_string),
@@ -2142,7 +2142,7 @@ fn translate_array_decl(
             Ok((
                 (ItemTranslationResult::Item(DecoratedItem {
                     item: Item::ArrayDecl(typ_ident, size, cell_t, index_typ),
-                    tags: ItemTagSet(HashSet::unit("code".to_string())),
+                    tags: ItemTagSet(HashSet::unit(ItemTag::Tag("code".to_string()))),
                 })),
                 SpecialNames {
                     arrays: specials.arrays.update(typ_ident_string),
@@ -2381,7 +2381,8 @@ fn attribute_is_test(attr: &Attribute) -> bool {
 fn attribute_tag(attr: &Attribute) -> Option<Vec<ItemTag>> {
     let attr_name = attr.name_or_empty().to_ident_string();
     match attr_name.as_str() {
-        "quickcheck" | "test" => Some(vec![attr_name]),
+        "quickcheck" => Some(vec![ItemTag::Tag("quickcheck".to_string())]),
+        "test" => Some(vec![ItemTag::Tag("test".to_string())]),
         "ensures" => {
             let inner_tokens = attr.tokens().to_tokenstream();
             if inner_tokens.len() != 2 {
@@ -2414,7 +2415,7 @@ fn attribute_tag(attr: &Attribute) -> Option<Vec<ItemTag>> {
 
                                                 let b = sym.to_ident_string();
                                                 println!("ensures: {:?}", b);
-                                                a.push(b);
+                                                a.push(ItemTag::Ensures(b));
 
                                                 // println!("ensures: {:?}", b);
 
@@ -2465,7 +2466,7 @@ fn attribute_tag(attr: &Attribute) -> Option<Vec<ItemTag>> {
                                     Some(inner.trees().fold(Vec::new(), |mut a, x| match x {
                                         TokenTree::Token(tok) => match tok.kind {
                                             TokenKind::Ident(ident, _) => {
-                                                a.push(ident.to_ident_string());
+                                                a.push(ItemTag::Tag(ident.to_ident_string()));
                                                 a
                                             }
                                             _ => a,
@@ -2513,7 +2514,8 @@ fn attribute_tag(attr: &Attribute) -> Option<Vec<ItemTag>> {
                                             TokenKind::Ident(ident, _) => {
                                                 let ident_string = ident.to_ident_string();
                                                 match ident_string.as_str() {
-                                                    "proof" | "test" => Some(vec![ident_string]),
+                                                    "proof" => Some(vec![ItemTag::Tag("proof".to_string())]),
+                                                    "test" => Some(vec![ItemTag::Tag("test".to_string())]),
                                                     _ => None,
                                                 }
                                             }
@@ -2543,14 +2545,14 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
     external_data: &F,
 ) -> TranslationResult<(ItemTranslationResult, SpecialNames)> {
     let mut tags = HashSet::new();
-    tags.insert("code".to_string());
+    tags.insert(ItemTag::Tag("code".to_string()));
     let export = i
         .attrs
         .iter()
         .fold(false, |b, attr| match attribute_tag(attr) {
             Some(a) => {
-                tags.extend(a.iter());
-                b || a.contains(&"proof".to_string())
+                a.iter().fold((), |(), x| { tags.insert(x.clone()); });
+                b || a.contains(&ItemTag::Tag("proof".to_string()))
             }
             None => b,
         });

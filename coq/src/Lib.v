@@ -1081,7 +1081,8 @@ Axiom nat_mod_eqb_spec : forall {p} (a b : nat_mod p), Z.eqb (nat_mod_val p a) (
 
 #[global] Instance nat_mod_eqdec {p} : EqDec (nat_mod p) := {
   eqb a b := Z.eqb (nat_mod_val p a) (nat_mod_val p b);
-  eqb_leibniz := nat_mod_eqb_spec;
+    eqb_leibniz := nat_mod_eqb_spec;
+    eqb_leibniz' := nat_mod_eqb_spec';
 }.
 
 #[global] Instance nat_mod_comparable `{p : Z} : Comparable (nat_mod p) := {
