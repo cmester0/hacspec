@@ -2194,7 +2194,7 @@ fn typecheck_statement(
             Ok((
                 Statement::LetBinding(
                     (pat.clone(), pat_span.clone()),
-                    typ.clone(),
+                    typ.clone(), // Some ((expr_typ.clone(), expr.1.clone())) // Todo: fix span
                     (new_expr, expr.1.clone()),
                     *question_mark,
                 ),

@@ -53,7 +53,7 @@ fn make_let_binding<'a>(
         .append(RcDoc::space())
         .append(RcDoc::as_string(":="))
         .group()
-        .append(RcDoc::line().append(expr.group()))
+        .append((if toplevel { RcDoc::line() } else { RcDoc::softline() }).append(expr.group()))
         .nest(2)
         .append(if toplevel {
             RcDoc::as_string(".")
@@ -145,8 +145,8 @@ fn make_paren<'a>(e: RcDoc<'a, ()>) -> RcDoc<'a, ()> {
 
 fn make_begin_paren<'a>(e: RcDoc<'a, ()>) -> RcDoc<'a, ()> {
     RcDoc::as_string("(")
-        .append(RcDoc::line().append(e).group().nest(2))
-        .append(RcDoc::line())
+        .append(RcDoc::softline().append(e).group().nest(2))
+        .append(RcDoc::softline())
         .append(RcDoc::as_string(")"))
 }
 
@@ -752,7 +752,7 @@ fn translate_expression<'a>(e: Expression, top_ctx: &'a TopLevelContext) -> RcDo
                 }),
                 RcDoc::line(),
             ))
-            .append(RcDoc::space())
+            .append(RcDoc::line())
             .append(RcDoc::as_string("end")),
         //todo
         Expression::EnumInject(enum_name, case_name, payload) => {
@@ -1949,7 +1949,7 @@ fn translate_item<'a>(
                         }
                         None => RcDoc::nil(),
                     })
-                    .append(RcDoc::as_string(") ["))      
+                    .append(RcDoc::as_string(") ["))
                     .append(RcDoc::intersperse(
                         cases.into_iter().map(|(case_name, case_typ)| {
                             let name_ty = BaseTyp::Named(name.clone(), None);

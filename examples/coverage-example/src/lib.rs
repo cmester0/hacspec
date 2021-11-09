@@ -131,3 +131,35 @@ pub fn loop_with_early_return(amount: usize) -> ResType {
 
     res
 }
+
+pub type StrangeResult = Result<u64, ()>;
+pub fn strange() -> StrangeResult {
+    let _ : u64 = StrangeResult::Err(())?;
+    StrangeResult::Ok (2_u64)
+}
+
+pub type LoopResult = Result<u64, ()>;
+pub fn loopres () -> LoopResult {
+    let mut result = 1_u64;
+    for x in 1..24 {
+        result = result + (x as u64);
+        if result > 100_u64 {
+            LoopResult::Err(())?;
+        }
+    }
+
+    LoopResult::Ok(result)
+}
+
+pub type DifficultResult = Result<u64, ()>;
+pub fn difficult () -> DifficultResult {
+    let mut result = 1;
+    for x in 1..24 {
+        result = result + x;
+        if result > 100 {
+            DifficultResult::Err(())?;
+        }
+    }
+
+    DifficultResult::Ok(result)
+}

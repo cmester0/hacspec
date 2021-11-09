@@ -28,3 +28,6 @@ src/Sha256.vos src/Sha256.vok src/Sha256.required_vos: src/Sha256.v src/Lib.vos 
 src/Aes.vo src/Aes.glob src/Aes.v.beautified src/Aes.required_vo: src/Aes.v src/Lib.vo src/MachineIntegers.vo src/Lib.vo
 src/Aes.vio: src/Aes.v src/Lib.vio src/MachineIntegers.vio src/Lib.vio
 src/Aes.vos src/Aes.vok src/Aes.required_vos: src/Aes.v src/Lib.vos src/MachineIntegers.vos src/Lib.vos
+src/auction.vo src/auction.glob src/auction.v.beautified src/auction.required_vo: src/auction.v src/Lib.vo src/MachineIntegers.vo src/QuickChickLib.vo src/Lib.vo
+src/auction.vio: src/auction.v src/Lib.vio src/MachineIntegers.vio src/QuickChickLib.vio src/Lib.vio
+src/auction.vos src/auction.vok src/auction.required_vos: src/auction.v src/Lib.vos src/MachineIntegers.vos src/QuickChickLib.vos src/Lib.vos
