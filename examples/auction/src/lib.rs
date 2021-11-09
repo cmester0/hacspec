@@ -223,16 +223,12 @@ pub fn auction_finalize(ctx: FinalizeContext, state: State) -> AuctionFinalizeRe
                 };
             } else {
                 // ensure!(remaining_bid.is_none(), FinalizeError::BidMapError);
-                if ! (match remaining_bid {
-                    BidRemain::BidNone => true,
-                    BidRemain::BidSome(_) => false,
-                }) {
+                if ! (remaining_bid == BidRemain::BidNone) {
                     AuctionFinalizeResult::Err(FinalizeError::BidMapError0)?;
                 }
                 auction_state = AuctionState::Sold(addr);
                 remaining_bid = BidRemain::BidSome(amnt);
             }
-            remaining_bid = remaining_bid;
         }
 
         // ensure that the only bidder left in the map is the one with the highest bid
@@ -256,108 +252,28 @@ pub fn auction_finalize(ctx: FinalizeContext, state: State) -> AuctionFinalizeRe
     }
 
     result
-
-    // let (continues, mut return_action) = match st0 {
-    //     AuctionState::NotSoldYet => {
-    //         if slot_time > st3 {
-    //             if balance == 0_u64 {
-    //                 (false, AuctionFinalizeResult::Ok((state, FinalizeAction::Accept)))
-    //             } else {
-    //                 (
-    //                     true,
-    //                     AuctionFinalizeResult::Ok((state, FinalizeAction::SimpleTransfer(
-    //                         owner,
-    //                         st1,
-    //                         PublicByteSeq::new(0_usize),
-    //                     ))),
-    //                 )
-    //             }
-    //         } else {
-    //             (
-    //                 false,
-    //                 AuctionFinalizeResult::Err(FinalizeError::AuctionStillActive),
-    //             )
-    //         }
-    //     }
-    //     AuctionState::Sold(_) => (
-    //         false,
-    //         AuctionFinalizeResult::Err(FinalizeError::AuctionFinalized),
-    //     ),
-    // };
-
-    // let mut remaining_bid = BidRemain::None;
-
-    // let SeqMap(m0, m1) = st4.clone();
-
-    // if continues {
-    //     // Return bids that are smaller than highest
-    //     // let aucstate = auction_state;
-    //     for x in 0..m0.clone().len() / 32 {
-    //         let amnt = u64_from_be_bytes(u64Word::from_seq(&m1.slice(x * 8, 8)));
-    //         let addr = UserAddress::from_seq(&m0.clone().slice(x * 32, 32));
-    //         if amnt < st1 {
-    //             return_action = match return_action {
-    //                 AuctionFinalizeResult::Ok(a) => match a {
-    //                     FinalizeAction::SimpleTransfer(o, b, a) => {
-    //                         AuctionFinalizeResult::Ok(FinalizeAction::SimpleTransfer(
-    //                             o,
-    //                             b,
-    //                             a.concat(&addr).concat(&u64_to_be_bytes(amnt)),
-    //                         ))
-    //                     }
-    //                     FinalizeAction::Accept => AuctionFinalizeResult::Ok(FinalizeAction::Accept),
-    //                 },
-    //                 AuctionFinalizeResult::Err(e) => AuctionFinalizeResult::Err(e),
-    //             };
-    //         } else {
-    //             if match remaining_bid {
-    //                 BidRemain::None => true,
-    //                 BidRemain::Some(_, _) => false,
-    //             } {
-    //                 st0 = AuctionState::Sold(addr);
-    //                 remaining_bid = BidRemain::Some(amnt, ());
-    //             } else {
-    //                 return_action = AuctionFinalizeResult::Err(FinalizeError::BidMapError);
-    //             }
-    //         }
-    //     }
-    // };
-
-    // if continues {
-    //     // Ensure that the only bidder left in the map is the one with the highest bid
-    //     return_action =
-    //         // match return_action {
-    //         //     AuctionFinalizeResult::Ok (_) =>
-    //                 match remaining_bid {
-    //                     BidRemain::Some(amount, _) => if amount == st1 { return_action } else { AuctionFinalizeResult::Err(FinalizeError::BidMapError)  },
-    //                     BidRemain::None => AuctionFinalizeResult::Err(FinalizeError::BidMapError),
-    //                 }; // ,
-    //                    // AuctionFinalizeResult::Err (e) => AuctionFinalizeResult::Err (e)
-    //                    // };
-
-    //     // return_action = res;
-    // };
-
-    // (State(st0, st1, st2, st3, st4), return_action) // (auction_state, b, c, expiry, (m1, m2))
 }
 
-#[cfg(test)]
-extern crate quickcheck;
-#[cfg(test)]
-#[macro_use(quickcheck)]
-extern crate quickcheck_macros;
+// #[cfg(test)]
+// extern crate quickcheck;
+// #[cfg(test)]
+// #[macro_use(quickcheck)]
+// extern crate quickcheck_macros;
 
-#[cfg(test)]
-use quickcheck::*;
+// #[cfg(test)]
+// use quickcheck::*;
 
 #[cfg(proof)]
 #[cfg(test)]
-#[quickcheck]
+// #[quickcheck]
 // #[requires("item === PublicByteSeq::new(0_usize)")]
 #[ensures("result === true")]
 /// Test that the smart-contract initialization sets the state correctly
 /// (no bids, active state, indicated auction-end time and item name).
-pub fn auction_test_init(item: PublicByteSeq, time: u64) -> bool {
+pub fn auction_test_init() -> bool { // item: PublicByteSeq, time: u64
+    let item = PublicByteSeq::new(0_usize);
+    let time = 1_u64; //  100
+
     fresh_state(item.clone(), time)
         == State(
             AuctionState::NotSoldYet,
@@ -406,33 +322,16 @@ fn verify_bid(
     )
 }
 
-// const AUCTION_END: u64 = 1;
-
-// fn new_account() -> AccountAddress {
-//     let account = AccountAddress([0; 32]);
-//     ADDRESS_COUNTER.fetch_add(1, Ordering::SeqCst);
-//     account
-// }
-
 // #[cfg(proof)]
-// fn new_account_ctx() -> (UserAddress, Context) {
-//     let account = new_account();
-//     let ctx = new_ctx(account, account, 1_u64);
-//     (account, ctx)
-// }
-
-// #[cfg(proof)]
-// fn new_ctx(
-//     owner: UserAddress,
-//     sender: UserAddress,
-//     slot_time: u64,
-// ) -> Context {
-//     // let mut ctx = Context;
-//     // ctx.set_sender(Address::Account(sender));
-//     // ctx.set_owner(owner);
-//     // ctx.set_metadata_slot_time(Timestamp::from_timestamp_millis(slot_time));
-//     // ctx
-//     (slot_time, sender)
+// #[cfg(test)]
+// fn new_account(i : u64) -> (UserAddress, Context) {
+//     let alice = (UserAddress([
+//         0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8,
+//         0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8,
+//         0_u8, 0_u8,
+//     ]));
+//     let alice_ctx = (time, UserAddressSet::UserAddressSome(alice));
+//     (alice, alice_ctx)
 // }
 
 #[cfg(proof)]
@@ -448,8 +347,10 @@ fn verify_bid(
 /// auction after its end time.    Alice gets her money back, while
 /// Carol (the owner of the contract) collects the highest bid amount.
 /// 6. Attempts to subsequently bid or finalize fail.
+// #[ensures("result === true && exists <k : usize> item.len() === k")]
 #[ensures("result === true")]
-fn test_auction_bid_and_finalize(item: PublicByteSeq) -> bool {
+fn test_auction_bid_and_finalize() -> bool { // item: PublicByteSeq, time : u64
+    let item = PublicByteSeq::new(0_usize);
     let time = 1_u64; //  100
 
     let amount = 100_u64;
@@ -586,44 +487,9 @@ fn test_auction_bid_and_finalize(item: PublicByteSeq) -> bool {
         AuctionFinalizeResult::Ok((state, action)) => (state, false),
     };
 
+    let t = auction_bid(bob_ctx, big_amount, state.clone());
+
+    let result_7 = t == AuctionBidResult::Err (BidError::AuctionIsFinalized);
     
-    // assert_eq!(state, make_state (
-    //     AuctionState::Sold(bob),
-    //     winning_amount,
-    //     ITEM.as_bytes().to_vec(),
-    //     Timestamp::from_timestamp_millis(AUCTION_END),
-    //     bid_map,
-    // ));
-
-    // let actions = finres2.expect("Finalizing auction should work");
-    // assert_eq!(
-    //     actions,
-    //     ActionsTree::simple_transfer(&carol, winning_amount)
-    //         .and_then(ActionsTree::simple_transfer(&alice, amount + amount))
-    // );
-    // assert_eq!(state, make_state (
-    //     AuctionState::Sold(bob),
-    //     winning_amount,
-    //     ITEM.as_bytes().to_vec(),
-    //     Timestamp::from_timestamp_millis(AUCTION_END),
-    //     bid_map,
-    // ));
-
-    // // attempting to finalize auction again should fail
-    // let finres3: Result<ActionsTree, _> = auction_finalize(&ctx5, &mut state);
-    // expect_error(
-    //     finres3,
-    //     FinalizeError::AuctionFinalized,
-    //     "Finalizing auction a second time should fail",
-    // );
-
-    // // attempting to bid again should fail
-    // let res4: Result<ActionsTree, _> = auction_bid(&bob_ctx, big_amount, &mut state);
-    // expect_error(
-    //     res4,
-    //     BidError::AuctionFinalized,
-    //     "Bidding should fail because the auction is finalized",
-    // );
-
-    result_0 && result_1 && result_2 && result_3 && result_4
+    result_0 && result_1 && result_2 && result_3 && result_4 && result_5 && result_6 && result_7
 }

@@ -909,6 +909,13 @@ Section Coercions.
   Definition nat_to_int `{WORDSIZE} (n : nat) := repr (Z.of_nat n).
   #[global] Coercion nat_to_int : nat >-> int.
 
+  Definition nat_to_int8 (n : nat) := @repr WORDSIZE8 (Z.of_nat n).
+  #[global] Coercion nat_to_int8 : nat >-> int.
+
+  Definition nat_to_int64 (n : nat) := @repr WORDSIZE64 (Z.of_nat n).
+  #[global] Coercion nat_to_int64 : nat >-> int.
+
+  
   Definition uint_size_to_nat (n : uint_size) : nat := from_uint_size n.
   #[global] Coercion uint_size_to_nat : uint_size >-> nat.
 
