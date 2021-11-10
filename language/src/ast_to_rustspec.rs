@@ -2383,6 +2383,53 @@ fn attribute_tag(attr: &Attribute) -> Option<Vec<ItemTag>> {
     match attr_name.as_str() {
         "quickcheck" => Some(vec![ItemTag::Tag("quickcheck".to_string())]),
         "test" => Some(vec![ItemTag::Tag("test".to_string())]),
+        "requires" => {
+            let inner_tokens = attr.tokens().to_tokenstream();
+            if inner_tokens.len() != 2 {
+                return None;
+            }
+            let mut it = inner_tokens.trees();
+            let first_token = it.next().unwrap();
+            let second_token = it.next().unwrap();
+            match (first_token, second_token) {
+                (TokenTree::Token(first_tok), TokenTree::Delimited(_, _, inner)) => {
+                    match first_tok.kind {
+                        TokenKind::Pound => {
+                            if inner.len() != 2 {
+                                return None;
+                            }
+                            let mut it = inner.trees();
+                            let _first_token = it.next().unwrap();
+                            // First is derive
+                            let second_token = it.next().unwrap();
+                            match second_token {
+                                TokenTree::Delimited(_, _, inner) => {
+                                    Some(inner.trees().fold(Vec::new(), |mut a, x| match x {
+                                        TokenTree::Token(tok) => match tok.kind {
+                                            TokenKind::Literal(rustc_ast::token::Lit {
+                                                kind: rustc_ast::token::LitKind::Str,
+                                                symbol: sym,
+                                                suffix: suf,
+                                            }) => {
+                                                let b = sym.to_ident_string();
+                                                println!("requires: {:?}", b);
+                                                a.push(ItemTag::Requires(b));
+                                                a
+                                            }
+                                            _ => a,
+                                        },
+                                        _ => a,
+                                    }))
+                                }
+                                _ => None,
+                            }
+                        }
+                        _ => None,
+                    }
+                }
+                _ => None,
+            }
+        }
         "ensures" => {
             let inner_tokens = attr.tokens().to_tokenstream();
             if inner_tokens.len() != 2 {
@@ -2514,8 +2561,12 @@ fn attribute_tag(attr: &Attribute) -> Option<Vec<ItemTag>> {
                                             TokenKind::Ident(ident, _) => {
                                                 let ident_string = ident.to_ident_string();
                                                 match ident_string.as_str() {
-                                                    "proof" => Some(vec![ItemTag::Tag("proof".to_string())]),
-                                                    "test" => Some(vec![ItemTag::Tag("test".to_string())]),
+                                                    "proof" => Some(vec![ItemTag::Tag(
+                                                        "proof".to_string(),
+                                                    )]),
+                                                    "test" => {
+                                                        Some(vec![ItemTag::Tag("test".to_string())])
+                                                    }
                                                     _ => None,
                                                 }
                                             }

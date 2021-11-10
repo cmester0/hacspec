@@ -1347,7 +1347,7 @@ fn translate_pearlite<'a>(t: pearlite_syn::term::Term) -> RcDoc<'a, ()> {
     match t {
         pearlite_syn::term::Term::Array(_) => {
             println!("Array");
-            RcDoc::nil()
+            RcDoc::as_string("TODOArray")
         }
         pearlite_syn::term::Term::Binary(pearlite_syn::term::TermBinary { left, op, right }) => {
             println!("Binary");
@@ -1360,23 +1360,28 @@ fn translate_pearlite<'a>(t: pearlite_syn::term::Term) -> RcDoc<'a, ()> {
         }
         pearlite_syn::term::Term::Block(pearlite_syn::term::TermBlock { block, .. }) => {
             println!("Block");
-            RcDoc::nil()
+            RcDoc::as_string("TODOBlock")
         }
         pearlite_syn::term::Term::Call(pearlite_syn::term::TermCall { func, args, .. }) => {
             println!("Call");
-            RcDoc::nil()
+            translate_pearlite(*func)
+                .append(RcDoc::space())
+                .append(RcDoc::intersperse(
+                    args.into_iter().map(|x| make_paren(translate_pearlite(x))),
+                    RcDoc::space(),
+                ))
         }
         pearlite_syn::term::Term::Cast(_) => {
             println!("Cast");
-            RcDoc::nil()
+            RcDoc::as_string("TODOCast")
         }
         pearlite_syn::term::Term::Field(pearlite_syn::term::TermField { base, member, .. }) => {
             println!("Field");
-            RcDoc::nil()
+            RcDoc::as_string("TODOField")
         }
         pearlite_syn::term::Term::Group(_) => {
             println!("Group");
-            RcDoc::nil()
+            RcDoc::as_string("TODOGroup")
         }
         pearlite_syn::term::Term::If(pearlite_syn::term::TermIf {
             cond,
@@ -1385,15 +1390,15 @@ fn translate_pearlite<'a>(t: pearlite_syn::term::Term) -> RcDoc<'a, ()> {
             ..
         }) => {
             println!("If");
-            RcDoc::nil()
+            RcDoc::as_string("TODOIf")
         }
         pearlite_syn::term::Term::Index(pearlite_syn::term::TermIndex { expr, index, .. }) => {
             println!("Index");
-            RcDoc::nil()
+            RcDoc::as_string("TODOIndex")
         }
         pearlite_syn::term::Term::Let(_) => {
             println!("Let");
-            RcDoc::nil()
+            RcDoc::as_string("TODOLet")
         }
         pearlite_syn::term::Term::Lit(pearlite_syn::term::TermLit { ref lit }) => {
             println!("Lit");
@@ -1401,7 +1406,7 @@ fn translate_pearlite<'a>(t: pearlite_syn::term::Term) -> RcDoc<'a, ()> {
         }
         pearlite_syn::term::Term::Match(pearlite_syn::term::TermMatch { expr, arms, .. }) => {
             println!("Match");
-            RcDoc::nil()
+            RcDoc::as_string("TODOMatch")
         }
         pearlite_syn::term::Term::MethodCall(pearlite_syn::term::TermMethodCall {
             receiver,
@@ -1411,7 +1416,7 @@ fn translate_pearlite<'a>(t: pearlite_syn::term::Term) -> RcDoc<'a, ()> {
             ..
         }) => {
             println!("MethodCall");
-            RcDoc::nil()
+            RcDoc::as_string("TODOMethodCall")
         }
         pearlite_syn::term::Term::Paren(pearlite_syn::term::TermParen { expr, .. }) => {
             println!("Paren");
@@ -1437,39 +1442,39 @@ fn translate_pearlite<'a>(t: pearlite_syn::term::Term) -> RcDoc<'a, ()> {
         }
         pearlite_syn::term::Term::Range(_) => {
             println!("Range");
-            RcDoc::nil()
+            RcDoc::as_string("TODORange")
         }
         pearlite_syn::term::Term::Repeat(_) => {
             println!("Repeat");
-            RcDoc::nil()
+            RcDoc::as_string("TODORepeat")
         }
         pearlite_syn::term::Term::Struct(_) => {
             println!("Struct");
-            RcDoc::nil()
+            RcDoc::as_string("TODOStruct")
         }
         pearlite_syn::term::Term::Tuple(pearlite_syn::term::TermTuple { elems, .. }) => {
             println!("Tuple");
-            RcDoc::nil()
+            RcDoc::as_string("TODOTuple")
         }
         pearlite_syn::term::Term::Type(ty) => {
             println!("Type");
-            RcDoc::nil()
+            RcDoc::as_string("TODOType")
         }
         pearlite_syn::term::Term::Unary(pearlite_syn::term::TermUnary { op, expr }) => {
             println!("Unary");
-            RcDoc::nil()
+            RcDoc::as_string("TODOUnary")
         }
         pearlite_syn::term::Term::Final(pearlite_syn::term::TermFinal { term, .. }) => {
             println!("Final");
-            RcDoc::nil()
+            RcDoc::as_string("TODOFinal")
         }
         pearlite_syn::term::Term::Model(pearlite_syn::term::TermModel { term, .. }) => {
             println!("Model");
-            RcDoc::nil()
+            RcDoc::as_string("TODOModel")
         }
         pearlite_syn::term::Term::Verbatim(_) => {
             println!("Verbatim");
-            RcDoc::nil()
+            RcDoc::as_string("TODOVerbatim")
         }
         pearlite_syn::term::Term::LogEq(pearlite_syn::term::TermLogEq { lhs, rhs, .. }) => {
             println!("LogEq");
@@ -1510,15 +1515,15 @@ fn translate_pearlite<'a>(t: pearlite_syn::term::Term) -> RcDoc<'a, ()> {
         }
         pearlite_syn::term::Term::Absurd(_) => {
             println!("Absurd");
-            RcDoc::nil()
+            RcDoc::as_string("TODOAbsurd")
         }
         pearlite_syn::term::Term::Pearlite(term) => {
             println!("Pearlite");
-            RcDoc::nil()
+            RcDoc::as_string("TODOPearlite")
         }
         pearlite_syn::term::Term::__Nonexhaustive => {
             println!("Nonexhaustive");
-            RcDoc::nil()
+            RcDoc::as_string("TODONonexhaustive")
         }
     }
 }
@@ -1565,61 +1570,73 @@ fn translate_item<'a>(
                 .group(),
             true,
         )
-            .append(item.tags.0.iter().fold(RcDoc::nil(), |rc, x| {
-	        match x {
-	            ItemTag::Tag(_) => rc,
-	            ItemTag::Ensures(s) => {
-                        let s = s.as_str();
-                        println!("s,{}", s);
-		        let t : pearlite_syn::term::Term = syn::parse_str(s).unwrap();
-		        rc
-                            .append(RcDoc::hardline())
-                            .append(RcDoc::as_string("Theorem ensures_"))
-                            .append(translate_ident(Ident::TopLevel(f.clone())))
-                            .append(RcDoc::as_string(" : forall result"))
-                            .append(RcDoc::space())
-                            .append(RcDoc::intersperse(
-                                sig.args.iter().map(|((x, _), (tau, _))| {
-                                    make_paren(
-                                        match x.clone() {
-                                            Ident::Local(LocalIdent { id, name: s }) => {
-                                                RcDoc::as_string(s)
-                                                    .append(RcDoc::space())
-                                                    .append(RcDoc::as_string(":"))
-                                                    .append(RcDoc::space())
-                                                    .append(translate_typ(tau.clone()))
-                                            }
-                                            _ => RcDoc::nil(),
-                                        }
-                                    )
-                                }),
-                                RcDoc::space()
-                            ))
-                            .append(RcDoc::as_string(","))
-                            .append(RcDoc::line())
-                            .append(translate_ident(Ident::TopLevel(f.clone())))
-                            .append(RcDoc::space())
-                            .append(RcDoc::intersperse(
-                                sig.args.iter().map(|((x, _), (tau, _))| {
+            .append(
+                if item.tags.0.iter().any(|x| match x {
+                    ItemTag::Requires(_) => true,
+                    ItemTag::Ensures(_) => true,
+                    _ => false,
+                }) {
+                    RcDoc::hardline()
+                        .append(RcDoc::as_string("Theorem ensures_"))
+                        .append(translate_ident(Ident::TopLevel(f.clone())))
+                        .append(RcDoc::as_string(" : forall result"))
+                        .append(RcDoc::space())
+                        .append(RcDoc::intersperse(
+                            sig.args.iter().map(|((x, _), (tau, _))| {
+                                make_paren(
                                     match x.clone() {
-                                        Ident::Local(LocalIdent { id, name: s }) => RcDoc::as_string(s),
+                                        Ident::Local(LocalIdent { id, name: s }) => {
+                                            RcDoc::as_string(s)
+                                                .append(RcDoc::space())
+                                                .append(RcDoc::as_string(":"))
+                                                .append(RcDoc::space())
+                                                .append(translate_typ(tau.clone()))
+                                        }
                                         _ => RcDoc::nil(),
                                     }
-                                }),
-                                RcDoc::space()
-                            ))
-                            .append(RcDoc::space())
-                            .append(RcDoc::as_string("= result ->"))
-                            .append(RcDoc::line())
-                            .append(RcDoc::space())
-                            .append(translate_pearlite(t))
-                            .append(RcDoc::as_string("."))
-                            .append(RcDoc::line())
-                            .append(RcDoc::as_string("Proof. Admitted."))
-                            .group()
-	            }
-	        }
-            }))
+                                )
+                            }),
+                            RcDoc::space()
+                        ))
+                        .append(RcDoc::as_string(","))
+                        .append(RcDoc::line())
+                        .append(translate_ident(Ident::TopLevel(f.clone())))
+                        .append(RcDoc::space())
+                        .append(RcDoc::intersperse(
+                            sig.args.iter().map(|((x, _), (tau, _))| {
+                                match x.clone() {
+                                    Ident::Local(LocalIdent { id, name: s }) => RcDoc::as_string(s),
+                                    _ => RcDoc::nil(),
+                                }
+                            }),
+                            RcDoc::space()
+                        ))
+                        .append(RcDoc::space())
+                        .append(RcDoc::as_string("= result ->"))
+                        .append(RcDoc::line())
+                        .append(item.tags.0.iter().fold(RcDoc::nil(), |rc, x| {
+	                    match x {
+	                        ItemTag::Requires(s) =>
+                                    rc
+                                    .append(translate_pearlite(syn::parse_str(s.as_str()).unwrap()))
+                                    .append(RcDoc::as_string("->")),
+                                _ => rc,
+	                    }
+                        }))
+                        .append(RcDoc::intersperse(item.tags.0.iter().filter(|x| match x{
+                            ItemTag::Ensures(_) => true,
+                            _ => false,
+                        }).map(|x| match x {
+	                    ItemTag::Ensures(s) => translate_pearlite(syn::parse_str(s.as_str()).unwrap()),
+                            _ => RcDoc::nil(), // Should never happen
+                        }), RcDoc::as_string("/\\")))
+                        .append(RcDoc::as_string("."))
+                        .append(RcDoc::line())
+                        .append(RcDoc::as_string("Proof. Admitted."))
+                }
+                else {
+                    RcDoc::nil()
+                })
             .append({
                 if item.tags.0.contains(&ItemTag::Tag("quickcheck".to_string())) {
                     RcDoc::hardline()
@@ -1840,7 +1857,7 @@ fn translate_item<'a>(
                     )
                     .append(RcDoc::hardline())
                     .append(RcDoc::hardline())
-                    .append(RcDoc::as_string("Instance"))
+                    .append(RcDoc::as_string("#[global] Instance"))
                     .append(RcDoc::space())
                     .append(RcDoc::as_string("eq_dec_"))
                     .append(translate_enum_name(name.0.clone()))
@@ -1872,7 +1889,7 @@ fn translate_item<'a>(
             })
             .append(if export_quick_check {
                 RcDoc::hardline()
-                    .append(RcDoc::as_string("Instance"))
+                    .append(RcDoc::as_string("#[global] Instance"))
                     .append(RcDoc::space())
                     .append(RcDoc::as_string("show_"))
                     .append(translate_ident(Ident::TopLevel(name.0.clone())))
@@ -1978,7 +1995,7 @@ fn translate_item<'a>(
                         RcDoc::as_string(";")))
                     .append(RcDoc::as_string("]."))
                     .append(RcDoc::hardline())
-                    .append(RcDoc::as_string("Instance"))
+                    .append(RcDoc::as_string("#[global] Instance"))
                     .append(RcDoc::space())
                     .append(RcDoc::as_string("gen_"))
                     .append(translate_ident(Ident::TopLevel(name.0.clone())))
@@ -2086,7 +2103,7 @@ fn translate_item<'a>(
                         )
                         .append(if export_quick_check {
                             RcDoc::hardline()
-                                .append(RcDoc::as_string("Instance"))
+                                .append(RcDoc::as_string("#[global] Instance"))
                                 .append(RcDoc::space())
                                 .append(RcDoc::as_string("show_"))
                                 .append(translate_ident(Ident::TopLevel(nat_name.0.clone())))
@@ -2118,7 +2135,7 @@ fn translate_item<'a>(
                                 .append(RcDoc::as_string("_"))
                                 .append(RcDoc::as_string(" x))."))
                                 .append(RcDoc::hardline())
-                                .append(RcDoc::as_string("Instance"))
+                                .append(RcDoc::as_string("#[global] Instance"))
                                 .append(RcDoc::space())
                                 .append(RcDoc::as_string("gen_"))
                                 .append(translate_ident(Ident::TopLevel(nat_name.0.clone())))
@@ -2158,7 +2175,7 @@ fn translate_item<'a>(
                 match ty.clone() {
                     BaseTyp::Tuple(args) => {
                         RcDoc::hardline()
-                            .append(RcDoc::as_string("Instance"))
+                            .append(RcDoc::as_string("#[global] Instance"))
                             .append(RcDoc::space())
                             .append(RcDoc::as_string("show_"))
                             .append(translate_ident_str(name.clone()))
@@ -2251,7 +2268,7 @@ fn translate_item<'a>(
                             .append(RcDoc::as_string("."))
                             .group()
                             .append(RcDoc::hardline())
-                            .append(RcDoc::as_string("Instance"))
+                            .append(RcDoc::as_string("#[global] Instance"))
                             .append(RcDoc::space())
                             .append(RcDoc::as_string("gen_"))
                             .append(translate_ident_str(name.clone()))

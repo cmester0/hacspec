@@ -469,6 +469,7 @@ pub enum ItemTag {
     // Proof,
     // Clone,
     // PartialEq,
+    Requires(String),
     Ensures(String),
     Tag(String),
 }
