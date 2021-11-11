@@ -1330,8 +1330,32 @@ fn translate_pearlite_binop<'a>(b: syn::BinOp) -> RcDoc<'a, ()> {
         syn::BinOp::Add(_) => RcDoc::as_string(".+"),
         syn::BinOp::Sub(_) => RcDoc::as_string(".-"),
         syn::BinOp::Mul(_) => RcDoc::as_string(".*"),
-        syn::BinOp::Eq(_) => RcDoc::as_string("="),
-        _ => RcDoc::as_string("TODO"),
+        syn::BinOp::Div(_) => RcDoc::as_string("./"),
+        syn::BinOp::Rem(_) => RcDoc::as_string(".%"),
+        syn::BinOp::And(_) => RcDoc::as_string("/\\"),
+        syn::BinOp::Or(_) => RcDoc::as_string("\\/"),
+        syn::BinOp::BitXor(_) => RcDoc::as_string(".^"),
+        syn::BinOp::BitAnd(_) => RcDoc::as_string(".&"),
+        syn::BinOp::BitOr(_) => RcDoc::as_string(".|"),
+        syn::BinOp::Shl(_) => RcDoc::as_string(".<<"),
+        syn::BinOp::Shr(_) => RcDoc::as_string(".>>"),
+        syn::BinOp::Eq(_) => RcDoc::as_string(".=="),
+        syn::BinOp::Lt(_) => RcDoc::as_string("<"),
+        syn::BinOp::Le(_) => RcDoc::as_string("<="),
+        syn::BinOp::Ne(_) => RcDoc::as_string(".!="),
+        syn::BinOp::Ge(_) => RcDoc::as_string(">="),
+        syn::BinOp::Gt(_) => RcDoc::as_string(">"),
+        syn::BinOp::AddEq(_) => RcDoc::as_string(".+="),
+        syn::BinOp::SubEq(_) => RcDoc::as_string(".-="),
+        syn::BinOp::MulEq(_) => RcDoc::as_string(".*="),
+        syn::BinOp::DivEq(_) => RcDoc::as_string("./="),
+        syn::BinOp::RemEq(_) => RcDoc::as_string(".%="),
+        syn::BinOp::BitXorEq(_) => RcDoc::as_string(".^="),
+        syn::BinOp::BitAndEq(_) => RcDoc::as_string(".&="),
+        syn::BinOp::BitOrEq(_) => RcDoc::as_string(".|="),
+        syn::BinOp::ShlEq(_) => RcDoc::as_string(".<<="),
+        syn::BinOp::ShrEq(_) => RcDoc::as_string(".>>="),
+        // _ => RcDoc::as_string(format!("TODO: {:?}", b)),
     }
 }
 
@@ -1454,7 +1478,10 @@ fn translate_pearlite<'a>(t: pearlite_syn::term::Term) -> RcDoc<'a, ()> {
         }
         pearlite_syn::term::Term::Tuple(pearlite_syn::term::TermTuple { elems, .. }) => {
             println!("Tuple");
-            RcDoc::as_string("TODOTuple")
+            make_paren(RcDoc::intersperse(
+                elems.into_iter().map(|x| make_paren(translate_pearlite(x))),
+                RcDoc::as_string(",").append(RcDoc::space()),
+            ))
         }
         pearlite_syn::term::Term::Type(ty) => {
             println!("Type");
@@ -1462,15 +1489,15 @@ fn translate_pearlite<'a>(t: pearlite_syn::term::Term) -> RcDoc<'a, ()> {
         }
         pearlite_syn::term::Term::Unary(pearlite_syn::term::TermUnary { op, expr }) => {
             println!("Unary");
-            RcDoc::as_string("TODOUnary")
+            RcDoc::as_string("TODOUnary").append(translate_pearlite(*expr))
         }
         pearlite_syn::term::Term::Final(pearlite_syn::term::TermFinal { term, .. }) => {
             println!("Final");
-            RcDoc::as_string("TODOFinal")
+            RcDoc::as_string("TODOFinal").append(translate_pearlite(*term))
         }
         pearlite_syn::term::Term::Model(pearlite_syn::term::TermModel { term, .. }) => {
             println!("Model");
-            RcDoc::as_string("TODOModel")
+            RcDoc::as_string("TODOModel").append(translate_pearlite(*term))
         }
         pearlite_syn::term::Term::Verbatim(_) => {
             println!("Verbatim");
@@ -1496,7 +1523,10 @@ fn translate_pearlite<'a>(t: pearlite_syn::term::Term) -> RcDoc<'a, ()> {
             println!("Forall");
             RcDoc::as_string("forall")
                 .append(RcDoc::space())
-                // .append(translate_pearlite(args))
+                .append(
+                    args.iter()
+                        .fold(RcDoc::nil(), |rs, x| rs.append(x.ident.to_string())),
+                )
                 .append(RcDoc::as_string(","))
                 .append(RcDoc::space())
                 .append(translate_pearlite(*term))
@@ -1553,6 +1583,25 @@ fn translate_item<'a>(
                 } else {
                     RcDoc::nil()
                 })
+                .append(if item.tags.0.iter().any(|x| match x {
+                    ItemTag::Requires(_) => true,
+                    ItemTag::Ensures(_) => true,
+                    _ => false,
+                }) {
+                    item.tags.0.iter().fold(RcDoc::nil(), |rc, x| {
+	                match x {
+	                    ItemTag::Requires(s) =>
+                                rc
+                                .append(RcDoc::space())
+                                .append(RcDoc::as_string("`{"))
+                                .append(translate_pearlite(syn::parse_str(s.as_str()).unwrap()))
+                                .append(RcDoc::as_string("}")),
+                            _ => rc,
+	                }
+                    })
+                } else {
+                    RcDoc::nil()
+                })
                 .append(RcDoc::line())
                 .append(
                     RcDoc::as_string(":")
@@ -1600,6 +1649,16 @@ fn translate_item<'a>(
                         ))
                         .append(RcDoc::as_string(","))
                         .append(RcDoc::line())
+                        .append(item.tags.0.iter().fold(RcDoc::nil(), |rc, x| {
+	                    match x {
+	                        ItemTag::Requires(s) =>
+                                    rc
+                                    .append(translate_pearlite(syn::parse_str(s.as_str()).unwrap()))
+                                    .append(RcDoc::as_string("->")),
+                                _ => rc,
+	                    }
+                        }))
+                        .append(RcDoc::line())
                         .append(translate_ident(Ident::TopLevel(f.clone())))
                         .append(RcDoc::space())
                         .append(RcDoc::intersperse(
@@ -1614,15 +1673,6 @@ fn translate_item<'a>(
                         .append(RcDoc::space())
                         .append(RcDoc::as_string("= result ->"))
                         .append(RcDoc::line())
-                        .append(item.tags.0.iter().fold(RcDoc::nil(), |rc, x| {
-	                    match x {
-	                        ItemTag::Requires(s) =>
-                                    rc
-                                    .append(translate_pearlite(syn::parse_str(s.as_str()).unwrap()))
-                                    .append(RcDoc::as_string("->")),
-                                _ => rc,
-	                    }
-                        }))
                         .append(RcDoc::intersperse(item.tags.0.iter().filter(|x| match x{
                             ItemTag::Ensures(_) => true,
                             _ => false,

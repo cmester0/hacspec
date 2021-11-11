@@ -2,9 +2,12 @@ use core::cmp::PartialEq;
 use core::hash::Hash;
 use im::HashSet;
 use itertools::Itertools;
+use proc_macro2::{TokenStream, TokenTree};
 use rustc_span::{MultiSpan, Span};
 use serde::{ser::SerializeSeq, Serialize, Serializer};
+use syn::token::Token;
 use std::fmt;
+use pretty::RcDoc;
 
 #[derive(Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Debug, Copy)]
 pub struct RustspecSpan(pub Span);
@@ -460,6 +463,11 @@ pub enum Item {
         Option<(Spanned<TopLevelIdent>, Spanned<String>)>, // Canvas array type name and modulo value
     ),
 }
+
+// #[derive(HashStable)]
+// pub enum EnsureStream {
+//     ES(rustc_ast::tokenstream::TokenStream);
+// }
 
 #[derive(Clone, Serialize, Hash, PartialEq, Eq)]
 pub enum ItemTag {

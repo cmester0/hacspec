@@ -487,12 +487,21 @@ Definition seq_update_slice
   update_sub (of_list out) start_out len
     (of_list (sub input start_in len)).
 
+
 Definition seq_concat
   {a : Type}
   (s1 :seq a)
   (s2: seq a)
   : seq a :=
   of_list (s1 ++ s2).
+
+(* Definition seq_concat *)
+(*   {a : Type} *)
+(*   (s1 :seq a) *)
+(*   (s2: seq a) *)
+(*   : nseq a _ := *)
+(* (* of_list (List.rev_append s1 s2) *) *)
+(*   of_list (s1 ++ s2). *)
 
 Definition seq_from_slice_range
   {a: Type}

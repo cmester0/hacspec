@@ -12,9 +12,9 @@ Require Import Hacspec.Lib.
 Definition fp_canvas := nseq (int8) (48).
 Definition fp :=
   nat_mod 0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab.
-Instance show_fp : Show (fp) := Build_Show (fp) (fun x => show (GZnZ.val _ x)).
+#[global] Instance show_fp : Show (fp) := Build_Show (fp) (fun x => show (GZnZ.val _ x)).
 Definition g_fp : G (fp) := @bindGen Z (fp) (arbitrary) (fun x => returnGen (@Z_in_nat_mod _ x)).
-Instance gen_fp : Gen (fp) := Build_Gen fp g_fp.
+#[global] Instance gen_fp : Gen (fp) := Build_Gen fp g_fp.
 
 
 Definition serialized_fp := nseq (uint8) (usize 48).
@@ -24,9 +24,9 @@ Definition array_fp := nseq (uint64) (usize 6).
 Definition scalar_canvas := nseq (int8) (32).
 Definition scalar :=
   nat_mod 0x8000000000000000000000000000000000000000000000000000000000000000.
-Instance show_scalar : Show (scalar) := Build_Show (scalar) (fun x => show (GZnZ.val _ x)).
+#[global] Instance show_scalar : Show (scalar) := Build_Show (scalar) (fun x => show (GZnZ.val _ x)).
 Definition g_scalar : G (scalar) := @bindGen Z (scalar) (arbitrary) (fun x => returnGen (@Z_in_nat_mod _ x)).
-Instance gen_scalar : Gen (scalar) := Build_Gen scalar g_scalar.
+#[global] Instance gen_scalar : Gen (scalar) := Build_Gen scalar g_scalar.
 
 
 Definition most_significant_bit (m_0 : scalar) (n_1 : uint_size) : uint_size :=
@@ -35,7 +35,7 @@ Definition most_significant_bit (m_0 : scalar) (n_1 : uint_size) : uint_size :=
       most_significant_bit (m_0) ((n_1) - (usize 1))) else (n_1)).
 
 Notation "'g1'" := ((fp × fp × bool)) : hacspec_scope.
-Instance show_g1 : Show (g1) :=
+#[global] Instance show_g1 : Show (g1) :=
 Build_Show g1 (fun x =>
   let (x, x0) := x in
   let (x, x1) := x in
@@ -45,11 +45,11 @@ bindGen arbitrary (fun x0 : fp =>
   bindGen arbitrary (fun x1 : fp =>
   bindGen arbitrary (fun x2 : bool =>
   returnGen (x0,x1,x2)))).
-Instance gen_g1 : Gen (g1) := Build_Gen g1 g_g1.
+#[global] Instance gen_g1 : Gen (g1) := Build_Gen g1 g_g1.
 
 
 Notation "'fp2'" := ((fp × fp)) : hacspec_scope.
-Instance show_fp2 : Show (fp2) :=
+#[global] Instance show_fp2 : Show (fp2) :=
 Build_Show fp2 (fun x =>
   let (x, x0) := x in
   append ("("%string) (append (show x) (append (","%string) (append (show x0) (")"%string))))).
@@ -57,11 +57,11 @@ Definition g_fp2 : G (fp2) :=
 bindGen arbitrary (fun x0 : fp =>
   bindGen arbitrary (fun x1 : fp =>
   returnGen (x0,x1))).
-Instance gen_fp2 : Gen (fp2) := Build_Gen fp2 g_fp2.
+#[global] Instance gen_fp2 : Gen (fp2) := Build_Gen fp2 g_fp2.
 
 
 Notation "'g2'" := ((fp2 × fp2 × bool)) : hacspec_scope.
-Instance show_g2 : Show (g2) :=
+#[global] Instance show_g2 : Show (g2) :=
 Build_Show g2 (fun x =>
   let (x, x0) := x in
   let (x, x1) := x in
@@ -71,11 +71,11 @@ bindGen arbitrary (fun x0 : fp2 =>
   bindGen arbitrary (fun x1 : fp2 =>
   bindGen arbitrary (fun x2 : bool =>
   returnGen (x0,x1,x2)))).
-Instance gen_g2 : Gen (g2) := Build_Gen g2 g_g2.
+#[global] Instance gen_g2 : Gen (g2) := Build_Gen g2 g_g2.
 
 
 Notation "'fp6'" := ((fp2 × fp2 × fp2)) : hacspec_scope.
-Instance show_fp6 : Show (fp6) :=
+#[global] Instance show_fp6 : Show (fp6) :=
 Build_Show fp6 (fun x =>
   let (x, x0) := x in
   let (x, x1) := x in
@@ -85,11 +85,11 @@ bindGen arbitrary (fun x0 : fp2 =>
   bindGen arbitrary (fun x1 : fp2 =>
   bindGen arbitrary (fun x2 : fp2 =>
   returnGen (x0,x1,x2)))).
-Instance gen_fp6 : Gen (fp6) := Build_Gen fp6 g_fp6.
+#[global] Instance gen_fp6 : Gen (fp6) := Build_Gen fp6 g_fp6.
 
 
 Notation "'fp12'" := ((fp6 × fp6)) : hacspec_scope.
-Instance show_fp12 : Show (fp12) :=
+#[global] Instance show_fp12 : Show (fp12) :=
 Build_Show fp12 (fun x =>
   let (x, x0) := x in
   append ("("%string) (append (show x) (append (","%string) (append (show x0) (")"%string))))).
@@ -97,7 +97,7 @@ Definition g_fp12 : G (fp12) :=
 bindGen arbitrary (fun x0 : fp6 =>
   bindGen arbitrary (fun x1 : fp6 =>
   returnGen (x0,x1))).
-Instance gen_fp12 : Gen (fp12) := Build_Gen fp12 g_fp12.
+#[global] Instance gen_fp12 : Gen (fp12) := Build_Gen fp12 g_fp12.
 
 
 Definition fp2fromfp (n_2 : fp) : fp2 :=

@@ -252,14 +252,14 @@ pub fn auction_finalize(ctx: FinalizeContext, state: State) -> AuctionFinalizeRe
     result
 }
 
-#[cfg(test)]
-extern crate quickcheck;
-#[cfg(test)]
-#[macro_use(quickcheck)]
-extern crate quickcheck_macros;
+// #[cfg(test)]
+// extern crate quickcheck;
+// #[cfg(test)]
+// #[macro_use(quickcheck)]
+// extern crate quickcheck_macros;
 
-#[cfg(test)]
-use quickcheck::*;
+// #[cfg(test)]
+// use quickcheck::*;
 
 #[cfg(proof)]
 #[cfg(test)]
@@ -269,11 +269,11 @@ pub fn auction_item(a : u64, b : u64, c : u64) -> PublicByteSeq {
 
 #[cfg(proof)]
 #[cfg(test)]
-#[quickcheck]
+// #[quickcheck]
 // #[requires("item === PublicByteSeq::new(0_usize)")]
 // #[ensures("result === true")]
-#[requires("item === auction_item(0,1,2)")]
-#[ensures("result === true")] // TODO: Macros unfolding! (PublicByteSeq::new(0_usize))
+// #[requires("item === auction_item(0,1,2)")]
+#[ensures(result === true)] // TODO: Macros unfolding! (PublicByteSeq::new(0_usize))
 /// Test that the smart-contract initialization sets the state correctly
 /// (no bids, active state, indicated auction-end time and item name).
 pub fn auction_test_init(item: PublicByteSeq) -> bool { //  time: u64
@@ -328,20 +328,27 @@ fn verify_bid(
     )
 }
 
-// #[cfg(proof)]
-// #[cfg(test)]
-// fn new_account(i : u64) -> (UserAddress, Context) {
-//     let alice = (UserAddress([
-//         0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8,
-//         0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8,
-//         0_u8, 0_u8,
-//     ]));
-//     let alice_ctx = (time, UserAddressSet::UserAddressSome(alice));
-//     (alice, alice_ctx)
-// }
+#[cfg(proof)]
+#[cfg(test)]
+fn useraddress_from_u8(i : u8) -> UserAddress {
+    UserAddress([
+        i, i, i, i, i, i, i, i, i, i, i, i, i, i, i,
+        i, i, i, i, i, i, i, i, i, i, i, i, i, i, i,
+        i, i,
+    ])
+}
 
 #[cfg(proof)]
 #[cfg(test)]
+fn new_account(time : u64, i : u8) -> (UserAddress, Context) {
+    let addr = useraddress_from_u8(i);
+    let ctx = (time, UserAddressSet::UserAddressSome(addr));
+    (addr, ctx)
+}
+
+#[cfg(proof)]
+#[cfg(test)]
+// #[quickcheck]
 // #[test]
 /// Test a sequence of bids and finalizations:
 /// 0. Auction is initialized.
@@ -354,10 +361,12 @@ fn verify_bid(
 /// Carol (the owner of the contract) collects the highest bid amount.
 /// 6. Attempts to subsequently bid or finalize fail.
 // #[ensures("result === true && exists <k : usize> item.len() === k")]
-#[ensures("result === true")]
-fn test_auction_bid_and_finalize() -> bool { // item: PublicByteSeq, time : u64
-    let item = PublicByteSeq::new(0_usize);
-    let time = 1_u64; //  100
+#[requires(forall<i:Int> 0 <= item && i < len(*item) == > get(^item, i) === Some(0u32))]
+#[ensures(@result === (a, b))]
+// #[ensures(exists<b : bool> (result === b) && (3 + 4 === 7))]
+fn test_auction_bid_and_finalize(item: PublicByteSeq, time : u64) -> bool { // item: PublicByteSeq, time : u64
+    // let item = PublicByteSeq::new(0_usize);
+    // let time = 1_u64; //  100
 
     let amount = 100_u64;
     let winning_amount = 300_u64;
@@ -369,12 +378,7 @@ fn test_auction_bid_and_finalize() -> bool { // item: PublicByteSeq, time : u64
     let state = fresh_state(item.clone(), time); // mut
 
     // 1st bid: account1 bids amount1
-    let alice = (UserAddress([
-        0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8,
-        0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8,
-        0_u8, 0_u8,
-    ]));
-    let alice_ctx = (time, UserAddressSet::UserAddressSome(alice));
+    let (alice, alice_ctx) = new_account(time, 0_u8);
 
     let (state, bid_map, res_0, result_0) = verify_bid(
         item.clone(),
@@ -402,12 +406,7 @@ fn test_auction_bid_and_finalize() -> bool { // item: PublicByteSeq, time : u64
     );
 
     // // 3rd bid: second account
-    let bob = (UserAddress([
-        1_u8, 1_u8, 1_u8, 1_u8, 1_u8, 1_u8, 1_u8, 1_u8, 1_u8, 1_u8, 1_u8, 1_u8, 1_u8, 1_u8, 1_u8,
-        1_u8, 1_u8, 1_u8, 1_u8, 1_u8, 1_u8, 1_u8, 1_u8, 1_u8, 1_u8, 1_u8, 1_u8, 1_u8, 1_u8, 1_u8,
-        1_u8, 1_u8,
-    ]));
-    let bob_ctx = (time, UserAddressSet::UserAddressSome(bob)); // first argument is slot time
+    let (bob, bob_ctx) = new_account(time, 1_u8); // first argument is slot time
 
     let (state, bid_map, res_2, result_2) = verify_bid(
         item.clone(),
@@ -420,11 +419,7 @@ fn test_auction_bid_and_finalize() -> bool { // item: PublicByteSeq, time : u64
         time,
     );
 
-    let owner = (UserAddress([
-        0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8,
-        0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8,
-        0_u8, 0_u8,
-    ]));
+    let owner = useraddress_from_u8(0_u8);
 
     // let sender = owner;
     let balance = 100_u64;
@@ -441,12 +436,7 @@ fn test_auction_bid_and_finalize() -> bool { // item: PublicByteSeq, time : u64
 
     // // finalizing auction
     // let carol = new_account();
-    let carol = (UserAddress([
-        2_u8, 2_u8, 2_u8, 2_u8, 2_u8, 2_u8, 2_u8, 2_u8, 2_u8, 2_u8, 2_u8, 2_u8, 2_u8, 2_u8, 2_u8,
-        2_u8, 2_u8, 2_u8, 2_u8, 2_u8, 2_u8, 2_u8, 2_u8, 2_u8, 2_u8, 2_u8, 2_u8, 2_u8, 2_u8, 2_u8,
-        2_u8, 2_u8,
-    ]));
-    let carol_ctx = (time, UserAddressSet::UserAddressSome(carol));
+    let (carol, carol_ctx) = new_account(time, 2_u8);
 
     let ctx5 = (time + 1_u64, carol, winning_amount);
     let finres2 = auction_finalize(ctx5, state.clone());
