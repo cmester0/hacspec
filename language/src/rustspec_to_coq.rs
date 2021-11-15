@@ -83,7 +83,6 @@ fn make_uint_size_coercion<'a>(pat: RcDoc<'a, ()>) -> RcDoc<'a, ()> {
 }
 
 fn make_tuple<'a, I: IntoIterator<Item = RcDoc<'a, ()>>>(args: I) -> RcDoc<'a, ()> {
-<<<<<<< HEAD
     let iter = args.into_iter();
     match &iter.size_hint().1 {
         Some(0) => RcDoc::as_string("tt"),
@@ -101,21 +100,6 @@ fn make_tuple<'a, I: IntoIterator<Item = RcDoc<'a, ()>>>(args: I) -> RcDoc<'a, (
             .append(RcDoc::as_string(")"))
             .group(),
     }
-=======
-    RcDoc::as_string("(")
-        .append(
-            RcDoc::line_()
-                .append(RcDoc::intersperse(
-                    args.into_iter(),
-                    RcDoc::as_string(",").append(RcDoc::line()),
-                ))
-                .group()
-                .nest(2),
-        )
-        .append(RcDoc::line_())
-        .append(RcDoc::as_string(")"))
-        .group()
->>>>>>> 352be7533 (Allow let binding patterns for tuple structs for coq backend)
 }
 
 fn make_list<'a, I: IntoIterator<Item = RcDoc<'a, ()>>>(args: I) -> RcDoc<'a, ()> {
@@ -835,7 +819,6 @@ fn translate_expression<'a>(e: Expression, top_ctx: &'a TopLevelContext) -> RcDo
                 })
         }
         Expression::MethodCall(sel_arg, sel_typ, (f, _), args) => {
-<<<<<<< HEAD
             // Ignore "clone" // TODO: is this correct?
             if f.clone() == TopLevelIdent("clone".to_string()) {
                 RcDoc::nil()
@@ -859,24 +842,6 @@ fn translate_expression<'a>(e: Expression, top_ctx: &'a TopLevelContext) -> RcDo
             .append(RcDoc::concat(args.into_iter().map(|((arg, _), _)| {
                 RcDoc::space().append(make_paren(translate_expression(arg, top_ctx)))
             })))
-=======
-            let (func_name, additional_args) =
-                translate_func_name(sel_typ.clone().map(|x| x.1), Ident::TopLevel(f), top_ctx);
-            func_name // We append implicit arguments first
-                .append(RcDoc::concat(
-                    additional_args
-                        .into_iter()
-                        .map(|arg| RcDoc::space().append(make_paren(arg))),
-                ))
-                // Then the self argument
-                .append(
-                    RcDoc::space().append(make_paren(translate_expression((sel_arg.0).0, top_ctx))),
-                )
-                // And finally the rest of the arguments
-                .append(RcDoc::concat(args.into_iter().map(|((arg, _), _)| {
-                    RcDoc::space().append(make_paren(translate_expression(arg, top_ctx)))
-                })))
->>>>>>> 352be7533 (Allow let binding patterns for tuple structs for coq backend)
         }
         Expression::ArrayIndex(x, e2, typ) => {
             let e2 = e2.0;
@@ -888,7 +853,6 @@ fn translate_expression<'a>(e: Expression, top_ctx: &'a TopLevelContext) -> RcDo
                 .append(RcDoc::space())
                 .append(make_paren(translate_expression(e2, top_ctx)))
         }
-<<<<<<< HEAD
         // Expression::NewArray(_array_name, inner_ty, args) => {
         Expression::NewArray(_array_name, inner_ty, args) => {
             let inner_ty = inner_ty.unwrap();
@@ -922,46 +886,6 @@ fn translate_expression<'a>(e: Expression, top_ctx: &'a TopLevelContext) -> RcDo
                         ))
                 }
             }
-=======
-        Expression::NewArray(_, typ, args) => {
-            // retrieves the element type of the array. For named types (aliases), it looks up
-            // the original definition in the typ_dict.
-            let inner_ty = match typ {
-                Some(BaseTyp::Named(ident, _)) => {
-                    let ident = &ident.0;
-                    match top_ctx.typ_dict.get(ident) {
-                        Some((alias_typ, DictEntry::Array)) => {
-                            match (alias_typ.1).0.clone() {
-                                BaseTyp::Array(_size, inner_ty) => inner_ty.as_ref().clone().0,
-                                _ => panic!(),
-                            }
-                            // translate_prefix_for_func_name((alias_typ.1).0.clone(), top_ctx)
-                        }
-                        _ => panic!(),
-                    }
-                }
-                Some(BaseTyp::Array(_size, inner_ty)) => inner_ty.as_ref().clone().0,
-                // Should not happen - array should always have an element type
-                _ => panic!(),
-            };
-            RcDoc::as_string(format!("{}_from_list", ARRAY_MODULE))
-                .append(RcDoc::space())
-                .append(translate_base_typ(inner_ty.clone()))
-                .append(RcDoc::space())
-                .append(make_paren(
-                    make_let_binding(
-                        RcDoc::as_string("l"),
-                        None,
-                        make_list(
-                            args.into_iter()
-                                .map(|(e, _)| translate_expression(e, top_ctx)),
-                        ),
-                        false,
-                    )
-                    .append(RcDoc::space())
-                    .append(RcDoc::as_string("l")),
-                ))
->>>>>>> 352be7533 (Allow let binding patterns for tuple structs for coq backend)
         }
         Expression::IntegerCasting(x, new_t, old_t) => {
             let old_t = old_t.unwrap();
@@ -1112,14 +1036,10 @@ fn translate_statements<'a>(
                         _ => RcDoc::nil(),
                     }
                     .append(translate_pattern_tick(pat.clone())),
-<<<<<<< HEAD
                     match pat.clone() {
                         Pattern::SingleCaseEnum(_, _) | Pattern::Tuple(_) => None,
                         _ => typ.map(|(typ, _)| translate_typ(typ)),
                     },
-=======
-                    typ.map(|(typ, _)| translate_typ(typ)),
->>>>>>> 352be7533 (Allow let binding patterns for tuple structs for coq backend)
                     translate_expression(expr.clone(), top_ctx),
                     false,
                 )
@@ -1211,7 +1131,6 @@ fn translate_statements<'a>(
                     }
                 });
             if either_blocks_contains_question_mark {
-<<<<<<< HEAD
                 let block1 = make_paren(translate_block(b1.clone(), true, top_ctx));
                 // RcDoc::as_string("let f a :=")
                 //     .append(RcDoc::line()) // softline
@@ -1266,13 +1185,6 @@ fn translate_statements<'a>(
                     .append(RcDoc::line())
                     .append(translate_statements(statements.clone(), top_ctx))
                     .append(RcDoc::as_string(")"))
-=======
-                // TODO
-                unimplemented!()
-                // make_error_returning_let_binding(pat, None, expr, || {
-                // translate_statements(statements, top_ctx)
-                // })
->>>>>>> 352be7533 (Allow let binding patterns for tuple structs for coq backend)
             } else {
                 make_let_binding(pat, None, expr, false)
                     .append(RcDoc::hardline())
@@ -1334,7 +1246,6 @@ fn translate_statements<'a>(
                     .append(translate_block(b, true, top_ctx))
                     .append(RcDoc::as_string(")"));
 
-<<<<<<< HEAD
                 RcDoc::as_string("match")
                     .append(RcDoc::softline())
                     .append(make_paren(loop_expr))
@@ -1383,11 +1294,6 @@ fn translate_statements<'a>(
                     .append(RcDoc::hardline())
                     .append(translate_statements(statements, top_ctx))
             }
-=======
-            make_let_binding(mut_tuple("'".to_string()), None, loop_expr, false)
-                .append(RcDoc::hardline())
-                .append(translate_statements(statements, top_ctx))
->>>>>>> 352be7533 (Allow let binding patterns for tuple structs for coq backend)
         }
     }
     .group()
@@ -1446,15 +1352,11 @@ fn translate_item<'a>(
                 ),
             None,
             translate_block(b.clone(), false, top_ctx)
-<<<<<<< HEAD
-                .append(RcDoc::nil())
-=======
                 .append(if let BaseTyp::Unit = sig.ret.0 {
                     RcDoc::hardline().append(RcDoc::as_string("()"))
                 } else {
                     RcDoc::nil()
                 })
->>>>>>> 352be7533 (Allow let binding patterns for tuple structs for coq backend)
                 .group(),
             true,
         )
@@ -1576,7 +1478,6 @@ fn translate_item<'a>(
                 }),
                 RcDoc::line(),
             ))
-<<<<<<< HEAD
             .append(RcDoc::as_string("."))
             .append(if item.tags.0.contains(&"PartialEq".to_string()) {
                 RcDoc::hardline()
@@ -1697,9 +1598,6 @@ fn translate_item<'a>(
             } else {
                 RcDoc::nil()
             }),
-=======
-            .append(RcDoc::as_string(".")),
->>>>>>> 352be7533 (Allow let binding patterns for tuple structs for coq backend)
         Item::ArrayDecl(name, size, cell_t, index_typ) => RcDoc::as_string("Definition")
             .append(RcDoc::space())
             .append(translate_ident(Ident::TopLevel(name.0.clone())))
@@ -2009,11 +1907,7 @@ pub fn translate_and_write_to_file(
     let export_quick_check = p
         .items
         .iter()
-<<<<<<< HEAD
         .any(|i| i.0.tags.0.contains(&"quickcheck".to_string()));
-=======
-        .any(|i| i.0.tags.0.contains(&ItemTag::QuickCheck));
->>>>>>> 352be7533 (Allow let binding patterns for tuple structs for coq backend)
     write!(
         file,
         "(** This file was automatically generated using Hacspec **)\n\
