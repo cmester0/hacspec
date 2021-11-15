@@ -17,7 +17,6 @@ use rustc_span::{symbol, Span};
 use crate::hir_to_rustspec::ExternalData;
 use crate::rustspec::*;
 use crate::HacspecErrorEmitter;
-// use pretty::RcDoc;
 
 #[derive(Clone)]
 struct SpecialNames {
@@ -1079,9 +1078,9 @@ fn translate_expr(
                             )),
                             _ => {
                                 sess.span_rustspec_err(
-                                        e.span,
-                                        "statements not allowed in Hacspec inside array indexing expression",
-                                    );
+                                    e.span,
+                                    "statements not allowed in Hacspec inside array indexing expression",
+                                );
                                 Err(())
                             }
                         }
@@ -1250,7 +1249,7 @@ fn translate_expr(
                                 sess.span_rustspec_err(
                                     ((arm.pat).span).clone(),
                                     "the only types of match pattern allowed in Hacspec start by \
-                                <name of the enum>::<name of the case>",
+                                     <name of the enum>::<name of the case>",
                                 );
                                 return Err(());
                             }
@@ -2272,173 +2271,106 @@ fn tokentree_text(x: TokenTree) -> String {
     }
 }
 
+fn get_delimited_tree(attr: Attribute) -> Option<rustc_ast::tokenstream::TokenStream> {
+    let inner_tokens = attr.tokens().to_tokenstream();
+    if inner_tokens.len() != 2 {
+        return None;
+    }
+    let mut it = inner_tokens.trees();
+    let first_token = it.next().unwrap();
+    let second_token = it.next().unwrap();
+    match (first_token, second_token) {
+        (TokenTree::Token(first_tok), TokenTree::Delimited(_, _, inner)) => {
+            match first_tok.kind {
+                TokenKind::Pound => {
+                    if inner.len() != 2 {
+                        return None;
+                    }
+                    let mut it = inner.trees();
+                    let _first_token = it.next().unwrap();
+                    // First is derive
+                    let second_token = it.next().unwrap();
+                    match second_token.clone() {
+                        TokenTree::Delimited(_, _, inner) => Some(inner),
+                        _ => None,
+                    }
+                }
+                _ => None,
+            }
+        }
+        _ => None,
+    }
+}
+
+fn attribute_requires(attr: &Attribute) -> Option<String> {
+    let attr_name = attr.name_or_empty().to_ident_string();
+    match attr_name.as_str() {
+        "requires" => {
+            let inner = get_delimited_tree(attr.clone())?;
+            let textify = inner
+                .trees()
+                .fold("".to_string(), |s, x| s + &tokentree_text(x));
+            println!("textify requires >>{}<<", textify);
+            Some(textify)
+        }
+        _ => None,
+    }
+}
+
+fn attribute_ensures(attr: &Attribute) -> Option<String> {
+    let attr_name = attr.name_or_empty().to_ident_string();
+    match attr_name.as_str() {
+        "ensures" => {
+            let inner = get_delimited_tree(attr.clone())?;
+            let textify = inner
+                .trees()
+                .fold("".to_string(), |s, x| s + &tokentree_text(x));
+            println!("textify requires >>{}<<", textify);
+            Some(textify)
+        }
+        _ => None,
+    }
+}
+
 fn attribute_tag(attr: &Attribute) -> Option<Vec<ItemTag>> {
     let attr_name = attr.name_or_empty().to_ident_string();
     match attr_name.as_str() {
-        "quickcheck" => Some(vec![ItemTag::Tag("quickcheck".to_string())]),
-        "test" => Some(vec![ItemTag::Tag("test".to_string())]),
-        "requires" => {
-            let inner_tokens = attr.tokens().to_tokenstream();
-            if inner_tokens.len() != 2 {
-                return None;
-            }
-            let mut it = inner_tokens.trees();
-            let first_token = it.next().unwrap();
-            let second_token = it.next().unwrap();
-            match (first_token, second_token) {
-                (TokenTree::Token(first_tok), TokenTree::Delimited(_, _, inner)) => {
-                    match first_tok.kind {
-                        TokenKind::Pound => {
-                            if inner.len() != 2 {
-                                return None;
-                            }
-                            let mut it = inner.trees();
-                            let _first_token = it.next().unwrap();
-                            // First is derive
-                            let second_token = it.next().unwrap();
-                            match second_token.clone() {
-                                TokenTree::Delimited(_, _, _) => {
-                                    let textify = tokentree_text(second_token);
-                                    println!("textify requires >>{}<<", textify);
-                                    Some(vec![ItemTag::Requires(textify)])
-                                }
-                                _ => None,
-                            }
-                        }
-                        _ => None,
-                    }
-                }
-                _ => None,
-            }
-        }
-        "ensures" => {
-            let inner_tokens = attr.tokens().to_tokenstream();
-            if inner_tokens.len() != 2 {
-                return None;
-            }
-            let mut it = inner_tokens.trees();
-            let first_token = it.next().unwrap();
-            let second_token = it.next().unwrap();
-            match (first_token, second_token) {
-                (TokenTree::Token(first_tok), TokenTree::Delimited(_, _, inner)) => {
-                    match first_tok.kind {
-                        TokenKind::Pound => {
-                            if inner.len() != 2 {
-                                return None;
-                            }
-                            let mut it = inner.trees();
-                            let _first_token = it.next().unwrap();
-                            // First is derive
-                            let second_token = it.next().unwrap();
-                            match second_token.clone() {
-                                TokenTree::Delimited(_, _, _) => {
-                                    let textify = tokentree_text(second_token);
-                                    println!("textify ensures >>{}<<", textify);
-                                    Some(vec![ItemTag::Ensures(textify)])
-                                }
-                                _ => None,
-                            }
-                        }
-                        _ => None,
-                    }
-                }
-                _ => None,
-            }
-        }
+        "quickcheck" | "test" | "requires" | "ensures" => Some(vec![ItemTag::Tag(attr_name)]),
         "derive" => {
-            let inner_tokens = attr.tokens().to_tokenstream();
-            if inner_tokens.len() != 2 {
-                return None;
-            }
-            let mut it = inner_tokens.trees();
-            let first_token = it.next().unwrap();
-            let second_token = it.next().unwrap();
-            match (first_token, second_token) {
-                (TokenTree::Token(first_tok), TokenTree::Delimited(_, _, inner)) => {
-                    match first_tok.kind {
-                        TokenKind::Pound => {
-                            if inner.len() != 2 {
-                                return None;
-                            }
-                            let mut it = inner.trees();
-                            let _first_token = it.next().unwrap();
-                            // First is derive
-                            let second_token = it.next().unwrap();
-                            match second_token {
-                                TokenTree::Delimited(_, _, inner) => {
-                                    Some(inner.trees().fold(Vec::new(), |mut a, x| match x {
-                                        TokenTree::Token(tok) => match tok.kind {
-                                            TokenKind::Ident(ident, _) => {
-                                                a.push(ItemTag::Tag(ident.to_ident_string()));
-                                                a
-                                            }
-                                            _ => a,
-                                        },
-                                        _ => a,
-                                    }))
-                                }
-                                _ => None,
-                            }
-                        }
-                        _ => None,
+            let inner = get_delimited_tree(attr.clone())?;
+            Some(inner.trees().fold(Vec::new(), |mut a, x| match x {
+                TokenTree::Token(tok) => match tok.kind {
+                    TokenKind::Ident(ident, _) => {
+                        a.push(ItemTag::Tag(ident.to_ident_string()));
+                        a
                     }
-                }
-                _ => None,
-            }
+                    _ => a,
+                },
+                _ => a,
+            }))
         }
         "cfg" => {
-            let inner_tokens = attr.tokens().to_tokenstream();
-            if inner_tokens.len() != 2 {
+            let inner = get_delimited_tree(attr.clone())?;
+            if inner.len() != 1 {
                 return None;
             }
-            let mut it = inner_tokens.trees();
+            let mut it = inner.trees();
             let first_token = it.next().unwrap();
-            let second_token = it.next().unwrap();
-            match (first_token, second_token) {
-                (TokenTree::Token(first_tok), TokenTree::Delimited(_, _, inner)) => {
-                    match first_tok.kind {
-                        TokenKind::Pound => {
-                            if inner.len() != 2 {
-                                return None;
-                            }
-                            let mut it = inner.trees();
-                            let _first_token = it.next().unwrap();
-                            // First is cfg
-                            let second_token = it.next().unwrap();
-                            match second_token {
-                                TokenTree::Delimited(_, _, inner) => {
-                                    if inner.len() != 1 {
-                                        return None;
-                                    }
-                                    let mut it = inner.trees();
-                                    let first_token = it.next().unwrap();
-                                    match first_token {
-                                        TokenTree::Token(tok) => match tok.kind {
-                                            TokenKind::Ident(ident, _) => {
-                                                let ident_string = ident.to_ident_string();
-                                                match ident_string.as_str() {
-                                                    "proof" => Some(vec![ItemTag::Tag("proof".to_string())]),
-                                                    "test" => {
-                                                        Some(vec![ItemTag::Tag("test".to_string())])
-                                                    }
-                                                    _ => None,
-                                                }
-                                            }
-                                            _ => None,
-                                        },
-                                        _ => None,
-                                    }
-                                }
-                                _ => None,
-                            }
+            match first_token {
+                TokenTree::Token(tok) => match tok.kind {
+                    TokenKind::Ident(ident, _) => {
+                        let ident_string = ident.to_ident_string();
+                        match ident_string.as_str() {
+                            "proof" => Some(vec![ItemTag::Tag("proof".to_string())]),
+                            "test" => Some(vec![ItemTag::Tag("test".to_string())]),
+                            _ => None,
                         }
-                        _ => None,
                     }
-                }
+                    _ => None,
+                },
                 _ => None,
             }
         }
-        // "test" => true, // proof
         _ => None,
     }
 }
@@ -2574,11 +2506,38 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
                 ),
                 Some(b) => translate_block(sess, specials, &b)?,
             };
+            let requires =
+                i.attrs
+                    .iter()
+                    .fold(Vec::new(), |mut v, attr| match attribute_requires(attr) {
+                        Some(a) => {
+                            v.push(a.clone());
+                            v
+                        }
+                        None => v,
+                    });
+            let ensures =
+                i.attrs
+                    .iter()
+                    .fold(Vec::new(), |mut v, attr| match attribute_ensures(attr) {
+                        Some(a) => {
+                            v.push(a.clone());
+                            v
+                        }
+                        None => v,
+                    });
             let fn_sig = FuncSig {
                 args: fn_inputs,
                 ret: fn_output,
             };
-            let fn_item = Item::FnDecl(translate_toplevel_ident(&i.ident), fn_sig, fn_body);
+            let fn_item = Item::FnDecl(
+                translate_toplevel_ident(&i.ident),
+                fn_sig,
+                fn_body,
+                requires,
+                ensures,
+                Vec::new()
+            );
 
             Ok((
                 ItemTranslationResult::Item(DecoratedItem {

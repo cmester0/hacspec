@@ -2163,10 +2163,16 @@ fn typecheck_statement(
                 top_level_context,
             )?;
             let typ = match typ {
-                None => Some ((expr_typ.clone(), expr.1.clone())),
+                None => Some((expr_typ.clone(), expr.1.clone())),
                 Some((inner_typ, _)) => {
-                    if unify_types(sess, inner_typ, &expr_typ, &HashMap::new(), top_level_context)?
-                        .is_none()
+                    if unify_types(
+                        sess,
+                        inner_typ,
+                        &expr_typ,
+                        &HashMap::new(),
+                        top_level_context,
+                    )?
+                    .is_none()
                     {
                         sess.span_rustspec_err(
                             *pat_span,
@@ -2617,7 +2623,7 @@ fn typecheck_item(
             ))
         }
         Item::AliasDecl(_, _) | Item::ImportedCrate(_) | Item::EnumDecl(_, _) => Ok(i.clone()),
-        Item::FnDecl((f, f_span), sig, (b, b_span)) => {
+        Item::FnDecl((f, f_span), sig, (b, b_span), requires, ensures, idents) => {
             let var_context = HashMap::new();
             let var_context = sig
                 .args
@@ -2655,6 +2661,9 @@ fn typecheck_item(
                 (f.clone(), f_span.clone()),
                 sig.clone(),
                 (new_b, b_span.clone()),
+                requires.clone(),
+                ensures.clone(),
+                idents.clone()
             );
             Ok(out)
         }

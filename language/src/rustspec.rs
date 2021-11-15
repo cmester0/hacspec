@@ -1,13 +1,14 @@
 use core::cmp::PartialEq;
 use core::hash::Hash;
 use im::HashSet;
+use im::HashMap;
 use itertools::Itertools;
+use pretty::RcDoc;
 use proc_macro2::{TokenStream, TokenTree};
 use rustc_span::{MultiSpan, Span};
 use serde::{ser::SerializeSeq, Serialize, Serializer};
-use syn::token::Token;
 use std::fmt;
-use pretty::RcDoc;
+use syn::token::Token;
 
 #[derive(Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Debug, Copy)]
 pub struct RustspecSpan(pub Span);
@@ -438,7 +439,14 @@ pub struct ExternalFuncSig {
 
 #[derive(Clone, Serialize)]
 pub enum Item {
-    FnDecl(Spanned<TopLevelIdent>, FuncSig, Spanned<Block>),
+    FnDecl(
+        Spanned<TopLevelIdent>,
+        FuncSig,
+        Spanned<Block>,
+        Vec<String>,
+        Vec<String>,
+        Vec<(String, Ident)>,
+    ),
     EnumDecl(
         Spanned<TopLevelIdent>,
         Vec<(Spanned<TopLevelIdent>, Option<Spanned<BaseTyp>>)>,
@@ -477,8 +485,8 @@ pub enum ItemTag {
     // Proof,
     // Clone,
     // PartialEq,
-    Requires(String),
-    Ensures(String),
+    // Requires(String),
+    // Ensures(String),
     Tag(String),
 }
 

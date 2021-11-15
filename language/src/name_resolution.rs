@@ -445,23 +445,42 @@ fn resolve_item(
                 i_span,
             ))
         }
-        Item::FnDecl((f, f_span), mut sig, (b, b_span)) => {
+        Item::FnDecl((f, f_span), mut sig, (b, b_span), requires, ensures, idents) => {
             let name_context = HashMap::new();
-            let (new_sig_args, name_context) = sig.args.iter().fold(
-                (Vec::new(), name_context),
-                |(mut new_sig_acc, name_context), ((x, x_span), (t, t_span))| {
+            let (new_sig_args, name_context, replacements) = sig.args.iter().fold(
+                (Vec::new(), name_context, Vec::new()),
+                |(mut new_sig_acc, name_context, mut repl), ((x, x_span), (t, t_span))| {
                     let new_x = match x {
                         Ident::Unresolved(s) => to_fresh_ident(s),
                         _ => panic!("should not happen"),
                     };
+                    
                     let name_context = add_name(x, &new_x, name_context);
+                    repl.push((x, new_x.clone()));
                     new_sig_acc.push(((new_x, x_span.clone()), (t.clone(), t_span.clone())));
-                    (new_sig_acc, name_context)
+                    (new_sig_acc, name_context, repl)
                 },
             );
+            
+            // let new_requires : Vec<String> = requires.iter().map(|s| {
+            //     replacements.iter().fold(s.clone(), |s : String, (x,new_x)| {
+            //         s.replace(format!["{}", x].as_str(), format!["{}", new_x].as_str())
+            //     })
+            // }).collect();
+            
+            // let (new_ensures, new_requires) : (Vec<String>, Vec<String>) = replacements.iter().fold((ensures.clone(), requires.clone()), |(e,r), (x, new_x)| {
+            //     (e.iter().map(|s| s.replace(format!["{}", x].as_str(), format!["{}", new_x].as_str())).collect(),
+            //      r.iter().map(|s| s.replace(format!["{}", x].as_str(), format!["{}", new_x].as_str())).collect())
+            // });
+
+            let mut new_idents : Vec<(String, Ident)> = replacements.iter().map(|(x,new_x)| {
+                (format!["{}", x], new_x.clone())
+            }).collect();
+            new_idents.append(&mut idents.clone());
+            
             sig.args = new_sig_args;
             let new_b = resolve_block(sess, (b, b_span), &name_context, top_level_ctx)?;
-            Ok((Item::FnDecl((f, f_span), sig, new_b), i_span))
+            Ok((Item::FnDecl((f, f_span), sig, new_b, requires, ensures, new_idents), i_span))
         }
     };
     match i {
@@ -625,7 +644,7 @@ fn process_decl_item(
             // Foreign items already imported at this point
             Ok(())
         }
-        Item::FnDecl((f, _f_span), sig, _b) => {
+        Item::FnDecl((f, _f_span), sig, _b, _requires, _ensures, _idents) => {
             top_level_context
                 .functions
                 .insert(FnKey::Independent(f.clone()), FnValue::Local(sig.clone()));

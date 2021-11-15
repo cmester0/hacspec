@@ -272,14 +272,12 @@ pub fn auction_item(a : u64, b : u64, c : u64) -> PublicByteSeq {
 // #[quickcheck]
 // #[requires("item === PublicByteSeq::new(0_usize)")]
 // #[ensures("result === true")]
-// #[requires("item === auction_item(0,1,2)")]
+#[requires(item === auction_item(0,1,2))]
+#[requires(time === 1_u64)]
 #[ensures(result === true)] // TODO: Macros unfolding! (PublicByteSeq::new(0_usize))
 /// Test that the smart-contract initialization sets the state correctly
 /// (no bids, active state, indicated auction-end time and item name).
-pub fn auction_test_init(item: PublicByteSeq) -> bool { //  time: u64
-    // let item = PublicByteSeq::new(0_usize);
-    let time = 1_u64; //  100
-
+pub fn auction_test_init(item: PublicByteSeq, time : u64) -> bool {
     fresh_state(item.clone(), time)
         == State(
             AuctionState::NotSoldYet,
@@ -361,8 +359,11 @@ fn new_account(time : u64, i : u8) -> (UserAddress, Context) {
 /// Carol (the owner of the contract) collects the highest bid amount.
 /// 6. Attempts to subsequently bid or finalize fail.
 // #[ensures("result === true && exists <k : usize> item.len() === k")]
-#[requires(forall<i:Int> 0 <= item && i < len(*item) == > get(^item, i) === Some(0u32))]
-#[ensures(@result === (a, b))]
+// #[requires(forall<i:Int> 0 <= len(item) && i < len(*item) ==> get(^item, i) === Some(0u32))]
+#[requires(item === auction_item(0,1,5))]
+#[requires(time === 1_u64)]
+// #[ensures(@result === (a, b))]
+#[ensures(result === true)]
 // #[ensures(exists<b : bool> (result === b) && (3 + 4 === 7))]
 fn test_auction_bid_and_finalize(item: PublicByteSeq, time : u64) -> bool { // item: PublicByteSeq, time : u64
     // let item = PublicByteSeq::new(0_usize);
