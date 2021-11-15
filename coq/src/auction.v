@@ -19,14 +19,11 @@ match x with
    | Sold a => match y with | Sold b => a =.? b | _ => false end
    end.
 
-Definition eqb_leibniz_auction_state (x y : auction_state) : eqb_auction_state x y = true -> x = y.
-Proof. intros. destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. Qed.
-
-Definition eqb_leibniz'_auction_state (x y : auction_state) : x = y -> eqb_auction_state x y = true.
-Proof. intros. subst. destruct y ; try reflexivity ; try (apply eqdec_refl). Qed.
+Definition eqb_leibniz_auction_state (x y : auction_state) : eqb_auction_state x y = true <-> x = y.
+Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. intros ; subst ; destruct y ; try reflexivity ; try (apply eqb_refl). Qed.
 
 #[global] Instance eq_dec_auction_state : EqDec (auction_state) :=
-Build_EqDec (auction_state) (eqb_auction_state) (eqb_leibniz_auction_state) (eqb_leibniz'_auction_state).
+Build_EqDec (auction_state) (eqb_auction_state) (eqb_leibniz_auction_state).
 
 
 Inductive seq_map :=
@@ -37,14 +34,11 @@ match x with
    | SeqMap a => match y with | SeqMap b => a =.? b end
    end.
 
-Definition eqb_leibniz_seq_map (x y : seq_map) : eqb_seq_map x y = true -> x = y.
-Proof. intros. destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. Qed.
-
-Definition eqb_leibniz'_seq_map (x y : seq_map) : x = y -> eqb_seq_map x y = true.
-Proof. intros. subst. destruct y ; try reflexivity ; try (apply eqdec_refl). Qed.
+Definition eqb_leibniz_seq_map (x y : seq_map) : eqb_seq_map x y = true <-> x = y.
+Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. intros ; subst ; destruct y ; try reflexivity ; try (apply eqb_refl). Qed.
 
 #[global] Instance eq_dec_seq_map : EqDec (seq_map) :=
-Build_EqDec (seq_map) (eqb_seq_map) (eqb_leibniz_seq_map) (eqb_leibniz'_seq_map).
+Build_EqDec (seq_map) (eqb_seq_map) (eqb_leibniz_seq_map).
 
 
 Notation "'amount'" := (int64) : hacspec_scope.
@@ -61,14 +55,11 @@ match x with
    | State a => match y with | State b => a =.? b end
    end.
 
-Definition eqb_leibniz_state (x y : state) : eqb_state x y = true -> x = y.
-Proof. intros. destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. Qed.
-
-Definition eqb_leibniz'_state (x y : state) : x = y -> eqb_state x y = true.
-Proof. intros. subst. destruct y ; try reflexivity ; try (apply eqdec_refl). Qed.
+Definition eqb_leibniz_state (x y : state) : eqb_state x y = true <-> x = y.
+Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. intros ; subst ; destruct y ; try reflexivity ; try (apply eqb_refl). Qed.
 
 #[global] Instance eq_dec_state : EqDec (state) :=
-Build_EqDec (state) (eqb_state) (eqb_leibniz_state) (eqb_leibniz'_state).
+Build_EqDec (state) (eqb_state) (eqb_leibniz_state).
 
 
 Definition fresh_state (itm_0 : itemtyp) (exp_1 : int64) : state :=
@@ -91,14 +82,11 @@ match x with
    | Entry a => match y with | Entry b => a =.? b end
    end.
 
-Definition eqb_leibniz_map_entry (x y : map_entry) : eqb_map_entry x y = true -> x = y.
-Proof. intros. destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. Qed.
-
-Definition eqb_leibniz'_map_entry (x y : map_entry) : x = y -> eqb_map_entry x y = true.
-Proof. intros. subst. destruct y ; try reflexivity ; try (apply eqdec_refl). Qed.
+Definition eqb_leibniz_map_entry (x y : map_entry) : eqb_map_entry x y = true <-> x = y.
+Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. intros ; subst ; destruct y ; try reflexivity ; try (apply eqb_refl). Qed.
 
 #[global] Instance eq_dec_map_entry : EqDec (map_entry) :=
-Build_EqDec (map_entry) (eqb_map_entry) (eqb_leibniz_map_entry) (eqb_leibniz'_map_entry).
+Build_EqDec (map_entry) (eqb_map_entry) (eqb_leibniz_map_entry).
 
 
 Definition seq_map_entry
@@ -134,14 +122,11 @@ match x with
    | Update a => match y with | Update b => a =.? b end
    end.
 
-Definition eqb_leibniz_map_update (x y : map_update) : eqb_map_update x y = true -> x = y.
-Proof. intros. destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. Qed.
-
-Definition eqb_leibniz'_map_update (x y : map_update) : x = y -> eqb_map_update x y = true.
-Proof. intros. subst. destruct y ; try reflexivity ; try (apply eqdec_refl). Qed.
+Definition eqb_leibniz_map_update (x y : map_update) : eqb_map_update x y = true <-> x = y.
+Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. intros ; subst ; destruct y ; try reflexivity ; try (apply eqb_refl). Qed.
 
 #[global] Instance eq_dec_map_update : EqDec (map_update) :=
-Build_EqDec (map_update) (eqb_map_update) (eqb_leibniz_map_update) (eqb_leibniz'_map_update).
+Build_EqDec (map_update) (eqb_map_update) (eqb_leibniz_map_update).
 
 
 Definition seq_map_update_entry
@@ -195,14 +180,11 @@ match x with
        end
    end.
 
-Definition eqb_leibniz_bid_error (x y : bid_error) : eqb_bid_error x y = true -> x = y.
-Proof. intros. destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. Qed.
-
-Definition eqb_leibniz'_bid_error (x y : bid_error) : x = y -> eqb_bid_error x y = true.
-Proof. intros. subst. destruct y ; try reflexivity ; try (apply eqdec_refl). Qed.
+Definition eqb_leibniz_bid_error (x y : bid_error) : eqb_bid_error x y = true <-> x = y.
+Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. intros ; subst ; destruct y ; try reflexivity ; try (apply eqb_refl). Qed.
 
 #[global] Instance eq_dec_bid_error : EqDec (bid_error) :=
-Build_EqDec (bid_error) (eqb_bid_error) (eqb_leibniz_bid_error) (eqb_leibniz'_bid_error).
+Build_EqDec (bid_error) (eqb_bid_error) (eqb_leibniz_bid_error).
 
 
 Inductive user_address_set :=
@@ -219,14 +201,11 @@ match x with
    | UserAddressNone => match y with | UserAddressNone=> true | _ => false end
    end.
 
-Definition eqb_leibniz_user_address_set (x y : user_address_set) : eqb_user_address_set x y = true -> x = y.
-Proof. intros. destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. Qed.
-
-Definition eqb_leibniz'_user_address_set (x y : user_address_set) : x = y -> eqb_user_address_set x y = true.
-Proof. intros. subst. destruct y ; try reflexivity ; try (apply eqdec_refl). Qed.
+Definition eqb_leibniz_user_address_set (x y : user_address_set) : eqb_user_address_set x y = true <-> x = y.
+Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. intros ; subst ; destruct y ; try reflexivity ; try (apply eqb_refl). Qed.
 
 #[global] Instance eq_dec_user_address_set : EqDec (user_address_set) :=
-Build_EqDec (user_address_set) (eqb_user_address_set) (eqb_leibniz_user_address_set) (eqb_leibniz'_user_address_set).
+Build_EqDec (user_address_set) (eqb_user_address_set) (eqb_leibniz_user_address_set).
 
 
 Notation "'context'" := ((int64 × user_address_set)) : hacspec_scope.
@@ -338,14 +317,11 @@ match x with
    | AuctionFinalized => match y with | AuctionFinalized=> true | _ => false end
    end.
 
-Definition eqb_leibniz_finalize_error (x y : finalize_error) : eqb_finalize_error x y = true -> x = y.
-Proof. intros. destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. Qed.
-
-Definition eqb_leibniz'_finalize_error (x y : finalize_error) : x = y -> eqb_finalize_error x y = true.
-Proof. intros. subst. destruct y ; try reflexivity ; try (apply eqdec_refl). Qed.
+Definition eqb_leibniz_finalize_error (x y : finalize_error) : eqb_finalize_error x y = true <-> x = y.
+Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. intros ; subst ; destruct y ; try reflexivity ; try (apply eqb_refl). Qed.
 
 #[global] Instance eq_dec_finalize_error : EqDec (finalize_error) :=
-Build_EqDec (finalize_error) (eqb_finalize_error) (eqb_leibniz_finalize_error) (eqb_leibniz'_finalize_error).
+Build_EqDec (finalize_error) (eqb_finalize_error) (eqb_leibniz_finalize_error).
 
 
 Inductive finalize_action :=
@@ -362,14 +338,11 @@ match x with
        end
    end.
 
-Definition eqb_leibniz_finalize_action (x y : finalize_action) : eqb_finalize_action x y = true -> x = y.
-Proof. intros. destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. Qed.
-
-Definition eqb_leibniz'_finalize_action (x y : finalize_action) : x = y -> eqb_finalize_action x y = true.
-Proof. intros. subst. destruct y ; try reflexivity ; try (apply eqdec_refl). Qed.
+Definition eqb_leibniz_finalize_action (x y : finalize_action) : eqb_finalize_action x y = true <-> x = y.
+Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. intros ; subst ; destruct y ; try reflexivity ; try (apply eqb_refl). Qed.
 
 #[global] Instance eq_dec_finalize_action : EqDec (finalize_action) :=
-Build_EqDec (finalize_action) (eqb_finalize_action) (eqb_leibniz_finalize_action) (eqb_leibniz'_finalize_action).
+Build_EqDec (finalize_action) (eqb_finalize_action) (eqb_leibniz_finalize_action).
 
 
 Inductive bid_remain :=
@@ -382,14 +355,11 @@ match x with
    | BidSome a => match y with | BidSome b => a =.? b | _ => false end
    end.
 
-Definition eqb_leibniz_bid_remain (x y : bid_remain) : eqb_bid_remain x y = true -> x = y.
-Proof. intros. destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. Qed.
-
-Definition eqb_leibniz'_bid_remain (x y : bid_remain) : x = y -> eqb_bid_remain x y = true.
-Proof. intros. subst. destruct y ; try reflexivity ; try (apply eqdec_refl). Qed.
+Definition eqb_leibniz_bid_remain (x y : bid_remain) : eqb_bid_remain x y = true <-> x = y.
+Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. intros ; subst ; destruct y ; try reflexivity ; try (apply eqb_refl). Qed.
 
 #[global] Instance eq_dec_bid_remain : EqDec (bid_remain) :=
-Build_EqDec (bid_remain) (eqb_bid_remain) (eqb_leibniz_bid_remain) (eqb_leibniz'_bid_remain).
+Build_EqDec (bid_remain) (eqb_bid_remain) (eqb_leibniz_bid_remain).
 
 
 Notation "'auction_finalize_result'" := ((result (state × finalize_action
@@ -508,7 +478,7 @@ forall {H_0 : (item_57) = (auction_item (repr 0) (repr 1) (repr 2))},
 forall {H_1 : (time_58) = (repr 1)},
 @auction_test_init item_57 time_58 H_0 H_1= result ->
 (result) = (true).
-Proof. now (intros ; subst). Qed.
+Proof. now intros ; subst. Qed.
 
 Definition verify_bid
   (item_59 : public_byte_seq)
@@ -665,8 +635,5 @@ forall {H_0 : (item_79) = (auction_item (repr 0) (repr 1) (repr 5))},
 forall {H_1 : (time_80) = (repr 1)},
 @test_auction_bid_and_finalize item_79 time_80 H_0 H_1= result ->
 (result) = (true).
-Proof.
-  intros.
-  subst.
-  reflexivity.
-Qed.
+Proof. now intros ; subst. Qed.
+

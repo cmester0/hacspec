@@ -1850,8 +1850,6 @@ fn translate_item<'a>(
                             .append(translate_enum_name(name.0.clone()))
                             .append(RcDoc::as_string(") (eqb_leibniz_"))
                             .append(translate_enum_name(name.0.clone()))
-                            .append(RcDoc::as_string(") (eqb_leibniz'_"))
-                            .append(translate_enum_name(name.0.clone()))
                             .append(RcDoc::as_string(")."))
                             .group()
                             .nest(2)
