@@ -819,6 +819,7 @@ fn translate_expression<'a>(e: Expression, top_ctx: &'a TopLevelContext) -> RcDo
                 })
         }
         Expression::MethodCall(sel_arg, sel_typ, (f, _), args) => {
+            // Ignore "clone" // TODO: is this correct?
             if f.clone() == TopLevelIdent("clone".to_string()) {
                 RcDoc::nil()
             } else {
@@ -1225,8 +1226,8 @@ fn translate_statements<'a>(
             };
             if b_question_mark {
                 let loop_expr = RcDoc::as_string("foldibnd")
-                // .append(RcDoc::space())
-                // .append(translate_typ())
+                    // .append(RcDoc::space())
+                    // .append(translate_typ())
                     .append(RcDoc::space())
                     .append(make_paren(translate_expression(e1.clone(), top_ctx)))
                     .append(RcDoc::space())
@@ -1250,7 +1251,7 @@ fn translate_statements<'a>(
                     .append(RcDoc::softline())
                     .append(translate_block(b, true, top_ctx))
                     .append(RcDoc::as_string(")"));
-                
+
                 RcDoc::as_string("match")
                     .append(RcDoc::softline())
                     .append(make_paren(loop_expr))
@@ -1270,7 +1271,6 @@ fn translate_statements<'a>(
                     .append(translate_statements(statements, top_ctx))
                     .append(RcDoc::softline())
                     .append(RcDoc::as_string("end"))
-
             } else {
                 let loop_expr = RcDoc::as_string("foldi")
                     .append(RcDoc::space())
@@ -1566,10 +1566,10 @@ fn translate_item<'a>(
                     .append(RcDoc::as_string("eqb_"))
                     .append(translate_enum_name(name.0.clone()))
                     .append(RcDoc::space())
-                    .append(RcDoc::as_string("x y = true -> x = y."))
+                    .append(RcDoc::as_string("x y = true <-> x = y."))
                     .append(RcDoc::hardline())
                     .append(
-                        RcDoc::as_string("Proof. intros. destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. Qed.")
+                        RcDoc::as_string("Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. intros ; subst ; destruct y ; try reflexivity ; try (apply eqb_refl). Qed.")
                     )
                     .append(RcDoc::hardline())
                     .append(RcDoc::hardline())
