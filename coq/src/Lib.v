@@ -1313,3 +1313,6 @@ Notation "'ifbnd' b 'thenbnd' x 'elsebnd' y '>>' f" := (if b then result_bind x 
 Notation "'foldibnd' s 'to' e 'for' z '>>' f" := (foldi s e (fun x y => result_bind y (f x)) (Ok z)) (at level 50).
 
 Definition usizemax := usize 18446744073709551615.
+#[global] Coercion bool_to_prop (b : bool) : Prop := b = true.
+
+ 

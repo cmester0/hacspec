@@ -23,13 +23,21 @@ use hacspec_lib::*;
 
 pub type ResultType = Result::<u64, u64>;
 
+pub fn lenfun64(arr : Seq<u32>) -> u64 {
+    arr.len() as u64
+}
+
+pub fn lenfun(arr : Seq<u32>) -> usize {
+    arr.len()
+}
+
 #[cfg(proof)]
 #[cfg(test)]
-// #[requires(arr.len() <= u64::MAX)]
-// #[requires(forall<i : Int, j : Int> 0 <= i && i < j && j < (@arr).len() ==> (@arr)[i] <= (@arr)[j])]
-// #[ensures(forall<x:u64> result === Ok(x) ==> (@arr)[@x] === elem)]
+#[requires(lenfun64(arr) <= 18446744073709551615_u64)] // u64::MAX = 18446744073709551615
+#[requires(forall<i : usize, j : usize> 0 <= i && i < j && j < lenfun(arr) ==> arr[i] <= arr[j])]
+#[ensures(forall<x:u64> result === ResultType::Ok(x) ==> arr[x] === elem)]
 #[ensures(forall<x:u64> result === ResultType::Err(x) ==> forall<i:u64> i < x ==> arr[i] <= elem)]
-// #[ensures(forall<x:u64> result === Err(x) ==> forall<i:u64> x < i && @i < (@arr).len() ==> elem < (@arr)[@i])]
+#[ensures(forall<x:u64> result === ResultType::Err(x) ==> forall<i:u64> x < i && i < lenfun64(arr) ==> elem < arr[i])]
 fn binary_search(arr: Seq<u32>, elem: u32) -> ResultType {
     if arr.len() == 0 {
         // return

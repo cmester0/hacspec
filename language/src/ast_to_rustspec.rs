@@ -2262,11 +2262,7 @@ fn tokentree_text(x: TokenTree) -> String {
             TokenKind::Pound => "€".to_string(),
             TokenKind::Dollar => "$".to_string(),
             TokenKind::Question => "$".to_string(),
-            TokenKind::Literal(rustc_ast::token::Lit {
-                kind: _,
-                symbol: sym,
-                ..
-            }) => sym.to_ident_string(),
+            TokenKind::Literal(x) => format!["{}", x].to_string(),
             TokenKind::Ident(sym, _) => format!["{}", sym].to_string(),
             y => {
                 panic!(" (TODO: {:?})", y);
@@ -2285,9 +2281,6 @@ fn tokentree_text(x: TokenTree) -> String {
                     .trees()
                     .fold("".to_string(), |s, x| s + &tokentree_text(x))
                 + right
-        }
-        z => {
-            panic!(" (TODO OUTER: {:?})", z);
         }
     }
 }
@@ -2464,17 +2457,35 @@ pub fn translate_pearlite_unquantified(
 }
 
 fn translate_pearlite_lit<'a>(l: syn::Lit, span: Span) -> rustc_ast::ast::Lit {
-    match l {
+    match l.clone() {
         syn::Lit::Int(lit) => {
             rustc_ast::ast::Lit {
                 token: rustc_ast::token::Lit {
                     kind: rustc_ast::token::LitKind::Integer,
                     symbol: rustc_span::symbol::Symbol::intern(lit.base10_digits()), // .value()
-                    suffix: None, // rustc_span::symbol::Symbol::intern(lit.suffix())
+                    suffix: Some(rustc_span::symbol::Symbol::intern(lit.suffix())), // None, // rustc_span::symbol::Symbol::intern(lit.suffix())
                 },
                 kind: rustc_ast::ast::LitKind::Int(
-                    lit.base10_digits().parse::<u128>().unwrap(),
-                    rustc_ast::ast::LitIntType::Unsuffixed,
+                    lit.base10_parse().unwrap(),
+                    match lit.suffix() {
+                        "isize" => rustc_ast::ast::LitIntType::Signed(rustc_ast::ast::IntTy::Isize),
+                        "i8" => rustc_ast::ast::LitIntType::Signed(rustc_ast::ast::IntTy::I8),
+                        "i16" => rustc_ast::ast::LitIntType::Signed(rustc_ast::ast::IntTy::I16),
+                        "i32" => rustc_ast::ast::LitIntType::Signed(rustc_ast::ast::IntTy::I32),
+                        "i64" => rustc_ast::ast::LitIntType::Signed(rustc_ast::ast::IntTy::I64),
+                        "i128" => rustc_ast::ast::LitIntType::Signed(rustc_ast::ast::IntTy::I128),
+                        "usize" => {
+                            rustc_ast::ast::LitIntType::Unsigned(rustc_ast::ast::UintTy::Usize)
+                        }
+                        "u8" => rustc_ast::ast::LitIntType::Unsigned(rustc_ast::ast::UintTy::U8),
+                        "u16" => rustc_ast::ast::LitIntType::Unsigned(rustc_ast::ast::UintTy::U16),
+                        "u32" => rustc_ast::ast::LitIntType::Unsigned(rustc_ast::ast::UintTy::U32),
+                        "u64" => rustc_ast::ast::LitIntType::Unsigned(rustc_ast::ast::UintTy::U64),
+                        "u128" => {
+                            rustc_ast::ast::LitIntType::Unsigned(rustc_ast::ast::UintTy::U128)
+                        }
+                        _ => rustc_ast::ast::LitIntType::Unsuffixed,
+                    },
                 ),
                 span,
             }
@@ -2548,7 +2559,7 @@ fn translate_pearlite_type(sess: &Session, typ: syn::Type, span: Span) -> Spanne
                         span, // tok.span.clone(),
                     },
                 )
-                .unwrap()
+                .unwrap();
             }
             //     BaseTyp::Named(
             //     (
@@ -2592,7 +2603,7 @@ pub fn translate_pearlite(
                 },
                 P(translate_pearlite_unquantified(sess, *left, span).unwrap()),
                 P(translate_pearlite_unquantified(sess, *right, span).unwrap()),
-            )
+            )                       
         }
         // pearlite_syn::term::Term::Block(pearlite_syn::term::TermBlock { block, .. }) => {
         //     ExprKind::Block(
