@@ -2452,8 +2452,12 @@ pub fn translate_pearlite_ident(
     )
 }
 
-pub fn translate_pearlite_unquantified(t: pearlite_syn::term::Term, span: Span) -> Option<Expr> {
-    match translate_pearlite(t, span) {
+pub fn translate_pearlite_unquantified(
+    sess: &Session,
+    t: pearlite_syn::term::Term,
+    span: Span,
+) -> Option<Expr> {
+    match translate_pearlite(sess, t, span) {
         Quantified::Unquantified(e) => Some(e),
         _ => None,
     }
@@ -2494,7 +2498,7 @@ fn translate_id(id: rustc_span::symbol::Ident) -> Ident {
     Ident::Unresolved(format!("{}", id))
 }
 
-fn translate_pearlite_type(typ: syn::Type, span: RustspecSpan) -> Spanned<BaseTyp> {
+fn translate_pearlite_type(sess: &Session, typ: syn::Type, span: Span) -> Spanned<BaseTyp> {
     (
         match typ {
             // syn::Type::Array(arr_ty) => {
@@ -2516,18 +2520,50 @@ fn translate_pearlite_type(typ: syn::Type, span: RustspecSpan) -> Spanned<BaseTy
                         leading_colon: _,
                         segments: s,
                     },
-            }) => BaseTyp::Named(
-                (
-                    TopLevelIdent(
-                        s.iter()
-                            .fold("".to_string(), |s, x| match x {
-                                syn::PathSegment { ident: id, .. } => s + "::" + format!("{}", id.clone()).as_str(),
-                            }),
-                    ),
-                    span,
-                ),
-                None,
-            ),
+            }) => {
+                return translate_base_typ(
+                    sess,
+                    &Ty {
+                        tokens: None,
+                        id: NodeId::MAX,
+                        kind: rustc_ast::TyKind::Path(
+                            None,
+                            rustc_ast::ast::Path {
+                                span,
+                                segments: s
+                                    .iter()
+                                    .map(|x| match x {
+                                        syn::PathSegment { ident: id, .. } => {
+                                            rustc_ast::ast::PathSegment {
+                                                ident: translate_pearlite_ident(id.clone(), span),
+                                                id: NodeId::MAX,
+                                                args: None,
+                                            }
+                                        }
+                                    })
+                                    .collect(),
+                                tokens: None,
+                            },
+                        ),
+                        span, // tok.span.clone(),
+                    },
+                )
+                .unwrap()
+            }
+            //     BaseTyp::Named(
+            //     (
+            //         TopLevelIdent(
+            //             s.iter()
+            //                 .fold("".to_string(), |s, x| match x {
+            //                     syn::PathSegment { ident: id, .. } =>
+            //                         (if s == "".to_string() { s } else { s + "::" }) + format!("{}", id.clone()).as_str(),
+            //                 }),
+            //         ),
+            //         span,
+            //     ),
+            //     None,
+            // )
+            ,
             // syn::Type::Ptr(TypePtr) => ,
             // syn::Type::Reference(TypeReference) => ,
             // syn::Type::Slice(TypeSlice) => ,
@@ -2536,12 +2572,13 @@ fn translate_pearlite_type(typ: syn::Type, span: RustspecSpan) -> Spanned<BaseTy
             // syn::Type::Verbatim(TokenStream) => ,
             _ => panic!(),
         },
-        span,
+        RustspecSpan::from(span),
     )
 }
 
 // translate_expr
 pub fn translate_pearlite(
+    sess: &Session,
     t: pearlite_syn::term::Term,
     span: Span,
 ) -> Quantified<(Ident, Spanned<BaseTyp>), Expr> {
@@ -2553,8 +2590,8 @@ pub fn translate_pearlite(
                     node: translate_pearlite_binop(op),
                     span,
                 },
-                P(translate_pearlite_unquantified(*left, span).unwrap()),
-                P(translate_pearlite_unquantified(*right, span).unwrap()),
+                P(translate_pearlite_unquantified(sess, *left, span).unwrap()),
+                P(translate_pearlite_unquantified(sess, *right, span).unwrap()),
             )
         }
         // pearlite_syn::term::Term::Block(pearlite_syn::term::TermBlock { block, .. }) => {
@@ -2582,9 +2619,9 @@ pub fn translate_pearlite(
         // }
         pearlite_syn::term::Term::Call(pearlite_syn::term::TermCall { func, args, .. }) => {
             ExprKind::Call(
-                P(translate_pearlite_unquantified(*func, span).unwrap()),
+                P(translate_pearlite_unquantified(sess, *func, span).unwrap()),
                 args.into_iter()
-                    .map(|x| P(translate_pearlite_unquantified(x, span).unwrap()))
+                    .map(|x| P(translate_pearlite_unquantified(sess, x, span).unwrap()))
                     .collect(),
             )
         }
@@ -2601,8 +2638,8 @@ pub fn translate_pearlite(
         //         }) => RcDoc::as_string("TODOIf"),
         pearlite_syn::term::Term::Index(pearlite_syn::term::TermIndex { expr, index, .. }) => {
             ExprKind::Index(
-                P(translate_pearlite_unquantified(*expr, span).unwrap()),
-                P(translate_pearlite_unquantified(*index, span).unwrap()),
+                P(translate_pearlite_unquantified(sess, *expr, span).unwrap()),
+                P(translate_pearlite_unquantified(sess, *index, span).unwrap()),
             )
         }
         //         pearlite_syn::term::Term::Let(_) => RcDoc::as_string("TODOLet"),
@@ -2621,14 +2658,16 @@ pub fn translate_pearlite(
         }) => ExprKind::MethodCall(
             PathSegment {
                 ident: translate_pearlite_ident(method, span),
-                id: NodeId::from_usize(0),
+                id: NodeId::MAX,
                 args: None,
             },
             Vec::new(),
             span,
         ),
         pearlite_syn::term::Term::Paren(pearlite_syn::term::TermParen { expr, .. }) => {
-            ExprKind::Paren(P(translate_pearlite_unquantified(*expr, span).unwrap()))
+            ExprKind::Paren(P(
+                translate_pearlite_unquantified(sess, *expr, span).unwrap()
+            ))
         }
         pearlite_syn::term::Term::Path(pearlite_syn::term::TermPath {
             inner:
@@ -2650,7 +2689,7 @@ pub fn translate_pearlite(
                     .map(|x| match x {
                         syn::PathSegment { ident: id, .. } => rustc_ast::ast::PathSegment {
                             ident: translate_pearlite_ident(id.clone(), span),
-                            id: NodeId::from_usize(0),
+                            id: NodeId::MAX,
                             args: None,
                         },
                     })
@@ -2678,19 +2717,19 @@ pub fn translate_pearlite(
         //         }
         pearlite_syn::term::Term::Model(pearlite_syn::term::TermModel { term, .. }) => {
             // TODO: Does not make sence in combination with hacspec!
-            return translate_pearlite(*term, span); // Model supported? (@)
+            return translate_pearlite(sess, *term, span); // Model supported? (@)
         }
         //         pearlite_syn::term::Term::Verbatim(_) => RcDoc::as_string("TODOVerbatim"),
         pearlite_syn::term::Term::LogEq(pearlite_syn::term::TermLogEq { lhs, rhs, .. }) => {
             return Quantified::Eq(
-                Box::new(translate_pearlite(*lhs, span)),
-                Box::new(translate_pearlite(*rhs, span)),
+                Box::new(translate_pearlite(sess, *lhs, span)),
+                Box::new(translate_pearlite(sess, *rhs, span)),
             )
         }
         pearlite_syn::term::Term::Impl(pearlite_syn::term::TermImpl { hyp, cons, .. }) => {
             return Quantified::Implication(
-                Box::new(translate_pearlite(*hyp, span)),
-                Box::new(translate_pearlite(*cons, span)),
+                Box::new(translate_pearlite(sess, *hyp, span)),
+                Box::new(translate_pearlite(sess, *cons, span)),
             );
 
             // make_paren(translate_pearlite(*hyp, top_ctx, idents.clone()))
@@ -2705,11 +2744,11 @@ pub fn translate_pearlite(
                     .map(|x| {
                         (
                             translate_id(translate_pearlite_ident(x.ident.clone(), span)),
-                            translate_pearlite_type(*x.ty.clone(), RustspecSpan::from(span)),
+                            translate_pearlite_type(sess, *x.ty.clone(), span),
                         )
                     })
                     .collect(),
-                Box::new(translate_pearlite(*term, span)),
+                Box::new(translate_pearlite(sess, *term, span)),
             );
         }
         //         pearlite_syn::term::Term::Exists(pearlite_syn::term::TermExists { args, term, .. }) => {
@@ -2909,6 +2948,7 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
                 .fold(Vec::new(), |mut v, attr| match attribute_requires(attr) {
                     Some(a) => {
                         let expr = translate_pearlite(
+                            sess,
                             syn::parse_str(a.clone().as_str()).unwrap(),
                             attr.span,
                         );
@@ -2926,6 +2966,7 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
                     .fold(Vec::new(), |mut v, attr| match attribute_ensures(attr) {
                         Some(a) => {
                             let expr = translate_pearlite(
+                                sess,
                                 syn::parse_str(a.clone().as_str()).unwrap(),
                                 attr.span,
                             );

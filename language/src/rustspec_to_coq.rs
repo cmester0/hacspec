@@ -720,8 +720,6 @@ fn translate_func_name<'a>(
 }
 
 fn translate_expression<'a>(e: Expression, top_ctx: &'a TopLevelContext) -> RcDoc<'a, ()> {
-    println!("Expression: {:#?}", e);
-    
     match e {
         Expression::Binary((op, _), e1, e2, op_typ) => {
             let e1 = e1.0;
@@ -1570,6 +1568,8 @@ fn translate_quantified_expression<'a>(qe: Quantified<(Ident, Spanned<BaseTyp>),
             RcDoc::as_string("forall")
             .append(RcDoc::space())
             .append(RcDoc::intersperse(ids.iter().map(|(x, _)| translate_ident(x.clone())), RcDoc::space()))
+            .append(RcDoc::as_string(","))
+            .append(RcDoc::line())
             .append(translate_quantified_expression(*qe2, top_ctx)),
         Quantified::Exists(ids, qe2) =>
             RcDoc::as_string("exists")
@@ -1580,7 +1580,7 @@ fn translate_quantified_expression<'a>(qe: Quantified<(Ident, Spanned<BaseTyp>),
             translate_quantified_expression(*qe2, top_ctx)
             .append(RcDoc::space())
             .append(RcDoc::as_string("->"))
-            .append(RcDoc::space())
+            .append(RcDoc::line())
             .append(translate_quantified_expression(*qe3, top_ctx)),
         Quantified::Eq(qe2, qe3) =>
             translate_quantified_expression(*qe2, top_ctx)
@@ -1650,7 +1650,9 @@ fn translate_item<'a>(
                         .append(RcDoc::hardline())
                         .append(RcDoc::as_string("Theorem ensures_"))
                         .append(translate_ident(Ident::TopLevel(f.clone())))
-                        .append(RcDoc::as_string(" : forall result"))
+                        .append(RcDoc::as_string(" : forall"))
+                        .append(RcDoc::space())
+                        .append(translate_ident(Ident::Unresolved("result".to_string())))
                         .append(RcDoc::space())
                         .append(RcDoc::intersperse(
                             sig.args.iter().map(|((x, _), (tau, _))| {

@@ -272,7 +272,7 @@ pub fn auction_item(a : u64, b : u64, c : u64) -> PublicByteSeq {
 // #[quickcheck]
 // #[requires("item === PublicByteSeq::new(0_usize)")]
 // #[ensures("result === true")]
-#[requires(item === auction_item(0,1,2))]
+#[requires(item === auction_item(0_u64,1_u64,2_u64))]
 #[requires(time === 1_u64)]
 #[ensures(result === true)] // TODO: Macros unfolding! (PublicByteSeq::new(0_usize))
 /// Test that the smart-contract initialization sets the state correctly
@@ -360,7 +360,7 @@ fn new_account(time : u64, i : u8) -> (UserAddress, Context) {
 /// 6. Attempts to subsequently bid or finalize fail.
 // #[ensures("result === true && exists <k : usize> item.len() === k")]
 // #[requires(forall<i:Int> 0 <= len(item) && i < len(*item) ==> get(^item, i) === Some(0u32))]
-#[requires(item === auction_item(0,1,5))]
+#[requires(item === auction_item(0_u64,1_u64,5_u64))]
 #[requires(time === 1_u64)]
 // #[ensures(@result === (a, b))]
 #[ensures(result === true)]

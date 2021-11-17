@@ -1890,7 +1890,6 @@ fn typecheck_quantified_expression(
             let var_context = ids
                 .iter()
                 .fold(var_context.clone(), |ctx, (x, (t, t_span))| {
-                    println!("ADD: {:#?} of {:#?}", x, t);
                     add_var(
                         x,
                         &((Borrowing::Consumed, *t_span), (t.clone(), *t_span)),
@@ -1911,7 +1910,6 @@ fn typecheck_quantified_expression(
             let var_context = ids
                 .iter()
                 .fold(var_context.clone(), |ctx, (x, (t, t_span))| {
-                    println!("ADD: {:#?} of {:#?}", x, t);
                     add_var(
                         x,
                         &((Borrowing::Consumed, *t_span), (t.clone(), *t_span)),
@@ -2716,40 +2714,8 @@ fn typecheck_item(
                     add_var(&x, t, &var_context)
                 });
 
-            // TODO: Check variable propagation for var_context (some might leek to function body, or between requires and/or ensures)
-            let new_requires = requires
-                .iter()
-                .map(|x| {
-                    typecheck_quantified_expression(
-                        sess,
-                        x.clone(),
-                        top_level_context,
-                        &var_context.clone(),
-                    )
-                    .unwrap()
-                })
-                .collect();
-            let result_var_context = add_var(
-                &Ident::Local(LocalIdent {
-                    id: 0,
-                    name: "result".to_string(),
-                }),
-                &((Borrowing::Consumed, DUMMY_SP.into()), sig.ret.clone()),
-                &var_context.clone(),
-            );
-            let new_ensures = ensures
-                .iter()
-                .map(|x| {
-                    typecheck_quantified_expression(
-                        sess,
-                        x.clone(),
-                        top_level_context,
-                        &result_var_context.clone(),
-                    )
-                    .unwrap()
-                })
-                .collect();
-
+            let attribute_var_context = var_context.clone();
+            
             let (new_b, _final_var_context) = typecheck_block(
                 sess,
                 (b.clone(), b_span.clone()),
@@ -2776,6 +2742,41 @@ fn typecheck_item(
                     .as_str(),
                 )
             }
+
+            // TODO: Check variable propagation for var_context (some might leek to function body, or between requires and/or ensures)
+            let new_requires = requires
+                .iter()
+                .map(|x| {
+                    typecheck_quantified_expression(
+                        sess,
+                        x.clone(),
+                        top_level_context,
+                        &attribute_var_context.clone(),
+                    )
+                        .unwrap()
+                })
+                .collect();
+            let result_var_context = add_var(
+                &Ident::Local(LocalIdent {
+                    id: 0,
+                    name: "result".to_string(),
+                }),
+                &comp_ret_typ,
+                &attribute_var_context.clone(),
+            );
+            let new_ensures = ensures
+                .iter()
+                .map(|x| {
+                    typecheck_quantified_expression(
+                        sess,
+                        x.clone(),
+                        top_level_context,
+                        &result_var_context.clone(),
+                    )
+                        .unwrap()
+                })
+                .collect();
+            
             let out = Item::FnDecl(
                 (f.clone(), f_span.clone()),
                 sig.clone(),

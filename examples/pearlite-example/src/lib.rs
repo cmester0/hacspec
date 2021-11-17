@@ -21,44 +21,44 @@ use hacspec_lib::*;
 
 // }
 
-pub type ResultType = Result::<usize, usize>;
+pub type ResultType = Result::<u64, u64>;
 
 #[cfg(proof)]
 #[cfg(test)]
-// #[requires(arr.len() <= usize::MAX)]
+// #[requires(arr.len() <= u64::MAX)]
 // #[requires(forall<i : Int, j : Int> 0 <= i && i < j && j < (@arr).len() ==> (@arr)[i] <= (@arr)[j])]
-// #[ensures(forall<x:usize> result === Ok(x) ==> (@arr)[@x] === elem)]
-#[ensures(forall<x:usize> result === Err(x) ==> forall<i:usize>  i < x ==> arr[i] <= elem)]
-// #[ensures(forall<x:usize> result === Err(x) ==> forall<i:usize> x < i && @i < (@arr).len() ==> elem < (@arr)[@i])]
+// #[ensures(forall<x:u64> result === Ok(x) ==> (@arr)[@x] === elem)]
+#[ensures(forall<x:u64> result === ResultType::Err(x) ==> forall<i:u64> i < x ==> arr[i] <= elem)]
+// #[ensures(forall<x:u64> result === Err(x) ==> forall<i:u64> x < i && @i < (@arr).len() ==> elem < (@arr)[@i])]
 fn binary_search(arr: Seq<u32>, elem: u32) -> ResultType {
     if arr.len() == 0 {
         // return
-        ResultType::Err(0)?;
+        ResultType::Err(0_u64)?;
     }
-    let mut size = arr.len();
-    let mut base = 0_usize;
+    let mut size = (arr.len() as u64);
+    let mut base = 0_u64;
 
-    let result = ResultType::Err(0);
+    let result = ResultType::Err(0_u64);
 
     // #[invariant(size_valid, 0 < @size && @size + @base <= (@arr).len())]
-    // #[invariant(lower_b, forall<i : usize> i < base ==> (@arr)[@i] <= elem)]
-    // #[invariant(lower_b, forall<i : usize> @base + @size < @i && @i < (@arr).len() ==> elem < (@arr)[@i])]
+    // #[invariant(lower_b, forall<i : u64> i < base ==> (@arr)[@i] <= elem)]
+    // #[invariant(lower_b, forall<i : u64> @base + @size < @i && @i < (@arr).len() ==> elem < (@arr)[@i])]
     for k in 1..arr.len() {
-        if size != 1 {
-            let half = size / 2;
+        if size != 1_u64 {
+            let half = size / 2_u64;
             let mid = base + half;
 
             base = if arr[mid] > elem { base } else { mid };
             size = size - half;
         } else {
-            let cmp = arr[base];
+            let cmp = arr[base as usize];
             if cmp == elem {
-                result = ResultType::Ok(base)
+                result = ResultType::Ok((base as u64))
             } else {
                 if cmp < elem {
-                    result = ResultType::Err(base + 1)
+                    result = ResultType::Err((base + 1 as u64))
                 } else {
-                    result = ResultType::Err(base)
+                    result = ResultType::Err((base as u64))
                 }
             }
         }
