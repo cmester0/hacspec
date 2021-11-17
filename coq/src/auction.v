@@ -460,7 +460,7 @@ Definition auction_item
 
 Definition auction_test_init
   (item_57 : public_byte_seq)
-  (time_58 : int64) `{(item_57) = (auction_item (repr 0) (repr 1) (repr 2))} `{(time_58) = (repr 1)}
+  (time_58 : int64) `{item_57 = auction_item (usize 0) (usize 1) (usize 2)} `{time_58 = usize 1}
   : bool :=
   (fresh_state ((item_57)) (time_58)) =.? (State ((
         NotSoldYet,
@@ -474,11 +474,11 @@ Definition auction_test_init
       ))).
 
 Theorem ensures_auction_test_init : forall result (item_57 : public_byte_seq) (time_58 : int64),
-forall {H_0 : (item_57) = (auction_item (repr 0) (repr 1) (repr 2))},
-forall {H_1 : (time_58) = (repr 1)},
-@auction_test_init item_57 time_58 H_0 H_1= result ->
-(result) = (true).
-Proof. now intros ; subst. Qed.
+forall {H_0 : item_57 = auction_item (usize 0) (usize 1) (usize 2)},
+forall {H_1 : time_58 = usize 1},
+@auction_test_init item_57 time_58 H_0 H_1 = result ->
+result = true.
+Proof. intros ; subst ; reflexivity. Qed.
 
 Definition verify_bid
   (item_59 : public_byte_seq)
@@ -562,7 +562,7 @@ Definition new_account
 
 Definition test_auction_bid_and_finalize
   (item_79 : public_byte_seq)
-  (time_80 : int64) `{(item_79) = (auction_item (repr 0) (repr 1) (repr 5))} `{(time_80) = (repr 1)}
+  (time_80 : int64) `{item_79 = auction_item (usize 0) (usize 1) (usize 5)} `{time_80 = usize 1}
   : bool :=
   let amount_81 : int64 := @repr WORDSIZE64 100 in 
   let winning_amount_82 : int64 := @repr WORDSIZE64 300 in 
@@ -631,9 +631,9 @@ Definition test_auction_bid_and_finalize
   (((((((result_0_91) && (result_1_95)) && (result_2_101)) && (result_3_107)) && (result_4_115)) && (result_5_118)) && (result_6_121)) && (result_7_126).
 
 Theorem ensures_test_auction_bid_and_finalize : forall result (item_79 : public_byte_seq) (time_80 : int64),
-forall {H_0 : (item_79) = (auction_item (repr 0) (repr 1) (repr 5))},
-forall {H_1 : (time_80) = (repr 1)},
-@test_auction_bid_and_finalize item_79 time_80 H_0 H_1= result ->
-(result) = (true).
-Proof. now intros ; subst. Qed.
+forall {H_0 : item_79 = auction_item (usize 0) (usize 1) (usize 5)},
+forall {H_1 : time_80 = usize 1},
+@test_auction_bid_and_finalize item_79 time_80 H_0 H_1 = result ->
+result = true.
+Proof. intros ; subst ; reflexivity. Qed.
 

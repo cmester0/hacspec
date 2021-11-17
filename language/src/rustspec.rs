@@ -1,14 +1,10 @@
 use core::cmp::PartialEq;
 use core::hash::Hash;
 use im::HashSet;
-use im::HashMap;
 use itertools::Itertools;
-use pretty::RcDoc;
-use proc_macro2::{TokenStream, TokenTree};
 use rustc_span::{MultiSpan, Span};
 use serde::{ser::SerializeSeq, Serialize, Serializer};
 use std::fmt;
-use syn::token::Token;
 
 #[derive(Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Debug, Copy)]
 pub struct RustspecSpan(pub Span);
@@ -437,15 +433,23 @@ pub struct ExternalFuncSig {
     pub ret: BaseTyp,
 }
 
+#[derive(Clone, Debug, Serialize)]
+pub enum Quantified<I, T> {
+    Unquantified (T),
+    Forall (Vec<I>, Box<Quantified<I, T>>),
+    Exists (Vec<I>, Box<Quantified<I, T>>),
+    Implication (Box<Quantified<I, T>>, Box<Quantified<I, T>>),
+    Eq (Box<Quantified<I, T>>, Box<Quantified<I, T>>),
+}
+
 #[derive(Clone, Serialize)]
 pub enum Item {
     FnDecl(
         Spanned<TopLevelIdent>,
         FuncSig,
         Spanned<Block>,
-        Vec<String>,
-        Vec<String>,
-        Vec<(String, Ident)>,
+        Vec<Quantified<(Ident, Spanned<BaseTyp>), Spanned<Expression>>>, // requires
+        Vec<Quantified<(Ident, Spanned<BaseTyp>), Spanned<Expression>>>, // ensures
     ),
     EnumDecl(
         Spanned<TopLevelIdent>,

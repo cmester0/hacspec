@@ -421,6 +421,46 @@ fn resolve_block(
     ))
 }
 
+fn resolve_quantified_identifiers (ids : Vec<(Ident, Spanned<BaseTyp>)>, name_context: &NameContext) -> (Vec<(Ident, Spanned<BaseTyp>)>, NameContext) {
+    let new_ids : Vec<(Ident, Spanned<BaseTyp>)> = ids.iter().map(|(x, ty)| {
+        let new_x = match x {
+            Ident::Unresolved(s) => to_fresh_ident(s),
+            _ => panic!("should not happen"),
+        };
+        
+        (new_x, ty.clone())
+    }).collect();
+    
+    let new_context = ids.iter().zip(new_ids.clone().iter()).fold(name_context.clone(), |ctx, ((x, _), (new_x, _))| {
+        add_name(x, &new_x.clone(), ctx)
+    });
+
+    (new_ids, new_context)
+}
+
+fn resolve_quantified_expression (
+    sess: &Session,
+    qe : Quantified<(Ident, Spanned<BaseTyp>), Spanned<Expression>>,
+    name_context: &NameContext,
+    top_level_ctx: &TopLevelContext,
+) -> ResolutionResult<Quantified<(Ident, Spanned<BaseTyp>), Spanned<Expression>>> {
+    match qe {
+        Quantified::Unquantified(e) => Ok(Quantified::Unquantified(resolve_expression(sess, e, name_context, top_level_ctx)?)),
+        Quantified::Forall(ids, qe2) => {
+            let (new_ids, new_context) = resolve_quantified_identifiers(ids, name_context);
+            let qe2_resolved = resolve_quantified_expression(sess, *qe2, &new_context, top_level_ctx)?;
+            
+            Ok(Quantified::Forall(new_ids, Box::new(qe2_resolved)))
+        }
+        Quantified::Exists(ids, qe2) => {
+            let (new_ids, new_context) = resolve_quantified_identifiers(ids, name_context);
+            Ok(Quantified::Exists(new_ids, Box::new(resolve_quantified_expression(sess, *qe2, &new_context, top_level_ctx)?)))
+        }
+        Quantified::Implication(a, b) => Ok(Quantified::Implication(Box::new(resolve_quantified_expression(sess, *a, name_context, top_level_ctx)?), Box::new(resolve_quantified_expression(sess, *b, name_context, top_level_ctx)?))),
+        Quantified::Eq(a, b) => Ok(Quantified::Eq(Box::new(resolve_quantified_expression(sess, *a, name_context, top_level_ctx)?), Box::new(resolve_quantified_expression(sess, *b, name_context, top_level_ctx)?))),
+    }
+}
+
 fn resolve_item(
     sess: &Session,
     (item, i_span): Spanned<DecoratedItem>,
@@ -445,42 +485,34 @@ fn resolve_item(
                 i_span,
             ))
         }
-        Item::FnDecl((f, f_span), mut sig, (b, b_span), requires, ensures, idents) => {
+        Item::FnDecl((f, f_span), mut sig, (b, b_span), requires, ensures) => {
             let name_context = HashMap::new();
-            let (new_sig_args, name_context, replacements) = sig.args.iter().fold(
-                (Vec::new(), name_context, Vec::new()),
-                |(mut new_sig_acc, name_context, mut repl), ((x, x_span), (t, t_span))| {
+            let (new_sig_args, name_context) = sig.args.iter().fold(
+                (Vec::new(), name_context),
+                |(mut new_sig_acc, name_context), ((x, x_span), (t, t_span))| {
                     let new_x = match x {
                         Ident::Unresolved(s) => to_fresh_ident(s),
                         _ => panic!("should not happen"),
                     };
                     
                     let name_context = add_name(x, &new_x, name_context);
-                    repl.push((x, new_x.clone()));
                     new_sig_acc.push(((new_x, x_span.clone()), (t.clone(), t_span.clone())));
-                    (new_sig_acc, name_context, repl)
+                    (new_sig_acc, name_context)
                 },
             );
             
-            // let new_requires : Vec<String> = requires.iter().map(|s| {
-            //     replacements.iter().fold(s.clone(), |s : String, (x,new_x)| {
-            //         s.replace(format!["{}", x].as_str(), format!["{}", new_x].as_str())
-            //     })
-            // }).collect();
+            let new_requires = requires.iter().map(|x| resolve_quantified_expression(sess, x.clone(), &name_context, &top_level_ctx).unwrap()).collect();
+            let ensures_context = add_name(&Ident::Unresolved("result".to_string()), &Ident::Local(LocalIdent{id: 0, name: "result".to_string()}), name_context.clone());
+            let new_ensures = ensures.iter().map(|x| resolve_quantified_expression(sess, x.clone(), &ensures_context, &top_level_ctx).unwrap()).collect();
             
             // let (new_ensures, new_requires) : (Vec<String>, Vec<String>) = replacements.iter().fold((ensures.clone(), requires.clone()), |(e,r), (x, new_x)| {
             //     (e.iter().map(|s| s.replace(format!["{}", x].as_str(), format!["{}", new_x].as_str())).collect(),
             //      r.iter().map(|s| s.replace(format!["{}", x].as_str(), format!["{}", new_x].as_str())).collect())
             // });
-
-            let mut new_idents : Vec<(String, Ident)> = replacements.iter().map(|(x,new_x)| {
-                (format!["{}", x], new_x.clone())
-            }).collect();
-            new_idents.append(&mut idents.clone());
             
             sig.args = new_sig_args;
             let new_b = resolve_block(sess, (b, b_span), &name_context, top_level_ctx)?;
-            Ok((Item::FnDecl((f, f_span), sig, new_b, requires, ensures, new_idents), i_span))
+            Ok((Item::FnDecl((f, f_span), sig, new_b, new_requires, new_ensures), i_span))
         }
     };
     match i {
@@ -644,7 +676,7 @@ fn process_decl_item(
             // Foreign items already imported at this point
             Ok(())
         }
-        Item::FnDecl((f, _f_span), sig, _b, _requires, _ensures, _idents) => {
+        Item::FnDecl((f, _f_span), sig, _b, _requires, _ensures) => {
             top_level_context
                 .functions
                 .insert(FnKey::Independent(f.clone()), FnValue::Local(sig.clone()));

@@ -1117,9 +1117,11 @@ Axiom nat_mod_eqb_spec : forall {p} (a b : nat_mod p), Z.eqb (nat_mod_val p a) (
   eqb_leibniz := String.eqb_eq ;
 }.
 
+(* Check fun 'tt 'tt => conj (fun (_ : true) => eq_refl , fun _ => eq_refl). *)
+                              
 #[global] Instance unit_eqdec : EqDec unit := {
   eqb := fun _ _ => true ;
-  eqb_leibniz := fun 'tt 'tt => eq_refl ; (* (fun 'tt 'tt _ => eq_refl , fun 'tt 'tt _ => eq_refl) *)
+  eqb_leibniz := (fun 'tt 'tt => conj (fun _ => eq_refl) (fun _ => eq_refl))
 }.
 
 Require Import Sumbool.
@@ -1309,3 +1311,5 @@ Notation "'ifbnd' b 'then' x 'elsebnd' y '>>' f" := (if b then f x else result_b
 Notation "'ifbnd' b 'thenbnd' x 'elsebnd' y '>>' f" := (if b then result_bind x f else result_bind y f) (at level 200).
 
 Notation "'foldibnd' s 'to' e 'for' z '>>' f" := (foldi s e (fun x y => result_bind y (f x)) (Ok z)) (at level 50).
+
+Definition usizemax := usize 18446744073709551615.
