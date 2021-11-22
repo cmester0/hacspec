@@ -5,7 +5,7 @@ Open Scope Z_scope.
 Open Scope bool_scope.
 Open Scope hacspec_scope.
 Require Import Hacspec.Lib.
-
+Notation "A × B" := (prod A B) (at level 79, left associativity) : hacspec_scope.
 Definition poly_key := nseq (uint8) (usize 32).
 
 Definition blocksize : uint_size :=

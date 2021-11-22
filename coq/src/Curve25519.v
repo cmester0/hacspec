@@ -5,7 +5,7 @@ Open Scope Z_scope.
 Open Scope bool_scope.
 Open Scope hacspec_scope.
 Require Import Hacspec.Lib.
-
+Notation "A × B" := (prod A B) (at level 79, left associativity) : hacspec_scope.
 Definition field_canvas := nseq (int8) (32).
 Definition field_element :=
   nat_mod 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffed.

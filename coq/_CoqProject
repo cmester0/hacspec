@@ -4,7 +4,6 @@
 src/MachineIntegers.v
 src/Lib.v
 src/QuickChickLib.v
-src/Bls.v
 src/Chacha20.v
 src/Poly1305.v
 src/Chacha20poly1305.v
@@ -12,3 +11,4 @@ src/Curve25519.v
 src/Sha256.v
 src/Aes.v
 src/auction.v
+src/pearliteexample.v

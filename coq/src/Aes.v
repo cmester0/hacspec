@@ -5,7 +5,7 @@ Open Scope Z_scope.
 Open Scope bool_scope.
 Open Scope hacspec_scope.
 Require Import Hacspec.Lib.
-
+Notation "A × B" := (prod A B) (at level 79, left associativity) : hacspec_scope.
 Definition blocksize : uint_size :=
   usize 16.
 

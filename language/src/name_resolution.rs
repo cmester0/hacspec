@@ -10,6 +10,8 @@ use crate::HacspecErrorEmitter;
 use rustc_span::DUMMY_SP;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+use rustc_ast::node_id::NodeId;
+
 pub static ID_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
 fn fresh_hacspec_id() -> usize {
@@ -421,43 +423,92 @@ fn resolve_block(
     ))
 }
 
-fn resolve_quantified_identifiers (ids : Vec<(Ident, Spanned<BaseTyp>)>, name_context: &NameContext) -> (Vec<(Ident, Spanned<BaseTyp>)>, NameContext) {
-    let new_ids : Vec<(Ident, Spanned<BaseTyp>)> = ids.iter().map(|(x, ty)| {
-        let new_x = match x {
-            Ident::Unresolved(s) => to_fresh_ident(s),
-            _ => panic!("should not happen"),
-        };
-        
-        (new_x, ty.clone())
-    }).collect();
-    
-    let new_context = ids.iter().zip(new_ids.clone().iter()).fold(name_context.clone(), |ctx, ((x, _), (new_x, _))| {
-        add_name(x, &new_x.clone(), ctx)
-    });
+fn resolve_quantified_identifiers(
+    ids: Vec<(Ident, Spanned<BaseTyp>)>,
+    name_context: &NameContext,
+) -> (Vec<(Ident, Spanned<BaseTyp>)>, NameContext) {
+    let new_ids: Vec<(Ident, Spanned<BaseTyp>)> = ids
+        .iter()
+        .map(|(x, ty)| {
+            let new_x = match x {
+                Ident::Unresolved(s) => to_fresh_ident(s),
+                _ => panic!("should not happen"),
+            };
+
+            (new_x, ty.clone())
+        })
+        .collect();
+
+    let new_context = ids
+        .iter()
+        .zip(new_ids.clone().iter())
+        .fold(name_context.clone(), |ctx, ((x, _), (new_x, _))| {
+            add_name(x, &new_x.clone(), ctx)
+        });
 
     (new_ids, new_context)
 }
 
-fn resolve_quantified_expression (
+fn resolve_quantified_expression(
     sess: &Session,
-    qe : Quantified<(Ident, Spanned<BaseTyp>), Spanned<Expression>>,
+    qe: Quantified<(Ident, Spanned<BaseTyp>), Spanned<Expression>>,
     name_context: &NameContext,
     top_level_ctx: &TopLevelContext,
 ) -> ResolutionResult<Quantified<(Ident, Spanned<BaseTyp>), Spanned<Expression>>> {
     match qe {
-        Quantified::Unquantified(e) => Ok(Quantified::Unquantified(resolve_expression(sess, e, name_context, top_level_ctx)?)),
+        Quantified::Unquantified(e) => Ok(Quantified::Unquantified(resolve_expression(
+            sess,
+            e,
+            name_context,
+            top_level_ctx,
+        )?)),
         Quantified::Forall(ids, qe2) => {
             let (new_ids, new_context) = resolve_quantified_identifiers(ids, name_context);
-            let qe2_resolved = resolve_quantified_expression(sess, *qe2, &new_context, top_level_ctx)?;
-            
+            let qe2_resolved =
+                resolve_quantified_expression(sess, *qe2, &new_context, top_level_ctx)?;
+
             Ok(Quantified::Forall(new_ids, Box::new(qe2_resolved)))
         }
         Quantified::Exists(ids, qe2) => {
             let (new_ids, new_context) = resolve_quantified_identifiers(ids, name_context);
-            Ok(Quantified::Exists(new_ids, Box::new(resolve_quantified_expression(sess, *qe2, &new_context, top_level_ctx)?)))
+            Ok(Quantified::Exists(
+                new_ids,
+                Box::new(resolve_quantified_expression(
+                    sess,
+                    *qe2,
+                    &new_context,
+                    top_level_ctx,
+                )?),
+            ))
         }
-        Quantified::Implication(a, b) => Ok(Quantified::Implication(Box::new(resolve_quantified_expression(sess, *a, name_context, top_level_ctx)?), Box::new(resolve_quantified_expression(sess, *b, name_context, top_level_ctx)?))),
-        Quantified::Eq(a, b) => Ok(Quantified::Eq(Box::new(resolve_quantified_expression(sess, *a, name_context, top_level_ctx)?), Box::new(resolve_quantified_expression(sess, *b, name_context, top_level_ctx)?))),
+        Quantified::Implication(a, b) => Ok(Quantified::Implication(
+            Box::new(resolve_quantified_expression(
+                sess,
+                *a,
+                name_context,
+                top_level_ctx,
+            )?),
+            Box::new(resolve_quantified_expression(
+                sess,
+                *b,
+                name_context,
+                top_level_ctx,
+            )?),
+        )),
+        Quantified::Eq(a, b) => Ok(Quantified::Eq(
+            Box::new(resolve_quantified_expression(
+                sess,
+                *a,
+                name_context,
+                top_level_ctx,
+            )?),
+            Box::new(resolve_quantified_expression(
+                sess,
+                *b,
+                name_context,
+                top_level_ctx,
+            )?),
+        )),
     }
 }
 
@@ -494,25 +545,59 @@ fn resolve_item(
                         Ident::Unresolved(s) => to_fresh_ident(s),
                         _ => panic!("should not happen"),
                     };
-                    
+
                     let name_context = add_name(x, &new_x, name_context);
                     new_sig_acc.push(((new_x, x_span.clone()), (t.clone(), t_span.clone())));
                     (new_sig_acc, name_context)
                 },
             );
-            
-            let new_requires = requires.iter().map(|x| resolve_quantified_expression(sess, x.clone(), &name_context, &top_level_ctx).unwrap()).collect();
-            let ensures_context = add_name(&Ident::Unresolved("result".to_string()), &Ident::Local(LocalIdent{id: 0, name: "result".to_string()}), name_context.clone());
-            let new_ensures = ensures.iter().map(|x| resolve_quantified_expression(sess, x.clone(), &ensures_context, &top_level_ctx).unwrap()).collect();
-            
+
+            let new_requires = requires
+                .iter()
+                .map(|x| {
+                    resolve_quantified_expression(
+                        sess,
+                        x.clone(),
+                        &name_context.clone(),
+                        &top_level_ctx,
+                    )
+                    .unwrap()
+                })
+                .collect();
+            let ensures_context = add_name(
+                &Ident::Unresolved("result".to_string()),
+                &Ident::Local(LocalIdent {
+                    id: NodeId::MAX.as_usize(),
+                    name: "result".to_string(),
+                }),
+                name_context.clone(),
+            );
+            let new_ensures = ensures
+                .iter()
+                .map(|x| {
+                    resolve_quantified_expression(
+                        sess,
+                        x.clone(),
+                        &ensures_context.clone(),
+                        &top_level_ctx,
+                    )
+                    .unwrap()
+                })
+                .collect();
+
+            println!("{:#?}", new_ensures);
+
             // let (new_ensures, new_requires) : (Vec<String>, Vec<String>) = replacements.iter().fold((ensures.clone(), requires.clone()), |(e,r), (x, new_x)| {
             //     (e.iter().map(|s| s.replace(format!["{}", x].as_str(), format!["{}", new_x].as_str())).collect(),
             //      r.iter().map(|s| s.replace(format!["{}", x].as_str(), format!["{}", new_x].as_str())).collect())
             // });
-            
+
             sig.args = new_sig_args;
             let new_b = resolve_block(sess, (b, b_span), &name_context, top_level_ctx)?;
-            Ok((Item::FnDecl((f, f_span), sig, new_b, new_requires, new_ensures), i_span))
+            Ok((
+                Item::FnDecl((f, f_span), sig, new_b, new_requires, new_ensures),
+                i_span,
+            ))
         }
     };
     match i {
