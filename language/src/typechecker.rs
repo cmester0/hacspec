@@ -1885,8 +1885,6 @@ fn typecheck_quantified_expression(
 ) -> Quantified<(Ident, Spanned<BaseTyp>), Spanned<Expression>> {
     match qe {
         Quantified::Unquantified(e) => {
-            println!("quantify: {:#?}", e);
-
             Quantified::Unquantified((
                 typecheck_expression(sess, &e.clone(), top_level_context, var_context)
                     .unwrap()

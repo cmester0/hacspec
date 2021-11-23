@@ -585,8 +585,6 @@ fn resolve_item(
                 })
                 .collect();
 
-            println!("{:#?}", new_ensures);
-
             // let (new_ensures, new_requires) : (Vec<String>, Vec<String>) = replacements.iter().fold((ensures.clone(), requires.clone()), |(e,r), (x, new_x)| {
             //     (e.iter().map(|s| s.replace(format!["{}", x].as_str(), format!["{}", new_x].as_str())).collect(),
             //      r.iter().map(|s| s.replace(format!["{}", x].as_str(), format!["{}", new_x].as_str())).collect())

@@ -727,7 +727,6 @@ fn translate_func_name<'a>(
 }
 
 fn translate_expression<'a>(e: Expression, top_ctx: &'a TopLevelContext) -> RcDoc<'a, ()> {
-    println!("Expression: {:#?}", e);
     match e {
         Expression::Binary((op, _), e1, e2, op_typ) => {
             let e1 = e1.0;
@@ -815,8 +814,6 @@ fn translate_expression<'a>(e: Expression, top_ctx: &'a TopLevelContext) -> RcDo
         Expression::FuncCall(prefix, name, args) => {
             let (func_name, additional_args) =
                 translate_func_name(prefix.clone(), Ident::TopLevel(name.0.clone()), top_ctx);
-
-            println!("Func Name: {:#?}", func_name);
 
             let total_args = args.len() + additional_args.len();
             func_name

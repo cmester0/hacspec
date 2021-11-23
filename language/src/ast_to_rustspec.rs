@@ -2578,90 +2578,12 @@ fn translate_pearlite_type(sess: &Session, typ: syn::Type, span: Span) -> rustc_
     }
 }
 
-// (
-//     match typ {
-//         // syn::Type::Array(arr_ty) => {
-//         // BaseTyp::Array(match translate_pearlite(arr_ty.len, span) {
-
-//         //     _ => panic!()
-//         // }, Box::new(translate_pearlite_type(*arr_ty.elem, span))) }
-//         // syn::Type::BareFn(TypeBareFn) => ,
-//         // syn::Type::Group(TypeGroup) => ,
-//         // syn::Type::ImplTrait(TypeImplTrait) => ,
-//         // syn::Type::Infer(TypeInfer) => ,
-//         // syn::Type::Macro(TypeMacro) => ,
-//         // syn::Type::Never(TypeNever) => ,
-//         // syn::Type::Paren(TypeParen) => ,
-//         syn::Type::Path(syn::TypePath {
-//             qself: _,
-//             path:
-//                 syn::Path {
-//                     leading_colon: _,
-//                     segments: s,
-//                 },
-//         }) => {
-//             return translate_base_typ(
-//                 sess,
-//                 &Ty {
-//                     tokens: None,
-//                     id: NodeId::MAX,
-//                     kind: rustc_ast::TyKind::Path(
-//                         None,
-//                         rustc_ast::ast::Path {
-//                             span,
-//                             segments: s
-//                                 .iter()
-//                                 .map(|x| match x {
-//                                     syn::PathSegment { ident: id, .. } => {
-//                                         rustc_ast::ast::PathSegment {
-//                                             ident: translate_pearlite_ident(id.clone(), span),
-//                                             id: NodeId::MAX,
-//                                             args: None,
-//                                         }
-//                                     }
-//                                 })
-//                                 .collect(),
-//                             tokens: None,
-//                         },
-//                     ),
-//                     span, // tok.span.clone(),
-//                 },
-//             )
-//             .unwrap();
-//         }
-//         //     BaseTyp::Named(
-//         //     (
-//         //         TopLevelIdent(
-//         //             s.iter()
-//         //                 .fold("".to_string(), |s, x| match x {
-//         //                     syn::PathSegment { ident: id, .. } =>
-//         //                         (if s == "".to_string() { s } else { s + "::" }) + format!("{}", id.clone()).as_str(),
-//         //                 }),
-//         //         ),
-//         //         span,
-//         //     ),
-//         //     None,
-//         // )
-//         ,
-//         // syn::Type::Ptr(TypePtr) => ,
-//         // syn::Type::Reference(TypeReference) => ,
-//         // syn::Type::Slice(TypeSlice) => ,
-//         // syn::Type::TraitObject(TypeTraitObject) => ,
-//         // syn::Type::Tuple(TypeTuple) => ,
-//         // syn::Type::Verbatim(TokenStream) => ,
-//         _ => panic!("Type panic"),
-//     },
-//     RustspecSpan::from(span),
-// )
-
 // translate_expr
 pub fn translate_pearlite(
     sess: &Session,
     t: pearlite_syn::term::Term,
     span: Span,
 ) -> Quantified<(Ident, Ty), Expr> {
-    // println!("translate_pearlite_todo: {:#?}\n", t);
-
     let kind = match t {
         // pearlite_syn::term::Term::Array(_) => RcDoc::as_string("TODOArray"),
         pearlite_syn::term::Term::Binary(pearlite_syn::term::TermBinary { left, op, right }) => {
@@ -2754,9 +2676,11 @@ pub fn translate_pearlite(
             )
         }
         pearlite_syn::term::Term::Paren(pearlite_syn::term::TermParen { expr, .. }) => {
-            ExprKind::Paren(P(
-                translate_pearlite_unquantified(sess, *expr, span).unwrap()
-            ))
+            // match expr.clone() {                
+                // ExprKind::Paren(P(
+                    return translate_pearlite(sess, *expr, span)// _unquantified.unwrap()
+                // ))
+            // }
         }
         pearlite_syn::term::Term::Path(pearlite_syn::term::TermPath {
             inner:
@@ -3089,10 +3013,8 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
                     .iter()
                     .fold(Vec::new(), |mut v, attr| match attribute_ensures(attr) {
                         Some(a) => {
-                            println!("before {} \n", a.clone());
                             let term: pearlite_syn::term::Term =
                                 syn::parse_str(a.clone().as_str()).unwrap();
-                            println!("between {:#?} \n", term);
 
                             let expr = translate_pearlite(
                                 sess,
@@ -3100,11 +3022,7 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
                                 attr.span,
                             );
 
-                            println!("after {:#?} \n", expr.clone());
-
                             let expression = translate_quantified_expr(sess, specials, expr);
-
-                            println!("done {:#?} \n", expression.clone());
 
                             v.push(expression);
                             v

@@ -39,7 +39,7 @@ Axiom int128_classify : int128 -> int128.
 
 (* CompCert integers' signedness is only interpreted through 'signed' and 'unsigned',
    and not in the representation. Therefore, uints are just names for their respective ints.
-*)
+ *)
 Definition uint8 := int8.
 Definition uint16 := int16.
 Definition uint32 := int32.
@@ -52,51 +52,51 @@ Definition int_size := int32.
 
 (* Represents any type that can be converted to uint_size and back *)
 Class UInt_sizable (A : Type) := {
-  usize : A -> uint_size;
-  from_uint_size : uint_size -> A;
-}.
+    usize : A -> uint_size;
+    from_uint_size : uint_size -> A;
+  }.
 Arguments usize {_} {_}.
 Arguments from_uint_size {_} {_}.
 
 Global Instance nat_uint_sizable : UInt_sizable nat := {
-  usize n := repr (Z.of_nat n);
-  from_uint_size n := Z.to_nat (unsigned n);
-}.
+    usize n := repr (Z.of_nat n);
+    from_uint_size n := Z.to_nat (unsigned n);
+  }.
 
 Global Instance N_uint_sizable : UInt_sizable N := {
-  usize n := repr (Z.of_N n);
-  from_uint_size n := Z.to_N (unsigned n);
-}.
+    usize n := repr (Z.of_N n);
+    from_uint_size n := Z.to_N (unsigned n);
+  }.
 
 Global Instance Z_uint_sizable : UInt_sizable Z := {
-  usize n := repr n;
-  from_uint_size n := unsigned n;
-}.
+    usize n := repr n;
+    from_uint_size n := unsigned n;
+  }.
 
 
 (* Same, but for int_size *)
 Class Int_sizable (A : Type) := {
-  isize : A -> int_size;
-  from_int_size : int_size -> A;
-}.
+    isize : A -> int_size;
+    from_int_size : int_size -> A;
+  }.
 
 Arguments isize {_} {_}.
 Arguments from_int_size {_} {_}.
 
 Global Instance nat_Int_sizable : Int_sizable nat := {
-  isize n := repr (Z.of_nat n);
-  from_int_size n := Z.to_nat (signed n);
-}.
+    isize n := repr (Z.of_nat n);
+    from_int_size n := Z.to_nat (signed n);
+  }.
 
 Global Instance N_Int_sizable : Int_sizable N := {
-  isize n := repr (Z.of_N n);
-  from_int_size n := Z.to_N (signed n);
-}.
+    isize n := repr (Z.of_N n);
+    from_int_size n := Z.to_N (signed n);
+  }.
 
 Global Instance Z_Int_sizable : Int_sizable Z := {
-  isize n := repr n;
-  from_int_size n := signed n;
-}.
+    isize n := repr n;
+    from_int_size n := signed n;
+  }.
 
 
 (**** Public integers *)
@@ -1323,4 +1323,116 @@ Notation "'foldibnd' s 'to' e 'for' z '>>' f" := (foldi s e (fun x y => result_b
 Definition usizemax := usize 18446744073709551615.
 Global Coercion bool_to_prop (b : bool) : Prop := b = true.
 
+Lemma Z_pos_is_succ : (forall p, exists z, Z.pos p = Z.succ z).
+Proof.
+  induction p.
+  * destruct IHp.
+    rewrite Pos.xI_succ_xO.
+    rewrite <- Pos.add_diag.
+    rewrite Pos2Z.inj_succ.
+    exists (Z.pos (p + p)).
+    reflexivity.
+  * destruct IHp.
+    exists (Z.succ x + x).
+    rewrite <- Z.add_succ_r.
+    rewrite ZCmisc.Zpos_xO_add.
+    rewrite H.
+    reflexivity.
+  * exists 0.
+    reflexivity.
+Qed.
+
+Ltac bit_solve :=
+  intros; apply same_bits_eq; intros; autorewrite with ints; auto with bool. 
+
+Theorem Z_nonnegative_induction :
+  forall (P : Z -> Prop),
+    P 0 ->
+    (forall (z : Z), P z -> P (Z.succ z)) ->
+    forall z, 0 <= z -> P z.
+ Proof.
+   intros.
+   pose proof Z.right_induction.
+   specialize (H2 P) with (n := z) (z := 0).
+   apply H2.
+   - unfold Morphisms.Proper.
+     reflexivity.
+   - apply H.
+   - intros.
+     apply H0.
+     apply H4.
+   - apply H1.
+Qed.    
+
+Require Import Lia.
  
+Theorem Z_nonnegative_range_induction :
+  forall (P : Z -> Prop),
+  forall k,
+    P 0 ->
+    (forall (z : Z), -1 < z < k-1 -> P z -> P (Z.succ z)) ->
+    forall z, -1 < z < k -> P z.
+ Proof.
+   intros.
+   pose proof Z.right_induction.
+   specialize (H2 (fun z => -1 < z < k -> P z)) with (n := z) (z := 0).
+   apply H2.
+   - unfold Morphisms.Proper.
+     reflexivity.
+   - intros. apply H.
+   - intros.
+     apply H0.
+     lia.
+     apply H4.
+     lia.
+   - lia.
+   - apply H1.
+Qed.    
+
+ 
+Theorem int_induction `{WORDSIZE} :
+  forall (P : int -> Prop),
+    P zero ->
+    (forall (n : int), P n -> P (n .+ one)) ->
+    forall n, P n.
+Proof.
+  intros.
+  destruct n.
+
+  replace ({| intval := intval; intrange := intrange |}) with (repr intval).
+  pose proof Z_nonnegative_range_induction.
+  apply (H2 (fun x => P (repr x)) modulus).
+  - apply H0.
+  - intros.
+    replace (repr (Z.succ z)) with (repr z .+ one).
+    + apply H1.
+      apply H4.
+    + intros.
+      unfold Z.succ.
+      rewrite add_unsigned.
+      rewrite unsigned_one.
+      replace (unsigned (repr z)) with z.
+      reflexivity.
+
+      rewrite unsigned_repr.
+      * reflexivity.
+      * unfold max_unsigned.
+        lia.
+  - lia.
+  - apply same_bits_eq.
+    intros.
+    induction i.
+    + cbn.
+      rewrite Z_mod_modulus_eq.
+      rewrite Zmod_small.
+      reflexivity.
+      lia.
+    + cbn.
+      rewrite Z_mod_modulus_eq.
+      rewrite Zmod_small.
+      reflexivity.
+      lia.
+    + lia.
+Qed.
+      
+    
