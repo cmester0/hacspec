@@ -193,10 +193,10 @@ Infix ".%" := (MachineIntegers.mods) (at level 77) : hacspec_scope.
 Infix ".^" := (MachineIntegers.xor) (at level 77) : hacspec_scope.
 Infix ".&" := (MachineIntegers.and) (at level 77) : hacspec_scope.
 Infix ".|" := (MachineIntegers.or) (at level 77) : hacspec_scope.
-(* Infix "==" := (MachineIntegers.eq) (at level 32) : hacspec_scope. *)
-(* Definition one := (@one WORDSIZE32). *)
-(* Definition zero := (@zero WORDSIZE32). *)
-(* Notation "A × B" := (prod A B) (at level 79, left associativity) : hacspec_scope. *)
+Infix "==" := (MachineIntegers.eq) (at level 32) : hacspec_scope.
+Definition one := (@one WORDSIZE32).
+Definition zero := (@zero WORDSIZE32).
+Notation "A × B" := (prod A B) (at level 79, left associativity) : hacspec_scope.
 (*** Loops *)
 
 Open Scope nat_scope.
@@ -1093,7 +1093,18 @@ Global Instance int_comparable `{WORDSIZE} : Comparable int := {
 
 Definition nat_mod_val (p : Z) (a : nat_mod p) : Z := GZnZ.val p a.
 
-Axiom nat_mod_eqb_spec : forall {p} (a b : nat_mod p), Z.eqb (nat_mod_val p a) (nat_mod_val p b) = true <-> a = b.
+Theorem nat_mod_eqb_spec : forall {p} (a b : nat_mod p), Z.eqb (nat_mod_val p a) (nat_mod_val p b) = true <-> a = b.
+Proof.
+  split ; intros.
+  - apply Z.eqb_eq in H.    
+    destruct a.
+    destruct b.
+    cbn in *.
+    apply (GZnZ.zirr p val val0 inZnZ inZnZ0 H).
+  - subst.
+    apply Z.eqb_eq.
+    reflexivity.
+Qed.  
 
 Global Instance nat_mod_eqdec {p} : EqDec (nat_mod p) := {
   eqb a b := Z.eqb (nat_mod_val p a) (nat_mod_val p b);
@@ -1158,20 +1169,12 @@ Global Instance List_eqdec {A} `{EqDec A} : EqDec (list A) := {
   eqb := list_eqdec;
   eqb_leibniz := list_eqdec_sound;
 }.
-Require Import Program.Equality.
 Lemma vector_eqb_sound : forall {A : Type} {n : nat} `{EqDec A} (v1 v2 : t A n), Vector.eqb _ eqb v1 v2 = true <-> v1 = v2.
 Proof.
-  intros A n H v1. induction v1; split ; intros; simpl in *; dependent destruction v2.
-  - reflexivity.
-  - reflexivity.
-  - f_equal; rewrite Bool.andb_true_iff in H0; destruct H0.
-    + apply eqb_leibniz. assumption.
-    + apply IHv1. assumption.
-  - inversion H0. subst.
-    rewrite eqb_refl.
-    apply IHv1.
-    apply Eqdep.EqdepTheory.inj_pair2.
-    assumption.
+  intros.
+  apply VectorEq.eqb_eq.
+  intros.
+  apply eqb_leibniz.
 Qed.
 
 Global Program Instance Vector_eqdec {A n} `{EqDec A}: EqDec (Vector.t A n) := {
@@ -1271,8 +1274,6 @@ Definition option_bind {A B} (r : option A) (f : A -> option B) : option B :=
   | None => None
   end.
 
-
-
 Definition option_ret {A} (a : A) : option A := Some a.
 
 Global Instance option_monad : Monad option :=
@@ -1283,8 +1284,6 @@ Definition option_is_none {A} (x : option A) : bool :=
   | None => true
   | _ => false
   end.
-
-Check foldi.
 
 Definition foldi_bind {A : Type} {M : Type -> Type} `{Monad M} (a : uint_size) (b : uint_size) (f : uint_size -> A -> M A) (init : M A) : M A :=
   @foldi (M A) a b (fun x y => bind y (f x)) init.
@@ -1298,10 +1297,7 @@ Definition result_int64_unit := (result int64 unit).
 
 Definition result_uint_size_unit_to_result_int64_unit (r : result_uint_size_unit) : result_int64_unit := result_uint_size_to_result_int64 r.
 
-Set Printing Coercions.
 Global Coercion lift_to_result_coerce {A B C} (f : A -> B) := (fun (r : result A C) => lift_to_result r f).
-
-Global Coercion result_uint_size_unit_to_result_int64_unit : result_uint_size_unit >-> result_int64_unit.
 
 (*** Notation *)
 
@@ -1342,9 +1338,6 @@ Proof.
     reflexivity.
 Qed.
 
-Ltac bit_solve :=
-  intros; apply same_bits_eq; intros; autorewrite with ints; auto with bool. 
-
 Theorem Z_nonnegative_induction :
   forall (P : Z -> Prop),
     P 0 ->
@@ -1364,6 +1357,20 @@ Theorem Z_nonnegative_induction :
    - apply H1.
 Qed.    
 
+
+Lemma Z_succ_is_pos : (forall z, 0 <= z -> exists p, Z.succ z = Z.pos p).
+Proof.
+  intros.
+  apply (Z_nonnegative_induction) with (z := z) ; intros.
+  * exists xH.
+    reflexivity.
+  * destruct H0.
+    exists ((x+1)%positive).
+    rewrite H0.
+    reflexivity.
+  * apply H.
+Qed.
+ 
 Require Import Lia.
  
 Theorem Z_nonnegative_range_induction :
@@ -1387,13 +1394,12 @@ Theorem Z_nonnegative_range_induction :
      lia.
    - lia.
    - apply H1.
-Qed.    
-
+Qed.
  
 Theorem int_induction `{WORDSIZE} :
   forall (P : int -> Prop),
-    P zero ->
-    (forall (n : int), P n -> P (n .+ one)) ->
+    P (repr 0) ->
+    (forall (n : int), P n -> P (n .+ repr 1)) ->
     forall n, P n.
 Proof.
   intros.
@@ -1404,20 +1410,15 @@ Proof.
   apply (H2 (fun x => P (repr x)) modulus).
   - apply H0.
   - intros.
-    replace (repr (Z.succ z)) with (repr z .+ one).
+    replace (repr (Z.succ z)) with (repr z .+ repr 1).
     + apply H1.
       apply H4.
     + intros.
       unfold Z.succ.
       rewrite add_unsigned.
-      rewrite unsigned_one.
-      replace (unsigned (repr z)) with z.
-      reflexivity.
 
-      rewrite unsigned_repr.
-      * reflexivity.
-      * unfold max_unsigned.
-        lia.
+      do 2 rewrite unsigned_repr by (unfold max_unsigned ; lia).
+      reflexivity.
   - lia.
   - apply same_bits_eq.
     intros.
@@ -1434,5 +1435,3 @@ Proof.
       lia.
     + lia.
 Qed.
-      
-    

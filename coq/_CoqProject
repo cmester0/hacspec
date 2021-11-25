@@ -10,5 +10,5 @@ src/Chacha20poly1305.v
 src/Curve25519.v
 src/Sha256.v
 src/Aes.v
-src/auction.v
 src/pearliteexample.v
+src/auction.v

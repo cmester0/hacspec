@@ -58,13 +58,18 @@
 // use creusot_contracts::*;
 
 use hacspec_lib::*;
+
+#[cfg(test)]
+#[cfg(proof)]
+use quickcheck::*;
+
 #[cfg(test)]
 #[cfg(proof)]
 
 #[ensures(result == n * (n + 1usize) / 2usize)]
 pub fn sum_first_n(n: usize) -> usize {
     let mut sum = 0usize;
-    for i in 0..n {
+    for i in 0..(n+1) {
         sum = sum + i;
     }
     
@@ -76,4 +81,12 @@ pub fn sum_first_n(n: usize) -> usize {
     //     i += 1;
     // }
     sum
+}
+
+
+#[cfg(test)]
+#[cfg(proof)]
+#[quickcheck]
+pub fn sum_first_n_test(n: usize) -> bool {
+    sum_first_n(n) == n * (n + 1usize) / 2usize
 }

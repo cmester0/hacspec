@@ -15,20 +15,25 @@ Definition g_unit : G (unit) := returnGen tt.
 #[global] Instance show_int8 : Show (int8) :=
   Build_Show (int8) (fun x => show (int8_to_nat x)).
 Definition g_int8 : G (int8) :=
-  bindGen arbitrary (fun x => returnGen (pub_u8 x)).
+  bindGen (* arbitrary *) (choose (0,1000)) (fun x => returnGen (pub_u8 x)).
 #[global] Instance gen_int8 : Gen (int8) := Build_Gen int8 g_int8.
 
 #[global] Instance show_int32 : Show (int32) :=
   Build_Show (int32) (fun x => show (int32_to_nat x)).
-Definition g_int32 : G (int32) :=
-  bindGen arbitrary (fun x => returnGen (pub_u32 x)).
+Definition g_int32 : G (int32) := (* restricted *)
+  bindGen (choose (0,1000)) (fun x => returnGen (pub_u32 x)).
 #[global] Instance gen_int32 : Gen (int32) := Build_Gen int32 g_int32.
 
 #[global] Instance show_int64 : Show (int64) :=
   Build_Show (int64) (fun x => show (int64_to_nat x)).
 Definition g_int64 : G (int64) :=
-  bindGen arbitrary (fun x => returnGen (pub_u64 x)).
+  bindGen (* arbitrary *) (choose (0,1000)) (fun x => returnGen (pub_u64 x)).
 #[global] Instance gen_int64 : Gen (int64) := Build_Gen int64 g_int64.
+
+#[global] Instance show_uint_size : Show (uint_size) :=
+  Build_Show (uint_size) (fun x => show x).
+Definition g_uint_size : G (uint_size) := arbitrary.
+#[global] Instance gen_uint_size : Gen (uint_size) := Build_Gen uint_size g_uint_size.
 
 #[global] Instance show_nseq n : Show (nseq (int8) (usize n)) :=
   Build_Show (nseq (int8) (usize n)) (fun x =>
@@ -36,23 +41,29 @@ Definition g_int64 : G (int64) :=
      | Vector.nil _ => "[]"%string
      | Vector.cons _ x n xs => ("[" ++ fold_left (fun a b => (a ++ " " ++ show b)) xs (show x) ++ "]")%string
      end).
-Definition g_nseq n : G (nseq (int8) (usize n)).
+
+Theorem unsized_g_int8 : Unsized g_int8.
+Proof.
+  unfold g_int8.
+  apply bindUnsized.
+  apply chooseUnsized.
   intros.
-  apply (@bindGen' (list int8) (nseq int8 n) (vectorOf n arbitrary)).
+  apply unsizedReturn.
+Qed.
+
+Definition g_nseq n : G (nseq (int8) (usize n)) :=
+  (@bindGen' (list int8) (nseq int8 (usize n)) (vectorOf (usize n) g_int8)) (fun l sem =>
+  returnGen (@eq_rect_r (nat) (Datatypes.length l) (nseq int8) (array_from_list int8 l) (usize n) (Logic.eq_sym (proj1 ( proj1 (@semVectorOfUnsized int8 g_int8 (usize n) unsized_g_int8 l) sem ))))).
+
+Definition g_nseq' n : G (nseq (int8) (usize n)). (* (usize *)
+  intros.
+  apply (@bindGen' (list int8) (nseq int8 (usize n)) (vectorOf (usize n) g_int8)).
   intros l sem.
   apply returnGen.
-  pose (array_from_list int8 l).
-  
-  assert (Datatypes.length l = n).
-  { unfold semGen in sem.
-    unfold "\bigcup_" in sem.
-    destruct sem as [i [a b]].
-
-    apply (semVectorOfSize _ arbitrary i l).
-    apply b. }
-  rewrite <- H.
-  apply n0.
+  rewrite <- (proj1 ( proj1 (@semVectorOfUnsized int8 g_int8 (usize n) unsized_g_int8 l) sem )).
+  apply (array_from_list int8 l).
 Defined.
+
 #[global] Instance gen_nseq n : Gen (nseq (int8) (usize n)) := Build_Gen (nseq (int8) (usize n)) (g_nseq n).
 
 #[global] Instance show_public_byte_seq : Show (public_byte_seq) :=

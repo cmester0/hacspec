@@ -25,9 +25,9 @@ src/Sha256.vos src/Sha256.vok src/Sha256.required_vos: src/Sha256.v src/Lib.vos 
 src/Aes.vo src/Aes.glob src/Aes.v.beautified src/Aes.required_vo: src/Aes.v src/Lib.vo src/MachineIntegers.vo src/Lib.vo
 src/Aes.vio: src/Aes.v src/Lib.vio src/MachineIntegers.vio src/Lib.vio
 src/Aes.vos src/Aes.vok src/Aes.required_vos: src/Aes.v src/Lib.vos src/MachineIntegers.vos src/Lib.vos
-src/auction.vo src/auction.glob src/auction.v.beautified src/auction.required_vo: src/auction.v src/Lib.vo src/MachineIntegers.vo src/Lib.vo
-src/auction.vio: src/auction.v src/Lib.vio src/MachineIntegers.vio src/Lib.vio
-src/auction.vos src/auction.vok src/auction.required_vos: src/auction.v src/Lib.vos src/MachineIntegers.vos src/Lib.vos
-src/pearliteexample.vo src/pearliteexample.glob src/pearliteexample.v.beautified src/pearliteexample.required_vo: src/pearliteexample.v src/Lib.vo src/MachineIntegers.vo src/Lib.vo
-src/pearliteexample.vio: src/pearliteexample.v src/Lib.vio src/MachineIntegers.vio src/Lib.vio
-src/pearliteexample.vos src/pearliteexample.vok src/pearliteexample.required_vos: src/pearliteexample.v src/Lib.vos src/MachineIntegers.vos src/Lib.vos
+src/pearliteexample.vo src/pearliteexample.glob src/pearliteexample.v.beautified src/pearliteexample.required_vo: src/pearliteexample.v src/Lib.vo src/MachineIntegers.vo src/QuickChickLib.vo src/Lib.vo
+src/pearliteexample.vio: src/pearliteexample.v src/Lib.vio src/MachineIntegers.vio src/QuickChickLib.vio src/Lib.vio
+src/pearliteexample.vos src/pearliteexample.vok src/pearliteexample.required_vos: src/pearliteexample.v src/Lib.vos src/MachineIntegers.vos src/QuickChickLib.vos src/Lib.vos
+src/auction.vo src/auction.glob src/auction.v.beautified src/auction.required_vo: src/auction.v src/Lib.vo src/QuickChickLib.vo
+src/auction.vio: src/auction.v src/Lib.vio src/QuickChickLib.vio
+src/auction.vos src/auction.vok src/auction.required_vos: src/auction.v src/Lib.vos src/QuickChickLib.vos
