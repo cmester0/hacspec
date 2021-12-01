@@ -1599,6 +1599,7 @@ fn translate_item<'a>(
             true,
         )
 
+            
             .append(
                 if ensures.len() > 0 {
                     RcDoc::hardline()
