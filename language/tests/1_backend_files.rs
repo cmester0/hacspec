@@ -82,3 +82,10 @@ fn positive_types() {
         &None,
     );
 }
+
+#[test]
+fn positive_pearlite_auction() {
+    run_tests("backend-tests/auction.rs",
+              "Auction",
+              HashMap::from([("coq", true)]));
+}
