@@ -2368,6 +2368,134 @@ fn attribute_ensures(attr: &Attribute) -> Option<String> {
     }
 }
 
+fn binop_text(op: rustc_ast::token::BinOpToken) -> String {
+    match op {
+        rustc_ast::token::BinOpToken::Plus => "+".to_string(),
+        rustc_ast::token::BinOpToken::Minus => "-".to_string(),
+        rustc_ast::token::BinOpToken::Star => "*".to_string(),
+        rustc_ast::token::BinOpToken::Slash => "/".to_string(),
+        rustc_ast::token::BinOpToken::Percent => "%".to_string(),
+        rustc_ast::token::BinOpToken::Caret => "^".to_string(),
+        rustc_ast::token::BinOpToken::And => "&".to_string(),
+        rustc_ast::token::BinOpToken::Or => "|".to_string(),
+        rustc_ast::token::BinOpToken::Shl => "<<".to_string(),
+        rustc_ast::token::BinOpToken::Shr => ">>".to_string(),
+    }
+}
+
+fn tokentree_text(x: TokenTree) -> String {
+    match x {
+        TokenTree::Token(tok) => match tok.kind {
+            TokenKind::Eq => "=".to_string(),
+            TokenKind::Lt => "<".to_string(),
+            TokenKind::Le => "<=".to_string(),
+            TokenKind::EqEq => "==".to_string(),
+            TokenKind::Ne => "!=".to_string(),
+            TokenKind::Ge => ">=".to_string(),
+            TokenKind::Gt => ">".to_string(),
+            TokenKind::AndAnd => "&&".to_string(),
+            TokenKind::OrOr => "||".to_string(),
+            TokenKind::Not => "!".to_string(),
+            TokenKind::Tilde => "`".to_string(),
+            TokenKind::BinOp(op) => binop_text(op),
+            TokenKind::BinOpEq(op) => binop_text(op) + "=",
+            TokenKind::At => "@".to_string(),
+            TokenKind::Dot => ".".to_string(),
+            TokenKind::DotDot => "..".to_string(),
+            TokenKind::DotDotDot => "...".to_string(),
+            TokenKind::Comma => ",".to_string(),
+            TokenKind::Semi => ";".to_string(),
+            TokenKind::Colon => ":".to_string(),
+            TokenKind::ModSep => "::".to_string(),
+            TokenKind::RArrow => "->".to_string(),
+            TokenKind::LArrow => "<-".to_string(),
+            TokenKind::FatArrow => "=>".to_string(),
+            TokenKind::Pound => "€".to_string(),
+            TokenKind::Dollar => "$".to_string(),
+            TokenKind::Question => "$".to_string(),
+            TokenKind::Literal(x) => format!["{}", x].to_string(),
+            TokenKind::Ident(sym, _) => format!["{}", sym].to_string(),
+            y => {
+                panic!(" (TODO: {:?})", y);
+            }
+        },
+        TokenTree::Delimited(_, delim_token, inner) => {
+            let (left, right) = match delim_token {
+                DelimToken::Paren => ("(", ")"),
+                DelimToken::Bracket => ("[", "]"),
+                DelimToken::Brace => ("{", "}"),
+                DelimToken::NoDelim => ("", ""),
+            };
+
+            left.to_string()
+                + &inner
+                    .trees()
+                    .fold("".to_string(), |s, x| s + &tokentree_text(x))
+                + right
+        }
+    }
+}
+
+fn get_delimited_tree(attr: Attribute) -> Option<rustc_ast::tokenstream::TokenStream> {
+    let inner_tokens = attr.tokens().to_tokenstream();
+    if inner_tokens.len() != 2 {
+        return None;
+    }
+    let mut it = inner_tokens.trees();
+    let first_token = it.next().unwrap();
+    let second_token = it.next().unwrap();
+    match (first_token, second_token) {
+        (TokenTree::Token(first_tok), TokenTree::Delimited(_, _, inner)) => {
+            match first_tok.kind {
+                TokenKind::Pound => {
+                    if inner.len() != 2 {
+                        return None;
+                    }
+                    let mut it = inner.trees();
+                    let _first_token = it.next().unwrap();
+                    // First is derive
+                    let second_token = it.next().unwrap();
+                    match second_token.clone() {
+                        TokenTree::Delimited(_, _, inner) => Some(inner),
+                        _ => None,
+                    }
+                    _ => a,
+                },
+                _ => a,
+            }))
+        }
+        _ => None,
+    }           
+}
+
+fn attribute_requires(attr: &Attribute) -> Option<String> {
+    let attr_name = attr.name_or_empty().to_ident_string();
+    match attr_name.as_str() {
+        "requires" => {
+            let inner = get_delimited_tree(attr.clone())?;
+            let textify = inner
+                .trees()
+                .fold("".to_string(), |s, x| s + &tokentree_text(x));
+            Some(textify)
+        }
+        _ => None,
+    }
+}
+
+fn attribute_ensures(attr: &Attribute) -> Option<String> {
+    let attr_name = attr.name_or_empty().to_ident_string();
+    match attr_name.as_str() {
+        "ensures" => {
+            let inner = get_delimited_tree(attr.clone())?;
+            let textify = inner
+                .trees()
+                .fold("".to_string(), |s, x| s + &tokentree_text(x));
+            Some(textify)
+        }
+        _ => None,
+    }
+}
+
 fn attribute_tag(attr: &Attribute) -> Option<Vec<ItemTag>> {
     let attr_name = attr.name_or_empty().to_ident_string();
     match attr_name.as_str() {
