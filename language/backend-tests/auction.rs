@@ -420,7 +420,7 @@ fn test_auction_bid_and_finalize(item: PublicByteSeq, time : u64) -> bool { // i
 
     // let sender = owner;
     let balance = 100_u64;
-    let ctx4 = (1_u64, owner, balance);
+    let ctx4 = (time, owner, balance);
 
     let finres = auction_finalize(ctx4, state.clone());
     let (state, result_3) = match finres {
@@ -458,7 +458,7 @@ fn test_auction_bid_and_finalize(item: PublicByteSeq, time : u64) -> bool { // i
             AuctionState::Sold(bob),
             winning_amount,
             item.clone(),
-            1_u64,
+            time,
             bid_map.clone(),
         );
 
