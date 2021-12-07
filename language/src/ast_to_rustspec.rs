@@ -2241,11 +2241,11 @@ fn translate_array_decl(
     }
 }
 
-fn attribute_is_test(attr: &Attribute) -> bool {
+fn attribute_tag(attr: &Attribute) -> Option<Vec<ItemTag>> {
     let attr_name = attr.name_or_empty().to_ident_string();
     match attr_name.as_str() {
-        "test" => true,
-        "cfg" => {
+        "quickcheck" | "proof" | "test" => Some(vec![attr_name]),
+        "derive" => {
             let inner_tokens = attr.tokens().to_tokenstream();
             if inner_tokens.len() != 2 {
                 return false;
@@ -3453,18 +3453,16 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
 ) -> TranslationResult<(ItemTranslationResult, SpecialNames)> {
     let mut tags = HashSet::new();
     tags.insert("code".to_string());
-    let export = i
-        .attrs
+    i.attrs
         .iter()
-        .fold(false, |b, attr| match attribute_tag(attr) {
+        .fold((), |(), attr| match attribute_tag(attr) {
             Some(a) => {
                 tags.extend(a.iter());
-                b || a.contains(&"proof".to_string())
             }
-            None => b,
+            None => (),
         });
 
-    if i.attrs.iter().any(attribute_is_test) && !export {
+    if tags.contains(&"test".to_string()) && !tags.contains(&"proof".to_string()) {
         return Ok((ItemTranslationResult::Ignored, specials.clone()));
     }
     match &i.kind {
