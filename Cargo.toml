@@ -40,6 +40,8 @@ members = [
     "examples/rsa-pkcs1",
     "examples/bip-340",
     "examples/rsa-fdh-vrf",
+    "examples/auction",
+    "examples/concordium_impls",
 ]
 default-members = [
     "lib",
@@ -78,5 +80,7 @@ default-members = [
     "examples/sha512",
     "examples/rsa-pkcs1",
     "examples/rsa-fdh-vrf",
+    "examples/auction",
+    "examples/concordium_impls",
 ]
 exclude = [ "language" ]

@@ -6,21 +6,19 @@
 // #[cfg(feature = "hacspec_unsafe")]
 use hacspec_lib::*;
 
-#[test]
+// #[cfg(feature = "hacspec_unsafe")]
 use hacspec_attributes::*;
-// use hacspec_attributes::*;
 
-// #[cfg(feature = "creusot")]
-#[test]
+#[cfg(feature = "creusot")]
+#[cfg(feature = "hacspec_unsafe")]
 extern crate creusot_contracts;
-// #[cfg(feature = "creusot")]
-#[test]
+
+#[cfg(feature = "creusot")]
+#[cfg(feature = "hacspec_unsafe")]
 use creusot_contracts::*;
 
 pub type Reject = i32;
 
-#[test]
-#[proof]
 #[cfg_attr(feature = "creusot", logic)]
 pub fn reject_impl_default() -> Reject {
     i32::MIN
@@ -32,8 +30,6 @@ pub enum OptionReject {
     NoneReject,
 }
 
-#[test]
-#[proof]
 #[cfg_attr(feature = "creusot", logic)]
 pub fn new_reject_impl(x: i32) -> OptionReject {
     if x < 0i32 {
@@ -43,9 +39,8 @@ pub fn new_reject_impl(x: i32) -> OptionReject {
     }
 }
 
-#[test]
-#[proof]
 #[cfg_attr(feature = "creusot", logic)]
+#[unsafe_hacspec]
 #[ensures(result != 0i32)]
 pub fn reject_impl_convert_from_unit() -> Reject {
     i32::MIN + 1i32

@@ -7,6 +7,10 @@ Open Scope bool_scope.
 Open Scope hacspec_scope.
 Require Import Hacspec.Lib.
 
+Require Import Hacspec.Attributes.
+
+Require Import Creusot.Contracts.
+
 Notation "'reject'" := (int32) : hacspec_scope.
 
 Definition reject_impl_default  : reject :=

@@ -2474,32 +2474,28 @@ fn tokentree_text(x: TokenTree) -> String {
 }
 
 fn get_delimited_tree(attr: Attribute) -> Option<rustc_ast::tokenstream::TokenStream> {
-    let inner_tokens = attr.tokens().to_tokenstream();
+    let inner_tokens = attr.clone().tokens().to_tokenstream();
     if inner_tokens.len() != 2 {
         return None;
     }
     let mut it = inner_tokens.trees();
     let first_token = it.next().unwrap();
     let second_token = it.next().unwrap();
-    match (first_token, second_token) {
-        (TokenTree::Token(first_tok), TokenTree::Delimited(_, _, inner)) => {
-            match first_tok.kind {
-                TokenKind::Pound => {
-                    if inner.len() != 2 {
-                        return None;
-                    }
-                    let mut it = inner.trees();
-                    let _first_token = it.next().unwrap();
-                    // First is derive
-                    let second_token = it.next().unwrap();
-                    match second_token.clone() {
-                        TokenTree::Delimited(_, _, inner) => Some(inner),
-                        _ => None,
-                    }
+    match first_token {
+        TokenTree::Token(first_tok) => match first_tok.kind {
+            TokenKind::Pound => {
+                let inner = get_delimited_inner_tree(second_token)?;
+                if inner.len() != 2 {
+                    return None;
                 }
-                _ => None,
+                let mut it = inner.trees();
+                let _first_token = it.next().unwrap();
+                // First is derive
+                let second_token = it.next().unwrap();
+                get_delimited_inner_tree(second_token.clone())
             }
-        }
+            _ => None,
+        },
         _ => None,
     }
 }
@@ -3752,6 +3748,7 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
                 for (alias_name, alias_ty) in data.ty_aliases.into_iter() {
                     specials.aliases.insert(alias_name, alias_ty);
                 }
+
                 Ok((
                     ItemTranslationResult::Item(DecoratedItem {
                         item: Item::ImportedCrate((
