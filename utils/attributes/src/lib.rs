@@ -153,3 +153,8 @@ pub fn hacspec_unsafe(attr: TokenStream, item: TokenStream) -> TokenStream {
     .emit();
     item
 }
+
+#[proc_macro_attribute]
+pub fn ensures(_: TokenStream, tokens: TokenStream) -> TokenStream {
+    tokens
+}
