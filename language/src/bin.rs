@@ -38,6 +38,8 @@ fn main() {
 
     let mut args: Vec<String> = env::args().skip(1).collect();
 
+    println!("Hacspec_args {:?}", args.clone());
+    
     if !args.is_empty() && args[0] == "hacspec" {
         args.remove(0);
     };
@@ -55,7 +57,9 @@ fn main() {
         .env(library_path_variable, sysroot_lib)
         .envs(&environment)
         .arg(format!("--sysroot={}", sysroot))
-        .args(args)
+        .args(args.clone())
+        // .arg("--features=hacspec")
+        // .arg("--cfg 'feature=hacspec'")
         .status()
         .expect("Couldn't run hacspec");
 
