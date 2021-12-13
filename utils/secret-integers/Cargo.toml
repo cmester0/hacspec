@@ -9,6 +9,8 @@ repository = "https://github.com/hacspec/hacspec"
 keywords = ["secret", "constant-time"]
 readme = "README.md"
 
+[dependencies]
+# creusot-contracts = { path = "../../../../creusot/creusot-contracts" } 
 
 [[example]]
 name = "dalek"
