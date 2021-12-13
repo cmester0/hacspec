@@ -6,7 +6,7 @@ extern crate creusot_contracts;
 use creusot_contracts::*;
 
 // #[cfg(not(feature = "contracts"))] // TODO: Remove condition from hacspec_lib import!
-#[cfg(feature = "hacspec")]
+// #[cfg(feature = "hacspec")]
 use hacspec_lib::*;
 
 // #[cfg(not(feature = "contracts"))]
