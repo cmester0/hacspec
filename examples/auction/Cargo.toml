@@ -1,0 +1,22 @@
+[package]
+name = "auction"
+version = "0.1.0"
+authors = [""]
+edition = "2018"
+
+[lib]
+path = "src/auction.rs"
+
+[dependencies]
+hacspec-lib = { path = "../../lib" }
+hacspec-attributes = { path = "../../utils/attributes", version = "0.1.0-beta.1" , features = ["hacspec_unsafe"] } # , features = ["hacspec_unsafe"] , , optional = true
+# pearlite-syn = { path = "../../../../creusot/pearlite-syn" }
+creusot-contracts = { path = "../../../../creusot/creusot-contracts" }
+
+# [features]
+# use_attributes = ["hacspec-attributes", "hacspec-attributes/print_attributes"]
+
+[dev-dependencies]
+hacspec-dev = { path = "../../utils/dev" }
+criterion = "0.3"
+rand = "0.8"
