@@ -10,7 +10,7 @@ use creusot_contracts::*;
 use hacspec_lib::*;
 
 // #[cfg(not(feature = "contracts"))]
-#[cfg(hacspec)]
+#[cfg(feature = "hacspec")]
 use hacspec_attributes::*;
 
 pub type Reject = i32;
@@ -20,18 +20,18 @@ pub fn reject_impl_default() -> Reject {
     i32::MIN
 }
 
-// pub type OptionReject = Option<i32>;
-pub enum OptionReject {
-    SomeReject(Reject),
-    NoneReject,
-}
+pub type OptionReject = Option<Reject>;
+// pub enum OptionReject {
+//     SomeReject(Reject),
+//     NoneReject,
+// }
 
 #[cfg_attr(feature = "creusot", logic)]
 pub fn new_reject_impl(x: i32) -> OptionReject {
     if x < 0i32 {
-        OptionReject::SomeReject(x)
+        OptionReject::Some(x)
     } else {
-        OptionReject::NoneReject
+        Option::<i32>::None // OptionReject
     }
 }
 
@@ -58,8 +58,6 @@ pub enum LogError {
     Malformed,
 }
 
-#[test]
-#[proof]
 #[cfg_attr(feature = "creusot", logic)]
 #[ensures(result != 0i32)]
 pub fn reject_impl_from_log_error(le: LogError) -> Reject {
@@ -77,8 +75,6 @@ pub enum NewContractNameError {
     NewContractNameErrorInvalidCharacters,
 }
 
-#[test]
-#[proof]
 #[cfg_attr(feature = "creusot", logic)]
 #[ensures(result != 0i32)]
 pub fn reject_impl_from_new_contract_name_error(nre: NewContractNameError) -> Reject {
@@ -97,8 +93,6 @@ pub enum NewReceiveNameError {
     NewReceiveNameErrorInvalidCharacters,
 }
 
-#[test]
-#[proof]
 #[cfg_attr(feature = "creusot", logic)]
 #[ensures(result != 0i32)]
 pub fn reject_impl_from_new_receive_name_error(nre: NewReceiveNameError) -> Reject {
@@ -151,8 +145,6 @@ pub enum SeekFrom {
 pub type U32Option = Option<u32>;
 pub type I64Option = Option<i64>;
 
-#[test]
-#[proof]
 #[cfg_attr(feature = "creusot", trusted)]
 pub fn contract_state_impl_seek(
     current_position: ContractState,
@@ -203,25 +195,34 @@ pub fn contract_state_impl_seek(
     }
 }
 
-#[test]
+
+#[cfg(not(feature = "hacspec"))]
+extern "C" {
+    pub(crate) fn load_state(start: *mut u8, length: u32, offset: u32) -> u32;
+}
+
 #[cfg_attr(feature = "creusot", trusted)]
-#[requires()]
-#[ensure()]
-fn load_state(start: *mut u8, length: u32, offset: u32) -> u32 {
-    1u32
+#[requires(offset < buf.len())]
+#[requires(offset < buf.len())]
+fn load_state_hacspec(buf : PublicByteSeq, offset: u32) -> u32 {
+    if cfg!(feature = "hacspec") {
+        1u32
+    }
+    else {
+        let temp = native_slice;
+        unsafe { load_state(buf.as_mut_ptr(), buf.len() as u32, offset) }
+    }
 }
 
 
-#[test]
-#[proof]
 #[cfg_attr(feature = "creusot", trusted)]
 pub fn contract_state_impl_read_read(
     current_position: ContractState,
-    num_read: u32,
+    buf : PublicByteSeq // Seq<u8>
+    // num_read: u32,
 ) -> (ContractState, usize) {
-
-    
-    
+    let mut num_read = 1u32;
+    num_read = load_state_hacspec(buf, current_position);
     (current_position + num_read, num_read as usize)
 }
 
