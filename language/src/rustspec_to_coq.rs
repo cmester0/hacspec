@@ -252,8 +252,11 @@ fn translate_base_typ<'a>(tau: BaseTyp) -> RcDoc<'a, ()> {
                 .group()
         }
         // todo?
-        BaseTyp::Enum(_cases, _type_args) => {
-            unimplemented!()
+        BaseTyp::Enum(cases, type_args) => {
+            println!("{:?} cases, {:?} types", cases, type_args);
+            // unimplemented!()
+            // RcDoc::concat(cases.iter().map(|x| RcDoc::as_string(format!("{:?}", x.0))))
+            RcDoc::as_string(format!("{}", enum_name))
         }
         BaseTyp::Array(size, tau) => {
             let tau = tau.0;

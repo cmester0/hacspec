@@ -230,10 +230,12 @@ fn translate_ident_str<'a>(ident_str: String) -> RcDoc<'a, ()> {
 }
 
 fn translate_constructor<'a>(enum_name: TopLevelIdent) -> RcDoc<'a> {
+    println!("enum_constructor: {:?} {:?} {:?}", enum_name, enum_name.string, enum_name.kind);
     RcDoc::as_string(enum_name.string)
 }
 
 fn translate_enum_name<'a>(enum_name: TopLevelIdent) -> RcDoc<'a> {
+    println!("enum_name: {:?} {:?} {:?}", enum_name, enum_name.string, enum_name.kind);
     translate_toplevel_ident(enum_name)
 }
 
@@ -437,6 +439,7 @@ fn get_type_default(t: &BaseTyp) -> Expression {
 }
 
 fn translate_pattern<'a>(p: Pattern) -> RcDoc<'a, ()> {
+    println!("pattern: {:?}", p);
     match p {
         Pattern::SingleCaseEnum(name, inner_pat) => {
             translate_enum_case_name(BaseTyp::Named(name.clone(), None), name.0.clone())
@@ -1458,13 +1461,15 @@ fn translate_item<'a>(
             "open {}",
             str::replace(&kr.to_title_case(), " ", ".")
         )),
-        Item::AliasDecl((name, _), (ty, _)) => RcDoc::as_string("type")
+        Item::AliasDecl((name, _), (ty, _)) => {
+            RcDoc::as_string("type")
             .append(RcDoc::space())
             .append(translate_ident(Ident::TopLevel(name.clone())))
             .append(RcDoc::space())
             .append(RcDoc::as_string("="))
             .append(RcDoc::space())
-            .append(translate_base_typ(ty.clone())),
+                .append(translate_base_typ(ty.clone()))
+        }
     }
 }
 

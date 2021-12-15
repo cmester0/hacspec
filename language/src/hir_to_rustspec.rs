@@ -583,6 +583,7 @@ fn check_special_type_from_struct_shape(tcx: &TyCtxt, def: &ty::Ty) -> SpecialTy
                                     Ok(args) => args,
                                     Err(_) => return SpecialTypeReturn::NotSpecial,
                                 },
+                                id
                             ))
                         }
                         _ => {

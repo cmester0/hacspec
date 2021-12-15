@@ -197,6 +197,7 @@ pub enum BaseTyp {
     Enum(
         Vec<(Spanned<TopLevelIdent>, Option<Spanned<BaseTyp>>)>,
         Vec<TypVar>,
+        TopLevelIdent,
     ), // Cases, type variables
     NaturalInteger(Secrecy, Spanned<String>, Spanned<usize>), // secrecy, modulo value, encoding bits
 }

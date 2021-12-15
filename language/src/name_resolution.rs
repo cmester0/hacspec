@@ -88,10 +88,24 @@ pub(crate) fn find_ident<'b>(
                     kind: TopLevelIdentKind::Constant,
                 };
                 match top_level_context.consts.get(&x_tl) {
-                    Some(_) => Ok(Ident::TopLevel(x_tl)),
+                    Some(_) => {
+                        Ok(Ident::TopLevel(x_tl))
+                    },
                     None => {
-                        sess.span_rustspec_err(x.1.clone(), "identifier is not a constant");
-                        Err(())
+                        let x_tl = TopLevelIdent {
+                            string: name.clone(),
+                            kind: TopLevelIdentKind::EnumConstructor,
+                        };
+                        match top_level_context.consts.get(&x_tl) {
+                            Some(_) => {
+                                println!("Enum Match");
+                                Ok(Ident::TopLevel(x_tl))
+                            },
+                            None => {
+                                sess.span_rustspec_err(x.1.clone(), "identifier is not a constant");
+                                Err(())
+                            }
+                        }
                     }
                 }
             }
@@ -377,6 +391,7 @@ fn resolve_statement(
         Statement::Reassignment(var, e, question_mark) => {
             let new_var = find_ident(sess, &var, &name_context, top_level_ctx)?;
             let new_e = resolve_expression(sess, e, &name_context, top_level_ctx)?;
+
             Ok((
                 (
                     Statement::Reassignment((new_var, var.1.clone()), new_e, question_mark),
@@ -495,7 +510,7 @@ fn process_decl_item(
                 (
                     (
                         (Borrowing::Consumed, i_span.clone()),
-                        (BaseTyp::Enum(cases.clone(), Vec::new()), i_span.clone()),
+                        (BaseTyp::Enum(cases.clone(), Vec::new(), name.0.clone()), i_span.clone()),
                     ),
                     DictEntry::Enum,
                 ),
@@ -620,6 +635,38 @@ fn process_decl_item(
                     DictEntry::Alias,
                 ),
             );
+
+            let temp = match &alias_ty.0 {
+                BaseTyp::Named(ident, args) => top_level_context.typ_dict.get(&ident.0),
+                _ => None,
+            };
+
+            match temp {
+                None => (),
+                Some(a) => {
+                    match a.1 {
+                        DictEntry::Enum => match a.0 .1 .0.clone() {
+                            BaseTyp::Enum(x, y) => {
+                                for ((z, _), opt) in x {
+                                    if opt == None {
+                                        println!("KKIINNDD {:?}", z.kind);
+                                        // let x_tl = TopLevelIdent {
+                                        //     string: z.string.clone(),
+                                        //     kind: TopLevelIdentKind::Constant,
+                                        // };
+                                        top_level_context.consts.insert(
+                                            z.clone(),
+                                            a.0.1.clone());
+                                    }
+                                };
+                            }
+                            _ => (),
+                        },
+                        _ => (),
+                    }
+                }
+            };
+
             Ok(())
         }
         Item::ImportedCrate(_) => {
