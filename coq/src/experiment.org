@@ -1,0 +1,684 @@
+#+PROPERTY: header-args:coq  :session *Coq*
+
+* Fibonacci specification
+** Config
+#+begin_src conf :tangle ../../examples/auction/Cargo.toml
+  [package]
+  name = "auction"
+  version = "0.1.0"
+  authors = [""]
+  edition = "2018"
+
+  [lib]
+  path = "src/auction.rs"
+
+  [dependencies]
+  hacspec-lib = { path = "../../lib" }
+  hacspec-attributes = { path = "../../utils/attributes", version = "0.1.0-beta.1" , features = ["print_attributes"] } # , features = ["hacspec_unsafe"] , , optional = true
+  # pearlite-syn = { path = "../../../../creusot/pearlite-syn" }
+  creusot-contracts = { path = "../../../../creusot/creusot-contracts" }
+  # hacspec = {optional = true}
+
+  [features]
+  hacspec = []
+  # use_attributes = ["hacspec-attributes", "hacspec-attributes/print_attributes"]
+
+  [dev-dependencies]
+  hacspec-dev = { path = "../../utils/dev" }
+  criterion = "0.3"
+  rand = "0.8"
+#+end_src
+
+** Imports
+#+begin_src rust :tangle ../../examples/auction/src/auction.rs :eval never
+  #[cfg(not(feature = "hacspec"))]
+  extern crate hacspec_lib;
+
+  use hacspec_lib::*;
+
+  // #[cfg(feature = "hacspec_attributes")]
+  #[cfg(feature = "hacspec")]
+  use hacspec_attributes::*;
+
+  #[cfg(not(feature = "hacspec"))]
+  extern crate creusot_contracts;
+  #[cfg(not(feature = "hacspec"))]
+  use creusot_contracts::ensures;
+#+end_src
+
+** Rust code
+#+begin_src rust :tangle ../../examples/auction/src/auction.rs :eval never
+array!(UserAddress, 32, u8); // U8
+
+#[derive(Clone, PartialEq)]
+pub enum AuctionState {
+    /// The auction is either
+    /// - still accepting bids or
+    /// - not accepting bids because it's past the auction end, but nobody has
+    ///   finalized the auction yet.
+    NotSoldYet,
+    /// The auction is over and the item has been sold to the indicated address.
+    Sold(UserAddress), // winning account's address
+}
+
+#[derive(Clone, PartialEq)]
+pub struct SeqMap(pub PublicByteSeq, pub PublicByteSeq);
+
+pub type Amount = u64;
+pub type Timestamp = u64;
+pub type Itemtyp = PublicByteSeq; // Seq<u8>;
+
+#[derive(Clone, PartialEq)]
+pub struct State(
+    pub AuctionState,
+    pub Amount,
+    pub Itemtyp,
+    pub Timestamp,
+    pub SeqMap,
+);
+
+// #[cfg_attr(feature = "use_attributes", unsafe_hacspec)]
+// #[cfg_attr(feature = "use_attributes", ensures(true))]
+// #[hacspec_unsafe]
+// #[cfg(feature = "hacspec_unsafe")]
+// #[hacspec_unsafe]
+#[ensures(true)]
+// #[hacspec_unsafe] // ensures(result.0 === AuctionState::NotSoldYet)
+// #[ensures(forall<x : u32> x + x = x * 2)]
+pub fn fresh_state(itm: Itemtyp, exp: u64) -> State {
+    State(
+        AuctionState::NotSoldYet,
+        0_u64,
+        itm,
+        exp,
+        SeqMap(PublicByteSeq::new(0_usize), PublicByteSeq::new(0_usize)),
+    )
+}
+
+// #[derive(Clone, PartialEq)]
+// pub enum MapEntry {
+//     Entry(u64, SeqMap),
+// }
+
+// #[ensures(true)]
+// #[ensures(result === )]
+fn seq_map_entry(m: SeqMap, sender_address: UserAddress) -> (u64, SeqMap) {
+    let SeqMap(m0, m1) = m;
+
+    let mut res = // MapEntry::Entry
+        (
+        0_u64,
+        SeqMap(
+            m0.clone().concat(&sender_address),
+            m1.clone().concat(&u64_to_be_bytes(0_u64)),
+        ),
+    );
+
+    for x in 0..m0.clone().len() / 32 {
+        if UserAddress::from_seq(&m0.clone().slice(x * 32, 32)) == sender_address {
+            res = // MapEntry::Entry
+                (
+                u64_from_be_bytes(u64Word::from_seq(&m1.clone().slice(x * 8, 8))),
+                SeqMap(m0.clone(), m1.clone()),
+            );
+        }
+    }
+
+    res
+}
+
+#[derive(Clone, PartialEq)]
+pub enum MapUpdate {
+    Update(u64, SeqMap),
+}
+
+fn seq_map_update_entry(m: SeqMap, sender_address: UserAddress, amount: u64) -> MapUpdate {
+    let SeqMap(m0, m1) = m;
+
+    let mut res = MapUpdate::Update(
+        amount,
+        SeqMap(
+            m0.clone().concat(&sender_address),
+            m1.clone().concat(&u64_to_be_bytes(amount)),
+        ),
+    );
+
+    // !! Issue in for loop !! (update, updates the reference!)
+    for x in 0..m0.clone().len() / 32 {
+        if UserAddress::from_seq(&m0.clone().slice(x * 32, 32)) == sender_address {
+            res = MapUpdate::Update(
+                amount,
+                SeqMap(
+                    m0.clone().update(x * 32, &sender_address),
+                    m1.clone().update(x * 8, &u64_to_be_bytes(amount)),
+                ),
+            );
+        }
+    }
+
+    res
+}
+
+#[derive(Clone, PartialEq)]
+pub enum BidError {
+    ContractSender, // raised if a contract, as opposed to account, tries to bid
+    BidTooLow,      /* { bid: Amount, highest_bid: Amount } */
+    // raised if bid is lower than highest amount
+    BidsOverWaitingForAuctionFinalization, // raised if bid is placed after auction expiry time
+    AuctionIsFinalized,                    /* raised if bid is placed after auction has been
+                                            * finalized */
+}
+
+// pub type UserAddressSet = Option<UserAddress>;
+#[derive(Clone, PartialEq)]
+pub enum UserAddressSet {
+    UserAddressSome(UserAddress),
+    UserAddressNone,
+}
+pub type Context = (u64, UserAddressSet);
+pub type AuctionBidResult = Result<State, BidError>;
+
+pub fn auction_bid(ctx: Context, amount: u64, state: State) -> AuctionBidResult {
+    let State(auction_state, highest_bid, st2, expiry, st4) = state.clone();
+
+    if !(auction_state == AuctionState::NotSoldYet) {
+        AuctionBidResult::Err(BidError::AuctionIsFinalized)?;
+    }
+
+    let (slot_time, sender) = ctx;
+    if !(slot_time <= expiry) {
+        AuctionBidResult::Err(BidError::BidsOverWaitingForAuctionFinalization)?;
+    }
+
+    if sender == UserAddressSet::UserAddressNone {
+        AuctionBidResult::Err(BidError::ContractSender)?;
+    }
+
+    let sender_address = match sender {
+        UserAddressSet::UserAddressNone => UserAddress([
+            5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8,
+            5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8,
+            5_u8, 5_u8, 5_u8, 5_u8,
+        ]), // should never happen
+        UserAddressSet::UserAddressSome(account_address) => account_address,
+    };
+
+    let (bid_to_update, new_map) = // match
+        seq_map_entry(st4.clone(), sender_address) // {
+    //     MapEntry::Entry(bid_to_update, new_map) => (bid_to_update, new_map),
+    // }
+    ;
+
+    let (updated_bid, updated_map) =
+        match seq_map_update_entry(st4.clone(), sender_address, bid_to_update + amount) {
+            MapUpdate::Update(updated_bid, updated_map) => (updated_bid, updated_map),
+        };
+
+    if !(updated_bid > highest_bid) {
+        AuctionBidResult::Err(BidError::BidTooLow)?;
+    }
+
+    AuctionBidResult::Ok(State(auction_state, updated_bid, st2, expiry, updated_map))
+}
+
+pub type FinalizeContext = (u64, UserAddress, u64);
+
+/// For errors in which the `finalize` function can result
+#[derive(Clone, PartialEq)]
+pub enum FinalizeError {
+    BidMapError,
+    AuctionStillActive,
+    AuctionFinalized,
+}
+
+#[derive(Clone, PartialEq)]
+pub enum FinalizeAction {
+    Accept,
+    SimpleTransfer(PublicByteSeq),
+}
+
+#[derive(Clone, PartialEq)]
+pub enum BidRemain {
+    BidNone,
+    BidSome(u64),
+}
+
+pub type AuctionFinalizeResult = Result<(State, FinalizeAction), FinalizeError>;
+// pub type BidRemain = Option<(UserAddress, u64)>;
+
+pub fn auction_finalize(ctx: FinalizeContext, state: State) -> AuctionFinalizeResult {
+    let State(mut auction_state, highest_bid, st2, expiry, SeqMap(m0, m1)) = state.clone();
+
+    let mut result = AuctionFinalizeResult::Ok((state.clone(), FinalizeAction::Accept));
+
+    if !(auction_state == AuctionState::NotSoldYet) {
+        AuctionFinalizeResult::Err(FinalizeError::AuctionFinalized)?;
+    }
+
+    let (slot_time, owner, balance) = ctx;
+
+    if !(slot_time > expiry) {
+        AuctionFinalizeResult::Err(FinalizeError::AuctionStillActive)?;
+    }
+
+    if balance != 0_u64 {
+        let mut return_action = FinalizeAction::SimpleTransfer(
+            PublicByteSeq::new(0_usize)
+                .concat(&owner)
+                .concat(&u64_to_be_bytes(highest_bid)),
+        );
+        let mut remaining_bid = BidRemain::BidNone;
+        // Return bids that are smaller than highest
+        // let x = 0;
+        for x in 0..m0.clone().len() / 32 {
+            let addr = UserAddress::from_seq(&m0.clone().slice(x * 32, 32));
+            let amnt = u64_from_be_bytes(u64Word::from_seq(&m1.clone().slice(x * 8, 8)));
+            if amnt < highest_bid {
+                return_action = match return_action {
+                    FinalizeAction::Accept => FinalizeAction::Accept, // TODO: What error (should never happen)..
+                    FinalizeAction::SimpleTransfer(m) => FinalizeAction::SimpleTransfer(
+                        m.concat(&addr).concat(&u64_to_be_bytes(amnt)),
+                    ),
+                };
+            } else {
+                // ensure!(remaining_bid.is_none(), FinalizeError::BidMapError);
+                if ! (remaining_bid == BidRemain::BidNone) {
+                    AuctionFinalizeResult::Err(FinalizeError::BidMapError)?;
+                }
+                auction_state = AuctionState::Sold(addr);
+                remaining_bid = BidRemain::BidSome(amnt);
+            }
+        }
+
+        // ensure that the only bidder left in the map is the one with the highest bid
+        result = match remaining_bid {
+            BidRemain::BidSome(amount) =>
+            // ensure!(amount == state.highest_bid, FinalizeError::BidMapError);
+            {
+                if !(amount == highest_bid) {
+                    AuctionFinalizeResult::Err(FinalizeError::BidMapError)
+                } else {
+                    AuctionFinalizeResult::Ok((
+                        State(auction_state, highest_bid, st2, expiry, SeqMap(m0.clone(), m1.clone())),
+                        return_action,
+                    ))
+                }
+            }
+            BidRemain::BidNone => AuctionFinalizeResult::Err(FinalizeError::BidMapError),
+        };
+
+        result.clone()?;
+    }
+
+    result
+}
+
+// #[cfg(test)]
+// extern crate quickcheck;
+// #[cfg(test)]
+// #[macro_use(quickcheck)]
+// extern crate quickcheck_macros;
+
+// #[cfg(test)]
+// use quickcheck::*;
+
+// #[cfg(proof)]
+// #[cfg(test)]
+// pub fn auction_item(a : u64, b : u64, c : u64) -> PublicByteSeq {
+//     PublicByteSeq::new(0_usize)
+// }
+
+#[test]
+#[proof]
+#[quickcheck]
+#[ensures(result === true)]
+/// Test that the smart-contract initialization sets the state correctly
+/// (no bids, active state, indicated auction-end time and item name).
+pub fn auction_test_init(item: PublicByteSeq, time : u64) -> bool {
+    fresh_state(item.clone(), time)
+        == State(
+            AuctionState::NotSoldYet,
+            0_u64,
+            item.clone(),
+            time,
+            SeqMap(PublicByteSeq::new(0_usize), PublicByteSeq::new(0_usize)),
+        )
+}
+
+#[test]
+#[proof]
+fn verify_bid(
+    item: PublicByteSeq,
+    state: State,
+    account: UserAddress,
+    ctx: Context,
+    amount: u64,
+    bid_map: SeqMap,
+    highest_bid: u64,
+    time : u64,
+) -> (State, SeqMap, bool, bool) {
+    let t = auction_bid(ctx, amount, state.clone());
+
+    let (state, res) = match t {
+        AuctionBidResult::Err(e) => (state, false),
+        AuctionBidResult::Ok(s) => (s, true),
+    };
+
+    let bid_map = match seq_map_update_entry(bid_map.clone(), account, highest_bid) {
+        MapUpdate::Update(_, updated_map) => updated_map,
+    };
+
+    (
+        state.clone(),
+        bid_map.clone(),
+        res,
+        state.clone()
+            == State(
+                AuctionState::NotSoldYet,
+                highest_bid,
+                item.clone(),
+                time,
+                bid_map.clone(),
+            ),
+    )
+}
+
+#[test]
+#[proof]
+fn useraddress_from_u8(i : u8) -> UserAddress {
+    UserAddress([
+        i, i, i, i, i, i, i, i, i, i, i, i, i, i, i,
+        i, i, i, i, i, i, i, i, i, i, i, i, i, i, i,
+        i, i,
+    ])
+}
+
+#[test]
+#[proof]
+fn new_account(time : u64, i : u8) -> (UserAddress, Context) {
+    let addr = useraddress_from_u8(i);
+    let ctx = (time, UserAddressSet::UserAddressSome(addr));
+    (addr, ctx)
+}
+
+#[test]
+#[proof]
+// #[quickcheck]
+// #[test]
+/// Test a sequence of bids and finalizations:
+/// 0. Auction is initialized.
+/// 1. Alice successfully bids 0.1 GTU.
+/// 2. Alice successfully bids another 0.1 GTU, highest bid becomes 0.2 GTU
+/// (the sum of her two bids). 3. Bob successfully bids 0.3 GTU, highest
+/// bid becomes 0.3 GTU. 4. Someone tries to finalize the auction before
+/// its end time. Attempt fails. 5. Dave successfully finalizes the
+/// auction after its end time.    Alice gets her money back, while
+/// Carol (the owner of the contract) collects the highest bid amount.
+/// 6. Attempts to subsequently bid or finalize fail.
+#[ensures(result === true)]
+#[quickcheck]
+fn test_auction_bid_and_finalize(item: PublicByteSeq, time : u64, input_amount : u64) -> bool {
+    let amount = input_amount + 1_u64;
+    let winning_amount = amount * 3_u64; // 300_u64;
+    let big_amount = amount * 5_u64; // 500_u64;
+
+    let bid_map = SeqMap(PublicByteSeq::new(0_usize), PublicByteSeq::new(0_usize));
+
+    // initializing auction
+    let state = fresh_state(item.clone(), time); // mut
+
+    // 1st bid: account1 bids amount1
+    let (alice, alice_ctx) = new_account(time, 0_u8);
+
+    let (state, bid_map, res_0, result_0) = verify_bid(
+        item.clone(),
+        state,
+        alice,
+        alice_ctx,
+        amount,
+        bid_map,
+        amount,
+        time,
+    );
+
+    // // 2nd bid: account1 bids `amount` again
+    // // should work even though it's the same amount because account1 simply
+    // // increases their bid
+    let (state, bid_map, res_1, result_1) = verify_bid(
+        item.clone(),
+        state,
+        alice,
+        alice_ctx,
+        amount,
+        bid_map,
+        amount + amount,
+        time,
+    );
+
+    // // 3rd bid: second account
+    let (bob, bob_ctx) = new_account(time, 1_u8); // first argument is slot time
+
+    let (state, bid_map, res_2, result_2) = verify_bid(
+        item.clone(),
+        state,
+        bob,
+        bob_ctx,
+        winning_amount,
+        bid_map,
+        winning_amount,
+        time,
+    );
+
+    let owner = useraddress_from_u8(0_u8);
+
+    // let sender = owner;
+    let balance = 100_u64;
+    let ctx4 = (time, owner, balance);
+
+    let finres = auction_finalize(ctx4, state.clone());
+    let (state, result_3) = match finres {
+        AuctionFinalizeResult::Err(err) => (
+            state.clone(),
+            err == FinalizeError::AuctionStillActive
+        ),
+        AuctionFinalizeResult::Ok((state, _)) => (state, false),
+    };
+
+    // // finalizing auction
+    // let carol = new_account();
+    let (carol, carol_ctx) = new_account(time, 2_u8);
+
+    let ctx5 = (time + 1_u64, carol, winning_amount);
+    let finres2 = auction_finalize(ctx5, state.clone());
+
+    let (state, result_4) = match finres2 {
+        AuctionFinalizeResult::Err(_) => (state.clone(), false),
+        AuctionFinalizeResult::Ok((state, action)) => (
+            state,
+            action
+                == FinalizeAction::SimpleTransfer(
+                    PublicByteSeq::new(0_usize)
+                        .concat(&carol)
+                        .concat(&u64_to_be_bytes(winning_amount))
+                        .concat(&alice)
+                        .concat(&u64_to_be_bytes(amount + amount)),
+                ),
+        ),
+    };
+
+    let result_5 = state.clone()
+        == State(
+            AuctionState::Sold(bob),
+            winning_amount,
+            item.clone(),
+            time,
+            bid_map.clone(),
+        );
+
+    // attempting to finalize auction again should fail
+    let finres3 = auction_finalize(ctx5, state.clone());
+
+    let (state, result_6) = match finres3 {
+        AuctionFinalizeResult::Err(err) => (state, err == FinalizeError::AuctionFinalized),
+        AuctionFinalizeResult::Ok((state, action)) => (state, false),
+    };
+
+    let t = auction_bid(bob_ctx, big_amount, state.clone());
+
+    // let result_7 = t == AuctionBidResult::Err (BidError::AuctionIsFinalized);
+    let result_7 = match t {
+        AuctionBidResult::Err(e) => e == BidError::AuctionIsFinalized,
+        AuctionBidResult::Ok(_) => false,
+    };
+    
+    result_0 && result_1 && result_2 && result_3 && result_4 && result_5 && result_6 && result_7
+}
+#+end_src
+
+** Generation of backend output
+# #+begin_src fundamental :tangle _CoqProject :eval never
+#   -R ../../../coq/src/ Hacspec
+#   -arg -w
+#   -arg all
+
+#   ../../../coq/src/MachineIntegers.v
+#   ../../../coq/src/Lib.v
+#   ../../../coq/src/QuickChickLib.v
+# #+end_src
+
+#+begin_src sh :results none
+  cargo hacspec -o Auction.v auction --update
+#+end_src
+
+#+begin_src emacs-lisp :results none
+  ;; (setq coq-project-filename "_CoqProject")
+  ;; ((coq-mode . ((coq-project-filename . "_CoqProject"))))
+  ((coq-mode
+    .
+    ((eval
+      .
+      (progn 
+	(make-local-variable 'coq-project-filename)
+	(setq coq-project-filename  "_CoqProject"))))))
+#+end_src
+
+# (setq coq-load-path '((rec "/home/au538501/Documents/LocalHacspec/hacspec/coq/src/" "Hacspec")))
+# (setq coq-load-path-include-current 1)
+# (add-to-list 'load-path (expand-file-name (file-name-directory (or load-file-name buffer-file-name))))
+# :eval never
+
+#+name: lines
+#+begin_src sh :wrap "src coq :tangle Auction.v" :exports results :eval no-export :results output raw :var ARG="1,10p;11q"
+  sed -n $ARG Auction.v
+#+end_src
+
+#+CALL: lines(ARG="1,10p;11q")
+
+#+RESULTS:
+#+begin_src coq :tangle Auction.v
+(** This file was automatically generated using Hacspec **)
+Require Import Lib MachineIntegers.
+From Coq Require Import ZArith.
+Import List.ListNotations.
+Open Scope Z_scope.
+Open Scope bool_scope.
+Open Scope hacspec_scope.
+From QuickChick Require Import QuickChick.
+Require Import QuickChickLib.
+Require Import Hacspec.Lib.
+#+end_src
+
+#+CALL: lines(ARG="12,200p;201q")
+
+#+RESULTS:
+#+begin_src coq :tangle Auction.v
+Definition user_address := nseq (int8) (usize 32).
+
+Inductive auction_state :=
+| NotSoldYet : auction_state
+| Sold : user_address -> auction_state.
+
+Definition eqb_auction_state (x y : auction_state) : bool :=
+match x with
+   | NotSoldYet => match y with | NotSoldYet=> true | _ => false end
+   | Sold a => match y with | Sold b => a =.? b | _ => false end
+   end.
+
+Definition eqb_leibniz_auction_state (x y : auction_state) : eqb_auction_state x y = true <-> x = y.
+Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. intros ; subst ; destruct y ; try reflexivity ; try (apply eqb_refl). Qed.
+
+Instance eq_dec_auction_state : EqDec (auction_state) :=
+Build_EqDec (auction_state) (eqb_auction_state) (eqb_leibniz_auction_state).
+
+ Global Instance show_auction_state : Show (auction_state) :=
+  @Build_Show (auction_state) (fun x =>
+ match x with
+ NotSoldYet => ("NotSoldYet")%string
+ | Sold a => ("Sold" ++ show a)%string
+ end).
+Definition g_auction_state : G (auction_state) := oneOf_ (returnGen NotSoldYet) [returnGen NotSoldYet;bindGen arbitrary (fun a => returnGen (Sold a))].
+#[global] Instance gen_auction_state : Gen (auction_state) := Build_Gen auction_state g_auction_state.
+
+
+Inductive seq_map :=
+| SeqMap : (public_byte_seq × public_byte_seq) -> seq_map.
+
+Definition eqb_seq_map (x y : seq_map) : bool :=
+match x with
+   | SeqMap a => match y with | SeqMap b => a =.? b end
+   end.
+
+Definition eqb_leibniz_seq_map (x y : seq_map) : eqb_seq_map x y = true <-> x = y.
+Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. intros ; subst ; destruct y ; try reflexivity ; try (apply eqb_refl). Qed.
+
+Instance eq_dec_seq_map : EqDec (seq_map) :=
+Build_EqDec (seq_map) (eqb_seq_map) (eqb_leibniz_seq_map).
+
+ Global Instance show_seq_map : Show (seq_map) :=
+  @Build_Show (seq_map) (fun x =>
+ match x with
+ SeqMap a => ("SeqMap" ++ show a)%string
+ end).
+Definition g_seq_map : G (seq_map) := oneOf_ (bindGen arbitrary (fun a => returnGen (SeqMap a))) [bindGen arbitrary (fun a => returnGen (SeqMap a))].
+#[global] Instance gen_seq_map : Gen (seq_map) := Build_Gen seq_map g_seq_map.
+
+
+Notation "'amount'" := (int64) : hacspec_scope.
+
+Notation "'timestamp'" := (int64) : hacspec_scope.
+
+Notation "'itemtyp'" := (public_byte_seq) : hacspec_scope.
+
+Inductive state :=
+| State : (auction_state × amount × itemtyp × timestamp × seq_map) -> state.
+
+Definition eqb_state (x y : state) : bool :=
+match x with
+   | State a => match y with | State b => a =.? b end
+   end.
+
+Definition eqb_leibniz_state (x y : state) : eqb_state x y = true <-> x = y.
+Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. intros ; subst ; destruct y ; try reflexivity ; try (apply eqb_refl). Qed.
+
+Instance eq_dec_state : EqDec (state) :=
+Build_EqDec (state) (eqb_state) (eqb_leibniz_state).
+
+ Global Instance show_state : Show (state) :=
+  @Build_Show (state) (fun x =>
+ match x with
+ State a => ("State" ++ show a)%string
+ end).
+Definition g_state : G (state) := oneOf_ (bindGen arbitrary (fun a => returnGen (State a))) [bindGen arbitrary (fun a => returnGen (State a))].
+#[global] Instance gen_state : Gen (state) := Build_Gen state g_state.
+
+
+Definition fresh_state (itm_0 : itemtyp) (exp_1 : int64) : state :=
+  State ((
+      NotSoldYet,
+      @repr WORDSIZE64 0,
+      itm_0,
+      exp_1,
+      SeqMap ((
+	  seq_new_ (@repr WORDSIZE8 0) (usize 0),
+	  seq_new_ (@repr WORDSIZE8 0) (usize 0)
+#+end_src
