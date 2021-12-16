@@ -588,6 +588,20 @@ Require Import QuickChickLib.
 Require Import Hacspec.Lib.
 #+end_src
 
+#+RESULTS:
+#+begin_example
+(** This file was automatically generated using Hacspec **)
+Require Import Lib MachineIntegers.
+From Coq Require Import ZArith.
+Import List.ListNotations.
+Open Scope Z_scope.
+Open Scope bool_scope.
+Open Scope hacspec_scope.
+From QuickChick Require Import QuickChick.
+Require Import QuickChickLib.
+Require Import Hacspec.Lib.
+#+end_example
+
 #+CALL: lines(ARG="12,200p;201q")
 
 #+RESULTS:
@@ -681,4 +695,104 @@ Definition fresh_state (itm_0 : itemtyp) (exp_1 : int64) : state :=
       SeqMap ((
 	  seq_new_ (@repr WORDSIZE8 0) (usize 0),
 	  seq_new_ (@repr WORDSIZE8 0) (usize 0)
+	))
+    )).
+
+Theorem ensures_fresh_state : forall result_2 (itm_0 : itemtyp) (exp_1 : int64),
+ @fresh_state itm_0 exp_1 = result_2 ->
+ true.
+ Proof. Admitted.
+
+Definition seq_map_entry
+  (m_3 : seq_map)
+  (sender_address_4 : user_address)
+  : (int64 × seq_map) :=
+  let 'SeqMap ((m0_5, m1_6)) :=
+    m_3 in 
+  let res_7 : (int64 × seq_map) :=
+    (
+      @repr WORDSIZE64 0,
+      SeqMap ((
+	  seq_concat ((m0_5)) (sender_address_4),
+	  seq_concat ((m1_6)) (u64_to_be_bytes (@repr WORDSIZE64 0))
+	))
+    ) in 
+  let res_7 :=
+    foldi (usize 0) ((seq_len ((m0_5))) / (usize 32)) (fun x_8 res_7 =>
+      let '(res_7) :=
+	if (array_from_seq (32) (seq_slice ((m0_5)) ((x_8) * (usize 32)) (
+	      usize 32))) array_eq (sender_address_4):bool then (let res_7 :=
+	    (
+	      u64_from_be_bytes (array_from_seq (8) (seq_slice ((m1_6)) ((
+		      x_8) * (usize 8)) (usize 8))),
+	      SeqMap (((m0_5), (m1_6)))
+	    ) in 
+	  (res_7)) else ((res_7)) in 
+      (res_7))
+    res_7 in 
+  res_7.
+
+Inductive map_update :=
+| Update : (int64 × seq_map) -> map_update.
+
+Definition eqb_map_update (x y : map_update) : bool :=
+match x with
+   | Update a => match y with | Update b => a =.? b end
+   end.
+
+Definition eqb_leibniz_map_update (x y : map_update) : eqb_map_update x y = true <-> x = y.
+Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. intros ; subst ; destruct y ; try reflexivity ; try (apply eqb_refl). Qed.
+
+Instance eq_dec_map_update : EqDec (map_update) :=
+Build_EqDec (map_update) (eqb_map_update) (eqb_leibniz_map_update).
+
+ Global Instance show_map_update : Show (map_update) :=
+  @Build_Show (map_update) (fun x =>
+ match x with
+ Update a => ("Update" ++ show a)%string
+ end).
+Definition g_map_update : G (map_update) := oneOf_ (bindGen arbitrary (fun a => returnGen (Update a))) [bindGen arbitrary (fun a => returnGen (Update a))].
+#[global] Instance gen_map_update : Gen (map_update) := Build_Gen map_update g_map_update.
+
+
+Definition seq_map_update_entry
+  (m_9 : seq_map)
+  (sender_address_10 : user_address)
+  (amount_11 : int64)
+  : map_update :=
+  let 'SeqMap ((m0_12, m1_13)) :=
+    m_9 in 
+  let res_14 : map_update :=
+    Update ((
+	amount_11,
+	SeqMap ((
+	    seq_concat ((m0_12)) (sender_address_10),
+	    seq_concat ((m1_13)) (u64_to_be_bytes (amount_11))
+	  ))
+      )) in 
+  let res_14 :=
+    foldi (usize 0) ((seq_len ((m0_12))) / (usize 32)) (fun x_15 res_14 =>
+      let '(res_14) :=
+	if (array_from_seq (32) (seq_slice ((m0_12)) ((x_15) * (usize 32)) (
+	      usize 32))) array_eq (sender_address_10):bool then (let res_14 :=
+	    Update ((
+		amount_11,
+		SeqMap ((
+		    seq_update ((m0_12)) ((x_15) * (usize 32)) (
+		      sender_address_10),
+		    seq_update ((m1_13)) ((x_15) * (usize 8)) (u64_to_be_bytes (
+			amount_11))
+		  ))
+	      )) in 
+	  (res_14)) else ((res_14)) in 
+      (res_14))
+    res_14 in 
+  res_14.
+
+Inductive bid_error :=
+| ContractSender : bid_error
+| BidTooLow : bid_error
+| BidsOverWaitingForAuctionFinalization : bid_error
+| AuctionIsFinalized : bid_error.
+
 #+end_src
