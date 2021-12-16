@@ -48,6 +48,7 @@
 #+end_src
 
 ** Rust code
+Types
 #+begin_src rust :tangle ../../examples/auction/src/auction.rs :eval never
 array!(UserAddress, 32, u8); // U8
 
@@ -77,7 +78,9 @@ pub struct State(
     pub Timestamp,
     pub SeqMap,
 );
-
+#+end_src
+Fresh state function
+#+begin_src rust :tangle ../../examples/auction/src/auction.rs :eval never
 // #[cfg_attr(feature = "use_attributes", unsafe_hacspec)]
 // #[cfg_attr(feature = "use_attributes", ensures(true))]
 // #[hacspec_unsafe]
@@ -95,12 +98,9 @@ pub fn fresh_state(itm: Itemtyp, exp: u64) -> State {
         SeqMap(PublicByteSeq::new(0_usize), PublicByteSeq::new(0_usize)),
     )
 }
-
-// #[derive(Clone, PartialEq)]
-// pub enum MapEntry {
-//     Entry(u64, SeqMap),
-// }
-
+#+end_src
+Seq map entry
+#+begin_src rust :tangle ../../examples/auction/src/auction.rs :eval never
 // #[ensures(true)]
 // #[ensures(result === )]
 fn seq_map_entry(m: SeqMap, sender_address: UserAddress) -> (u64, SeqMap) {
@@ -127,7 +127,9 @@ fn seq_map_entry(m: SeqMap, sender_address: UserAddress) -> (u64, SeqMap) {
 
     res
 }
-
+#+end_src
+Map Update and result type
+#+begin_src rust :tangle ../../examples/auction/src/auction.rs :eval never
 #[derive(Clone, PartialEq)]
 pub enum MapUpdate {
     Update(u64, SeqMap),
@@ -159,7 +161,9 @@ fn seq_map_update_entry(m: SeqMap, sender_address: UserAddress, amount: u64) -> 
 
     res
 }
-
+#+end_src
+Auction bid and intermediate types
+#+begin_src rust :tangle ../../examples/auction/src/auction.rs :eval never
 #[derive(Clone, PartialEq)]
 pub enum BidError {
     ContractSender, // raised if a contract, as opposed to account, tries to bid
@@ -221,7 +225,9 @@ pub fn auction_bid(ctx: Context, amount: u64, state: State) -> AuctionBidResult 
 
     AuctionBidResult::Ok(State(auction_state, updated_bid, st2, expiry, updated_map))
 }
-
+#+end_src
+Finalize function and types
+#+begin_src rust :tangle ../../examples/auction/src/auction.rs :eval never
 pub type FinalizeContext = (u64, UserAddress, u64);
 
 /// For errors in which the `finalize` function can result
@@ -313,7 +319,9 @@ pub fn auction_finalize(ctx: FinalizeContext, state: State) -> AuctionFinalizeRe
 
     result
 }
-
+#+end_src
+** Rust Tests
+#+begin_src rust :tangle ../../examples/auction/src/auction.rs :eval never
 // #[cfg(test)]
 // extern crate quickcheck;
 // #[cfg(test)]
@@ -531,7 +539,7 @@ fn test_auction_bid_and_finalize(item: PublicByteSeq, time : u64, input_amount :
         AuctionBidResult::Err(e) => e == BidError::AuctionIsFinalized,
         AuctionBidResult::Ok(_) => false,
     };
-    
+
     result_0 && result_1 && result_2 && result_3 && result_4 && result_5 && result_6 && result_7
 }
 #+end_src
@@ -577,6 +585,8 @@ fn test_auction_bid_and_finalize(item: PublicByteSeq, time : u64, input_amount :
   import functools
 
   lower, upper = map(int, ARG.split())
+  if upper != -1:
+    upper = lower + upper
 
   def boundery(start, end, lines, i):
     test = lines[i][:len(start)] == start
@@ -615,6 +625,7 @@ fn test_auction_bid_and_finalize(item: PublicByteSeq, time : u64, input_amount :
 			      ["Theorem",set({".\n"})],
 			      ["Global Instance",set({".\n"})],
 			      ["Proof",set({"Admitted", "Qed"})],
+			      ["QuickChick",set({".\n"})],
 			      ],
 			     (False, "", i))
     if a:
@@ -665,7 +676,21 @@ Load Sha256.
 Load Aes.
 #+end_src
 
-#+CALL: split-file(ARG="0 10")
+# #+NAME: next
+# #+begin_src sh :results value file
+#   cat Auction.v
+# #+end_src
+
+#+NAME: next
+#+begin_src python :var ARG="0 0" :var linum="0 0" :results output replace
+  a,b = map(int, linum.split())
+  c,d = map(int, ARG.split())
+  print (a+b+c,d)
+#+end_src
+
+#+NAME: linum0
+#+CALL: next(ARG="0 10", linum="0 0")
+#+CALL: split-file(ARG=linum0)
 #+RESULTS:
 #+begin_src coq :tangle Auction.v :results none
 (** This file was automatically generated using Hacspec **)
@@ -680,13 +705,17 @@ Require Import QuickChickLib.
 Require Import Hacspec.Lib.
 #+end_src
 
-#+CALL: split-file(ARG="11 12")
+#+NAME: linum1
+#+CALL: next(ARG="1 1", linum=linum0)
+#+CALL: split-file(ARG=linum1)
 #+RESULTS:
 #+begin_src coq :tangle Auction.v :results none
 Definition user_address := nseq (int8) (usize 32).
 #+end_src
 
-#+CALL: split-file(ARG="13 19")
+#+NAME: linum2
+#+CALL: next(ARG="1 6", linum=linum1)
+#+CALL: split-file(ARG=linum2)
 #+RESULTS:
 #+begin_src coq :tangle Auction.v :results none
 Inductive auction_state :=
@@ -703,7 +732,9 @@ Definition eqb_leibniz_auction_state (x y : auction_state) : eqb_auction_state x
 Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. intros ; subst ; destruct y ; try reflexivity ; try (apply eqb_refl). Qed.
 #+end_src
 
-#+CALL: split-file(ARG="20 25")
+#+NAME: linum3
+#+CALL: next(ARG="1 5", linum=linum2)
+#+CALL: split-file(ARG=linum3)
 #+RESULTS:
 #+begin_src coq :tangle Auction.v :results none
 Instance eq_dec_auction_state : EqDec (auction_state) :=
@@ -719,8 +750,9 @@ Definition g_auction_state : G (auction_state) := oneOf_ (returnGen NotSoldYet) 
 Global Instance gen_auction_state : Gen (auction_state) := Build_Gen auction_state g_auction_state.
 #+end_src
 
-#+CALL: split-file(ARG="26 38")
-
+#+NAME: linum4
+#+CALL: next(ARG="1 12", linum=linum3)
+#+CALL: split-file(ARG=linum4)
 #+RESULTS:
 #+begin_src coq :tangle Auction.v :results none
 Inductive seq_map :=
@@ -746,8 +778,9 @@ Definition g_seq_map : G (seq_map) := oneOf_ (bindGen arbitrary (fun a => return
 Global Instance gen_seq_map : Gen (seq_map) := Build_Gen seq_map g_seq_map.
 #+end_src
 
-#+CALL: split-file(ARG="39 44")
-
+#+NAME: linum5
+#+CALL: next(ARG="1 5", linum=linum4)
+#+CALL: split-file(ARG=linum5)
 #+RESULTS:
 #+begin_src coq :tangle Auction.v :results none
 Notation "'amount'" := (int64) : hacspec_scope.
@@ -757,7 +790,9 @@ Notation "'timestamp'" := (int64) : hacspec_scope.
 Notation "'itemtyp'" := (public_byte_seq) : hacspec_scope.
 #+end_src
 
-#+CALL: split-file(ARG="45 57")
+#+NAME: linum6
+#+CALL: next(ARG="1 12", linum=linum5)
+#+CALL: split-file(ARG=linum6)
 #+RESULTS:
 #+begin_src coq :tangle Auction.v :results none
 Inductive state :=
@@ -783,7 +818,9 @@ Definition g_state : G (state) := oneOf_ (bindGen arbitrary (fun a => returnGen 
 Global Instance gen_state : Gen (state) := Build_Gen state g_state.
 #+end_src
 
-#+CALL: split-file(ARG="58 62")
+#+NAME: linum7
+#+CALL: next(ARG="1 4", linum=linum6)
+#+CALL: split-file(ARG=linum7)
 #+RESULTS:
 #+begin_src coq :tangle Auction.v :results none
 Definition fresh_state (itm_0 : itemtyp) (exp_1 : int64) : state :=
@@ -804,7 +841,9 @@ true.
 Proof. Admitted.
 #+end_src
 
-#+CALL: split-file(ARG="63 64")
+#+NAME: linum8
+#+CALL: next(ARG="1 1", linum=linum7)
+#+CALL: split-file(ARG=linum8)
 #+RESULTS:
 #+begin_src coq :tangle Auction.v :results none
 Definition seq_map_entry
@@ -837,7 +876,9 @@ Definition seq_map_entry
   res_7.
 #+end_src
 
-#+CALL: split-file(ARG="65 77")
+#+NAME: linum9
+#+CALL: next(ARG="1 12", linum=linum8)
+#+CALL: split-file(ARG=linum9)
 #+RESULTS:
 #+begin_src coq :tangle Auction.v :results none
 Inductive map_update :=
@@ -863,8 +904,9 @@ Definition g_map_update : G (map_update) := oneOf_ (bindGen arbitrary (fun a => 
 Global Instance gen_map_update : Gen (map_update) := Build_Gen map_update g_map_update.
 #+end_src
 
-#+CALL: split-file(ARG="78 79")
-
+#+NAME: linum10
+#+CALL: next(ARG="1 1", linum=linum9)
+#+CALL: split-file(ARG=linum10)
 #+RESULTS:
 #+begin_src coq :tangle Auction.v :results none
 Definition seq_map_update_entry
@@ -902,301 +944,11 @@ Definition seq_map_update_entry
   res_14.
 #+end_src
 
-
-#+CALL: lines(ARG="1,10p")
-
+#+NAME: linum11
+#+CALL: next(ARG="1 12", linum=linum10)
+#+CALL: split-file(ARG=linum11)
 #+RESULTS:
 #+begin_src coq :tangle Auction.v :results none
-(** This file was automatically generated using Hacspec **)
-Require Import Lib MachineIntegers.
-From Coq Require Import ZArith.
-Import List.ListNotations.
-Open Scope Z_scope.
-Open Scope bool_scope.
-Open Scope hacspec_scope.
-From QuickChick Require Import QuickChick.
-Require Import QuickChickLib.
-Require Import Hacspec.Lib.
-#+end_src
-
-#+CALL: lines(ARG="12,12p;13q")
-
-#+RESULTS:
-#+begin_src coq :tangle Auction.v :results none
-Definition user_address := nseq (int8) (usize 32).
-#+end_src
-
-#+CALL: lines(ARG="14,37p")
-
-#+RESULTS:
-#+begin_src coq :tangle Auction.v :results none
-Inductive auction_state :=
-| NotSoldYet : auction_state
-| Sold : user_address -> auction_state.
-
-Definition eqb_auction_state (x y : auction_state) : bool :=
-match x with
-   | NotSoldYet => match y with | NotSoldYet=> true | _ => false end
-   | Sold a => match y with | Sold b => a =.? b | _ => false end
-   end.
-
-Definition eqb_leibniz_auction_state (x y : auction_state) : eqb_auction_state x y = true <-> x = y.
-Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. intros ; subst ; destruct y ; try reflexivity ; try (apply eqb_refl). Qed.
-
-Instance eq_dec_auction_state : EqDec (auction_state) :=
-Build_EqDec (auction_state) (eqb_auction_state) (eqb_leibniz_auction_state).
-
- Global Instance show_auction_state : Show (auction_state) :=
-  @Build_Show (auction_state) (fun x =>
- match x with
- NotSoldYet => ("NotSoldYet")%string
- | Sold a => ("Sold" ++ show a)%string
- end).
-Definition g_auction_state : G (auction_state) := oneOf_ (returnGen NotSoldYet) [returnGen NotSoldYet;bindGen arbitrary (fun a => returnGen (Sold a))].
-#[global] Instance gen_auction_state : Gen (auction_state) := Build_Gen auction_state g_auction_state.
-#+end_src
-
-#+CALL: lines(ARG="43,60p")
-
-#+RESULTS:
-#+begin_src coq :tangle Auction.v :results none
-Definition eqb_seq_map (x y : seq_map) : bool :=
-match x with
-   | SeqMap a => match y with | SeqMap b => a =.? b end
-   end.
-
-Definition eqb_leibniz_seq_map (x y : seq_map) : eqb_seq_map x y = true <-> x = y.
-Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. intros ; subst ; destruct y ; try reflexivity ; try (apply eqb_refl). Qed.
-
-Instance eq_dec_seq_map : EqDec (seq_map) :=
-Build_EqDec (seq_map) (eqb_seq_map) (eqb_leibniz_seq_map).
-
- Global Instance show_seq_map : Show (seq_map) :=
-  @Build_Show (seq_map) (fun x =>
- match x with
- SeqMap a => ("SeqMap" ++ show a)%string
- end).
-Definition g_seq_map : G (seq_map) := oneOf_ (bindGen arbitrary (fun a => returnGen (SeqMap a))) [bindGen arbitrary (fun a => returnGen (SeqMap a))].
-#[global] Instance gen_seq_map : Gen (seq_map) := Build_Gen seq_map g_seq_map.
-#+end_src
-
-#+CALL: lines(ARG="63,67p")
-
-#+RESULTS:
-#+begin_src coq :tangle Auction.v :results none
-Notation "'amount'" := (int64) : hacspec_scope.
-
-Notation "'timestamp'" := (int64) : hacspec_scope.
-
-Notation "'itemtyp'" := (public_byte_seq) : hacspec_scope.
-#+end_src
-
-#+CALL: lines(ARG="69,89p")
-
-#+RESULTS:
-#+begin_src coq :tangle Auction.v :results none
-Inductive state :=
-| State : (auction_state × amount × itemtyp × timestamp × seq_map) -> state.
-
-Definition eqb_state (x y : state) : bool :=
-match x with
-   | State a => match y with | State b => a =.? b end
-   end.
-
-Definition eqb_leibniz_state (x y : state) : eqb_state x y = true <-> x = y.
-Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. intros ; subst ; destruct y ; try reflexivity ; try (apply eqb_refl). Qed.
-
-Instance eq_dec_state : EqDec (state) :=
-Build_EqDec (state) (eqb_state) (eqb_leibniz_state).
-
- Global Instance show_state : Show (state) :=
-  @Build_Show (state) (fun x =>
- match x with
- State a => ("State" ++ show a)%string
- end).
-Definition g_state : G (state) := oneOf_ (bindGen arbitrary (fun a => returnGen (State a))) [bindGen arbitrary (fun a => returnGen (State a))].
-#[global] Instance gen_state : Gen (state) := Build_Gen state g_state.
-#+end_src
-
-#+CALL: lines(ARG="92,107p")
-
-#+RESULTS:
-#+begin_src coq :tangle Auction.v :results none
-Definition fresh_state (itm_0 : itemtyp) (exp_1 : int64) : state :=
-  State ((
-      NotSoldYet,
-      @repr WORDSIZE64 0,
-      itm_0,
-      exp_1,
-      SeqMap ((
-          seq_new_ (@repr WORDSIZE8 0) (usize 0),
-          seq_new_ (@repr WORDSIZE8 0) (usize 0)
-        ))
-    )).
-
-Theorem ensures_fresh_state : forall result_2 (itm_0 : itemtyp) (exp_1 : int64),
- @fresh_state itm_0 exp_1 = result_2 ->
- true.
- Proof. Admitted.
-#+end_src
-
-
-#+CALL: lines(ARG="100,9999999p")
-
-#+RESULTS:
-#+begin_src coq :tangle Auction.v :results none
-Definition eqb_seq_map (x y : seq_map) : bool :=
-match x with
-   | SeqMap a => match y with | SeqMap b => a =.? b end
-   end.
-
-Definition eqb_leibniz_seq_map (x y : seq_map) : eqb_seq_map x y = true <-> x = y.
-Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. intros ; subst ; destruct y ; try reflexivity ; try (apply eqb_refl). Qed.
-
-Instance eq_dec_seq_map : EqDec (seq_map) :=
-Build_EqDec (seq_map) (eqb_seq_map) (eqb_leibniz_seq_map).
-
- Global Instance show_seq_map : Show (seq_map) :=
-  @Build_Show (seq_map) (fun x =>
- match x with
- SeqMap a => ("SeqMap" ++ show a)%string
- end).
-Definition g_seq_map : G (seq_map) := oneOf_ (bindGen arbitrary (fun a => returnGen (SeqMap a))) [bindGen arbitrary (fun a => returnGen (SeqMap a))].
-#[global] Instance gen_seq_map : Gen (seq_map) := Build_Gen seq_map g_seq_map.
-
-
-Notation "'amount'" := (int64) : hacspec_scope.
-
-Notation "'timestamp'" := (int64) : hacspec_scope.
-
-Notation "'itemtyp'" := (public_byte_seq) : hacspec_scope.
-
-Inductive state :=
-| State : (auction_state × amount × itemtyp × timestamp × seq_map) -> state.
-
-Definition eqb_state (x y : state) : bool :=
-match x with
-   | State a => match y with | State b => a =.? b end
-   end.
-
-Definition eqb_leibniz_state (x y : state) : eqb_state x y = true <-> x = y.
-Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. intros ; subst ; destruct y ; try reflexivity ; try (apply eqb_refl). Qed.
-
-Instance eq_dec_state : EqDec (state) :=
-Build_EqDec (state) (eqb_state) (eqb_leibniz_state).
-
- Global Instance show_state : Show (state) :=
-  @Build_Show (state) (fun x =>
- match x with
- State a => ("State" ++ show a)%string
- end).
-Definition g_state : G (state) := oneOf_ (bindGen arbitrary (fun a => returnGen (State a))) [bindGen arbitrary (fun a => returnGen (State a))].
-#[global] Instance gen_state : Gen (state) := Build_Gen state g_state.
-
-
-Definition fresh_state (itm_0 : itemtyp) (exp_1 : int64) : state :=
-  State ((
-      NotSoldYet,
-      @repr WORDSIZE64 0,
-      itm_0,
-      exp_1,
-      SeqMap ((
-          seq_new_ (@repr WORDSIZE8 0) (usize 0),
-          seq_new_ (@repr WORDSIZE8 0) (usize 0)
-        ))
-    )).
-
-Theorem ensures_fresh_state : forall result_2 (itm_0 : itemtyp) (exp_1 : int64),
- @fresh_state itm_0 exp_1 = result_2 ->
- true.
- Proof. Admitted.
-
-Definition seq_map_entry
-  (m_3 : seq_map)
-  (sender_address_4 : user_address)
-  : (int64 × seq_map) :=
-  let 'SeqMap ((m0_5, m1_6)) :=
-    m_3 in 
-  let res_7 : (int64 × seq_map) :=
-    (
-      @repr WORDSIZE64 0,
-      SeqMap ((
-          seq_concat ((m0_5)) (sender_address_4),
-          seq_concat ((m1_6)) (u64_to_be_bytes (@repr WORDSIZE64 0))
-        ))
-    ) in 
-  let res_7 :=
-    foldi (usize 0) ((seq_len ((m0_5))) / (usize 32)) (fun x_8 res_7 =>
-      let '(res_7) :=
-        if (array_from_seq (32) (seq_slice ((m0_5)) ((x_8) * (usize 32)) (
-              usize 32))) array_eq (sender_address_4):bool then (let res_7 :=
-            (
-              u64_from_be_bytes (array_from_seq (8) (seq_slice ((m1_6)) ((
-                      x_8) * (usize 8)) (usize 8))),
-              SeqMap (((m0_5), (m1_6)))
-            ) in 
-          (res_7)) else ((res_7)) in 
-      (res_7))
-    res_7 in 
-  res_7.
-
-Inductive map_update :=
-| Update : (int64 × seq_map) -> map_update.
-
-Definition eqb_map_update (x y : map_update) : bool :=
-match x with
-   | Update a => match y with | Update b => a =.? b end
-   end.
-
-Definition eqb_leibniz_map_update (x y : map_update) : eqb_map_update x y = true <-> x = y.
-Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. intros ; subst ; destruct y ; try reflexivity ; try (apply eqb_refl). Qed.
-
-Instance eq_dec_map_update : EqDec (map_update) :=
-Build_EqDec (map_update) (eqb_map_update) (eqb_leibniz_map_update).
-
- Global Instance show_map_update : Show (map_update) :=
-  @Build_Show (map_update) (fun x =>
- match x with
- Update a => ("Update" ++ show a)%string
- end).
-Definition g_map_update : G (map_update) := oneOf_ (bindGen arbitrary (fun a => returnGen (Update a))) [bindGen arbitrary (fun a => returnGen (Update a))].
-#[global] Instance gen_map_update : Gen (map_update) := Build_Gen map_update g_map_update.
-
-
-Definition seq_map_update_entry
-  (m_9 : seq_map)
-  (sender_address_10 : user_address)
-  (amount_11 : int64)
-  : map_update :=
-  let 'SeqMap ((m0_12, m1_13)) :=
-    m_9 in 
-  let res_14 : map_update :=
-    Update ((
-        amount_11,
-        SeqMap ((
-            seq_concat ((m0_12)) (sender_address_10),
-            seq_concat ((m1_13)) (u64_to_be_bytes (amount_11))
-          ))
-      )) in 
-  let res_14 :=
-    foldi (usize 0) ((seq_len ((m0_12))) / (usize 32)) (fun x_15 res_14 =>
-      let '(res_14) :=
-        if (array_from_seq (32) (seq_slice ((m0_12)) ((x_15) * (usize 32)) (
-              usize 32))) array_eq (sender_address_10):bool then (let res_14 :=
-            Update ((
-                amount_11,
-                SeqMap ((
-                    seq_update ((m0_12)) ((x_15) * (usize 32)) (
-                      sender_address_10),
-                    seq_update ((m1_13)) ((x_15) * (usize 8)) (u64_to_be_bytes (
-                        amount_11))
-                  ))
-              )) in 
-          (res_14)) else ((res_14)) in 
-      (res_14))
-    res_14 in 
-  res_14.
-
 Inductive bid_error :=
 | ContractSender : bid_error
 | BidTooLow : bid_error
@@ -1225,8 +977,8 @@ Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz
 Instance eq_dec_bid_error : EqDec (bid_error) :=
 Build_EqDec (bid_error) (eqb_bid_error) (eqb_leibniz_bid_error).
 
- Global Instance show_bid_error : Show (bid_error) :=
-  @Build_Show (bid_error) (fun x =>
+Global Instance show_bid_error : Show (bid_error) :=
+ @Build_Show (bid_error) (fun x =>
  match x with
  ContractSender => ("ContractSender")%string
  | BidTooLow => ("BidTooLow")%string
@@ -1235,9 +987,14 @@ Build_EqDec (bid_error) (eqb_bid_error) (eqb_leibniz_bid_error).
  | AuctionIsFinalized => ("AuctionIsFinalized")%string
  end).
 Definition g_bid_error : G (bid_error) := oneOf_ (returnGen ContractSender) [returnGen ContractSender;returnGen BidTooLow;returnGen BidsOverWaitingForAuctionFinalization;returnGen AuctionIsFinalized].
-#[global] Instance gen_bid_error : Gen (bid_error) := Build_Gen bid_error g_bid_error.
+Global Instance gen_bid_error : Gen (bid_error) := Build_Gen bid_error g_bid_error.
+#+end_src
 
-
+#+NAME: linum12
+#+CALL: next(ARG="1 12", linum=linum11)
+#+CALL: split-file(ARG=linum12)
+#+RESULTS:
+#+begin_src coq :tangle Auction.v :results none
 Inductive user_address_set :=
 | UserAddressSome : user_address -> user_address_set
 | UserAddressNone : user_address_set.
@@ -1258,16 +1015,21 @@ Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz
 Instance eq_dec_user_address_set : EqDec (user_address_set) :=
 Build_EqDec (user_address_set) (eqb_user_address_set) (eqb_leibniz_user_address_set).
 
- Global Instance show_user_address_set : Show (user_address_set) :=
-  @Build_Show (user_address_set) (fun x =>
+Global Instance show_user_address_set : Show (user_address_set) :=
+ @Build_Show (user_address_set) (fun x =>
  match x with
  UserAddressSome a => ("UserAddressSome" ++ show a)%string
  | UserAddressNone => ("UserAddressNone")%string
  end).
 Definition g_user_address_set : G (user_address_set) := oneOf_ (bindGen arbitrary (fun a => returnGen (UserAddressSome a))) [bindGen arbitrary (fun a => returnGen (UserAddressSome a));returnGen UserAddressNone].
-#[global] Instance gen_user_address_set : Gen (user_address_set) := Build_Gen user_address_set g_user_address_set.
+Global Instance gen_user_address_set : Gen (user_address_set) := Build_Gen user_address_set g_user_address_set.
+#+end_src
 
-
+#+NAME: linum13
+#+CALL: next(ARG="1 4", linum=linum12)
+#+CALL: split-file(ARG=linum13)
+#+RESULTS:
+#+begin_src coq :tangle Auction.v :results none
 Notation "'context'" := ((int64 × user_address_set)) : hacspec_scope.
 Instance show_context : Show (context) :=
 Build_Show context (fun x =>
@@ -1278,10 +1040,21 @@ bindGen arbitrary (fun x0 : int64 =>
   bindGen arbitrary (fun x1 : user_address_set =>
   returnGen (x0,x1))).
 Instance gen_context : Gen (context) := Build_Gen context g_context.
+#+end_src
 
-
+#+NAME: linum14
+#+CALL: next(ARG="1 1", linum=linum13)
+#+CALL: split-file(ARG=linum14)
+#+RESULTS:
+#+begin_src coq :tangle Auction.v :results none
 Notation "'auction_bid_result'" := ((result state bid_error)) : hacspec_scope.
+#+end_src
 
+#+NAME: linum15
+#+CALL: next(ARG="1 1", linum=linum14)
+#+CALL: split-file(ARG=linum15)
+#+RESULTS:
+#+begin_src coq :tangle Auction.v :results none
 Definition auction_bid
   (ctx_16 : context)
   (amount_17 : int64)
@@ -1358,7 +1131,14 @@ Definition auction_bid
         expiry_22,
         updated_map_31
       ))))))).
+#+end_src
 
+
+#+NAME: linum16
+#+CALL: next(ARG="1 4", linum=linum15)
+#+CALL: split-file(ARG=linum16)
+#+RESULTS:
+#+begin_src coq :tangle Auction.v :results none
 Notation "'finalize_context'" := ((int64 × user_address × int64
 )) : hacspec_scope.
 Instance show_finalize_context : Show (finalize_context) :=
@@ -1373,8 +1153,13 @@ bindGen arbitrary (fun x0 : int64 =>
   bindGen arbitrary (fun x2 : int64 =>
   returnGen (x0,x1,x2)))).
 Instance gen_finalize_context : Gen (finalize_context) := Build_Gen finalize_context g_finalize_context.
+#+end_src
 
-
+#+NAME: linum17
+#+CALL: next(ARG="1 12", linum=linum16)
+#+CALL: split-file(ARG=linum17)
+#+RESULTS:
+#+begin_src coq :tangle Auction.v :results none
 Inductive finalize_error :=
 | BidMapError : finalize_error
 | AuctionStillActive : finalize_error
@@ -1397,17 +1182,22 @@ Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz
 Instance eq_dec_finalize_error : EqDec (finalize_error) :=
 Build_EqDec (finalize_error) (eqb_finalize_error) (eqb_leibniz_finalize_error).
 
- Global Instance show_finalize_error : Show (finalize_error) :=
-  @Build_Show (finalize_error) (fun x =>
+Global Instance show_finalize_error : Show (finalize_error) :=
+ @Build_Show (finalize_error) (fun x =>
  match x with
  BidMapError => ("BidMapError")%string
  | AuctionStillActive => ("AuctionStillActive")%string
  | AuctionFinalized => ("AuctionFinalized")%string
  end).
 Definition g_finalize_error : G (finalize_error) := oneOf_ (returnGen BidMapError) [returnGen BidMapError;returnGen AuctionStillActive;returnGen AuctionFinalized].
-#[global] Instance gen_finalize_error : Gen (finalize_error) := Build_Gen finalize_error g_finalize_error.
+Global Instance gen_finalize_error : Gen (finalize_error) := Build_Gen finalize_error g_finalize_error.
+#+end_src
 
-
+#+NAME: linum18
+#+CALL: next(ARG="1 12", linum=linum17)
+#+CALL: split-file(ARG=linum18)
+#+RESULTS:
+#+begin_src coq :tangle Auction.v :results none
 Inductive finalize_action :=
 | Accept : finalize_action
 | SimpleTransfer : public_byte_seq -> finalize_action.
@@ -1428,16 +1218,21 @@ Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz
 Instance eq_dec_finalize_action : EqDec (finalize_action) :=
 Build_EqDec (finalize_action) (eqb_finalize_action) (eqb_leibniz_finalize_action).
 
- Global Instance show_finalize_action : Show (finalize_action) :=
-  @Build_Show (finalize_action) (fun x =>
+Global Instance show_finalize_action : Show (finalize_action) :=
+ @Build_Show (finalize_action) (fun x =>
  match x with
  Accept => ("Accept")%string
  | SimpleTransfer a => ("SimpleTransfer" ++ show a)%string
  end).
 Definition g_finalize_action : G (finalize_action) := oneOf_ (returnGen Accept) [returnGen Accept;bindGen arbitrary (fun a => returnGen (SimpleTransfer a))].
-#[global] Instance gen_finalize_action : Gen (finalize_action) := Build_Gen finalize_action g_finalize_action.
+Global Instance gen_finalize_action : Gen (finalize_action) := Build_Gen finalize_action g_finalize_action.
+#+end_src
 
-
+#+NAME: linum19
+#+CALL: next(ARG="1 12", linum=linum18)
+#+CALL: split-file(ARG=linum19)
+#+RESULTS:
+#+begin_src coq :tangle Auction.v :results none
 Inductive bid_remain :=
 | BidNone : bid_remain
 | BidSome : int64 -> bid_remain.
@@ -1454,19 +1249,30 @@ Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz
 Instance eq_dec_bid_remain : EqDec (bid_remain) :=
 Build_EqDec (bid_remain) (eqb_bid_remain) (eqb_leibniz_bid_remain).
 
- Global Instance show_bid_remain : Show (bid_remain) :=
-  @Build_Show (bid_remain) (fun x =>
+Global Instance show_bid_remain : Show (bid_remain) :=
+ @Build_Show (bid_remain) (fun x =>
  match x with
  BidNone => ("BidNone")%string
  | BidSome a => ("BidSome" ++ show a)%string
  end).
 Definition g_bid_remain : G (bid_remain) := oneOf_ (returnGen BidNone) [returnGen BidNone;bindGen arbitrary (fun a => returnGen (BidSome a))].
-#[global] Instance gen_bid_remain : Gen (bid_remain) := Build_Gen bid_remain g_bid_remain.
+Global Instance gen_bid_remain : Gen (bid_remain) := Build_Gen bid_remain g_bid_remain.
+#+end_src
 
-
+#+NAME: linum20
+#+CALL: next(ARG="1 1", linum=linum19)
+#+CALL: split-file(ARG=linum20)
+#+RESULTS:
+#+begin_src coq :tangle Auction.v :results none
 Notation "'auction_finalize_result'" := ((result (state × finalize_action
   ) finalize_error)) : hacspec_scope.
+#+end_src
 
+#+NAME: linum21
+#+CALL: next(ARG="1 1", linum=linum20)
+#+CALL: split-file(ARG=linum21)
+#+RESULTS:
+#+begin_src coq :tangle Auction.v :results none
 Definition auction_finalize
   (ctx_34 : finalize_context)
   (state_35 : state)
@@ -1554,7 +1360,13 @@ Definition auction_finalize
       bind ((result_42)) (fun _ => Ok ((auction_state_36, result_42)))))
   else ((auction_state_36, result_42)) >> (fun '(auction_state_36, result_42) =>
   result_42))).
+#+end_src
 
+#+NAME: linum22
+#+CALL: next(ARG="1 1", linum=linum21)
+#+CALL: split-file(ARG=linum22)
+#+RESULTS:
+#+begin_src coq :tangle Auction.v :results none
 Definition auction_test_init
   (item_53 : public_byte_seq)
   (time_54 : int64)
@@ -1569,16 +1381,34 @@ Definition auction_test_init
             seq_new_ (@repr WORDSIZE8 0) (usize 0)
           ))
       ))).
+#+end_src
 
+#+NAME: linum23
+#+CALL: next(ARG="1 2", linum=linum22)
+#+CALL: split-file(ARG=linum23)
+#+RESULTS:
+#+begin_src coq :tangle Auction.v :results none
 Theorem ensures_auction_test_init : forall result_2 (
   item_53 : public_byte_seq) (time_54 : int64),
- @auction_test_init item_53 time_54 = result_2 ->
- result_2 = true.
- Proof. Admitted.
+@auction_test_init item_53 time_54 = result_2 ->
+result_2 = true.
+Proof. Admitted.
+#+end_src
+
+#+NAME: linum24
+#+CALL: next(ARG="0 1", linum=linum23)
+#+CALL: split-file(ARG=linum24)
+#+RESULTS:
+#+begin_src coq :tangle Auction.v :results none
 QuickChick (
   forAll g_public_byte_seq (fun item_53 : public_byte_seq =>forAll g_int64 (fun time_54 : int64 =>auction_test_init item_53 time_54))).
+#+end_src
 
-
+#+NAME: linum25
+#+CALL: next(ARG="1 1", linum=linum24)
+#+CALL: split-file(ARG=linum25)
+#+RESULTS:
+#+begin_src coq :tangle Auction.v :results none
 Definition verify_bid
   (item_55 : public_byte_seq)
   (state_56 : state)
@@ -1612,7 +1442,13 @@ Definition verify_bid
           (bid_map_68)
         )))
   ).
+#+end_src
 
+#+NAME: linum26
+#+CALL: next(ARG="1 1", linum=linum25)
+#+CALL: split-file(ARG=linum26)
+#+RESULTS:
+#+begin_src coq :tangle Auction.v :results none
 Definition useraddress_from_u8 (i_70 : int8) : user_address :=
   array_from_list int8 (let l :=
       [
@@ -1649,7 +1485,13 @@ Definition useraddress_from_u8 (i_70 : int8) : user_address :=
         i_70;
         i_70
       ] in  l).
+#+end_src
 
+#+NAME: linum27
+#+CALL: next(ARG="1 1", linum=linum26)
+#+CALL: split-file(ARG=linum27)
+#+RESULTS:
+#+begin_src coq :tangle Auction.v :results none
 Definition new_account
   (time_71 : int64)
   (i_72 : int8)
@@ -1659,7 +1501,13 @@ Definition new_account
   let ctx_74 : (int64 × user_address_set) :=
     (time_71, UserAddressSome (addr_73)) in 
   (addr_73, ctx_74).
+#+end_src
 
+#+NAME: linum28
+#+CALL: next(ARG="1 1", linum=linum27)
+#+CALL: split-file(ARG=linum28)
+#+RESULTS:
+#+begin_src coq :tangle Auction.v :results none
 Definition test_auction_bid_and_finalize
   (item_75 : public_byte_seq)
   (time_76 : int64)
@@ -1746,14 +1594,25 @@ Definition test_auction_bid_and_finalize
   (((((((result_0_88) && (result_1_92)) && (result_2_98)) && (
             result_3_104)) && (result_4_112)) && (result_5_115)) && (
       result_6_118)) && (result_7_123).
+#+end_src
 
+#+NAME: linum29
+#+CALL: next(ARG="1 2", linum=linum28)
+#+CALL: split-file(ARG=linum29)
+#+RESULTS:
+#+begin_src coq :tangle Auction.v :results none
 Theorem ensures_test_auction_bid_and_finalize : forall result_2 (
   item_75 : public_byte_seq) (time_76 : int64) (input_amount_77 : int64),
- @test_auction_bid_and_finalize item_75 time_76 input_amount_77 = result_2 ->
- result_2 = true.
- Proof. Admitted.
+@test_auction_bid_and_finalize item_75 time_76 input_amount_77 = result_2 ->
+result_2 = true.
+Proof. Admitted.
+#+end_src
+
+#+NAME: linum30
+#+CALL: next(ARG="0 1", linum=linum29)
+#+CALL: split-file(ARG=linum30)
+#+RESULTS:
+#+begin_src coq :tangle Auction.v :results none
 QuickChick (
   forAll g_public_byte_seq (fun item_75 : public_byte_seq =>forAll g_int64 (fun time_76 : int64 =>forAll g_int64 (fun input_amount_77 : int64 =>test_auction_bid_and_finalize item_75 time_76 input_amount_77)))).
-
-
 #+end_src
