@@ -1,4 +1,4 @@
--R ../../../coq/src/ Hacspec
+# -R ../../../coq/src/ Hacspec
 -arg -w
 -arg all
 
