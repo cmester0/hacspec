@@ -205,13 +205,13 @@ extern "C" {
 #[requires(offset < buf.len())]
 #[requires(offset < buf.len())]
 fn load_state_hacspec(buf : PublicByteSeq, offset: u32) -> u32 {
-    if cfg!(feature = "hacspec") {
+    // if cfg!(feature = "hacspec") {
         1u32
-    }
-    else {
-        let temp = native_slice;
-        unsafe { load_state(buf.as_mut_ptr(), buf.len() as u32, offset) }
-    }
+    // }
+    // else {
+    //     let temp = native_slice;
+    //     unsafe { load_state(buf.as_mut_ptr(), buf.len() as u32, offset) }
+    // }
 }
 
 
