@@ -59,11 +59,6 @@ pub fn fresh_state(itm: Itemtyp, exp: u64) -> State {
     )
 }
 
-// #[derive(Clone, PartialEq)]
-// pub enum MapEntry {
-//     Entry(u64, SeqMap),
-// }
-
 // #[ensures(true)]
 // #[ensures(result === )]
 fn seq_map_entry(m: SeqMap, sender_address: UserAddress) -> (u64, SeqMap) {
@@ -494,6 +489,6 @@ fn test_auction_bid_and_finalize(item: PublicByteSeq, time : u64, input_amount :
         AuctionBidResult::Err(e) => e == BidError::AuctionIsFinalized,
         AuctionBidResult::Ok(_) => false,
     };
-    
+
     result_0 && result_1 && result_2 && result_3 && result_4 && result_5 && result_6 && result_7
 }
