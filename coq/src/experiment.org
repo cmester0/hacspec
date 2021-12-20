@@ -554,20 +554,6 @@ fn test_auction_bid_and_finalize(item: PublicByteSeq, time : u64, input_amount :
   sed -n $ARG Auction.v
 #+end_src
 
-#+RESULTS: lines
-#+begin_src coq :tangle Auction.v :results none
-(** This file was automatically generated using Hacspec **)
-Require Import Lib MachineIntegers.
-From Coq Require Import ZArith.
-Import List.ListNotations.
-Open Scope Z_scope.
-Open Scope bool_scope.
-Open Scope hacspec_scope.
-From QuickChick Require Import QuickChick.
-Require Import QuickChickLib.
-Require Import Hacspec.Lib.
-#+end_src
-
 #+name: split-file
 #+begin_src python :wrap "src coq :tangle Auction.v :results output silent" :exports none :results code :var ARG="0 -1"
   import functools

@@ -9,17 +9,6 @@ From QuickChick Require Import QuickChick.
 Require Import QuickChickLib.
 Require Import Hacspec.Lib.
 
-(** This file was automatically generated using Hacspec **)
-Require Import Lib MachineIntegers.
-From Coq Require Import ZArith.
-Import List.ListNotations.
-Open Scope Z_scope.
-Open Scope bool_scope.
-Open Scope hacspec_scope.
-From QuickChick Require Import QuickChick.
-Require Import QuickChickLib.
-Require Import Hacspec.Lib.
-
 Definition user_address := nseq (int8) (usize 32).
 
 Inductive auction_state :=
@@ -119,7 +108,7 @@ Definition seq_map_entry
   (sender_address_4 : user_address)
   : (int64 × seq_map) :=
   let 'SeqMap ((m0_5, m1_6)) :=
-    m_3 in 
+    m_3 in
   let res_7 : (int64 × seq_map) :=
     (
       @repr WORDSIZE64 0,
@@ -127,7 +116,7 @@ Definition seq_map_entry
           seq_concat ((m0_5)) (sender_address_4),
           seq_concat ((m1_6)) (u64_to_be_bytes (@repr WORDSIZE64 0))
         ))
-    ) in 
+    ) in
   let res_7 :=
     foldi (usize 0) ((seq_len ((m0_5))) / (usize 32)) (fun x_8 res_7 =>
       let '(res_7) :=
@@ -137,10 +126,10 @@ Definition seq_map_entry
               u64_from_be_bytes (array_from_seq (8) (seq_slice ((m1_6)) ((
                       x_8) * (usize 8)) (usize 8))),
               SeqMap (((m0_5), (m1_6)))
-            ) in 
-          (res_7)) else ((res_7)) in 
+            ) in
+          (res_7)) else ((res_7)) in
       (res_7))
-    res_7 in 
+    res_7 in
   res_7.
 
 Inductive map_update :=
@@ -171,7 +160,7 @@ Definition seq_map_update_entry
   (amount_11 : int64)
   : map_update :=
   let 'SeqMap ((m0_12, m1_13)) :=
-    m_9 in 
+    m_9 in
   let res_14 : map_update :=
     Update ((
         amount_11,
@@ -179,7 +168,7 @@ Definition seq_map_update_entry
             seq_concat ((m0_12)) (sender_address_10),
             seq_concat ((m1_13)) (u64_to_be_bytes (amount_11))
           ))
-      )) in 
+      )) in
   let res_14 :=
     foldi (usize 0) ((seq_len ((m0_12))) / (usize 32)) (fun x_15 res_14 =>
       let '(res_14) :=
@@ -193,10 +182,10 @@ Definition seq_map_update_entry
                     seq_update ((m1_13)) ((x_15) * (usize 8)) (u64_to_be_bytes (
                         amount_11))
                   ))
-              )) in 
-          (res_14)) else ((res_14)) in 
+              )) in
+          (res_14)) else ((res_14)) in
       (res_14))
-    res_14 in 
+    res_14 in
   res_14.
 
 Inductive bid_error :=
@@ -287,12 +276,12 @@ Definition auction_bid
   (state_18 : state)
   : auction_bid_result :=
   let 'State ((auction_state_19, highest_bid_20, st2_21, expiry_22, st4_23)) :=
-    (state_18) in 
+    (state_18) in
   ifbnd negb ((auction_state_19) =.? (NotSoldYet)) : bool
   thenbnd (bind (@Err state bid_error (AuctionIsFinalized)) (fun _ => Ok (tt)))
   else (tt) >> (fun 'tt =>
   let '(slot_time_24, sender_25) :=
-    ctx_16 in 
+    ctx_16 in
   ifbnd negb ((slot_time_24) <=.? (expiry_22)) : bool
   thenbnd (bind (@Err state bid_error (BidsOverWaitingForAuctionFinalization)) (
       fun _ => Ok (tt)))
@@ -338,15 +327,15 @@ Definition auction_bid
           @repr WORDSIZE8 5
         ] in  l)
     | UserAddressSome account_address_27 => account_address_27
-    end in 
+    end in
   let '(bid_to_update_28, new_map_29) :=
-    seq_map_entry ((st4_23)) (sender_address_26) in 
+    seq_map_entry ((st4_23)) (sender_address_26) in
   let '(updated_bid_30, updated_map_31) :=
     match seq_map_update_entry ((st4_23)) (sender_address_26) ((
         bid_to_update_28) .+ (amount_17)) with
     | Update (updated_bid_32, updated_map_33) => (updated_bid_32, updated_map_33
     )
-    end in 
+    end in
   ifbnd negb ((updated_bid_30) >.? (highest_bid_20)) : bool
   thenbnd (bind (@Err state bid_error (BidTooLow)) (fun _ => Ok (tt)))
   else (tt) >> (fun 'tt =>
@@ -473,15 +462,15 @@ Definition auction_finalize
 	expiry_39,
 	SeqMap ((m0_40, m1_41))
       )) :=
-    (state_35) in 
+    (state_35) in
   let result_42 : (result (state × finalize_action) finalize_error) :=
-    @Ok (state × finalize_action) finalize_error (((state_35), Accept)) in 
+    @Ok (state × finalize_action) finalize_error (((state_35), Accept)) in
   ifbnd negb ((auction_state_36) =.? (NotSoldYet)) : bool
   thenbnd (bind (@Err (state × finalize_action) finalize_error (
 	AuctionFinalized)) (fun _ => Ok (tt)))
   else (tt) >> (fun 'tt =>
   let '(slot_time_43, owner_44, balance_45) :=
-    ctx_34 in 
+    ctx_34 in
   ifbnd negb ((slot_time_43) >.? (expiry_39)) : bool
   thenbnd (bind (@Err (state × finalize_action) finalize_error (
 	AuctionStillActive)) (fun _ => Ok (tt)))
@@ -489,9 +478,9 @@ Definition auction_finalize
   ifbnd (balance_45) !=.? (@repr WORDSIZE64 0) : bool
   thenbnd (let return_action_46 : finalize_action :=
       SimpleTransfer (seq_concat (seq_concat (seq_new_ (@repr WORDSIZE8 0) (
-	      usize 0)) (owner_44)) (u64_to_be_bytes (highest_bid_37))) in 
+	      usize 0)) (owner_44)) (u64_to_be_bytes (highest_bid_37))) in
     let remaining_bid_47 : bid_remain :=
-      BidNone in 
+      BidNone in
     bind (foldibnd (usize 0) to ((seq_len ((m0_40))) / (usize 32)) for (
 	auction_state_36,
 	return_action_46,
@@ -499,26 +488,26 @@ Definition auction_finalize
       )>> (fun x_48 '(auction_state_36, return_action_46, remaining_bid_47) =>
       let addr_49 : user_address :=
 	array_from_seq (32) (seq_slice ((m0_40)) ((x_48) * (usize 32)) (
-	    usize 32)) in 
+	    usize 32)) in
       let amnt_50 : int64 :=
 	u64_from_be_bytes (array_from_seq (8) (seq_slice ((m1_41)) ((x_48) * (
-		usize 8)) (usize 8))) in 
+		usize 8)) (usize 8))) in
       ifbnd (amnt_50) <.? (highest_bid_37) : bool
       then (let return_action_46 :=
 	  match return_action_46 with
 	  | Accept => Accept
 	  | SimpleTransfer m_51 => SimpleTransfer (seq_concat (seq_concat (
 		m_51) (addr_49)) (u64_to_be_bytes (amnt_50)))
-	  end in 
+	  end in
 	(auction_state_36, return_action_46, remaining_bid_47))
       elsebnd(ifbnd negb ((remaining_bid_47) =.? (BidNone)) : bool
 	thenbnd (bind (@Err (state × finalize_action) finalize_error (
 	      BidMapError)) (fun _ => Ok (tt)))
 	else (tt) >> (fun 'tt =>
 	let auction_state_36 :=
-	  Sold (addr_49) in 
+	  Sold (addr_49) in
 	let remaining_bid_47 :=
-	  BidSome (amnt_50) in 
+	  BidSome (amnt_50) in
 	Ok ((auction_state_36, return_action_46, remaining_bid_47)))) >> (fun '(
 	auction_state_36,
 	return_action_46,
@@ -545,7 +534,7 @@ Definition auction_finalize
 	      ))))
 	| BidNone => @Err (state × finalize_action) finalize_error (
 	  BidMapError)
-	end in 
+	end in
       bind ((result_42)) (fun _ => Ok ((auction_state_36, result_42)))))
   else ((auction_state_36, result_42)) >> (fun '(auction_state_36, result_42) =>
   result_42))).
@@ -585,16 +574,16 @@ Definition verify_bid
   (time_62 : int64)
   : (state × seq_map × bool × bool) :=
   let t_63 : (result state bid_error) :=
-    auction_bid (ctx_58) (amount_59) ((state_56)) in 
+    auction_bid (ctx_58) (amount_59) ((state_56)) in
   let '(state_64, res_65) :=
     match t_63 with
     | Err e_66 => (state_56, false)
     | Ok s_67 => (s_67, true)
-    end in 
+    end in
   let bid_map_68 : seq_map :=
     match seq_map_update_entry ((bid_map_60)) (account_57) (highest_bid_61) with
     | Update (_, updated_map_69) => updated_map_69
-    end in 
+    end in
   (
     (state_64),
     (bid_map_68),
@@ -650,9 +639,9 @@ Definition new_account
   (i_72 : int8)
   : (user_address × context) :=
   let addr_73 : user_address :=
-    useraddress_from_u8 (i_72) in 
+    useraddress_from_u8 (i_72) in
   let ctx_74 : (int64 × user_address_set) :=
-    (time_71, UserAddressSome (addr_73)) in 
+    (time_71, UserAddressSome (addr_73)) in
   (addr_73, ctx_74).
 
 Definition test_auction_bid_and_finalize
@@ -661,50 +650,50 @@ Definition test_auction_bid_and_finalize
   (input_amount_77 : int64)
   : bool :=
   let amount_78 : int64 :=
-    (input_amount_77) .+ (@repr WORDSIZE64 1) in 
+    (input_amount_77) .+ (@repr WORDSIZE64 1) in
   let winning_amount_79 : int64 :=
-    (amount_78) .* (@repr WORDSIZE64 3) in 
+    (amount_78) .* (@repr WORDSIZE64 3) in
   let big_amount_80 : int64 :=
-    (amount_78) .* (@repr WORDSIZE64 5) in 
+    (amount_78) .* (@repr WORDSIZE64 5) in
   let bid_map_81 : seq_map :=
     SeqMap ((
         seq_new_ (@repr WORDSIZE8 0) (usize 0),
         seq_new_ (@repr WORDSIZE8 0) (usize 0)
-      )) in 
+      )) in
   let state_82 : state :=
-    fresh_state ((item_75)) (time_76) in 
+    fresh_state ((item_75)) (time_76) in
   let '(alice_83, alice_ctx_84) :=
-    new_account (time_76) (@repr WORDSIZE8 0) in 
+    new_account (time_76) (@repr WORDSIZE8 0) in
   let '(state_85, bid_map_86, res_0_87, result_0_88) :=
     verify_bid ((item_75)) (state_82) (alice_83) (alice_ctx_84) (amount_78) (
-      bid_map_81) (amount_78) (time_76) in 
+      bid_map_81) (amount_78) (time_76) in
   let '(state_89, bid_map_90, res_1_91, result_1_92) :=
     verify_bid ((item_75)) (state_85) (alice_83) (alice_ctx_84) (amount_78) (
-      bid_map_86) ((amount_78) .+ (amount_78)) (time_76) in 
+      bid_map_86) ((amount_78) .+ (amount_78)) (time_76) in
   let '(bob_93, bob_ctx_94) :=
-    new_account (time_76) (@repr WORDSIZE8 1) in 
+    new_account (time_76) (@repr WORDSIZE8 1) in
   let '(state_95, bid_map_96, res_2_97, result_2_98) :=
     verify_bid ((item_75)) (state_89) (bob_93) (bob_ctx_94) (
-      winning_amount_79) (bid_map_90) (winning_amount_79) (time_76) in 
+      winning_amount_79) (bid_map_90) (winning_amount_79) (time_76) in
   let owner_99 : user_address :=
-    useraddress_from_u8 (@repr WORDSIZE8 0) in 
+    useraddress_from_u8 (@repr WORDSIZE8 0) in
   let balance_100 : int64 :=
-    @repr WORDSIZE64 100 in 
+    @repr WORDSIZE64 100 in
   let ctx4_101 : (int64 × user_address × int64) :=
-    (time_76, owner_99, balance_100) in 
+    (time_76, owner_99, balance_100) in
   let finres_102 : (result (state × finalize_action) finalize_error) :=
-    auction_finalize (ctx4_101) ((state_95)) in 
+    auction_finalize (ctx4_101) ((state_95)) in
   let '(state_103, result_3_104) :=
     match finres_102 with
     | Err err_105 => ((state_95), (err_105) =.? (AuctionStillActive))
     | Ok (state_106, _) => (state_106, false)
-    end in 
+    end in
   let '(carol_107, carol_ctx_108) :=
-    new_account (time_76) (@repr WORDSIZE8 2) in 
+    new_account (time_76) (@repr WORDSIZE8 2) in
   let ctx5_109 : (int64 × user_address × int64) :=
-    ((time_76) .+ (@repr WORDSIZE64 1), carol_107, winning_amount_79) in 
+    ((time_76) .+ (@repr WORDSIZE64 1), carol_107, winning_amount_79) in
   let finres2_110 : (result (state × finalize_action) finalize_error) :=
-    auction_finalize (ctx5_109) ((state_103)) in 
+    auction_finalize (ctx5_109) ((state_103)) in
   let '(state_111, result_4_112) :=
     match finres2_110 with
     | Err _ => ((state_103), false)
@@ -715,7 +704,7 @@ Definition test_auction_bid_and_finalize
                   carol_107)) (u64_to_be_bytes (winning_amount_79))) (
               alice_83)) (u64_to_be_bytes ((amount_78) .+ (amount_78)))))
     )
-    end in 
+    end in
   let result_5_115 : bool :=
     ((state_111)) =.? (State ((
           Sold (bob_93),
@@ -723,21 +712,21 @@ Definition test_auction_bid_and_finalize
           (item_75),
           time_76,
           (bid_map_96)
-        ))) in 
+        ))) in
   let finres3_116 : (result (state × finalize_action) finalize_error) :=
-    auction_finalize (ctx5_109) ((state_111)) in 
+    auction_finalize (ctx5_109) ((state_111)) in
   let '(state_117, result_6_118) :=
     match finres3_116 with
     | Err err_119 => (state_111, (err_119) =.? (AuctionFinalized))
     | Ok (state_120, action_121) => (state_120, false)
-    end in 
+    end in
   let t_122 : (result state bid_error) :=
-    auction_bid (bob_ctx_94) (big_amount_80) ((state_117)) in 
+    auction_bid (bob_ctx_94) (big_amount_80) ((state_117)) in
   let result_7_123 : bool :=
     match t_122 with
     | Err e_124 => (e_124) =.? (AuctionIsFinalized)
     | Ok _ => false
-    end in 
+    end in
   (((((((result_0_88) && (result_1_92)) && (result_2_98)) && (
             result_3_104)) && (result_4_112)) && (result_5_115)) && (
       result_6_118)) && (result_7_123).
@@ -861,7 +850,7 @@ Definition seq_map_entry
   (sender_address_4 : user_address)
   : (int64 × seq_map) :=
   let 'SeqMap ((m0_5, m1_6)) :=
-    m_3 in 
+    m_3 in
   let res_7 : (int64 × seq_map) :=
     (
       @repr WORDSIZE64 0,
@@ -869,7 +858,7 @@ Definition seq_map_entry
           seq_concat ((m0_5)) (sender_address_4),
           seq_concat ((m1_6)) (u64_to_be_bytes (@repr WORDSIZE64 0))
         ))
-    ) in 
+    ) in
   let res_7 :=
     foldi (usize 0) ((seq_len ((m0_5))) / (usize 32)) (fun x_8 res_7 =>
       let '(res_7) :=
@@ -879,10 +868,10 @@ Definition seq_map_entry
               u64_from_be_bytes (array_from_seq (8) (seq_slice ((m1_6)) ((
                       x_8) * (usize 8)) (usize 8))),
               SeqMap (((m0_5), (m1_6)))
-            ) in 
-          (res_7)) else ((res_7)) in 
+            ) in
+          (res_7)) else ((res_7)) in
       (res_7))
-    res_7 in 
+    res_7 in
   res_7.
 
 Inductive map_update :=
@@ -913,7 +902,7 @@ Definition seq_map_update_entry
   (amount_11 : int64)
   : map_update :=
   let 'SeqMap ((m0_12, m1_13)) :=
-    m_9 in 
+    m_9 in
   let res_14 : map_update :=
     Update ((
         amount_11,
@@ -921,7 +910,7 @@ Definition seq_map_update_entry
             seq_concat ((m0_12)) (sender_address_10),
             seq_concat ((m1_13)) (u64_to_be_bytes (amount_11))
           ))
-      )) in 
+      )) in
   let res_14 :=
     foldi (usize 0) ((seq_len ((m0_12))) / (usize 32)) (fun x_15 res_14 =>
       let '(res_14) :=
@@ -935,10 +924,10 @@ Definition seq_map_update_entry
                     seq_update ((m1_13)) ((x_15) * (usize 8)) (u64_to_be_bytes (
                         amount_11))
                   ))
-              )) in 
-          (res_14)) else ((res_14)) in 
+              )) in
+          (res_14)) else ((res_14)) in
       (res_14))
-    res_14 in 
+    res_14 in
   res_14.
 
 Inductive bid_error :=
@@ -1029,12 +1018,12 @@ Definition auction_bid
   (state_18 : state)
   : auction_bid_result :=
   let 'State ((auction_state_19, highest_bid_20, st2_21, expiry_22, st4_23)) :=
-    (state_18) in 
+    (state_18) in
   ifbnd negb ((auction_state_19) =.? (NotSoldYet)) : bool
   thenbnd (bind (@Err state bid_error (AuctionIsFinalized)) (fun _ => Ok (tt)))
   else (tt) >> (fun 'tt =>
   let '(slot_time_24, sender_25) :=
-    ctx_16 in 
+    ctx_16 in
   ifbnd negb ((slot_time_24) <=.? (expiry_22)) : bool
   thenbnd (bind (@Err state bid_error (BidsOverWaitingForAuctionFinalization)) (
       fun _ => Ok (tt)))
@@ -1080,15 +1069,15 @@ Definition auction_bid
           @repr WORDSIZE8 5
         ] in  l)
     | UserAddressSome account_address_27 => account_address_27
-    end in 
+    end in
   let '(bid_to_update_28, new_map_29) :=
-    seq_map_entry ((st4_23)) (sender_address_26) in 
+    seq_map_entry ((st4_23)) (sender_address_26) in
   let '(updated_bid_30, updated_map_31) :=
     match seq_map_update_entry ((st4_23)) (sender_address_26) ((
         bid_to_update_28) .+ (amount_17)) with
     | Update (updated_bid_32, updated_map_33) => (updated_bid_32, updated_map_33
     )
-    end in 
+    end in
   ifbnd negb ((updated_bid_30) >.? (highest_bid_20)) : bool
   thenbnd (bind (@Err state bid_error (BidTooLow)) (fun _ => Ok (tt)))
   else (tt) >> (fun 'tt =>
@@ -1215,15 +1204,15 @@ Definition auction_finalize
 	expiry_39,
 	SeqMap ((m0_40, m1_41))
       )) :=
-    (state_35) in 
+    (state_35) in
   let result_42 : (result (state × finalize_action) finalize_error) :=
-    @Ok (state × finalize_action) finalize_error (((state_35), Accept)) in 
+    @Ok (state × finalize_action) finalize_error (((state_35), Accept)) in
   ifbnd negb ((auction_state_36) =.? (NotSoldYet)) : bool
   thenbnd (bind (@Err (state × finalize_action) finalize_error (
 	AuctionFinalized)) (fun _ => Ok (tt)))
   else (tt) >> (fun 'tt =>
   let '(slot_time_43, owner_44, balance_45) :=
-    ctx_34 in 
+    ctx_34 in
   ifbnd negb ((slot_time_43) >.? (expiry_39)) : bool
   thenbnd (bind (@Err (state × finalize_action) finalize_error (
 	AuctionStillActive)) (fun _ => Ok (tt)))
@@ -1231,9 +1220,9 @@ Definition auction_finalize
   ifbnd (balance_45) !=.? (@repr WORDSIZE64 0) : bool
   thenbnd (let return_action_46 : finalize_action :=
       SimpleTransfer (seq_concat (seq_concat (seq_new_ (@repr WORDSIZE8 0) (
-	      usize 0)) (owner_44)) (u64_to_be_bytes (highest_bid_37))) in 
+	      usize 0)) (owner_44)) (u64_to_be_bytes (highest_bid_37))) in
     let remaining_bid_47 : bid_remain :=
-      BidNone in 
+      BidNone in
     bind (foldibnd (usize 0) to ((seq_len ((m0_40))) / (usize 32)) for (
 	auction_state_36,
 	return_action_46,
@@ -1241,26 +1230,26 @@ Definition auction_finalize
       )>> (fun x_48 '(auction_state_36, return_action_46, remaining_bid_47) =>
       let addr_49 : user_address :=
 	array_from_seq (32) (seq_slice ((m0_40)) ((x_48) * (usize 32)) (
-	    usize 32)) in 
+	    usize 32)) in
       let amnt_50 : int64 :=
 	u64_from_be_bytes (array_from_seq (8) (seq_slice ((m1_41)) ((x_48) * (
-		usize 8)) (usize 8))) in 
+		usize 8)) (usize 8))) in
       ifbnd (amnt_50) <.? (highest_bid_37) : bool
       then (let return_action_46 :=
 	  match return_action_46 with
 	  | Accept => Accept
 	  | SimpleTransfer m_51 => SimpleTransfer (seq_concat (seq_concat (
 		m_51) (addr_49)) (u64_to_be_bytes (amnt_50)))
-	  end in 
+	  end in
 	(auction_state_36, return_action_46, remaining_bid_47))
       elsebnd(ifbnd negb ((remaining_bid_47) =.? (BidNone)) : bool
 	thenbnd (bind (@Err (state × finalize_action) finalize_error (
 	      BidMapError)) (fun _ => Ok (tt)))
 	else (tt) >> (fun 'tt =>
 	let auction_state_36 :=
-	  Sold (addr_49) in 
+	  Sold (addr_49) in
 	let remaining_bid_47 :=
-	  BidSome (amnt_50) in 
+	  BidSome (amnt_50) in
 	Ok ((auction_state_36, return_action_46, remaining_bid_47)))) >> (fun '(
 	auction_state_36,
 	return_action_46,
@@ -1287,7 +1276,7 @@ Definition auction_finalize
 	      ))))
 	| BidNone => @Err (state × finalize_action) finalize_error (
 	  BidMapError)
-	end in 
+	end in
       bind ((result_42)) (fun _ => Ok ((auction_state_36, result_42)))))
   else ((auction_state_36, result_42)) >> (fun '(auction_state_36, result_42) =>
   result_42))).
@@ -1327,16 +1316,16 @@ Definition verify_bid
   (time_62 : int64)
   : (state × seq_map × bool × bool) :=
   let t_63 : (result state bid_error) :=
-    auction_bid (ctx_58) (amount_59) ((state_56)) in 
+    auction_bid (ctx_58) (amount_59) ((state_56)) in
   let '(state_64, res_65) :=
     match t_63 with
     | Err e_66 => (state_56, false)
     | Ok s_67 => (s_67, true)
-    end in 
+    end in
   let bid_map_68 : seq_map :=
     match seq_map_update_entry ((bid_map_60)) (account_57) (highest_bid_61) with
     | Update (_, updated_map_69) => updated_map_69
-    end in 
+    end in
   (
     (state_64),
     (bid_map_68),
@@ -1392,9 +1381,9 @@ Definition new_account
   (i_72 : int8)
   : (user_address × context) :=
   let addr_73 : user_address :=
-    useraddress_from_u8 (i_72) in 
+    useraddress_from_u8 (i_72) in
   let ctx_74 : (int64 × user_address_set) :=
-    (time_71, UserAddressSome (addr_73)) in 
+    (time_71, UserAddressSome (addr_73)) in
   (addr_73, ctx_74).
 
 Definition test_auction_bid_and_finalize
@@ -1403,50 +1392,50 @@ Definition test_auction_bid_and_finalize
   (input_amount_77 : int64)
   : bool :=
   let amount_78 : int64 :=
-    (input_amount_77) .+ (@repr WORDSIZE64 1) in 
+    (input_amount_77) .+ (@repr WORDSIZE64 1) in
   let winning_amount_79 : int64 :=
-    (amount_78) .* (@repr WORDSIZE64 3) in 
+    (amount_78) .* (@repr WORDSIZE64 3) in
   let big_amount_80 : int64 :=
-    (amount_78) .* (@repr WORDSIZE64 5) in 
+    (amount_78) .* (@repr WORDSIZE64 5) in
   let bid_map_81 : seq_map :=
     SeqMap ((
         seq_new_ (@repr WORDSIZE8 0) (usize 0),
         seq_new_ (@repr WORDSIZE8 0) (usize 0)
-      )) in 
+      )) in
   let state_82 : state :=
-    fresh_state ((item_75)) (time_76) in 
+    fresh_state ((item_75)) (time_76) in
   let '(alice_83, alice_ctx_84) :=
-    new_account (time_76) (@repr WORDSIZE8 0) in 
+    new_account (time_76) (@repr WORDSIZE8 0) in
   let '(state_85, bid_map_86, res_0_87, result_0_88) :=
     verify_bid ((item_75)) (state_82) (alice_83) (alice_ctx_84) (amount_78) (
-      bid_map_81) (amount_78) (time_76) in 
+      bid_map_81) (amount_78) (time_76) in
   let '(state_89, bid_map_90, res_1_91, result_1_92) :=
     verify_bid ((item_75)) (state_85) (alice_83) (alice_ctx_84) (amount_78) (
-      bid_map_86) ((amount_78) .+ (amount_78)) (time_76) in 
+      bid_map_86) ((amount_78) .+ (amount_78)) (time_76) in
   let '(bob_93, bob_ctx_94) :=
-    new_account (time_76) (@repr WORDSIZE8 1) in 
+    new_account (time_76) (@repr WORDSIZE8 1) in
   let '(state_95, bid_map_96, res_2_97, result_2_98) :=
     verify_bid ((item_75)) (state_89) (bob_93) (bob_ctx_94) (
-      winning_amount_79) (bid_map_90) (winning_amount_79) (time_76) in 
+      winning_amount_79) (bid_map_90) (winning_amount_79) (time_76) in
   let owner_99 : user_address :=
-    useraddress_from_u8 (@repr WORDSIZE8 0) in 
+    useraddress_from_u8 (@repr WORDSIZE8 0) in
   let balance_100 : int64 :=
-    @repr WORDSIZE64 100 in 
+    @repr WORDSIZE64 100 in
   let ctx4_101 : (int64 × user_address × int64) :=
-    (time_76, owner_99, balance_100) in 
+    (time_76, owner_99, balance_100) in
   let finres_102 : (result (state × finalize_action) finalize_error) :=
-    auction_finalize (ctx4_101) ((state_95)) in 
+    auction_finalize (ctx4_101) ((state_95)) in
   let '(state_103, result_3_104) :=
     match finres_102 with
     | Err err_105 => ((state_95), (err_105) =.? (AuctionStillActive))
     | Ok (state_106, _) => (state_106, false)
-    end in 
+    end in
   let '(carol_107, carol_ctx_108) :=
-    new_account (time_76) (@repr WORDSIZE8 2) in 
+    new_account (time_76) (@repr WORDSIZE8 2) in
   let ctx5_109 : (int64 × user_address × int64) :=
-    ((time_76) .+ (@repr WORDSIZE64 1), carol_107, winning_amount_79) in 
+    ((time_76) .+ (@repr WORDSIZE64 1), carol_107, winning_amount_79) in
   let finres2_110 : (result (state × finalize_action) finalize_error) :=
-    auction_finalize (ctx5_109) ((state_103)) in 
+    auction_finalize (ctx5_109) ((state_103)) in
   let '(state_111, result_4_112) :=
     match finres2_110 with
     | Err _ => ((state_103), false)
@@ -1457,7 +1446,7 @@ Definition test_auction_bid_and_finalize
                   carol_107)) (u64_to_be_bytes (winning_amount_79))) (
               alice_83)) (u64_to_be_bytes ((amount_78) .+ (amount_78)))))
     )
-    end in 
+    end in
   let result_5_115 : bool :=
     ((state_111)) =.? (State ((
           Sold (bob_93),
@@ -1465,21 +1454,21 @@ Definition test_auction_bid_and_finalize
           (item_75),
           time_76,
           (bid_map_96)
-        ))) in 
+        ))) in
   let finres3_116 : (result (state × finalize_action) finalize_error) :=
-    auction_finalize (ctx5_109) ((state_111)) in 
+    auction_finalize (ctx5_109) ((state_111)) in
   let '(state_117, result_6_118) :=
     match finres3_116 with
     | Err err_119 => (state_111, (err_119) =.? (AuctionFinalized))
     | Ok (state_120, action_121) => (state_120, false)
-    end in 
+    end in
   let t_122 : (result state bid_error) :=
-    auction_bid (bob_ctx_94) (big_amount_80) ((state_117)) in 
+    auction_bid (bob_ctx_94) (big_amount_80) ((state_117)) in
   let result_7_123 : bool :=
     match t_122 with
     | Err e_124 => (e_124) =.? (AuctionIsFinalized)
     | Ok _ => false
-    end in 
+    end in
   (((((((result_0_88) && (result_1_92)) && (result_2_98)) && (
             result_3_104)) && (result_4_112)) && (result_5_115)) && (
       result_6_118)) && (result_7_123).
