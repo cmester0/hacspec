@@ -49,7 +49,7 @@
 #+end_src
 
 ** Rust code
-*** Types
+*** Reject
 #+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
   pub type Reject = i32;
 
@@ -59,10 +59,6 @@
   }
 
   pub type OptionReject = Option<Reject>;
-  // pub enum OptionReject {
-  //     SomeReject(Reject),
-  //     NoneReject,
-  // }
 
   #[cfg_attr(feature = "creusot", logic)]
   pub fn new_reject_impl(x: i32) -> OptionReject {
@@ -73,7 +69,10 @@
       }
   }
 
+#+end_src
 
+*** Convert From for Reject
+#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
   #[ensures(result != 0i32)]
   #[cfg_attr(feature = "creusot", logic)]
   pub fn reject_impl_convert_from_unit() -> Reject {
@@ -86,6 +85,10 @@
       i32::MIN + 2i32
   }
 
+#+end_src
+
+*** Log error
+#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
   /// Errors that can occur during logging.
   #[derive(Copy, Clone)] // , Debug, Eq, PartialEq
   #[repr(u8)]
@@ -105,6 +108,9 @@
       }
   }
 
+#+end_src
+*** Contract Name Error
+#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
   #[derive(Clone)] // , Debug, PartialEq, Eq
   pub enum NewContractNameError {
       NewContractNameErrorMissingInitPrefix,
@@ -124,6 +130,9 @@
       }
   }
 
+#+end_src
+*** Receive Name Error
+#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
   #[derive(Clone)] // , Debug, PartialEq, Eq
   pub enum NewReceiveNameError {
       NewReceiveNameErrorMissingDotSeparator,
@@ -141,20 +150,14 @@
       }
   }
 
+#+end_src
+*** Contract state
+#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
   pub type ContractState = u32;
 
-  // /// A type representing the constract state bytes.
-  // // #[derive(Default)]
-  // #[cfg_attr(feature = "test", logic)]
-  // pub fn try_from_u64_to_u32 (inp : i64) -> Result<u32, std::num::TryFromIntError> {
-  //     std::convert::TryFrom::try_from(inp)
-  // }
-  // #[cfg_attr(feature = "test", logic)]
-  // pub fn try_from_i64_to_u32 (inp : i64) -> Result<u32, std::num::TryFromIntError> {
-  //     std::convert::TryFrom::try_from(inp)
-  // }
-
-  // pub type SeekResult = Result<u64, ()>;
+#+end_src
+**** Contract State -- Seek
+#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
   pub enum SeekResult {
       SeekResultOk(u64),
       SeekResultErr(()),
@@ -233,6 +236,9 @@
       }
   }
 
+#+end_src
+**** Contract State -- Load
+#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   extern "C" {
       pub(crate) fn load_state(start: *mut u8, length: u32, offset: u32) -> u32;
@@ -241,20 +247,25 @@
   // #[cfg(feature = "hacspec")]
   // #[cfg_attr(feature = "creusot", trusted)]
   // #[requires(offset < buf.len())]
+  #[cfg(feature = "hacspec")]
+  #[ensures(result != (buf, 2u32))] // forall<b : u32> result = (buf,b) ==> 0u32 < offset + b
   fn load_state_hacspec(buf : PublicByteSeq, offset: u32) -> (PublicByteSeq, u32) {
-      if cfg!(feature = "hacspec") {
-	  (buf, 1u32)
-      }
-      else {
-	  let mut temp_vec : Vec<u8> = (0..buf.len()).map(|i| {
-	      buf.index(i).clone()
-	  }).collect();
-	  let temp = &mut temp_vec[..];
-	  let i = unsafe { load_state(temp.as_mut_ptr(), buf.len() as u32, offset) };
-	  (PublicByteSeq::from_native_slice(temp), i)
-      }
+      (buf, 1u32)
   }
 
+  #[cfg(not(feature = "hacspec"))]
+  fn load_state_hacspec(buf : PublicByteSeq, offset: u32) -> (PublicByteSeq, u32) {
+      let mut temp_vec : Vec<u8> = (0..buf.len()).map(|i| {
+	  buf.index(i).clone()
+      }).collect();
+      let temp = &mut temp_vec[..];
+      let i = unsafe { load_state(temp.as_mut_ptr(), buf.len() as u32, offset) };
+      (PublicByteSeq::from_native_slice(temp), i)
+  }
+
+#+end_src
+**** Contract State -- Read
+#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
   #[cfg_attr(feature = "creusot", trusted)]
   pub fn contract_state_impl_read_read(
       current_position: ContractState,
@@ -265,7 +276,7 @@
       (current_position + num_read, num_read as usize)
   }
 
-  /// Read a `u32` in little-endian format. This is optimized to not
+  /// Read a u32 in little-endian format. This is optimized to not
   /// initialize a dummy value before calling an external function.
   #[cfg_attr(feature = "creusot", logic)]
   pub fn contract_state_impl_read_read_u64(
@@ -275,7 +286,7 @@
       (current_position + num_read, num_read == 8_u32)
   }
 
-  /// Read a `u32` in little-endian format. This is optimized to not
+  /// Read a u32 in little-endian format. This is optimized to not
   /// initialize a dummy value before calling an external function.
   #[cfg_attr(feature = "creusot", logic)]
   pub fn contract_state_impl_read_read_u32(
@@ -285,7 +296,7 @@
       (current_position + num_read, num_read == 4_u32)
   }
 
-  /// Read a `u8` in little-endian format. This is optimized to not
+  /// Read a u8 in little-endian format. This is optimized to not
   /// initialize a dummy value before calling an external function.
   #[cfg_attr(feature = "creusot", logic)]
   pub fn contract_state_impl_read_read_u8(
@@ -295,6 +306,9 @@
       (current_position + num_read, num_read == 1_u32)
   }
 
+#+end_src
+**** Contract State -- Write
+#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
   #[cfg_attr(feature = "creusot", logic)]
   pub fn write_impl_for_contract_state_test(current_position: ContractState, len: u32) -> bool {
       current_position.checked_add(len).is_none() // Check for overflow
@@ -308,6 +322,9 @@
       (current_position + num_bytes, num_bytes as usize)
   }
 
+#+end_src
+**** Contract State -- Misc.
+#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
   #[cfg_attr(feature = "creusot", logic)]
   pub fn has_contract_state_impl_for_contract_state_open() -> ContractState {
       0_u32
@@ -338,6 +355,9 @@
       }
   }
 
+#+end_src
+*** Parameter
+#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
   pub type Parameter = u32;
 
   #[cfg_attr(feature = "creusot", trusted)]
@@ -348,6 +368,9 @@
       (current_position + num_read, num_read as usize)
   }
 
+#+end_src
+*** AttributesCursor
+#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
   // pub struct AttributeTag(pub u8);
   pub type AttributesCursor = (u32, u16);
 
@@ -813,9 +836,9 @@ Definition contract_state_impl_read_read
   (buf_18 : public_byte_seq)
   : (contract_state × uint_size) :=
   let num_read_19 : int32 :=
-    @repr WORDSIZE32 1 in 
+    @repr WORDSIZE32 1 in
   let num_read_19 :=
-    load_state_hacspec (buf_18) (current_position_17) in 
+    load_state_hacspec (buf_18) (current_position_17) in
   ((current_position_17) .+ (num_read_19), @cast _ uint32 _ (num_read_19)).
 
 Definition contract_state_impl_read_read_u64
@@ -934,7 +957,7 @@ Definition has_policy_impl_for_policy_attributes_cursor_next_test
   (policy_attribute_items_39 : attributes_cursor)
   : bool :=
   let '(_, remaining_items_40) :=
-    policy_attribute_items_39 in 
+    policy_attribute_items_39 in
   (remaining_items_40) =.? (@repr WORDSIZE16 0).
 
 Definition has_policy_impl_for_policy_attributes_cursor_next_tag_invalid
@@ -943,9 +966,9 @@ Definition has_policy_impl_for_policy_attributes_cursor_next_tag_invalid
   (num_read_43 : int32)
   : (attributes_cursor × bool) :=
   let '(current_position_44, remaining_items_45) :=
-    policy_attribute_items_41 in 
+    policy_attribute_items_41 in
   let policy_attribute_items_46 : (int32 × int16) :=
-    ((current_position_44) .+ (num_read_43), remaining_items_45) in 
+    ((current_position_44) .+ (num_read_43), remaining_items_45) in
   (policy_attribute_items_46, (tag_value_len_1_42) >.? (@repr WORDSIZE8 31)).
 
 Definition has_policy_impl_for_policy_attributes_cursor_next
@@ -953,11 +976,10 @@ Definition has_policy_impl_for_policy_attributes_cursor_next
   (num_read_48 : int32)
   : attributes_cursor :=
   let '(current_position_49, remaining_items_50) :=
-    policy_attribute_items_47 in 
+    policy_attribute_items_47 in
   (
     (current_position_49) .+ (num_read_48),
     (remaining_items_50) .- (@repr WORDSIZE16 1)
   ).
 
 #+end_src
-
