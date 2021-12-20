@@ -1,0 +1,963 @@
+#+TITLE: Concordium Smartcontract Infrastructure Implementations
+#+AUTHOR: Lasse Letager Hansen
+
+#+HTML_HEAD: <style>pre.src {background-color: #303030; color: #e5e5e5;}</style>
+#+PROPERTY: header-args:coq  :session *Coq*
+
+* Concordium "Impls" specification
+** Config
+#+begin_src toml :tangle ../../examples/concordium_impls/Cargo.toml
+  [package]
+  name = "concordium_impls"
+  version = "0.1.0"
+  authors = [""]
+  edition = "2018"
+
+  [lib]
+  path = "src/concordium_impls.rs"
+
+  [dependencies]
+  hacspec-lib = { path = "../../lib" }
+  hacspec-attributes = { path = "../../utils/attributes", version = "0.1.0-beta.1" , features = ["print_attributes", "hacspec_unsafe"] } # , features = ["hacspec_unsafe"] , , optional = true
+  # pearlite-syn = { path = "../../../../creusot/pearlite-syn" }
+  creusot-contracts = { path = "../../../../creusot/creusot-contracts" }
+
+  [features]
+  use_attributes = ["hacspec-attributes/print_attributes", "hacspec-attributes/hacspec_unsafe"]
+
+  [dev-dependencies]
+  hacspec-dev = { path = "../../utils/dev" }
+  criterion = "0.3"
+  rand = "0.8"
+#+end_src
+
+** Imports
+#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+  #[cfg(not(feature = "hacspec"))]
+  extern crate hacspec_lib;
+
+  use hacspec_lib::*;
+
+  // #[cfg(feature = "hacspec_attributes")]
+  #[cfg(feature = "hacspec")]
+  use hacspec_attributes::*;
+
+  #[cfg(not(feature = "hacspec"))]
+  extern crate creusot_contracts;
+  #[cfg(not(feature = "hacspec"))]
+  use creusot_contracts::ensures;
+#+end_src
+
+** Rust code
+*** Types
+#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+  pub type Reject = i32;
+
+  #[cfg_attr(feature = "creusot", logic)]
+  pub fn reject_impl_deafult() -> Reject {
+      i32::MIN
+  }
+
+  pub type OptionReject = Option<Reject>;
+  // pub enum OptionReject {
+  //     SomeReject(Reject),
+  //     NoneReject,
+  // }
+
+  #[cfg_attr(feature = "creusot", logic)]
+  pub fn new_reject_impl(x: i32) -> OptionReject {
+      if x < 0i32 {
+	  OptionReject::Some(x)
+      } else {
+	  Option::<i32>::None // OptionReject
+      }
+  }
+
+
+  #[ensures(result != 0i32)]
+  #[cfg_attr(feature = "creusot", logic)]
+  pub fn reject_impl_convert_from_unit() -> Reject {
+      i32::MIN + 1i32
+  }
+
+  #[ensures(result != 0i32)]
+  #[cfg_attr(feature = "creusot", logic)]
+  pub fn reject_impl_convert_from_parse_error() -> Reject {
+      i32::MIN + 2i32
+  }
+
+  /// Errors that can occur during logging.
+  #[derive(Copy, Clone)] // , Debug, Eq, PartialEq
+  #[repr(u8)]
+  pub enum LogError {
+      /// The log is full.
+      Full,
+      /// The message to log was malformed (e.g., too long)
+      Malformed,
+  }
+
+  #[cfg_attr(feature = "creusot", logic)]
+  #[ensures(result != 0i32)]
+  pub fn reject_impl_from_log_error(le: LogError) -> Reject {
+      match le {
+	  LogError::Full => i32::MIN + 3i32,
+	  LogError::Malformed => i32::MIN + 4i32,
+      }
+  }
+
+  #[derive(Clone)] // , Debug, PartialEq, Eq
+  pub enum NewContractNameError {
+      NewContractNameErrorMissingInitPrefix,
+      NewContractNameErrorTooLong,
+      NewContractNameErrorContainsDot,
+      NewContractNameErrorInvalidCharacters,
+  }
+
+  #[cfg_attr(feature = "creusot", logic)]
+  #[ensures(result != 0i32)]
+  pub fn reject_impl_from_new_contract_name_error(nre: NewContractNameError) -> Reject {
+      match nre {
+	  NewContractNameError::NewContractNameErrorMissingInitPrefix => i32::MIN + 5i32,
+	  NewContractNameError::NewContractNameErrorTooLong => i32::MIN + 6i32,
+	  NewContractNameError::NewContractNameErrorContainsDot => i32::MIN + 9i32,
+	  NewContractNameError::NewContractNameErrorInvalidCharacters => i32::MIN + 10i32,
+      }
+  }
+
+  #[derive(Clone)] // , Debug, PartialEq, Eq
+  pub enum NewReceiveNameError {
+      NewReceiveNameErrorMissingDotSeparator,
+      NewReceiveNameErrorTooLong,
+      NewReceiveNameErrorInvalidCharacters,
+  }
+
+  #[cfg_attr(feature = "creusot", logic)]
+  #[ensures(result != 0i32)]
+  pub fn reject_impl_from_new_receive_name_error(nre: NewReceiveNameError) -> Reject {
+      match nre {
+	  NewReceiveNameError::NewReceiveNameErrorMissingDotSeparator => i32::MIN + 7i32,
+	  NewReceiveNameError::NewReceiveNameErrorTooLong => i32::MIN + 8i32,
+	  NewReceiveNameError::NewReceiveNameErrorInvalidCharacters => i32::MIN + 11i32,
+      }
+  }
+
+  pub type ContractState = u32;
+
+  // /// A type representing the constract state bytes.
+  // // #[derive(Default)]
+  // #[cfg_attr(feature = "test", logic)]
+  // pub fn try_from_u64_to_u32 (inp : i64) -> Result<u32, std::num::TryFromIntError> {
+  //     std::convert::TryFrom::try_from(inp)
+  // }
+  // #[cfg_attr(feature = "test", logic)]
+  // pub fn try_from_i64_to_u32 (inp : i64) -> Result<u32, std::num::TryFromIntError> {
+  //     std::convert::TryFrom::try_from(inp)
+  // }
+
+  // pub type SeekResult = Result<u64, ()>;
+  pub enum SeekResult {
+      SeekResultOk(u64),
+      SeekResultErr(()),
+  }
+
+  #[derive(Copy, Clone)] // , Debug, PartialEq, Eq
+  pub enum SeekFrom {
+      /// Sets the offset to the provided number of bytes.
+      Start(u64),
+
+      /// Sets the offset to the size of this object plus the specified number of
+      /// bytes.
+      ///
+      /// It is possible to seek beyond the end of an object, but it's an error to
+      /// seek before byte 0.
+      End(i64),
+
+      /// Sets the offset to the current position plus the specified number of
+      /// bytes.
+      ///
+      /// It is possible to seek beyond the end of an object, but it's an error to
+      /// seek before byte 0.
+      Current(i64),
+  }
+
+  pub type U32Option = Option<u32>;
+  pub type I64Option = Option<i64>;
+
+  #[cfg_attr(feature = "creusot", trusted)]
+  pub fn contract_state_impl_seek(
+      current_position: ContractState,
+      pos: SeekFrom,
+  ) -> (ContractState, SeekResult) {
+      match pos {
+	  SeekFrom::Start(offset) => (offset as u32, SeekResult::SeekResultOk(offset)),
+	  SeekFrom::End(delta) => {
+	      if delta >= 0_i64 {
+		  match current_position.checked_add(delta as u32) {
+		      U32Option::Some(b) => (b, SeekResult::SeekResultOk(delta as u64)),
+		      U32Option::None => (current_position, SeekResult::SeekResultErr(())),
+		  }
+	      } else {
+		  match delta.checked_abs() {
+		      I64Option::Some(b) =>
+		      // {
+		      // let new_pos = 4_u32 - (b as u32);
+		      {
+			  (
+			      (4_u32 - (b as u32)),
+			      SeekResult::SeekResultOk((4_u32 - (b as u32)) as u64),
+			  )
+		      }
+		      // }
+		      I64Option::None => (current_position, SeekResult::SeekResultErr(())),
+		  }
+	      }
+	  }
+	  SeekFrom::Current(delta) => {
+	      if delta >= 0_i64 {
+		  match current_position.checked_add(delta as u32) {
+		      U32Option::Some(offset) => (offset, SeekResult::SeekResultOk(offset as u64)),
+		      U32Option::None => (current_position, SeekResult::SeekResultErr(())),
+		  }
+	      } else {
+		  match delta.checked_abs() {
+		      I64Option::Some(b) => match current_position.checked_sub(b as u32) {
+			  U32Option::Some(offset) => {
+			      (offset, SeekResult::SeekResultOk(offset as u64))
+			  }
+			  U32Option::None => (current_position, SeekResult::SeekResultErr(())),
+		      },
+		      I64Option::None => (current_position, SeekResult::SeekResultErr(())),
+		  }
+	      }
+	  }
+      }
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  extern "C" {
+      pub(crate) fn load_state(start: *mut u8, length: u32, offset: u32) -> u32;
+  }
+
+  // #[cfg(feature = "hacspec")]
+  // #[cfg_attr(feature = "creusot", trusted)]
+  // #[requires(offset < buf.len())]
+  fn load_state_hacspec(buf : PublicByteSeq, offset: u32) -> (PublicByteSeq, u32) {
+      if cfg!(feature = "hacspec") {
+	  (buf, 1u32)
+      }
+      else {
+	  let mut temp_vec : Vec<u8> = (0..buf.len()).map(|i| {
+	      buf.index(i).clone()
+	  }).collect();
+	  let temp = &mut temp_vec[..];
+	  let i = unsafe { load_state(temp.as_mut_ptr(), buf.len() as u32, offset) };
+	  (PublicByteSeq::from_native_slice(temp), i)
+      }
+  }
+
+  #[cfg_attr(feature = "creusot", trusted)]
+  pub fn contract_state_impl_read_read(
+      current_position: ContractState,
+      buf : PublicByteSeq // Seq<u8>
+      // num_read: u32,
+  ) -> (ContractState, usize) {
+      let (buf, num_read) = load_state_hacspec(buf, current_position);
+      (current_position + num_read, num_read as usize)
+  }
+
+  /// Read a `u32` in little-endian format. This is optimized to not
+  /// initialize a dummy value before calling an external function.
+  #[cfg_attr(feature = "creusot", logic)]
+  pub fn contract_state_impl_read_read_u64(
+      current_position: ContractState,
+      num_read: u32,
+  ) -> (ContractState, bool) {
+      (current_position + num_read, num_read == 8_u32)
+  }
+
+  /// Read a `u32` in little-endian format. This is optimized to not
+  /// initialize a dummy value before calling an external function.
+  #[cfg_attr(feature = "creusot", logic)]
+  pub fn contract_state_impl_read_read_u32(
+      current_position: ContractState,
+      num_read: u32,
+  ) -> (ContractState, bool) {
+      (current_position + num_read, num_read == 4_u32)
+  }
+
+  /// Read a `u8` in little-endian format. This is optimized to not
+  /// initialize a dummy value before calling an external function.
+  #[cfg_attr(feature = "creusot", logic)]
+  pub fn contract_state_impl_read_read_u8(
+      current_position: ContractState,
+      num_read: u32,
+  ) -> (ContractState, bool) {
+      (current_position + num_read, num_read == 1_u32)
+  }
+
+  #[cfg_attr(feature = "creusot", logic)]
+  pub fn write_impl_for_contract_state_test(current_position: ContractState, len: u32) -> bool {
+      current_position.checked_add(len).is_none() // Check for overflow
+  }
+
+  #[cfg_attr(feature = "creusot", trusted)]
+  pub fn write_impl_for_contract_state(
+      current_position: ContractState,
+      num_bytes: u32,
+  ) -> (ContractState, usize) {
+      (current_position + num_bytes, num_bytes as usize)
+  }
+
+  #[cfg_attr(feature = "creusot", logic)]
+  pub fn has_contract_state_impl_for_contract_state_open() -> ContractState {
+      0_u32
+  }
+
+  #[cfg_attr(feature = "creusot", logic)]
+  pub fn has_contract_state_impl_for_contract_state_reserve_0(len: u32, cur_size: u32) -> bool {
+      cur_size < len
+  }
+  #[cfg_attr(feature = "creusot", logic)]
+  pub fn has_contract_state_impl_for_contract_state_reserve_1(res: u32) -> bool {
+      res == 1_u32
+  }
+
+  #[cfg_attr(feature = "creusot", logic)]
+  pub fn has_contract_state_impl_for_contract_state_truncate_0(cur_size: u32, new_size: u32) -> bool {
+      cur_size > new_size
+  }
+  #[cfg_attr(feature = "creusot", logic)]
+  pub fn has_contract_state_impl_for_contract_state_truncate_1(
+      current_position: ContractState,
+      new_size: u32,
+  ) -> ContractState {
+      if new_size < current_position {
+	  new_size
+      } else {
+	  current_position
+      }
+  }
+
+  pub type Parameter = u32;
+
+  #[cfg_attr(feature = "creusot", trusted)]
+  pub fn read_impl_for_parameter_read(
+      current_position: Parameter,
+      num_read: u32,
+  ) -> (Parameter, usize) {
+      (current_position + num_read, num_read as usize)
+  }
+
+  // pub struct AttributeTag(pub u8);
+  pub type AttributesCursor = (u32, u16);
+
+  #[cfg_attr(feature = "creusot", trusted)]
+  pub fn has_policy_impl_for_policy_attributes_cursor_next_test(
+      policy_attribute_items: AttributesCursor,
+  ) -> bool {
+      let (_, remaining_items) = policy_attribute_items;
+      remaining_items == 0_u16
+  }
+
+  #[cfg_attr(feature = "creusot", trusted)]
+  pub fn has_policy_impl_for_policy_attributes_cursor_next_tag_invalid(
+      policy_attribute_items: AttributesCursor,
+      tag_value_len_1: u8,
+      num_read: u32,
+  ) -> (AttributesCursor, bool) {
+      let (current_position, remaining_items) = policy_attribute_items;
+      let policy_attribute_items = (current_position + num_read, remaining_items);
+      (policy_attribute_items, tag_value_len_1 > 31_u8)
+  }
+
+  #[cfg_attr(feature = "creusot", trusted)]
+  pub fn has_policy_impl_for_policy_attributes_cursor_next(
+      policy_attribute_items: AttributesCursor,
+      num_read: u32,
+  ) -> AttributesCursor {
+      let (current_position, remaining_items) = policy_attribute_items;
+      (current_position + num_read, remaining_items - 1_u16)
+  }
+#+end_src
+** Rust Tests
+#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+
+#+end_src
+
+** Resulting output
+#+begin_src sh :eval no-export-query :results output silent
+  cargo clean
+#+end_src
+
+#+begin_src sh :eval no-export-query :results output silent
+  cd ../.. && cargo install --path language
+#+end_src
+
+#+begin_src sh :eval no-export-query :results output silent
+  cd ../.. && cargo build
+#+end_src
+
+#+begin_src sh :eval no-export-query :results output silent
+  cargo hacspec -o ConcordiumImpls.v concordium_impls --init
+#+end_src
+
+#+begin_src sh :results none
+  cargo hacspec -o ConcordiumImpls.v concordium_impls --update
+#+end_src
+
+** Generation of backend output
+
+#+name: split-file
+#+begin_src python :wrap "src coq :tangle ConcordiumImpls.v :results output silent" :exports none :results code :var ARG="0 -1" :var FILENAME="ConcordiumImpls.v"
+  import functools
+
+  lower, upper = map(int, ARG.split())
+  if upper != -1:
+    upper = lower + upper
+
+  def boundery(start, end, lines, i):
+    test = lines[i][:len(start)] == start
+    res_str = ""
+
+    in_end = lambda i: (i < len(lines) and len(list(filter(lambda x: x in lines[i], end))) > 0)
+
+    if test:
+      # if end in lines[i]:
+      if in_end(i):
+	res_str = lines[i]
+      else:
+	while i < len(lines) and not in_end(i): # end not in lines[i]:
+	  res_str += lines[i]
+	  i += 1
+	res_str += lines[i]
+    return (test, res_str, i)
+
+  lines = []
+  with open(FILENAME) as f:
+    lines = f.readlines()
+
+  result = []
+  i  = 0
+  while i < len(lines) and (upper == -1 or upper > len(result)):
+    a,b,c = functools.reduce(lambda b, a: b if b[0] else boundery(a[0], a[1], lines, b[2]),
+			     [["(**", set({"**)"})],
+			      ["From",set({".\n"})],
+			      ["Require",set({".\n"})],
+			      ["Import",set({".\n"})],
+			      ["Open Scope",set({".\n"})],
+			      ["Inductive",set({".\n"})],
+			      ["Definition",set({".\n"})],
+			      ["Instance",set({".\n"})],
+			      ["Notation",set({".\n"})],
+			      ["Theorem",set({".\n"})],
+			      ["Global Instance",set({".\n"})],
+			      ["Proof",set({"Admitted", "Qed"})],
+			      ["QuickChick",set({".\n"})],
+			      ],
+			     (False, "", i))
+    if a:
+      result.append(b)
+      i = c
+    elif lines[i].isspace():
+      space = ""
+      while i < len(lines) and lines[i].isspace():
+	space += lines[i]
+	i += 1
+      i -= 1
+      result.append(space)
+    else:
+      result.append("ERR:" + lines[i])
+    i += 1
+
+  result_str = ""
+  for s in (result[lower:] if upper == -1 else result[lower:upper]):
+    result_str += s
+
+  return result_str
+#+end_src
+
+#+NAME: next
+#+begin_src python :var ARG="0 0" :var linum="0 0" :results output replace :exports none
+  a,b = map(int, linum.split())
+  c,d = map(int, ARG.split())
+  print (a+b+c,d)
+#+end_src
+
+#+NAME: seginit
+#+begin_src python :wrap "src coq :results output silent" :result code :exports none :var loc=(file-name-directory buffer-file-name)
+  with open("../_CoqProject") as f:
+      result = ""
+      for l in f:
+	  if l[:2] == "-R":
+	      pre, post = l[3:].split()
+	      result += "Add Rec LoadPath \"" + pre + "\" as " + post + ".\n"
+	  # elif l[:4] == "src/":
+	  #     result += "Load " + l[4:-2] + "\n"
+      return "Reset Initial.\nCd \""+loc+"../\".\n" + result
+#+end_src
+#+RESULTS: seginit
+#+begin_src coq :results output silent
+Reset Initial.
+Cd "/home/au538501/Documents/LocalHacspec/hacspec/coq/src/../".
+Add Rec LoadPath "src/" as Hacspec.
+#+end_src
+
+*** The includes
+#+NAME: linum0
+#+CALL: next(ARG="0 9", linum="0 0") :result output silent :exports none :cache yes
+#+NAME: seg0
+#+CALL: split-file(ARG=linum0) :cache yes
+#+RESULTS[0d31c7b9141599e8e58333ff982f7144360fe7fe]: seg0
+#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+(** This file was automatically generated using Hacspec **)
+Require Import Lib MachineIntegers.
+From Coq Require Import ZArith.
+Import List.ListNotations.
+Open Scope Z_scope.
+Open Scope bool_scope.
+Open Scope hacspec_scope.
+Require Import Hacspec.Lib.
+
+#+end_src
+
+*** Types and default implementations
+#+NAME: linum1
+#+CALL: next(ARG="0 2", linum=linum0) :result output silent :exports none :cache yes
+#+NAME: seg1
+#+CALL: split-file(ARG=linum1) :cache yes
+#+RESULTS[7004d8b56094df79398a3d75147f9e60a696aa7d]: seg1
+#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+Notation "'reject'" := (int32) : hacspec_scope.
+
+#+end_src
+
+#+NAME: linum2
+#+CALL: next(ARG="0 2", linum=linum1) :result output silent :exports none :cache yes
+#+NAME: seg2
+#+CALL: split-file(ARG=linum2) :cache yes
+#+RESULTS[cebe4a3b498bf3a64ad1b0fee92ef78b48fd7ccd]: seg2
+#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+Definition reject_impl_default  : reject :=
+  min.
+
+#+end_src
+
+
+#+NAME: linum3
+#+CALL: next(ARG="0 2", linum=linum2) :result output silent :exports none :cache yes
+#+NAME: seg3
+#+CALL: split-file(ARG=linum3) :cache yes
+#+RESULTS[37fecf32223b194cbb0c1bd1dcc918300b8c1de1]: seg3
+#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+Notation "'option_reject'" := ((option reject)) : hacspec_scope.
+
+#+end_src
+
+#+NAME: linum4
+#+CALL: next(ARG="0 2", linum=linum3) :result output silent :exports none :cache yes
+#+NAME: seg4
+#+CALL: split-file(ARG=linum4) :cache yes
+#+RESULTS[749a12595beca24d5dd730d8c8c02e4a6efe251b]: seg4
+#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+Definition new_reject_impl (x_0 : int32) : option_reject :=
+  (if ((x_0) <.? (@repr WORDSIZE32 0)):bool then (@Some reject (x_0)) else (
+      @None int32)).
+
+#+end_src
+
+*** Error handling
+#+NAME: linum5
+#+CALL: next(ARG="0 5", linum=linum4) :result output silent :exports none :cache yes
+#+NAME: seg5
+#+CALL: split-file(ARG=linum5) :cache yes
+#+RESULTS[ac841e3d575b7f4b005d32499fb8d2f7468bd510]: seg5
+#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+  Definition reject_impl_convert_from_unit  : reject :=
+    (min) .+ (@repr WORDSIZE32 1).
+
+  Theorem ensures_reject_impl_convert_from_unit : forall result_1 ,
+  @reject_impl_convert_from_unit  = result_1 ->
+  (result_1) !=.? (@repr WORDSIZE32 0).
+  Proof.
+    intros; subst.
+    reflexivity.
+  Qed.
+
+#+end_src
+
+#+NAME: linum6
+#+CALL: next(ARG="0 5", linum=linum5) :result output silent :exports none :cache yes
+#+NAME: seg6
+#+CALL: split-file(ARG=linum6) :cache yes
+#+RESULTS[c1d463dd2f5c7ed7ad84199dd45bfc772ff2c2c4]: seg6
+#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+  Definition reject_impl_convert_from_parse_error  : reject :=
+    (min) .+ (@repr WORDSIZE32 2).
+
+  Theorem ensures_reject_impl_convert_from_parse_error : forall result_1 ,
+  @reject_impl_convert_from_parse_error  = result_1 ->
+  (result_1) !=.? (@repr WORDSIZE32 0).
+  Proof.
+    intros ; subst.
+    reflexivity.
+  Qed.
+
+#+end_src
+
+#+NAME: linum7
+#+CALL: next(ARG="0 7", linum=linum6) :result output silent :exports none :cache yes
+#+NAME: seg7
+#+CALL: split-file(ARG=linum7) :cache yes
+#+RESULTS[c45cad55add404df56048791632c7fcb770de68e]: seg7
+#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+  Inductive log_error :=
+  | Full : log_error
+  | Malformed : log_error.
+
+  Definition reject_impl_from_log_error (le_2 : log_error) : reject :=
+    match le_2 with
+    | Full => (min) .+ (@repr WORDSIZE32 3)
+    | Malformed => (min) .+ (@repr WORDSIZE32 4)
+    end.
+
+  Theorem ensures_reject_impl_from_log_error : forall result_1 (le_2 : log_error),
+  @reject_impl_from_log_error le_2 = result_1 ->
+  (result_1) !=.? (@repr WORDSIZE32 0).
+  Proof.
+    intros ; subst.
+    unfold reject_impl_from_log_error.
+    destruct le_2.
+    - reflexivity.
+    - reflexivity.
+  Qed.
+
+#+end_src
+
+#+NAME: linum8
+#+CALL: next(ARG="0 7", linum=linum7) :result output silent :exports none :cache yes
+#+NAME: seg8
+#+CALL: split-file(ARG=linum8) :cache yes
+#+RESULTS[591c5303f9352d18a6a6ff3c2225659c1789dc38]: seg8
+#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+  Inductive new_contract_name_error :=
+  | NewContractNameErrorMissingInitPrefix : new_contract_name_error
+  | NewContractNameErrorTooLong : new_contract_name_error
+  | NewContractNameErrorContainsDot : new_contract_name_error
+  | NewContractNameErrorInvalidCharacters : new_contract_name_error.
+
+  Definition reject_impl_from_new_contract_name_error
+    (nre_3 : new_contract_name_error)
+    : reject :=
+    match nre_3 with
+    | NewContractNameErrorMissingInitPrefix => (min) .+ (@repr WORDSIZE32 5)
+    | NewContractNameErrorTooLong => (min) .+ (@repr WORDSIZE32 6)
+    | NewContractNameErrorContainsDot => (min) .+ (@repr WORDSIZE32 9)
+    | NewContractNameErrorInvalidCharacters => (min) .+ (@repr WORDSIZE32 10)
+    end.
+
+  Theorem ensures_reject_impl_from_new_contract_name_error : forall result_1 (
+    nre_3 : new_contract_name_error),
+  @reject_impl_from_new_contract_name_error nre_3 = result_1 ->
+  (result_1) !=.? (@repr WORDSIZE32 0).
+  Proof.
+    intros ; subst.
+    unfold reject_impl_from_new_contract_name_error.
+    destruct nre_3 ; reflexivity.
+  Qed.
+
+#+end_src
+
+#+NAME: linum9
+#+CALL: next(ARG="0 7", linum=linum8) :result output silent :exports none :cache yes
+#+NAME: seg9
+#+CALL: split-file(ARG=linum9) :cache yes
+#+RESULTS[33bb02aed6d7654d0929bcaebab35f0f9ddc594e]: seg9
+#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+  Inductive new_receive_name_error :=
+  | NewReceiveNameErrorMissingDotSeparator : new_receive_name_error
+  | NewReceiveNameErrorTooLong : new_receive_name_error
+  | NewReceiveNameErrorInvalidCharacters : new_receive_name_error.
+
+  Definition reject_impl_from_new_receive_name_error
+    (nre_4 : new_receive_name_error)
+    : reject :=
+    match nre_4 with
+    | NewReceiveNameErrorMissingDotSeparator => (min) .+ (@repr WORDSIZE32 7)
+    | NewReceiveNameErrorTooLong => (min) .+ (@repr WORDSIZE32 8)
+    | NewReceiveNameErrorInvalidCharacters => (min) .+ (@repr WORDSIZE32 11)
+    end.
+
+  Theorem ensures_reject_impl_from_new_receive_name_error : forall result_1 (
+    nre_4 : new_receive_name_error),
+  @reject_impl_from_new_receive_name_error nre_4 = result_1 ->
+  (result_1) !=.? (@repr WORDSIZE32 0).
+  Proof.
+    intros ; subst.
+    unfold reject_impl_from_new_contract_name_error.
+    destruct nre_4 ; reflexivity.
+  Qed.
+
+#+end_src
+
+*** Contract state
+#+NAME: linum10
+#+CALL: next(ARG="0 2", linum=linum9) :result output silent :exports none :cache yes
+#+NAME: seg10
+#+CALL: split-file(ARG=linum10) :cache yes
+#+RESULTS[fab0ca92040091f9092434752a3acc7d922f4ca0]: seg10
+#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+Notation "'contract_state'" := (int32) : hacspec_scope.
+
+#+end_src
+
+#+NAME: linum11
+#+CALL: next(ARG="0 4", linum=linum10) :result output silent :exports none :cache yes
+#+NAME: seg11
+#+CALL: split-file(ARG=linum11) :cache yes
+#+RESULTS[d3514c26f939b248cc1fd6115b895d8638997c58]: seg11
+#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+Inductive seek_result :=
+| SeekResultOk : int64 -> seek_result
+| SeekResultErr : unit -> seek_result.
+
+Inductive seek_from :=
+| Start : int64 -> seek_from
+| End : int64 -> seek_from
+| Current : int64 -> seek_from.
+
+#+end_src
+
+#+NAME: linum12
+#+CALL: next(ARG="0 4", linum=linum11) :result output silent :exports none :cache yes
+#+NAME: seg12
+#+CALL: split-file(ARG=linum12) :cache yes
+#+RESULTS[d6b3803ea926c01845f5ef5a2119263986c53d9a]: seg12
+#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+Notation "'uint32_option'" := ((option int32)) : hacspec_scope.
+
+Notation "'iint64_option'" := ((option int64)) : hacspec_scope.
+
+#+end_src
+
+#+NAME: linum13
+#+CALL: next(ARG="0 2", linum=linum12) :result output silent :exports none :cache yes
+#+NAME: seg13
+#+CALL: split-file(ARG=linum13) :cache yes
+#+RESULTS[3fd666602b25114a67b445cbcdae2df0f9e59e91]: seg13
+#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+Definition contract_state_impl_seek
+  (current_position_5 : contract_state)
+  (pos_6 : seek_from)
+  : (contract_state × seek_result) :=
+  match pos_6 with
+  | Start offset_7 => (@cast _ uint32 _ (offset_7), SeekResultOk (offset_7))
+  | End delta_8 => (if ((delta_8) >=.? (@repr WORDSIZE64 0)):bool then (
+      match pub_uint32_checked_add (current_position_5) (@cast _ uint32 _ (
+          delta_8)) with
+      | Some b_9 => (b_9, SeekResultOk (@cast _ uint64 _ (delta_8)))
+      | None => (current_position_5, SeekResultErr (tt))
+      end) else (match pub_int64_checked_abs (delta_8) with
+      | Some b_10 => (
+        (@repr WORDSIZE32 4) .- (@cast _ uint32 _ (b_10)),
+        SeekResultOk (@cast _ uint64 _ ((@repr WORDSIZE32 4) .- (
+              @cast _ uint32 _ (b_10))))
+      )
+      | None => (current_position_5, SeekResultErr (tt))
+      end))
+  | Current delta_11 => (if ((delta_11) >=.? (@repr WORDSIZE64 0)):bool then (
+      match pub_uint32_checked_add (current_position_5) (@cast _ uint32 _ (
+          delta_11)) with
+      | Some offset_12 => (
+        offset_12,
+        SeekResultOk (@cast _ uint64 _ (offset_12))
+      )
+      | None => (current_position_5, SeekResultErr (tt))
+      end) else (match pub_int64_checked_abs (delta_11) with
+      | Some b_13 => match pub_uint32_checked_sub (current_position_5) (
+        @cast _ uint32 _ (b_13)) with
+      | Some offset_14 => (
+        offset_14,
+        SeekResultOk (@cast _ uint64 _ (offset_14))
+      )
+      | None => (current_position_5, SeekResultErr (tt))
+      end
+      | None => (current_position_5, SeekResultErr (tt))
+      end))
+  end.
+
+#+end_src
+
+**** Contract state - Read Trait
+#+NAME: linum14
+#+CALL: next(ARG="0 2", linum=linum13) :result output silent :exports none :cache yes
+#+NAME: seg14
+#+CALL: split-file(ARG=linum14) :cache yes
+#+RESULTS[c51fe102d9dc5f2b4855fe3254417f6d2f90c1c2]: seg14
+#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+Definition load_state_hacspec
+  (buf_15 : public_byte_seq)
+  (offset_16 : int32)
+  : int32 :=
+  @repr WORDSIZE32 1.
+
+#+end_src
+
+#+NAME: linum15
+#+CALL: next(ARG="0 8", linum=linum14) :result output silent :exports none :cache yes
+#+NAME: seg15
+#+CALL: split-file(ARG=linum15) :cache yes
+#+RESULTS[6d021bc8f5102bffd0417918f753ccad666415b5]: seg15
+#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+Definition contract_state_impl_read_read
+  (current_position_17 : contract_state)
+  (buf_18 : public_byte_seq)
+  : (contract_state × uint_size) :=
+  let num_read_19 : int32 :=
+    @repr WORDSIZE32 1 in 
+  let num_read_19 :=
+    load_state_hacspec (buf_18) (current_position_17) in 
+  ((current_position_17) .+ (num_read_19), @cast _ uint32 _ (num_read_19)).
+
+Definition contract_state_impl_read_read_u64
+  (current_position_20 : contract_state)
+  (num_read_21 : int32)
+  : (contract_state × bool) :=
+  (
+    (current_position_20) .+ (num_read_21),
+    (num_read_21) =.? (@repr WORDSIZE32 8)
+  ).
+
+Definition contract_state_impl_read_read_u32
+  (current_position_22 : contract_state)
+  (num_read_23 : int32)
+  : (contract_state × bool) :=
+  (
+    (current_position_22) .+ (num_read_23),
+    (num_read_23) =.? (@repr WORDSIZE32 4)
+  ).
+
+Definition contract_state_impl_read_read_u8
+  (current_position_24 : contract_state)
+  (num_read_25 : int32)
+  : (contract_state × bool) :=
+  (
+    (current_position_24) .+ (num_read_25),
+    (num_read_25) =.? (@repr WORDSIZE32 1)
+  ).
+
+#+end_src
+
+**** Contract state - Write Trait
+#+NAME: linum16
+#+CALL: next(ARG="0 4", linum=linum15) :result output silent :exports none :cache yes
+#+NAME: seg16
+#+CALL: split-file(ARG=linum16) :cache yes
+#+RESULTS[a0113da7a14eae3aa0c7ada5521876113200f6b6]: seg16
+#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+Definition write_impl_for_contract_state_test
+  (current_position_26 : contract_state)
+  (len_27 : int32)
+  : bool :=
+  option_is_none (pub_uint32_checked_add (current_position_26) (len_27)).
+
+Definition write_impl_for_contract_state
+  (current_position_28 : contract_state)
+  (num_bytes_29 : int32)
+  : (contract_state × uint_size) :=
+  ((current_position_28) .+ (num_bytes_29), @cast _ uint32 _ (num_bytes_29)).
+
+#+end_src
+
+**** Contract State - Misc.
+#+NAME: linum17
+#+CALL: next(ARG="0 10", linum=linum16) :result output silent :exports none :cache yes
+#+NAME: seg17
+#+CALL: split-file(ARG=linum17) :cache yes
+#+RESULTS[a04a620a3eaae3063b564f96952157587bd6cb86]: seg17
+#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+Definition has_contract_state_impl_for_contract_state_open  : contract_state :=
+  @repr WORDSIZE32 0.
+
+Definition has_contract_state_impl_for_contract_state_reserve_0
+  (len_30 : int32)
+  (cur_size_31 : int32)
+  : bool :=
+  (cur_size_31) <.? (len_30).
+
+Definition has_contract_state_impl_for_contract_state_reserve_1
+  (res_32 : int32)
+  : bool :=
+  (res_32) =.? (@repr WORDSIZE32 1).
+
+Definition has_contract_state_impl_for_contract_state_truncate_0
+  (cur_size_33 : int32)
+  (new_size_34 : int32)
+  : bool :=
+  (cur_size_33) >.? (new_size_34).
+
+Definition has_contract_state_impl_for_contract_state_truncate_1
+  (current_position_35 : contract_state)
+  (new_size_36 : int32)
+  : contract_state :=
+  (if ((new_size_36) <.? (current_position_35)):bool then (new_size_36) else (
+      current_position_35)).
+
+#+end_src
+
+*** Parameter
+#+NAME: linum18
+#+CALL: next(ARG="0 4", linum=linum17) :result output silent :exports none :cache yes
+#+NAME: seg18
+#+CALL: split-file(ARG=linum18) :cache yes
+#+RESULTS[115c92a71f3e0b9fd1c417790062c51146039492]: seg18
+#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+Notation "'parameter'" := (int32) : hacspec_scope.
+
+Definition read_impl_for_parameter_read
+  (current_position_37 : parameter)
+  (num_read_38 : int32)
+  : (parameter × uint_size) :=
+  ((current_position_37) .+ (num_read_38), @cast _ uint32 _ (num_read_38)).
+
+#+end_src
+
+*** Attributes Cursor
+#+NAME: linum19
+#+CALL: next(ARG="0 -1", linum=linum18) :result output silent :exports none :cache yes
+#+NAME: seg19
+#+CALL: split-file(ARG=linum19) :cache yes
+#+RESULTS[2e1d86e441037bd6b6dc231ef07271f1f6df9326]: seg19
+#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+Notation "'attributes_cursor'" := ((int32 × int16)) : hacspec_scope.
+
+Definition has_policy_impl_for_policy_attributes_cursor_next_test
+  (policy_attribute_items_39 : attributes_cursor)
+  : bool :=
+  let '(_, remaining_items_40) :=
+    policy_attribute_items_39 in 
+  (remaining_items_40) =.? (@repr WORDSIZE16 0).
+
+Definition has_policy_impl_for_policy_attributes_cursor_next_tag_invalid
+  (policy_attribute_items_41 : attributes_cursor)
+  (tag_value_len_1_42 : int8)
+  (num_read_43 : int32)
+  : (attributes_cursor × bool) :=
+  let '(current_position_44, remaining_items_45) :=
+    policy_attribute_items_41 in 
+  let policy_attribute_items_46 : (int32 × int16) :=
+    ((current_position_44) .+ (num_read_43), remaining_items_45) in 
+  (policy_attribute_items_46, (tag_value_len_1_42) >.? (@repr WORDSIZE8 31)).
+
+Definition has_policy_impl_for_policy_attributes_cursor_next
+  (policy_attribute_items_47 : attributes_cursor)
+  (num_read_48 : int32)
+  : attributes_cursor :=
+  let '(current_position_49, remaining_items_50) :=
+    policy_attribute_items_47 in 
+  (
+    (current_position_49) .+ (num_read_48),
+    (remaining_items_50) .- (@repr WORDSIZE16 1)
+  ).
+
+#+end_src
+
