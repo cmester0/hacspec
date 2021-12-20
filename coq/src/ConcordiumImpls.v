@@ -177,9 +177,9 @@ Definition contract_state_impl_read_read
   (buf_18 : public_byte_seq)
   : (contract_state × uint_size) :=
   let num_read_19 : int32 :=
-    @repr WORDSIZE32 1 in 
+    @repr WORDSIZE32 1 in
   let num_read_19 :=
-    load_state_hacspec (buf_18) (current_position_17) in 
+    load_state_hacspec (buf_18) (current_position_17) in
   ((current_position_17) .+ (num_read_19), @cast _ uint32 _ (num_read_19)).
 
 Definition contract_state_impl_read_read_u64
@@ -262,7 +262,7 @@ Definition has_policy_impl_for_policy_attributes_cursor_next_test
   (policy_attribute_items_39 : attributes_cursor)
   : bool :=
   let '(_, remaining_items_40) :=
-    policy_attribute_items_39 in 
+    policy_attribute_items_39 in
   (remaining_items_40) =.? (@repr WORDSIZE16 0).
 
 Definition has_policy_impl_for_policy_attributes_cursor_next_tag_invalid
@@ -271,9 +271,9 @@ Definition has_policy_impl_for_policy_attributes_cursor_next_tag_invalid
   (num_read_43 : int32)
   : (attributes_cursor × bool) :=
   let '(current_position_44, remaining_items_45) :=
-    policy_attribute_items_41 in 
+    policy_attribute_items_41 in
   let policy_attribute_items_46 : (int32 × int16) :=
-    ((current_position_44) .+ (num_read_43), remaining_items_45) in 
+    ((current_position_44) .+ (num_read_43), remaining_items_45) in
   (policy_attribute_items_46, (tag_value_len_1_42) >.? (@repr WORDSIZE8 31)).
 
 Definition has_policy_impl_for_policy_attributes_cursor_next
@@ -281,7 +281,7 @@ Definition has_policy_impl_for_policy_attributes_cursor_next
   (num_read_48 : int32)
   : attributes_cursor :=
   let '(current_position_49, remaining_items_50) :=
-    policy_attribute_items_47 in 
+    policy_attribute_items_47 in
   (
     (current_position_49) .+ (num_read_48),
     (remaining_items_50) .- (@repr WORDSIZE16 1)

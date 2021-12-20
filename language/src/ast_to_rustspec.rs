@@ -2863,14 +2863,12 @@ pub fn translate_pearlite(
         //         pearlite_syn::term::Term::Range(_) => RcDoc::as_string("TODORange"),
         //         pearlite_syn::term::Term::Repeat(_) => RcDoc::as_string("TODORepeat"),
         //         pearlite_syn::term::Term::Struct(_) => RcDoc::as_string("TODOStruct"),
-        //         pearlite_syn::term::Term::Tuple(pearlite_syn::term::TermTuple { elems, .. }) => {
-        //             make_paren(RcDoc::intersperse(
-        //                 elems
-        //                     .into_iter()
-        //                     .map(|x| make_paren(translate_pearlite(x, top_ctx, idents.clone()))),
-        //                 RcDoc::as_string(",").append(RcDoc::space()),
-        //             ))
-        //         }
+        pearlite_syn::term::Term::Tuple(pearlite_syn::term::TermTuple { elems, .. }) => {
+            ExprKind::Tup(elems
+                        .into_iter()
+                          .map(|x| P(translate_pearlite_unquantified(sess, x, span).unwrap()))
+                          .collect())
+        }
         //         pearlite_syn::term::Term::Type(ty) => RcDoc::as_string("TODOType"),
         pearlite_syn::term::Term::Unary(pearlite_syn::term::TermUnary { op, expr }) => {
             let t_op = translate_pearlite_unop(op);

@@ -20,10 +20,6 @@ pub fn reject_impl_deafult() -> Reject {
 }
 
 pub type OptionReject = Option<Reject>;
-// pub enum OptionReject {
-//     SomeReject(Reject),
-//     NoneReject,
-// }
 
 #[cfg_attr(feature = "creusot", logic)]
 pub fn new_reject_impl(x: i32) -> OptionReject {
@@ -33,7 +29,6 @@ pub fn new_reject_impl(x: i32) -> OptionReject {
 	Option::<i32>::None // OptionReject
     }
 }
-
 
 #[ensures(result != 0i32)]
 #[cfg_attr(feature = "creusot", logic)]
@@ -104,18 +99,6 @@ pub fn reject_impl_from_new_receive_name_error(nre: NewReceiveNameError) -> Reje
 
 pub type ContractState = u32;
 
-// /// A type representing the constract state bytes.
-// // #[derive(Default)]
-// #[cfg_attr(feature = "test", logic)]
-// pub fn try_from_u64_to_u32 (inp : i64) -> Result<u32, std::num::TryFromIntError> {
-//     std::convert::TryFrom::try_from(inp)
-// }
-// #[cfg_attr(feature = "test", logic)]
-// pub fn try_from_i64_to_u32 (inp : i64) -> Result<u32, std::num::TryFromIntError> {
-//     std::convert::TryFrom::try_from(inp)
-// }
-
-// pub type SeekResult = Result<u64, ()>;
 pub enum SeekResult {
     SeekResultOk(u64),
     SeekResultErr(()),
@@ -202,18 +185,20 @@ extern "C" {
 // #[cfg(feature = "hacspec")]
 // #[cfg_attr(feature = "creusot", trusted)]
 // #[requires(offset < buf.len())]
+#[cfg(feature = "hacspec")]
+#[ensures(result != (buf, 2u32))] // forall<b : u32> result = (buf,b) ==> 0u32 < offset + b
 fn load_state_hacspec(buf : PublicByteSeq, offset: u32) -> (PublicByteSeq, u32) {
-    if cfg!(feature = "hacspec") {
-	(buf, 1u32)
-    }
-    else {
-	let mut temp_vec : Vec<u8> = (0..buf.len()).map(|i| {
-	    buf.index(i).clone()
-	}).collect();
-	let temp = &mut temp_vec[..];
-	let i = unsafe { load_state(temp.as_mut_ptr(), buf.len() as u32, offset) };
-	(PublicByteSeq::from_native_slice(temp), i)
-    }
+    (buf, 1u32)
+}
+
+#[cfg(not(feature = "hacspec"))]
+fn load_state_hacspec(buf : PublicByteSeq, offset: u32) -> (PublicByteSeq, u32) {
+    let mut temp_vec : Vec<u8> = (0..buf.len()).map(|i| {
+	buf.index(i).clone()
+    }).collect();
+    let temp = &mut temp_vec[..];
+    let i = unsafe { load_state(temp.as_mut_ptr(), buf.len() as u32, offset) };
+    (PublicByteSeq::from_native_slice(temp), i)
 }
 
 #[cfg_attr(feature = "creusot", trusted)]
@@ -226,7 +211,7 @@ pub fn contract_state_impl_read_read(
     (current_position + num_read, num_read as usize)
 }
 
-/// Read a `u32` in little-endian format. This is optimized to not
+/// Read a u32 in little-endian format. This is optimized to not
 /// initialize a dummy value before calling an external function.
 #[cfg_attr(feature = "creusot", logic)]
 pub fn contract_state_impl_read_read_u64(
@@ -236,7 +221,7 @@ pub fn contract_state_impl_read_read_u64(
     (current_position + num_read, num_read == 8_u32)
 }
 
-/// Read a `u32` in little-endian format. This is optimized to not
+/// Read a u32 in little-endian format. This is optimized to not
 /// initialize a dummy value before calling an external function.
 #[cfg_attr(feature = "creusot", logic)]
 pub fn contract_state_impl_read_read_u32(
@@ -246,7 +231,7 @@ pub fn contract_state_impl_read_read_u32(
     (current_position + num_read, num_read == 4_u32)
 }
 
-/// Read a `u8` in little-endian format. This is optimized to not
+/// Read a u8 in little-endian format. This is optimized to not
 /// initialize a dummy value before calling an external function.
 #[cfg_attr(feature = "creusot", logic)]
 pub fn contract_state_impl_read_read_u8(
