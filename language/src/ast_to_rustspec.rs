@@ -2501,7 +2501,7 @@ fn get_delimited_tree(attr: Attribute) -> Option<rustc_ast::tokenstream::TokenSt
             }
         }
         _ => None,
-    }           
+    }
 }
 
 fn attribute_requires(attr: &Attribute) -> Option<String> {
@@ -2664,9 +2664,9 @@ pub fn translate_pearlite_unquantified(
 ) -> Option<Expr> {
     match translate_pearlite(sess, t, span) {
         Quantified::Unquantified(e) => Some(e),
-                         _ => None,
-                     }
-                 }
+        _ => None,
+    }
+}
 
 fn translate_pearlite_lit<'a>(l: syn::Lit, span: Span) -> rustc_ast::ast::Lit {
     match l.clone() {
