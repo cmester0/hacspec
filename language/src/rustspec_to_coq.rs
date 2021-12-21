@@ -1394,7 +1394,7 @@ fn translate_quantified_expression<'a>(
         Quantified::Forall(ids, qe2) => RcDoc::as_string("forall")
             .append(RcDoc::space())
             .append(RcDoc::intersperse(
-                ids.iter().map(|(x, _)| translate_ident(x.clone())),
+                ids.into_iter().map(|(x, (typ , _))| translate_ident(x.clone()).append(RcDoc::as_string(" : ")).append(translate_base_typ(typ))),
                 RcDoc::space(),
             ))
             .append(RcDoc::as_string(","))
@@ -1403,9 +1403,11 @@ fn translate_quantified_expression<'a>(
         Quantified::Exists(ids, qe2) => RcDoc::as_string("exists")
             .append(RcDoc::space())
             .append(RcDoc::intersperse(
-                ids.iter().map(|(x, _)| translate_ident(x.clone())),
+                ids.into_iter().map(|(x, (typ, _))| translate_ident(x.clone()).append(RcDoc::as_string(" : ")).append(translate_base_typ(typ))),
                 RcDoc::space(),
             ))
+            .append(RcDoc::as_string(","))
+            .append(RcDoc::line())
             .append(translate_quantified_expression(*qe2, top_ctx)),
         Quantified::Implication(qe2, qe3) => translate_quantified_expression(*qe2, top_ctx)
             .append(RcDoc::space())
