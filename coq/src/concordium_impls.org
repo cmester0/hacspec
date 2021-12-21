@@ -120,9 +120,6 @@ which we can insert as the definition of the from functions in the trait impleme
       }
   }
 #+end_src
-
-#+RESULTS:
-
 We define a log error type and function converting from it to the reject type
 #+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
   /// Errors that can occur during logging.
@@ -616,7 +613,7 @@ Definition new_reject_impl (x_0 : int32) : option_reject :=
 *** Error handling
 #+NAME: linum5
 #+CALL: next(ARG="0 5", linum=linum4)#+NAME: seg5
-#+CALL: split-file(ARG=linum5)
+#+CALL: split-file(ARG=linum5) :eval
 #+RESULTS: seg5
 #+begin_src coq :tangle ConcordiumImpls.v :results output silent
 Definition reject_impl_convert_from_unit  : reject :=
@@ -632,7 +629,7 @@ Proof. Admitted.
 #+NAME: linum6
 #+CALL: next(ARG="0 5", linum=linum5)
 #+NAME: seg6
-#+CALL: split-file(ARG=linum6)
+#+CALL: split-file(ARG=linum6) :eval
 #+RESULTS: seg6
 #+begin_src coq :tangle ConcordiumImpls.v :results output silent
 Definition reject_impl_convert_from_parse_error  : reject :=
@@ -648,7 +645,7 @@ Proof. Admitted.
 #+NAME: linum7
 #+CALL: next(ARG="0 7", linum=linum6)
 #+NAME: seg7
-#+CALL: split-file(ARG=linum7)
+#+CALL: split-file(ARG=linum7) :eval
 #+RESULTS: seg7
 #+begin_src coq :tangle ConcordiumImpls.v :results output silent
 Inductive log_error :=
@@ -671,7 +668,7 @@ Proof. Admitted.
 #+NAME: linum8
 #+CALL: next(ARG="0 7", linum=linum7)
 #+NAME: seg8
-#+CALL: split-file(ARG=linum8)
+#+CALL: split-file(ARG=linum8) :eval
 #+RESULTS: seg8
 #+begin_src coq :tangle ConcordiumImpls.v :results output silent
 Inductive new_contract_name_error :=
@@ -701,7 +698,7 @@ Proof. Admitted.
 #+NAME: linum9
 #+CALL: next(ARG="0 7", linum=linum8)
 #+NAME: seg9
-#+CALL: split-file(ARG=linum9)
+#+CALL: split-file(ARG=linum9) :eval
 #+RESULTS: seg9
 #+begin_src coq :tangle ConcordiumImpls.v :results output silent
 Inductive new_receive_name_error :=
@@ -730,7 +727,7 @@ Proof. Admitted.
 #+NAME: linum10
 #+CALL: next(ARG="0 2", linum=linum9)
 #+NAME: seg10
-#+CALL: split-file(ARG=linum10)
+#+CALL: split-file(ARG=linum10) :eval
 #+RESULTS: seg10
 #+begin_src coq :tangle ConcordiumImpls.v :results output silent
 Notation "'contract_state'" := (int32) : hacspec_scope.
@@ -740,7 +737,7 @@ Notation "'contract_state'" := (int32) : hacspec_scope.
 #+NAME: linum11
 #+CALL: next(ARG="0 4", linum=linum10)
 #+NAME: seg11
-#+CALL: split-file(ARG=linum11)
+#+CALL: split-file(ARG=linum11) :eval
 #+RESULTS: seg11
 #+begin_src coq :tangle ConcordiumImpls.v :results output silent
 Notation "'seek_result'" := ((result (contract_state × int64
@@ -756,7 +753,7 @@ Inductive seek_from :=
 #+NAME: linum12
 #+CALL: next(ARG="0 4", linum=linum11)
 #+NAME: seg12
-#+CALL: split-file(ARG=linum12)
+#+CALL: split-file(ARG=linum12) :eval
 #+RESULTS: seg12
 #+begin_src coq :tangle ConcordiumImpls.v :results output silent
 Notation "'uint32_option'" := ((option int32)) : hacspec_scope.
@@ -768,15 +765,15 @@ Notation "'iint64_option'" := ((option int64)) : hacspec_scope.
 #+NAME: linum13
 #+CALL: next(ARG="0 2", linum=linum12)
 #+NAME: seg13
-#+CALL: split-file(ARG=linum13)
+#+CALL: split-file(ARG=linum13) :eval
 #+RESULTS: seg13
 #+begin_src coq :tangle ConcordiumImpls.v :results output silent
 Definition contract_state_impl_seek
   (current_position_5 : contract_state)
   (pos_6 : seek_from)
-  `{forall delta_7,
+  `{forall delta_7 ,
   pos_6 = End (delta_7) ->
-  exists b_8true}
+  exists b_8 true}
   : seek_result :=
   match pos_6 with
   | Start offset_9 => @Ok (contract_state × int64) unit ((
@@ -825,7 +822,7 @@ Definition contract_state_impl_seek
 #+NAME: linum14
 #+CALL: next(ARG="0 5", linum=linum13)
 #+NAME: seg14
-#+CALL: split-file(ARG=linum14)
+#+CALL: split-file(ARG=linum14) :eval
 #+RESULTS: seg14
 #+begin_src coq :tangle ConcordiumImpls.v :results output silent
 Definition load_state_hacspec
@@ -845,7 +842,7 @@ Proof. Admitted.
 #+NAME: linum15
 #+CALL: next(ARG="0 8", linum=linum14)
 #+NAME: seg15
-#+CALL: split-file(ARG=linum15)
+#+CALL: split-file(ARG=linum15) :eval
 #+RESULTS: seg15
 #+begin_src coq :tangle ConcordiumImpls.v :results output silent
 Definition contract_state_impl_read_read
@@ -889,7 +886,7 @@ Definition contract_state_impl_read_read_u8
 #+NAME: linum16
 #+CALL: next(ARG="0 4", linum=linum15)
 #+NAME: seg16
-#+CALL: split-file(ARG=linum16)
+#+CALL: split-file(ARG=linum16) :eval
 #+RESULTS: seg16
 #+begin_src coq :tangle ConcordiumImpls.v :results output silent
 Definition write_impl_for_contract_state_test
@@ -910,7 +907,7 @@ Definition write_impl_for_contract_state
 #+NAME: linum17
 #+CALL: next(ARG="0 10", linum=linum16)
 #+NAME: seg17
-#+CALL: split-file(ARG=linum17)
+#+CALL: split-file(ARG=linum17) :eval
 #+RESULTS: seg17
 #+begin_src coq :tangle ConcordiumImpls.v :results output silent
 Definition has_contract_state_impl_for_contract_state_open  : contract_state :=
@@ -946,7 +943,7 @@ Definition has_contract_state_impl_for_contract_state_truncate_1
 #+NAME: linum18
 #+CALL: next(ARG="0 4", linum=linum17)
 #+NAME: seg18
-#+CALL: split-file(ARG=linum18)
+#+CALL: split-file(ARG=linum18) :eval
 #+RESULTS: seg18
 #+begin_src coq :tangle ConcordiumImpls.v :results output silent
 Notation "'parameter'" := (int32) : hacspec_scope.
@@ -963,7 +960,7 @@ Definition read_impl_for_parameter_read
 #+NAME: linum19
 #+CALL: next(ARG="0 -1", linum=linum18)
 #+NAME: seg19
-#+CALL: split-file(ARG=linum19)
+#+CALL: split-file(ARG=linum19) :eval
 #+RESULTS: seg19
 #+begin_src coq :tangle ConcordiumImpls.v :results output silent
 Notation "'attributes_cursor'" := ((int32 × int16)) : hacspec_scope.
