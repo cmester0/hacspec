@@ -125,7 +125,7 @@ pub type U32Option = Option<u32>;
 pub type I64Option = Option<i64>;
 
 #[cfg_attr(feature = "creusot", trusted)]
-#[requires(forall<delta : i64> pos === SeekFrom::End(delta) ==> exists<b : u32> match current_position.checked_add(delta as u32) { U32Option::Some(c) => b === c, U32Option::None => false })]
+#[requires(forall<delta : i64> pos === SeekFrom::End(delta) ==> exists<b : u32> current_position.checked_add(delta as u32) == U32Option::Some(b))]
 pub fn contract_state_impl_seek(current_position: ContractState, pos: SeekFrom) -> SeekResult {
     match pos {
 	SeekFrom::Start(offset) => SeekResult::Ok((offset as u32, offset)),

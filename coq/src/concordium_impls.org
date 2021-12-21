@@ -218,7 +218,7 @@ We define contract state as its inner state namely the current position of the s
   pub type I64Option = Option<i64>;
 
   #[cfg_attr(feature = "creusot", trusted)]
-  #[requires(forall<delta : i64> pos === SeekFrom::End(delta) ==> exists<b : u32> current_position.checked_add(delta as u32) === U32Option::Some(b))]
+  #[requires(forall<delta : i64> pos === SeekFrom::End(delta) ==> exists<b : u32> current_position.checked_add(delta as u32) == U32Option::Some(b))]
   pub fn contract_state_impl_seek(current_position: ContractState, pos: SeekFrom) -> SeekResult {
       match pos {
 	  SeekFrom::Start(offset) => SeekResult::Ok((offset as u32, offset)),
@@ -612,7 +612,8 @@ Definition new_reject_impl (x_0 : int32) : option_reject :=
 
 *** Error handling
 #+NAME: linum5
-#+CALL: next(ARG="0 5", linum=linum4)#+NAME: seg5
+#+CALL: next(ARG="0 5", linum=linum4)
+#+NAME: seg5
 #+CALL: split-file(ARG=linum5) :eval
 #+RESULTS: seg5
 #+begin_src coq :tangle ConcordiumImpls.v :results output silent
