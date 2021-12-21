@@ -24,11 +24,7 @@ Definition reject_impl_convert_from_unit  : reject :=
 Theorem ensures_reject_impl_convert_from_unit : forall result_1 ,
 @reject_impl_convert_from_unit  = result_1 ->
 (result_1) !=.? (@repr WORDSIZE32 0).
-Proof. 
-  intros ; subst.
-  reflexivity.
-Qed.
-
+Proof. Admitted.
 
 Definition reject_impl_convert_from_parse_error  : reject :=
   (min) .+ (@repr WORDSIZE32 2).
@@ -36,10 +32,7 @@ Definition reject_impl_convert_from_parse_error  : reject :=
 Theorem ensures_reject_impl_convert_from_parse_error : forall result_1 ,
 @reject_impl_convert_from_parse_error  = result_1 ->
 (result_1) !=.? (@repr WORDSIZE32 0).
-Proof. 
-  intros ; subst.
-  reflexivity.
-Qed.
+Proof. Admitted.
 
 Inductive log_error :=
 | Full : log_error
@@ -54,10 +47,7 @@ Definition reject_impl_from_log_error (le_2 : log_error) : reject :=
 Theorem ensures_reject_impl_from_log_error : forall result_1 (le_2 : log_error),
 @reject_impl_from_log_error le_2 = result_1 ->
 (result_1) !=.? (@repr WORDSIZE32 0).
-Proof.  
-  intros ; subst.
-  destruct le_2 ; reflexivity.
-Qed.
+Proof. Admitted.
 
 Inductive new_contract_name_error :=
 | NewContractNameErrorMissingInitPrefix : new_contract_name_error
@@ -79,10 +69,7 @@ Theorem ensures_reject_impl_from_new_contract_name_error : forall result_1 (
   nre_3 : new_contract_name_error),
 @reject_impl_from_new_contract_name_error nre_3 = result_1 ->
 (result_1) !=.? (@repr WORDSIZE32 0).
-Proof. 
-  intros ; subst.
-  destruct nre_3 ; reflexivity.
-Qed.
+Proof. Admitted.
 
 Inductive new_receive_name_error :=
 | NewReceiveNameErrorMissingDotSeparator : new_receive_name_error
@@ -102,10 +89,7 @@ Theorem ensures_reject_impl_from_new_receive_name_error : forall result_1 (
   nre_4 : new_receive_name_error),
 @reject_impl_from_new_receive_name_error nre_4 = result_1 ->
 (result_1) !=.? (@repr WORDSIZE32 0).
-Proof.
-  intros ; subst.
-  destruct nre_4 ; reflexivity.
-Qed.
+Proof. Admitted.
 
 Notation "'contract_state'" := (int32) : hacspec_scope.
 
@@ -181,14 +165,7 @@ Theorem ensures_load_state_hacspec : forall result_1 (
   buf_17 : public_byte_seq) (offset_18 : int32),
 @load_state_hacspec buf_17 offset_18 = result_1 ->
 (result_1) !=.? ((buf_17, @repr WORDSIZE32 2)).
-Proof.
-  intros ; subst.
-  unfold negb.
-  cbn.
-  rewrite list_eqdec_refl.
-  cbn.
-  rewrite (@eq_false WORDSIZE32 (repr 1) (repr 2)) ; easy.
-Qed.  
+Proof. Admitted.
 
 Definition contract_state_impl_read_read
   (current_position_19 : contract_state)
