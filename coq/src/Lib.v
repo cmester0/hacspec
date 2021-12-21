@@ -1256,6 +1256,43 @@ Next Obligation.
   - inversion_clear H1. now do 2 rewrite eqb_refl.
 Defined.
 
+Search option.
+
+Definition eqb_option {A} `{EqDec A} (a b : option A) :=
+  match a with
+  | Some x =>
+      match b with
+      | Some y => eqb x y
+      | None => false
+      end
+  | None =>
+      match b with
+      | Some y => false
+      | None => true
+      end
+  end.
+
+Lemma eqb_leibniz_option : forall {A : Type} `{EqDec A} (v1 v2 : option A), eqb_option v1 v2 = true <-> v1 = v2.
+Proof.
+  split ; intros ; destruct v1; destruct v2.
+  - apply f_equal.
+    apply eqb_leibniz.
+    assumption.
+  - inversion H0.
+  - inversion H0.
+  - reflexivity.
+  - inversion H0 ; subst.
+    apply eqb_refl.
+  - inversion H0.
+  - inversion H0.
+  - reflexivity.
+Qed.
+
+Global Instance option_eqdec {A} `{EqDec A} : EqDec (option A) := {
+    eqb := eqb_option ;
+    eqb_leibniz := eqb_leibniz_option ;
+  }.
+
 (*** Result *)
 
 Inductive result (a: Type) (b: Type) :=
