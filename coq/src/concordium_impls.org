@@ -623,7 +623,11 @@ Definition reject_impl_convert_from_unit  : reject :=
 Theorem ensures_reject_impl_convert_from_unit : forall result_1 ,
 @reject_impl_convert_from_unit  = result_1 ->
 (result_1) !=.? (@repr WORDSIZE32 0).
-Proof. Admitted.
+Proof. 
+  intros ; subst.
+  reflexivity.
+Qed.
+
 
 #+end_src
 
@@ -639,7 +643,10 @@ Definition reject_impl_convert_from_parse_error  : reject :=
 Theorem ensures_reject_impl_convert_from_parse_error : forall result_1 ,
 @reject_impl_convert_from_parse_error  = result_1 ->
 (result_1) !=.? (@repr WORDSIZE32 0).
-Proof. Admitted.
+Proof. 
+  intros ; subst.
+  reflexivity.
+Qed.
 
 #+end_src
 
@@ -662,7 +669,10 @@ Definition reject_impl_from_log_error (le_2 : log_error) : reject :=
 Theorem ensures_reject_impl_from_log_error : forall result_1 (le_2 : log_error),
 @reject_impl_from_log_error le_2 = result_1 ->
 (result_1) !=.? (@repr WORDSIZE32 0).
-Proof. Admitted.
+Proof.  
+  intros ; subst.
+  destruct le_2 ; reflexivity.
+Qed.
 
 #+end_src
 
@@ -692,7 +702,10 @@ Theorem ensures_reject_impl_from_new_contract_name_error : forall result_1 (
   nre_3 : new_contract_name_error),
 @reject_impl_from_new_contract_name_error nre_3 = result_1 ->
 (result_1) !=.? (@repr WORDSIZE32 0).
-Proof. Admitted.
+Proof. 
+  intros ; subst.
+  destruct nre_3 ; reflexivity.
+Qed.
 
 #+end_src
 
@@ -720,7 +733,10 @@ Theorem ensures_reject_impl_from_new_receive_name_error : forall result_1 (
   nre_4 : new_receive_name_error),
 @reject_impl_from_new_receive_name_error nre_4 = result_1 ->
 (result_1) !=.? (@repr WORDSIZE32 0).
-Proof. Admitted.
+Proof.
+  intros ; subst.
+  destruct nre_4 ; reflexivity.
+Qed.
 
 #+end_src
 
@@ -772,9 +788,11 @@ Notation "'iint64_option'" := ((option int64)) : hacspec_scope.
 Definition contract_state_impl_seek
   (current_position_5 : contract_state)
   (pos_6 : seek_from)
-  `{forall delta_7 ,
+  `{forall delta_7 : int64,
   pos_6 = End (delta_7) ->
-  exists b_8 true}
+  exists b_8 : int32,
+  (pub_uint32_checked_add (current_position_5) (@cast _ uint32 _ (
+        delta_7))) =.? (@Some int32 (b_8))}
   : seek_result :=
   match pos_6 with
   | Start offset_9 => @Ok (contract_state × int64) unit ((
@@ -836,7 +854,14 @@ Theorem ensures_load_state_hacspec : forall result_1 (
   buf_17 : public_byte_seq) (offset_18 : int32),
 @load_state_hacspec buf_17 offset_18 = result_1 ->
 (result_1) !=.? ((buf_17, @repr WORDSIZE32 2)).
-Proof. Admitted.
+Proof.
+  intros ; subst.
+  unfold negb.
+  cbn.
+  rewrite list_eqdec_refl.
+  cbn.
+  rewrite (@eq_false WORDSIZE32 (repr 1) (repr 2)) ; easy.
+Qed.  
 
 #+end_src
 
@@ -994,4 +1019,5 @@ Definition has_policy_impl_for_policy_attributes_cursor_next
     (current_position_52) .+ (num_read_51),
     (remaining_items_53) .- (@repr WORDSIZE16 1)
   ).
+
 #+end_src
