@@ -10,7 +10,7 @@ use hacspec_attributes::*;
 #[cfg(not(feature = "hacspec"))]
 extern crate creusot_contracts;
 #[cfg(not(feature = "hacspec"))]
-use creusot_contracts::ensures;
+use creusot_contracts::*;
 
 pub type Reject = i32;
 
@@ -30,14 +30,14 @@ pub fn new_reject_impl(x: i32) -> OptionReject {
     }
 }
 
-#[ensures(result != 0i32)]
 #[cfg_attr(feature = "creusot", logic)]
+#[ensures(result != 0i32)]
 pub fn reject_impl_convert_from_unit() -> Reject {
     i32::MIN + 1i32
 }
 
-#[ensures(result != 0i32)]
 #[cfg_attr(feature = "creusot", logic)]
+#[ensures(result != 0i32)]
 pub fn reject_impl_convert_from_parse_error() -> Reject {
     i32::MIN + 2i32
 }
@@ -99,10 +99,7 @@ pub fn reject_impl_from_new_receive_name_error(nre: NewReceiveNameError) -> Reje
 
 pub type ContractState = u32;
 
-pub enum SeekResult {
-    SeekResultOk(u64),
-    SeekResultErr(()),
-}
+pub type SeekResult = Result<(ContractState, u64), ()>;
 
 #[derive(Copy, Clone)] // , Debug, PartialEq, Eq
 pub enum SeekFrom {
@@ -128,17 +125,15 @@ pub type U32Option = Option<u32>;
 pub type I64Option = Option<i64>;
 
 #[cfg_attr(feature = "creusot", trusted)]
-pub fn contract_state_impl_seek(
-    current_position: ContractState,
-    pos: SeekFrom,
-) -> (ContractState, SeekResult) {
+#[requires(forall<delta : i64> pos === SeekFrom::End(delta) ==> exists<b : u32> match current_position.checked_add(delta as u32) { U32Option::Some(c) => b === c, U32Option::None => false })]
+pub fn contract_state_impl_seek(current_position: ContractState, pos: SeekFrom) -> SeekResult {
     match pos {
-	SeekFrom::Start(offset) => (offset as u32, SeekResult::SeekResultOk(offset)),
+	SeekFrom::Start(offset) => SeekResult::Ok((offset as u32, offset)),
 	SeekFrom::End(delta) => {
 	    if delta >= 0_i64 {
 		match current_position.checked_add(delta as u32) {
-		    U32Option::Some(b) => (b, SeekResult::SeekResultOk(delta as u64)),
-		    U32Option::None => (current_position, SeekResult::SeekResultErr(())),
+		    U32Option::Some(b) => SeekResult::Ok((b, delta as u64)),
+		    U32Option::None => SeekResult::Err(()),
 		}
 	    } else {
 		match delta.checked_abs() {
@@ -146,31 +141,26 @@ pub fn contract_state_impl_seek(
 		    // {
 		    // let new_pos = 4_u32 - (b as u32);
 		    {
-			(
-			    (4_u32 - (b as u32)),
-			    SeekResult::SeekResultOk((4_u32 - (b as u32)) as u64),
-			)
+			SeekResult::Ok(((4_u32 - (b as u32)), (4_u32 - (b as u32)) as u64))
 		    }
 		    // }
-		    I64Option::None => (current_position, SeekResult::SeekResultErr(())),
+		    I64Option::None => SeekResult::Err(()),
 		}
 	    }
 	}
 	SeekFrom::Current(delta) => {
 	    if delta >= 0_i64 {
 		match current_position.checked_add(delta as u32) {
-		    U32Option::Some(offset) => (offset, SeekResult::SeekResultOk(offset as u64)),
-		    U32Option::None => (current_position, SeekResult::SeekResultErr(())),
+		    U32Option::Some(offset) => SeekResult::Ok((offset, offset as u64)),
+		    U32Option::None => SeekResult::Err(()),
 		}
 	    } else {
 		match delta.checked_abs() {
 		    I64Option::Some(b) => match current_position.checked_sub(b as u32) {
-			U32Option::Some(offset) => {
-			    (offset, SeekResult::SeekResultOk(offset as u64))
-			}
-			U32Option::None => (current_position, SeekResult::SeekResultErr(())),
+			U32Option::Some(offset) => SeekResult::Ok((offset, offset as u64)),
+			U32Option::None => SeekResult::Err(()),
 		    },
-		    I64Option::None => (current_position, SeekResult::SeekResultErr(())),
+		    I64Option::None => SeekResult::Err(()),
 		}
 	    }
 	}

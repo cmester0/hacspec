@@ -4,35 +4,38 @@
 #+HTML_HEAD: <style>pre.src {background-color: #303030; color: #e5e5e5;}</style>
 #+PROPERTY: header-args:coq  :session *Coq*
 
+# C-c C-v t   -  export this files
+# C-c C-v b   -  create results / run this file
+
 * Concordium "Impls" specification
 ** Config
-#+begin_src toml :tangle ../../examples/concordium_impls/Cargo.toml
-  [package]
-  name = "concordium_impls"
-  version = "0.1.0"
-  authors = [""]
-  edition = "2018"
+#+BEGIN_SRC toml :eval never
+[package]
+name = "concordium_impls"
+version = "0.1.0"
+authors = [""]
+edition = "2018"
 
-  [lib]
-  path = "src/concordium_impls.rs"
+[lib]
+path = "src/concordium_impls.rs"
 
-  [dependencies]
-  hacspec-lib = { path = "../../lib" }
-  hacspec-attributes = { path = "../../utils/attributes", version = "0.1.0-beta.1" , features = ["print_attributes", "hacspec_unsafe"] } # , features = ["hacspec_unsafe"] , , optional = true
-  # pearlite-syn = { path = "../../../../creusot/pearlite-syn" }
-  creusot-contracts = { path = "../../../../creusot/creusot-contracts" }
+[dependencies]
+hacspec-lib = { path = "../../lib" }
+hacspec-attributes = { path = "../../utils/attributes", version = "0.1.0-beta.1" , features = ["print_attributes", "hacspec_unsafe"] } # , features = ["hacspec_unsafe"] , , optional = true
+# pearlite-syn = { path = "../../../../creusot/pearlite-syn" }
+creusot-contracts = { path = "../../../../creusot/creusot-contracts" }
 
-  [features]
-  use_attributes = ["hacspec-attributes/print_attributes", "hacspec-attributes/hacspec_unsafe"]
+[features]
+use_attributes = ["hacspec-attributes/print_attributes", "hacspec-attributes/hacspec_unsafe"]
 
-  [dev-dependencies]
-  hacspec-dev = { path = "../../utils/dev" }
-  criterion = "0.3"
-  rand = "0.8"
-#+end_src
+[dev-dependencies]
+hacspec-dev = { path = "../../utils/dev" }
+criterion = "0.3"
+rand = "0.8"
+#+END_SRC
 
 ** Imports
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+BEGIN_SRC rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   extern crate hacspec_lib;
 
@@ -45,11 +48,12 @@
   #[cfg(not(feature = "hacspec"))]
   extern crate creusot_contracts;
   #[cfg(not(feature = "hacspec"))]
-  use creusot_contracts::ensures;
-#+end_src
+  use creusot_contracts::*;
+#+END_SRC
 
 ** Rust code
 *** Reject
+We modle reject as the underlying data, that is the src_rust[:eval never]{i32} error code. The default constructor is i32 min.
 #+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
   pub type Reject = i32;
 
@@ -57,7 +61,9 @@
   pub fn reject_impl_deafult() -> Reject {
       i32::MIN
   }
+#+end_src
 
+#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
   pub type OptionReject = Option<Reject>;
 
   #[cfg_attr(feature = "creusot", logic)]
@@ -71,23 +77,53 @@
 
 #+end_src
 
-*** Convert From for Reject
+**** Reject - From trait
+#+begin_src rust :tangle no :eval never
+  impl convert::From<()> for Reject {
+      #[inline(always)]
+      fn from(_: ()) -> Self {
+	  Reject {
+	      error_code: unsafe { num::NonZeroI32::new_unchecked(i32::MIN + 1) },
+	  }
+      }
+  }
+
+  impl convert::From<ParseError> for Reject {
+      #[inline(always)]
+      fn from(_: ParseError) -> Self {
+	  Reject {
+	      error_code: unsafe { num::NonZeroI32::new_unchecked(i32::MIN + 2) },
+	  }
+      }
+  }
+#+end_src
+
+We modle the unsafe block with unchecked non zero as a precondition using requires giving us the hacspec equivalent
 #+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
-  #[ensures(result != 0i32)]
   #[cfg_attr(feature = "creusot", logic)]
+  #[ensures(result != 0i32)]
   pub fn reject_impl_convert_from_unit() -> Reject {
       i32::MIN + 1i32
   }
 
-  #[ensures(result != 0i32)]
   #[cfg_attr(feature = "creusot", logic)]
+  #[ensures(result != 0i32)]
   pub fn reject_impl_convert_from_parse_error() -> Reject {
       i32::MIN + 2i32
   }
-
+#+end_src
+which we can insert as the definition of the from functions in the trait implementation by using a coerce function
+#+begin_src rust :tangle no :eval never
+  pub fn coerce_hacspec_to_rust_reject(hacspec_reject: ConcordiumImpls::Reject) {
+      Reject {
+	  error_code: hacspec_reject,
+      }
+  }
 #+end_src
 
-*** Log error
+#+RESULTS:
+
+We define a log error type and function converting from it to the reject type
 #+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
   /// Errors that can occur during logging.
   #[derive(Copy, Clone)] // , Debug, Eq, PartialEq
@@ -109,7 +145,7 @@
   }
 
 #+end_src
-*** Contract Name Error
+We define a type for new contract name errors and conversion from it to reject
 #+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
   #[derive(Clone)] // , Debug, PartialEq, Eq
   pub enum NewContractNameError {
@@ -131,7 +167,7 @@
   }
 
 #+end_src
-*** Receive Name Error
+We define a type for new receive name errors and conversion from it to reject
 #+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
   #[derive(Clone)] // , Debug, PartialEq, Eq
   pub enum NewReceiveNameError {
@@ -152,16 +188,14 @@
 
 #+end_src
 *** Contract state
+We define contract state as its inner state namely the current position of the src_rust[:eval never]{u32} type.
 #+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
   pub type ContractState = u32;
 
 #+end_src
 **** Contract State -- Seek
 #+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
-  pub enum SeekResult {
-      SeekResultOk(u64),
-      SeekResultErr(()),
-  }
+  pub type SeekResult = Result<(ContractState, u64), ()>;
 
   #[derive(Copy, Clone)] // , Debug, PartialEq, Eq
   pub enum SeekFrom {
@@ -187,17 +221,15 @@
   pub type I64Option = Option<i64>;
 
   #[cfg_attr(feature = "creusot", trusted)]
-  pub fn contract_state_impl_seek(
-      current_position: ContractState,
-      pos: SeekFrom,
-  ) -> (ContractState, SeekResult) {
+  #[requires(forall<delta : i64> pos === SeekFrom::End(delta) ==> exists<b : u32> current_position.checked_add(delta as u32) === U32Option::Some(b))]
+  pub fn contract_state_impl_seek(current_position: ContractState, pos: SeekFrom) -> SeekResult {
       match pos {
-	  SeekFrom::Start(offset) => (offset as u32, SeekResult::SeekResultOk(offset)),
+	  SeekFrom::Start(offset) => SeekResult::Ok((offset as u32, offset)),
 	  SeekFrom::End(delta) => {
 	      if delta >= 0_i64 {
 		  match current_position.checked_add(delta as u32) {
-		      U32Option::Some(b) => (b, SeekResult::SeekResultOk(delta as u64)),
-		      U32Option::None => (current_position, SeekResult::SeekResultErr(())),
+		      U32Option::Some(b) => SeekResult::Ok((b, delta as u64)),
+		      U32Option::None => SeekResult::Err(()),
 		  }
 	      } else {
 		  match delta.checked_abs() {
@@ -205,37 +237,31 @@
 		      // {
 		      // let new_pos = 4_u32 - (b as u32);
 		      {
-			  (
-			      (4_u32 - (b as u32)),
-			      SeekResult::SeekResultOk((4_u32 - (b as u32)) as u64),
-			  )
+			  SeekResult::Ok(((4_u32 - (b as u32)), (4_u32 - (b as u32)) as u64))
 		      }
 		      // }
-		      I64Option::None => (current_position, SeekResult::SeekResultErr(())),
+		      I64Option::None => SeekResult::Err(()),
 		  }
 	      }
 	  }
 	  SeekFrom::Current(delta) => {
 	      if delta >= 0_i64 {
 		  match current_position.checked_add(delta as u32) {
-		      U32Option::Some(offset) => (offset, SeekResult::SeekResultOk(offset as u64)),
-		      U32Option::None => (current_position, SeekResult::SeekResultErr(())),
+		      U32Option::Some(offset) => SeekResult::Ok((offset, offset as u64)),
+		      U32Option::None => SeekResult::Err(()),
 		  }
 	      } else {
 		  match delta.checked_abs() {
 		      I64Option::Some(b) => match current_position.checked_sub(b as u32) {
-			  U32Option::Some(offset) => {
-			      (offset, SeekResult::SeekResultOk(offset as u64))
-			  }
-			  U32Option::None => (current_position, SeekResult::SeekResultErr(())),
+			  U32Option::Some(offset) => SeekResult::Ok((offset, offset as u64)),
+			  U32Option::None => SeekResult::Err(()),
 		      },
-		      I64Option::None => (current_position, SeekResult::SeekResultErr(())),
+		      I64Option::None => SeekResult::Err(()),
 		  }
 	      }
 	  }
       }
   }
-
 #+end_src
 **** Contract State -- Load
 #+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
@@ -420,18 +446,18 @@
   cd ../.. && cargo build
 #+end_src
 
-#+begin_src sh :eval no-export-query :results output silent
+#+begin_src sh :eval never :results output silent
   cargo hacspec -o ConcordiumImpls.v concordium_impls --init
 #+end_src
 
-#+begin_src sh :results none
+#+begin_src sh :results output silent
   cargo hacspec -o ConcordiumImpls.v concordium_impls --update
 #+end_src
 
 ** Generation of backend output
 
 #+name: split-file
-#+begin_src python :wrap "src coq :tangle ConcordiumImpls.v :results output silent" :exports none :results code :var ARG="0 -1" :var FILENAME="ConcordiumImpls.v"
+#+begin_src python :wrap "src coq :tangle ConcordiumImpls.v :results output silent" :exports none :results code :var ARG="0 -1" :var FILENAME="ConcordiumImpls.v" :eval never
   import functools
 
   lower, upper = map(int, ARG.split())
@@ -500,7 +526,7 @@
 #+end_src
 
 #+NAME: next
-#+begin_src python :var ARG="0 0" :var linum="0 0" :results output replace :exports none
+#+begin_src python :var ARG="0 0" :var linum="0 0" :results output silent :exports none
   a,b = map(int, linum.split())
   c,d = map(int, ARG.split())
   print (a+b+c,d)
@@ -527,10 +553,10 @@ Add Rec LoadPath "src/" as Hacspec.
 
 *** The includes
 #+NAME: linum0
-#+CALL: next(ARG="0 9", linum="0 0") :result output silent :exports none :cache yes
+#+CALL: next(ARG="0 9", linum="0 0")
 #+NAME: seg0
-#+CALL: split-file(ARG=linum0) :cache yes
-#+RESULTS[0d31c7b9141599e8e58333ff982f7144360fe7fe]: seg0
+#+CALL: split-file(ARG=linum0) :eval
+#+RESULTS: seg0
 #+begin_src coq :tangle ConcordiumImpls.v :results output silent
 (** This file was automatically generated using Hacspec **)
 Require Import Lib MachineIntegers.
@@ -545,42 +571,41 @@ Require Import Hacspec.Lib.
 
 *** Types and default implementations
 #+NAME: linum1
-#+CALL: next(ARG="0 2", linum=linum0) :result output silent :exports none :cache yes
+#+CALL: next(ARG="0 2", linum=linum0)
 #+NAME: seg1
-#+CALL: split-file(ARG=linum1) :cache yes
-#+RESULTS[7004d8b56094df79398a3d75147f9e60a696aa7d]: seg1
+#+CALL: split-file(ARG=linum1) :eval
+#+RESULTS: seg1
 #+begin_src coq :tangle ConcordiumImpls.v :results output silent
 Notation "'reject'" := (int32) : hacspec_scope.
 
 #+end_src
 
 #+NAME: linum2
-#+CALL: next(ARG="0 2", linum=linum1) :result output silent :exports none :cache yes
+#+CALL: next(ARG="0 2", linum=linum1)
 #+NAME: seg2
-#+CALL: split-file(ARG=linum2) :cache yes
-#+RESULTS[cebe4a3b498bf3a64ad1b0fee92ef78b48fd7ccd]: seg2
+#+CALL: split-file(ARG=linum2) :eval
+#+RESULTS: seg2
 #+begin_src coq :tangle ConcordiumImpls.v :results output silent
-Definition reject_impl_default  : reject :=
+Definition reject_impl_deafult  : reject :=
   min.
 
 #+end_src
 
-
 #+NAME: linum3
-#+CALL: next(ARG="0 2", linum=linum2) :result output silent :exports none :cache yes
+#+CALL: next(ARG="0 2", linum=linum2)
 #+NAME: seg3
-#+CALL: split-file(ARG=linum3) :cache yes
-#+RESULTS[37fecf32223b194cbb0c1bd1dcc918300b8c1de1]: seg3
+#+CALL: split-file(ARG=linum3) :eval
+#+RESULTS: seg3
 #+begin_src coq :tangle ConcordiumImpls.v :results output silent
 Notation "'option_reject'" := ((option reject)) : hacspec_scope.
 
 #+end_src
 
 #+NAME: linum4
-#+CALL: next(ARG="0 2", linum=linum3) :result output silent :exports none :cache yes
+#+CALL: next(ARG="0 2", linum=linum3)
 #+NAME: seg4
-#+CALL: split-file(ARG=linum4) :cache yes
-#+RESULTS[749a12595beca24d5dd730d8c8c02e4a6efe251b]: seg4
+#+CALL: split-file(ARG=linum4) :eval
+#+RESULTS: seg4
 #+begin_src coq :tangle ConcordiumImpls.v :results output silent
 Definition new_reject_impl (x_0 : int32) : option_reject :=
   (if ((x_0) <.? (@repr WORDSIZE32 0)):bool then (@Some reject (x_0)) else (
@@ -590,158 +615,136 @@ Definition new_reject_impl (x_0 : int32) : option_reject :=
 
 *** Error handling
 #+NAME: linum5
-#+CALL: next(ARG="0 5", linum=linum4) :result output silent :exports none :cache yes
-#+NAME: seg5
-#+CALL: split-file(ARG=linum5) :cache yes
-#+RESULTS[ac841e3d575b7f4b005d32499fb8d2f7468bd510]: seg5
+#+CALL: next(ARG="0 5", linum=linum4)#+NAME: seg5
+#+CALL: split-file(ARG=linum5)
+#+RESULTS: seg5
 #+begin_src coq :tangle ConcordiumImpls.v :results output silent
-  Definition reject_impl_convert_from_unit  : reject :=
-    (min) .+ (@repr WORDSIZE32 1).
+Definition reject_impl_convert_from_unit  : reject :=
+  (min) .+ (@repr WORDSIZE32 1).
 
-  Theorem ensures_reject_impl_convert_from_unit : forall result_1 ,
-  @reject_impl_convert_from_unit  = result_1 ->
-  (result_1) !=.? (@repr WORDSIZE32 0).
-  Proof.
-    intros; subst.
-    reflexivity.
-  Qed.
+Theorem ensures_reject_impl_convert_from_unit : forall result_1 ,
+@reject_impl_convert_from_unit  = result_1 ->
+(result_1) !=.? (@repr WORDSIZE32 0).
+Proof. Admitted.
 
 #+end_src
 
 #+NAME: linum6
-#+CALL: next(ARG="0 5", linum=linum5) :result output silent :exports none :cache yes
+#+CALL: next(ARG="0 5", linum=linum5)
 #+NAME: seg6
-#+CALL: split-file(ARG=linum6) :cache yes
-#+RESULTS[c1d463dd2f5c7ed7ad84199dd45bfc772ff2c2c4]: seg6
+#+CALL: split-file(ARG=linum6)
+#+RESULTS: seg6
 #+begin_src coq :tangle ConcordiumImpls.v :results output silent
-  Definition reject_impl_convert_from_parse_error  : reject :=
-    (min) .+ (@repr WORDSIZE32 2).
+Definition reject_impl_convert_from_parse_error  : reject :=
+  (min) .+ (@repr WORDSIZE32 2).
 
-  Theorem ensures_reject_impl_convert_from_parse_error : forall result_1 ,
-  @reject_impl_convert_from_parse_error  = result_1 ->
-  (result_1) !=.? (@repr WORDSIZE32 0).
-  Proof.
-    intros ; subst.
-    reflexivity.
-  Qed.
+Theorem ensures_reject_impl_convert_from_parse_error : forall result_1 ,
+@reject_impl_convert_from_parse_error  = result_1 ->
+(result_1) !=.? (@repr WORDSIZE32 0).
+Proof. Admitted.
 
 #+end_src
 
 #+NAME: linum7
-#+CALL: next(ARG="0 7", linum=linum6) :result output silent :exports none :cache yes
+#+CALL: next(ARG="0 7", linum=linum6)
 #+NAME: seg7
-#+CALL: split-file(ARG=linum7) :cache yes
-#+RESULTS[c45cad55add404df56048791632c7fcb770de68e]: seg7
+#+CALL: split-file(ARG=linum7)
+#+RESULTS: seg7
 #+begin_src coq :tangle ConcordiumImpls.v :results output silent
-  Inductive log_error :=
-  | Full : log_error
-  | Malformed : log_error.
+Inductive log_error :=
+| Full : log_error
+| Malformed : log_error.
 
-  Definition reject_impl_from_log_error (le_2 : log_error) : reject :=
-    match le_2 with
-    | Full => (min) .+ (@repr WORDSIZE32 3)
-    | Malformed => (min) .+ (@repr WORDSIZE32 4)
-    end.
+Definition reject_impl_from_log_error (le_2 : log_error) : reject :=
+  match le_2 with
+  | Full => (min) .+ (@repr WORDSIZE32 3)
+  | Malformed => (min) .+ (@repr WORDSIZE32 4)
+  end.
 
-  Theorem ensures_reject_impl_from_log_error : forall result_1 (le_2 : log_error),
-  @reject_impl_from_log_error le_2 = result_1 ->
-  (result_1) !=.? (@repr WORDSIZE32 0).
-  Proof.
-    intros ; subst.
-    unfold reject_impl_from_log_error.
-    destruct le_2.
-    - reflexivity.
-    - reflexivity.
-  Qed.
+Theorem ensures_reject_impl_from_log_error : forall result_1 (le_2 : log_error),
+@reject_impl_from_log_error le_2 = result_1 ->
+(result_1) !=.? (@repr WORDSIZE32 0).
+Proof. Admitted.
 
 #+end_src
 
 #+NAME: linum8
-#+CALL: next(ARG="0 7", linum=linum7) :result output silent :exports none :cache yes
+#+CALL: next(ARG="0 7", linum=linum7)
 #+NAME: seg8
-#+CALL: split-file(ARG=linum8) :cache yes
-#+RESULTS[591c5303f9352d18a6a6ff3c2225659c1789dc38]: seg8
+#+CALL: split-file(ARG=linum8)
+#+RESULTS: seg8
 #+begin_src coq :tangle ConcordiumImpls.v :results output silent
-  Inductive new_contract_name_error :=
-  | NewContractNameErrorMissingInitPrefix : new_contract_name_error
-  | NewContractNameErrorTooLong : new_contract_name_error
-  | NewContractNameErrorContainsDot : new_contract_name_error
-  | NewContractNameErrorInvalidCharacters : new_contract_name_error.
+Inductive new_contract_name_error :=
+| NewContractNameErrorMissingInitPrefix : new_contract_name_error
+| NewContractNameErrorTooLong : new_contract_name_error
+| NewContractNameErrorContainsDot : new_contract_name_error
+| NewContractNameErrorInvalidCharacters : new_contract_name_error.
 
-  Definition reject_impl_from_new_contract_name_error
-    (nre_3 : new_contract_name_error)
-    : reject :=
-    match nre_3 with
-    | NewContractNameErrorMissingInitPrefix => (min) .+ (@repr WORDSIZE32 5)
-    | NewContractNameErrorTooLong => (min) .+ (@repr WORDSIZE32 6)
-    | NewContractNameErrorContainsDot => (min) .+ (@repr WORDSIZE32 9)
-    | NewContractNameErrorInvalidCharacters => (min) .+ (@repr WORDSIZE32 10)
-    end.
+Definition reject_impl_from_new_contract_name_error
+  (nre_3 : new_contract_name_error)
+  : reject :=
+  match nre_3 with
+  | NewContractNameErrorMissingInitPrefix => (min) .+ (@repr WORDSIZE32 5)
+  | NewContractNameErrorTooLong => (min) .+ (@repr WORDSIZE32 6)
+  | NewContractNameErrorContainsDot => (min) .+ (@repr WORDSIZE32 9)
+  | NewContractNameErrorInvalidCharacters => (min) .+ (@repr WORDSIZE32 10)
+  end.
 
-  Theorem ensures_reject_impl_from_new_contract_name_error : forall result_1 (
-    nre_3 : new_contract_name_error),
-  @reject_impl_from_new_contract_name_error nre_3 = result_1 ->
-  (result_1) !=.? (@repr WORDSIZE32 0).
-  Proof.
-    intros ; subst.
-    unfold reject_impl_from_new_contract_name_error.
-    destruct nre_3 ; reflexivity.
-  Qed.
+Theorem ensures_reject_impl_from_new_contract_name_error : forall result_1 (
+  nre_3 : new_contract_name_error),
+@reject_impl_from_new_contract_name_error nre_3 = result_1 ->
+(result_1) !=.? (@repr WORDSIZE32 0).
+Proof. Admitted.
 
 #+end_src
 
 #+NAME: linum9
-#+CALL: next(ARG="0 7", linum=linum8) :result output silent :exports none :cache yes
+#+CALL: next(ARG="0 7", linum=linum8)
 #+NAME: seg9
-#+CALL: split-file(ARG=linum9) :cache yes
-#+RESULTS[33bb02aed6d7654d0929bcaebab35f0f9ddc594e]: seg9
+#+CALL: split-file(ARG=linum9)
+#+RESULTS: seg9
 #+begin_src coq :tangle ConcordiumImpls.v :results output silent
-  Inductive new_receive_name_error :=
-  | NewReceiveNameErrorMissingDotSeparator : new_receive_name_error
-  | NewReceiveNameErrorTooLong : new_receive_name_error
-  | NewReceiveNameErrorInvalidCharacters : new_receive_name_error.
+Inductive new_receive_name_error :=
+| NewReceiveNameErrorMissingDotSeparator : new_receive_name_error
+| NewReceiveNameErrorTooLong : new_receive_name_error
+| NewReceiveNameErrorInvalidCharacters : new_receive_name_error.
 
-  Definition reject_impl_from_new_receive_name_error
-    (nre_4 : new_receive_name_error)
-    : reject :=
-    match nre_4 with
-    | NewReceiveNameErrorMissingDotSeparator => (min) .+ (@repr WORDSIZE32 7)
-    | NewReceiveNameErrorTooLong => (min) .+ (@repr WORDSIZE32 8)
-    | NewReceiveNameErrorInvalidCharacters => (min) .+ (@repr WORDSIZE32 11)
-    end.
+Definition reject_impl_from_new_receive_name_error
+  (nre_4 : new_receive_name_error)
+  : reject :=
+  match nre_4 with
+  | NewReceiveNameErrorMissingDotSeparator => (min) .+ (@repr WORDSIZE32 7)
+  | NewReceiveNameErrorTooLong => (min) .+ (@repr WORDSIZE32 8)
+  | NewReceiveNameErrorInvalidCharacters => (min) .+ (@repr WORDSIZE32 11)
+  end.
 
-  Theorem ensures_reject_impl_from_new_receive_name_error : forall result_1 (
-    nre_4 : new_receive_name_error),
-  @reject_impl_from_new_receive_name_error nre_4 = result_1 ->
-  (result_1) !=.? (@repr WORDSIZE32 0).
-  Proof.
-    intros ; subst.
-    unfold reject_impl_from_new_contract_name_error.
-    destruct nre_4 ; reflexivity.
-  Qed.
+Theorem ensures_reject_impl_from_new_receive_name_error : forall result_1 (
+  nre_4 : new_receive_name_error),
+@reject_impl_from_new_receive_name_error nre_4 = result_1 ->
+(result_1) !=.? (@repr WORDSIZE32 0).
+Proof. Admitted.
 
 #+end_src
 
 *** Contract state
 #+NAME: linum10
-#+CALL: next(ARG="0 2", linum=linum9) :result output silent :exports none :cache yes
+#+CALL: next(ARG="0 2", linum=linum9)
 #+NAME: seg10
-#+CALL: split-file(ARG=linum10) :cache yes
-#+RESULTS[fab0ca92040091f9092434752a3acc7d922f4ca0]: seg10
+#+CALL: split-file(ARG=linum10)
+#+RESULTS: seg10
 #+begin_src coq :tangle ConcordiumImpls.v :results output silent
 Notation "'contract_state'" := (int32) : hacspec_scope.
 
 #+end_src
 
 #+NAME: linum11
-#+CALL: next(ARG="0 4", linum=linum10) :result output silent :exports none :cache yes
+#+CALL: next(ARG="0 4", linum=linum10)
 #+NAME: seg11
-#+CALL: split-file(ARG=linum11) :cache yes
-#+RESULTS[d3514c26f939b248cc1fd6115b895d8638997c58]: seg11
+#+CALL: split-file(ARG=linum11)
+#+RESULTS: seg11
 #+begin_src coq :tangle ConcordiumImpls.v :results output silent
-Inductive seek_result :=
-| SeekResultOk : int64 -> seek_result
-| SeekResultErr : unit -> seek_result.
+Notation "'seek_result'" := ((result (contract_state × int64
+  ) unit)) : hacspec_scope.
 
 Inductive seek_from :=
 | Start : int64 -> seek_from
@@ -751,10 +754,10 @@ Inductive seek_from :=
 #+end_src
 
 #+NAME: linum12
-#+CALL: next(ARG="0 4", linum=linum11) :result output silent :exports none :cache yes
+#+CALL: next(ARG="0 4", linum=linum11)
 #+NAME: seg12
-#+CALL: split-file(ARG=linum12) :cache yes
-#+RESULTS[d6b3803ea926c01845f5ef5a2119263986c53d9a]: seg12
+#+CALL: split-file(ARG=linum12)
+#+RESULTS: seg12
 #+begin_src coq :tangle ConcordiumImpls.v :results output silent
 Notation "'uint32_option'" := ((option int32)) : hacspec_scope.
 
@@ -763,48 +766,56 @@ Notation "'iint64_option'" := ((option int64)) : hacspec_scope.
 #+end_src
 
 #+NAME: linum13
-#+CALL: next(ARG="0 2", linum=linum12) :result output silent :exports none :cache yes
+#+CALL: next(ARG="0 2", linum=linum12)
 #+NAME: seg13
-#+CALL: split-file(ARG=linum13) :cache yes
-#+RESULTS[3fd666602b25114a67b445cbcdae2df0f9e59e91]: seg13
+#+CALL: split-file(ARG=linum13)
+#+RESULTS: seg13
 #+begin_src coq :tangle ConcordiumImpls.v :results output silent
 Definition contract_state_impl_seek
   (current_position_5 : contract_state)
   (pos_6 : seek_from)
-  : (contract_state × seek_result) :=
+  `{forall delta_7,
+  pos_6 = End (delta_7) ->
+  exists b_8true}
+  : seek_result :=
   match pos_6 with
-  | Start offset_7 => (@cast _ uint32 _ (offset_7), SeekResultOk (offset_7))
-  | End delta_8 => (if ((delta_8) >=.? (@repr WORDSIZE64 0)):bool then (
+  | Start offset_9 => @Ok (contract_state × int64) unit ((
+      @cast _ uint32 _ (offset_9),
+      offset_9
+    ))
+  | End delta_10 => (if ((delta_10) >=.? (@repr WORDSIZE64 0)):bool then (
       match pub_uint32_checked_add (current_position_5) (@cast _ uint32 _ (
-          delta_8)) with
-      | Some b_9 => (b_9, SeekResultOk (@cast _ uint64 _ (delta_8)))
-      | None => (current_position_5, SeekResultErr (tt))
-      end) else (match pub_int64_checked_abs (delta_8) with
-      | Some b_10 => (
-        (@repr WORDSIZE32 4) .- (@cast _ uint32 _ (b_10)),
-        SeekResultOk (@cast _ uint64 _ ((@repr WORDSIZE32 4) .- (
-              @cast _ uint32 _ (b_10))))
-      )
-      | None => (current_position_5, SeekResultErr (tt))
+          delta_10)) with
+      | Some b_11 => @Ok (contract_state × int64) unit ((
+          b_11,
+          @cast _ uint64 _ (delta_10)
+        ))
+      | None => @Err (contract_state × int64) unit (tt)
+      end) else (match pub_int64_checked_abs (delta_10) with
+      | Some b_12 => @Ok (contract_state × int64) unit ((
+          (@repr WORDSIZE32 4) .- (@cast _ uint32 _ (b_12)),
+          @cast _ uint64 _ ((@repr WORDSIZE32 4) .- (@cast _ uint32 _ (b_12)))
+        ))
+      | None => @Err (contract_state × int64) unit (tt)
       end))
-  | Current delta_11 => (if ((delta_11) >=.? (@repr WORDSIZE64 0)):bool then (
+  | Current delta_13 => (if ((delta_13) >=.? (@repr WORDSIZE64 0)):bool then (
       match pub_uint32_checked_add (current_position_5) (@cast _ uint32 _ (
-          delta_11)) with
-      | Some offset_12 => (
-        offset_12,
-        SeekResultOk (@cast _ uint64 _ (offset_12))
-      )
-      | None => (current_position_5, SeekResultErr (tt))
-      end) else (match pub_int64_checked_abs (delta_11) with
-      | Some b_13 => match pub_uint32_checked_sub (current_position_5) (
-        @cast _ uint32 _ (b_13)) with
-      | Some offset_14 => (
-        offset_14,
-        SeekResultOk (@cast _ uint64 _ (offset_14))
-      )
-      | None => (current_position_5, SeekResultErr (tt))
+          delta_13)) with
+      | Some offset_14 => @Ok (contract_state × int64) unit ((
+          offset_14,
+          @cast _ uint64 _ (offset_14)
+        ))
+      | None => @Err (contract_state × int64) unit (tt)
+      end) else (match pub_int64_checked_abs (delta_13) with
+      | Some b_15 => match pub_uint32_checked_sub (current_position_5) (
+        @cast _ uint32 _ (b_15)) with
+      | Some offset_16 => @Ok (contract_state × int64) unit ((
+          offset_16,
+          @cast _ uint64 _ (offset_16)
+        ))
+      | None => @Err (contract_state × int64) unit (tt)
       end
-      | None => (current_position_5, SeekResultErr (tt))
+      | None => @Err (contract_state × int64) unit (tt)
       end))
   end.
 
@@ -812,174 +823,177 @@ Definition contract_state_impl_seek
 
 **** Contract state - Read Trait
 #+NAME: linum14
-#+CALL: next(ARG="0 2", linum=linum13) :result output silent :exports none :cache yes
+#+CALL: next(ARG="0 5", linum=linum13)
 #+NAME: seg14
-#+CALL: split-file(ARG=linum14) :cache yes
-#+RESULTS[c51fe102d9dc5f2b4855fe3254417f6d2f90c1c2]: seg14
+#+CALL: split-file(ARG=linum14)
+#+RESULTS: seg14
 #+begin_src coq :tangle ConcordiumImpls.v :results output silent
 Definition load_state_hacspec
-  (buf_15 : public_byte_seq)
-  (offset_16 : int32)
-  : int32 :=
-  @repr WORDSIZE32 1.
+  (buf_17 : public_byte_seq)
+  (offset_18 : int32)
+  : (public_byte_seq × int32) :=
+  (buf_17, @repr WORDSIZE32 1).
+
+Theorem ensures_load_state_hacspec : forall result_1 (
+  buf_17 : public_byte_seq) (offset_18 : int32),
+@load_state_hacspec buf_17 offset_18 = result_1 ->
+(result_1) !=.? ((buf_17, @repr WORDSIZE32 2)).
+Proof. Admitted.
 
 #+end_src
 
 #+NAME: linum15
-#+CALL: next(ARG="0 8", linum=linum14) :result output silent :exports none :cache yes
+#+CALL: next(ARG="0 8", linum=linum14)
 #+NAME: seg15
-#+CALL: split-file(ARG=linum15) :cache yes
-#+RESULTS[6d021bc8f5102bffd0417918f753ccad666415b5]: seg15
+#+CALL: split-file(ARG=linum15)
+#+RESULTS: seg15
 #+begin_src coq :tangle ConcordiumImpls.v :results output silent
 Definition contract_state_impl_read_read
-  (current_position_17 : contract_state)
-  (buf_18 : public_byte_seq)
+  (current_position_19 : contract_state)
+  (buf_20 : public_byte_seq)
   : (contract_state × uint_size) :=
-  let num_read_19 : int32 :=
-    @repr WORDSIZE32 1 in
-  let num_read_19 :=
-    load_state_hacspec (buf_18) (current_position_17) in
-  ((current_position_17) .+ (num_read_19), @cast _ uint32 _ (num_read_19)).
+  let '(buf_21, num_read_22) :=
+    load_state_hacspec (buf_20) (current_position_19) in 
+  ((current_position_19) .+ (num_read_22), @cast _ uint32 _ (num_read_22)).
 
 Definition contract_state_impl_read_read_u64
-  (current_position_20 : contract_state)
-  (num_read_21 : int32)
+  (current_position_23 : contract_state)
+  (num_read_24 : int32)
   : (contract_state × bool) :=
   (
-    (current_position_20) .+ (num_read_21),
-    (num_read_21) =.? (@repr WORDSIZE32 8)
+    (current_position_23) .+ (num_read_24),
+    (num_read_24) =.? (@repr WORDSIZE32 8)
   ).
 
 Definition contract_state_impl_read_read_u32
-  (current_position_22 : contract_state)
-  (num_read_23 : int32)
+  (current_position_25 : contract_state)
+  (num_read_26 : int32)
   : (contract_state × bool) :=
   (
-    (current_position_22) .+ (num_read_23),
-    (num_read_23) =.? (@repr WORDSIZE32 4)
+    (current_position_25) .+ (num_read_26),
+    (num_read_26) =.? (@repr WORDSIZE32 4)
   ).
 
 Definition contract_state_impl_read_read_u8
-  (current_position_24 : contract_state)
-  (num_read_25 : int32)
+  (current_position_27 : contract_state)
+  (num_read_28 : int32)
   : (contract_state × bool) :=
   (
-    (current_position_24) .+ (num_read_25),
-    (num_read_25) =.? (@repr WORDSIZE32 1)
+    (current_position_27) .+ (num_read_28),
+    (num_read_28) =.? (@repr WORDSIZE32 1)
   ).
 
 #+end_src
 
 **** Contract state - Write Trait
 #+NAME: linum16
-#+CALL: next(ARG="0 4", linum=linum15) :result output silent :exports none :cache yes
+#+CALL: next(ARG="0 4", linum=linum15)
 #+NAME: seg16
-#+CALL: split-file(ARG=linum16) :cache yes
-#+RESULTS[a0113da7a14eae3aa0c7ada5521876113200f6b6]: seg16
+#+CALL: split-file(ARG=linum16)
+#+RESULTS: seg16
 #+begin_src coq :tangle ConcordiumImpls.v :results output silent
 Definition write_impl_for_contract_state_test
-  (current_position_26 : contract_state)
-  (len_27 : int32)
+  (current_position_29 : contract_state)
+  (len_30 : int32)
   : bool :=
-  option_is_none (pub_uint32_checked_add (current_position_26) (len_27)).
+  option_is_none (pub_uint32_checked_add (current_position_29) (len_30)).
 
 Definition write_impl_for_contract_state
-  (current_position_28 : contract_state)
-  (num_bytes_29 : int32)
+  (current_position_31 : contract_state)
+  (num_bytes_32 : int32)
   : (contract_state × uint_size) :=
-  ((current_position_28) .+ (num_bytes_29), @cast _ uint32 _ (num_bytes_29)).
+  ((current_position_31) .+ (num_bytes_32), @cast _ uint32 _ (num_bytes_32)).
 
 #+end_src
 
 **** Contract State - Misc.
 #+NAME: linum17
-#+CALL: next(ARG="0 10", linum=linum16) :result output silent :exports none :cache yes
+#+CALL: next(ARG="0 10", linum=linum16)
 #+NAME: seg17
-#+CALL: split-file(ARG=linum17) :cache yes
-#+RESULTS[a04a620a3eaae3063b564f96952157587bd6cb86]: seg17
+#+CALL: split-file(ARG=linum17)
+#+RESULTS: seg17
 #+begin_src coq :tangle ConcordiumImpls.v :results output silent
 Definition has_contract_state_impl_for_contract_state_open  : contract_state :=
   @repr WORDSIZE32 0.
 
 Definition has_contract_state_impl_for_contract_state_reserve_0
-  (len_30 : int32)
-  (cur_size_31 : int32)
+  (len_33 : int32)
+  (cur_size_34 : int32)
   : bool :=
-  (cur_size_31) <.? (len_30).
+  (cur_size_34) <.? (len_33).
 
 Definition has_contract_state_impl_for_contract_state_reserve_1
-  (res_32 : int32)
+  (res_35 : int32)
   : bool :=
-  (res_32) =.? (@repr WORDSIZE32 1).
+  (res_35) =.? (@repr WORDSIZE32 1).
 
 Definition has_contract_state_impl_for_contract_state_truncate_0
-  (cur_size_33 : int32)
-  (new_size_34 : int32)
+  (cur_size_36 : int32)
+  (new_size_37 : int32)
   : bool :=
-  (cur_size_33) >.? (new_size_34).
+  (cur_size_36) >.? (new_size_37).
 
 Definition has_contract_state_impl_for_contract_state_truncate_1
-  (current_position_35 : contract_state)
-  (new_size_36 : int32)
+  (current_position_38 : contract_state)
+  (new_size_39 : int32)
   : contract_state :=
-  (if ((new_size_36) <.? (current_position_35)):bool then (new_size_36) else (
-      current_position_35)).
+  (if ((new_size_39) <.? (current_position_38)):bool then (new_size_39) else (
+      current_position_38)).
 
 #+end_src
 
 *** Parameter
 #+NAME: linum18
-#+CALL: next(ARG="0 4", linum=linum17) :result output silent :exports none :cache yes
+#+CALL: next(ARG="0 4", linum=linum17)
 #+NAME: seg18
-#+CALL: split-file(ARG=linum18) :cache yes
-#+RESULTS[115c92a71f3e0b9fd1c417790062c51146039492]: seg18
+#+CALL: split-file(ARG=linum18)
+#+RESULTS: seg18
 #+begin_src coq :tangle ConcordiumImpls.v :results output silent
 Notation "'parameter'" := (int32) : hacspec_scope.
 
 Definition read_impl_for_parameter_read
-  (current_position_37 : parameter)
-  (num_read_38 : int32)
+  (current_position_40 : parameter)
+  (num_read_41 : int32)
   : (parameter × uint_size) :=
-  ((current_position_37) .+ (num_read_38), @cast _ uint32 _ (num_read_38)).
+  ((current_position_40) .+ (num_read_41), @cast _ uint32 _ (num_read_41)).
 
 #+end_src
 
 *** Attributes Cursor
 #+NAME: linum19
-#+CALL: next(ARG="0 -1", linum=linum18) :result output silent :exports none :cache yes
+#+CALL: next(ARG="0 -1", linum=linum18)
 #+NAME: seg19
-#+CALL: split-file(ARG=linum19) :cache yes
-#+RESULTS[2e1d86e441037bd6b6dc231ef07271f1f6df9326]: seg19
+#+CALL: split-file(ARG=linum19)
+#+RESULTS: seg19
 #+begin_src coq :tangle ConcordiumImpls.v :results output silent
 Notation "'attributes_cursor'" := ((int32 × int16)) : hacspec_scope.
 
 Definition has_policy_impl_for_policy_attributes_cursor_next_test
-  (policy_attribute_items_39 : attributes_cursor)
+  (policy_attribute_items_42 : attributes_cursor)
   : bool :=
-  let '(_, remaining_items_40) :=
-    policy_attribute_items_39 in
-  (remaining_items_40) =.? (@repr WORDSIZE16 0).
+  let '(_, remaining_items_43) :=
+    policy_attribute_items_42 in 
+  (remaining_items_43) =.? (@repr WORDSIZE16 0).
 
 Definition has_policy_impl_for_policy_attributes_cursor_next_tag_invalid
-  (policy_attribute_items_41 : attributes_cursor)
-  (tag_value_len_1_42 : int8)
-  (num_read_43 : int32)
+  (policy_attribute_items_44 : attributes_cursor)
+  (tag_value_len_1_45 : int8)
+  (num_read_46 : int32)
   : (attributes_cursor × bool) :=
-  let '(current_position_44, remaining_items_45) :=
-    policy_attribute_items_41 in
-  let policy_attribute_items_46 : (int32 × int16) :=
-    ((current_position_44) .+ (num_read_43), remaining_items_45) in
-  (policy_attribute_items_46, (tag_value_len_1_42) >.? (@repr WORDSIZE8 31)).
+  let '(current_position_47, remaining_items_48) :=
+    policy_attribute_items_44 in 
+  let policy_attribute_items_49 : (int32 × int16) :=
+    ((current_position_47) .+ (num_read_46), remaining_items_48) in 
+  (policy_attribute_items_49, (tag_value_len_1_45) >.? (@repr WORDSIZE8 31)).
 
 Definition has_policy_impl_for_policy_attributes_cursor_next
-  (policy_attribute_items_47 : attributes_cursor)
-  (num_read_48 : int32)
+  (policy_attribute_items_50 : attributes_cursor)
+  (num_read_51 : int32)
   : attributes_cursor :=
-  let '(current_position_49, remaining_items_50) :=
-    policy_attribute_items_47 in
+  let '(current_position_52, remaining_items_53) :=
+    policy_attribute_items_50 in 
   (
-    (current_position_49) .+ (num_read_48),
-    (remaining_items_50) .- (@repr WORDSIZE16 1)
+    (current_position_52) .+ (num_read_51),
+    (remaining_items_53) .- (@repr WORDSIZE16 1)
   ).
-
 #+end_src
