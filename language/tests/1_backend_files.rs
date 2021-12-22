@@ -46,3 +46,10 @@ fn positive_types() {
               "Types",
               HashMap::from([("coq", true)]));
 }
+
+#[test]
+fn positive_casting() {
+    run_tests("backend-tests/casting.rs",
+              "Casting",
+              HashMap::from([("coq", true)]));
+}
