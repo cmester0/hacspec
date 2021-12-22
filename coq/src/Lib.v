@@ -36,7 +36,6 @@ Axiom int64_classify : int64 -> int64.
 Axiom uint128_classify : int128 -> int128.
 Axiom int128_classify : int128 -> int128.
 
-
 (* CompCert integers' signedness is only interpreted through 'signed' and 'unsigned',
    and not in the representation. Therefore, uints are just names for their respective ints.
 *)
@@ -130,6 +129,14 @@ Definition pub_u128 (n : Z) : int128 := repr n.
 
 (* Definition pub_i128 (n:N) : u:pub_int128{v u == n} := sint #S128 #PUB n *)
 Definition pub_i128 (n : Z) : int128 := repr n.
+
+(**** Secret integers *)
+
+Definition iint8 := int8.
+Definition iint16 := int16.
+Definition iint32 := int32.
+Definition iint64 := int64.
+Definition iint128 := int128.
 
 (**** Operations *)
 
@@ -1032,29 +1039,93 @@ Definition uint32_from_uint8 (n : int8) : int32 := repr n.
 Definition uint16_from_uint8 (n : int8) : int16 := repr n.
 Definition usize_from_uint8 (n : int8) : uint_size := repr n.
 
+Definition uint_size_from_uint16 (n : int16) : uint_size := repr n.
 Definition uint128_from_uint16 (n : int16) : int128 := repr n.
 Definition uint64_from_uint16 (n : int16) : int64 := repr n.
 Definition uint32_from_uint16 (n : int16) : int32 := repr n.
 Definition uint8_from_uint16 (n : int16) : int8 := repr n.
 Definition usize_from_uint16 (n : int16) : uint_size := repr n.
 
+Definition uint_size_from_uint32 (n : int32) : uint_size := repr n.
 Definition uint128_from_uint32 (n : int32) : int128 := repr n.
 Definition uint64_from_uint32 (n : int32) : int64 := repr n.
 Definition uint16_from_uint32 (n : int32) : int16 := repr n.
 Definition uint8_from_uint32 (n : int32) : int8 := repr n.
 Definition usize_from_uint32 (n : int32) : uint_size := repr n.
 
+Definition uint_size_from_uint64 (n : int64) : uint_size := repr n.
 Definition uint128_from_uint64 (n : int64) : int128 := repr n.
 Definition uint32_from_uint64 (n : int64) : int32 := repr n.
 Definition uint16_from_uint64 (n : int64) : int16 := repr n.
 Definition uint8_from_uint64 (n : int64) : int8 := repr n.
 Definition usize_from_uint64 (n : int64) : uint_size := repr n.
 
+Definition uint_size_from_uint128 (n : int128) : uint_size := repr n.
 Definition uint64_from_uint128 (n : int128) : int64 := repr n.
 Definition uint32_from_uint128 (n : int128) : int32 := repr n.
 Definition uint16_from_uint128 (n : int128) : int16 := repr n.
 Definition uint8_from_uint128 (n : int128) : int8 := repr n.
 Definition usize_from_uint128 (n : int128) : uint_size := repr n.
+
+
+Definition declassify_u8_from_uint8 (n : uint8) : int8 := n.
+Definition declassify_u16_from_uint8 (n : uint8) : int16 := uint16_from_uint8 n.
+Definition declassify_u32_from_uint8 (n : uint8) : int32 := uint32_from_uint8 n.
+Definition declassify_u64_from_uint8 (n : uint8) : int64 := uint64_from_uint8 n.
+Definition declassify_u128_from_uint8 (n : uint8) : int128 := uint128_from_uint8 n.
+Definition declassify_usize_from_uint8 (n : uint8) : uint_size := uint_size_from_uint8 n.
+
+Definition uint8_from_usize (n : uint_size) : uint8 := repr n.
+
+Definition declassify_u16_from_uint16 (n : uint16) : int16 := n.
+Definition declassify_u32_from_uint16 (n : uint16) : int32 := uint32_from_uint16 n.
+Definition declassify_u64_from_uint16 (n : uint16) : int64 := uint64_from_uint16 n.
+
+Definition u128_from_uint16 (n : uint16) : int128 := uint128_from_uint16 n.
+
+Definition declassify_u32_from_uint32 (n : uint32) : int32 := n.
+Definition declassify_u64_from_uint32 (n : uint32) : int64 := n.
+Definition declassify_u128_from_uint32 (n : uint32) : int128 := n.
+
+Definition declassify_u64_from_uint64 (n : uint64) : int64 := n.
+Definition declassify_u128_from_uint64 (n : uint64) : int128 := uint128_from_uint64 n.
+
+Definition declassify_u128_from_uint128 (n : uint128) : int128 := n.
+
+Definition uint64_from_usize (n : uint_size) : uint64 := repr n.
+Definition uint128_from_usize (n : uint_size) : uint128 := repr n.
+
+Definition iint128_from_iint8 (n : iint8) : iint128 := repr (int8_to_nat n).
+Definition iint8_from_iint128 (n : iint128) : iint8 := repr (int128_to_nat n).
+
+Definition iint128_from_iint16 (n : iint16) : iint128 := repr (int16_to_nat n).
+Definition iint16_from_iint128 (n : iint128) : iint16 := repr (int128_to_nat n).
+
+Definition iint128_from_iint32 (n : iint32) : iint128 := repr (int32_to_nat n).
+Definition iint32_from_iint128 (n : iint128) : iint32 := repr (int128_to_nat n).
+
+Definition iint128_from_iint64 (n : iint64) : iint128 := repr (int64_to_nat n).
+Definition iint64_from_iint128 (n : iint128) : iint64 := repr (int128_to_nat n).
+
+Definition iint64_from_iint8 (n : iint8) : iint64 := repr (int8_to_nat n).
+Definition iint8_from_iint64 (n : iint64) : iint8 := repr (int64_to_nat n).
+
+Definition iint64_from_iint16 (n : iint16) : iint64 := repr (int16_to_nat n).
+Definition iint16_from_iint64 (n : iint64) : iint16 := repr (int64_to_nat n).
+
+Definition iint64_from_iint32 (n : iint32) : iint64 := repr (int32_to_nat n).
+Definition iint32_from_iint64 (n : iint64) : iint32 := repr (int64_to_nat n).
+
+
+Definition iint32_from_iint8 (n : iint8) : iint32 := repr (int8_to_nat n).
+Definition iint8_from_iint32 (n : iint32) : iint8 := repr (int32_to_nat n).
+
+Definition iint32_from_iint16 (n : iint16) : iint32 := repr (int16_to_nat n).
+Definition iint16_from_iint32 (n : iint32) : iint16 := repr (int32_to_nat n).
+
+
+Definition iint16_from_iint8 (n : iint8) : iint16 := repr (int8_to_nat n).
+Definition iint8_from_iint16 (n : iint16) : iint8 := repr (int16_to_nat n).
 
 
 (* Comparisons, boolean equality, and notation *)
