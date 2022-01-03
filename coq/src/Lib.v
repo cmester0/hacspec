@@ -235,6 +235,29 @@ Definition foldi
 Class Default (A : Type) := {
   default : A
 }.
+<<<<<<< HEAD
+=======
+
+(* Default instances for common types *)
+Global Instance nat_default : Default nat := {
+  default := 0%nat
+}.
+Global Instance N_default : Default N := {
+  default := 0%N
+}.
+Global Instance Z_default : Default Z := {
+  default := 0%Z
+}.
+Global Instance uint_size_default : Default uint_size := {
+  default := zero
+}.
+Global Instance int_size_default : Default int_size := {
+  default := zero
+}.
+Global Instance int_default {WS : WORDSIZE} : Default (@int WS) := {
+  default := repr 0
+}.
+>>>>>>> adb36e989 (Working on backend tests)
 Global Arguments default {_} {_}.
 
 (*** Seq *)
@@ -788,8 +811,15 @@ Definition nat_mod_exp {p : Z} (a:nat_mod p) (n : uint_size) : nat_mod p :=
     end in
   exp_ a n.
 
+<<<<<<< HEAD
 Definition nat_mod_pow {p} := @nat_mod_exp p.
 Definition nat_mod_pow_self {p} := @nat_mod_exp p.
+=======
+
+(* Definition nat_mod_pow {p} := @nat_mod_exp p. *)
+Definition nat_mod_pow {p} {WS : WORDSIZE} (a:nat_mod p) (n : @int WS) :=
+  @nat_mod_exp p a (@repr WORDSIZE32 (unsigned n)).
+>>>>>>> adb36e989 (Working on backend tests)
 
 Close Scope nat_scope.
 Open Scope Z_scope.
@@ -818,6 +848,7 @@ Definition nat_mod_bit {n : Z} (a : nat_mod n) (i : uint_size) :=
 
 (* Alias for nat_mod_bit *)
 Definition nat_get_mod_bit {p} (a : nat_mod p) := nat_mod_bit a.
+Definition nat_mod_get_bit {p} (a : nat_mod p) (i : uint_size) := (if nat_mod_bit a i then @nat_mod_one p else @nat_mod_zero p).
 (*
 Definition nat_mod_to_public_byte_seq_le (n: pos)  (len: uint_size) (x: nat_mod_mod n) : lseq pub_uint8 len =
   Definition n' := n % (pow2 (8 * len)) in
@@ -833,6 +864,7 @@ Axiom array_to_be_uint32s : forall {l}, nseq uint8 l -> nseq uint32 (l/4).
 Axiom array_to_le_bytes : forall {A l}, nseq A l -> seq uint8.
 Axiom array_to_be_bytes : forall {A l}, nseq A l -> seq uint8.
 Axiom nat_mod_from_byte_seq_le : forall  {A n}, seq A -> nat_mod n.
+Axiom nat_mod_from_byte_seq_be : forall  {A n}, seq A -> nat_mod n.
 Axiom most_significant_bit : forall {m}, nat_mod m -> uint_size -> uint_size.
 
 
@@ -992,6 +1024,10 @@ Section Coercions.
 
   Definition uint_size_to_int64 (n : uint_size) : int64 := repr n.
   Global Coercion uint_size_to_int64 : uint_size >-> int64.
+
+  (* Missing ?? *)
+  Definition int128_to_uint_size (n : int128) : uint_size := repr n.
+  Global Coercion int128_to_uint_size : int128 >-> uint_size.
 
 
   (* coercions into nat_mod *)
@@ -1391,7 +1427,36 @@ Class Monad (M : Type -> Type) :=
     ret {A} (x : A) : M A ;
   }.
 
-Definition result2 (b: Type) (a: Type) := result a b.
+Notation "'do' X <- A ; B" := (bind A (fun X => B))
+ (at level 200, X ident, A at level 100, B at level 200)
+ : hacspec_scope.
+
+(* Notation "'ifbnd' b 'then' x 'else' y '>>' f" := (f (if b then x else y)) (at level 200). *)
+Notation "'ifbnd' b 'thenbnd' x 'else' y '>>' f" :=
+  (* (do v <- (if b then x else Ok y) ; f v) *)
+  (if b
+   then
+     match x with
+       Ok a => f a
+     | Err e => Err e
+     end
+   else f y)
+    (at level 200).
+Notation "'ifbnd' b 'then' x 'elsebnd' y '>>' f" :=
+  (* (do v <- (if b then Ok x else y) ; f v) *)
+  (if b
+   then f x
+   else match y with
+          Ok a => f a
+        | Err e => Err e
+        end)
+    (at level 200).
+Notation "'ifbnd' b 'thenbnd' x 'elsebnd' y '>>' f" :=
+  (* (do v <- (if b then x else y) ; f v) *)
+  (if b then bind x f else bind y f)
+    (at level 200).
+
+Notation "'result2'" := (fun b a => result a b).
 
 Definition result_bind {A B C} (r : result2 C A) (f : A -> result2 C B) : result2 C B :=
   match r with
@@ -1404,14 +1469,12 @@ Definition result_ret {A C} (a : A) : result2 C A := Ok a.
 Global Instance result_monad {C} : Monad (result2 C) :=
   Build_Monad (result2 C) (fun A B => @result_bind A B C) (fun A => @result_ret A C).
 
+
 Definition option_bind {A B} (r : option A) (f : A -> option B) : option B :=
   match r with
     Some (a) => f a
   | None => None
   end.
-
-
-
 Definition option_ret {A} (a : A) : option A := Some a.
 
 Global Instance option_monad : Monad option :=
@@ -1425,6 +1488,7 @@ Definition option_is_none {A} (x : option A) : bool :=
 
 Definition foldi_bind {A : Type} {M : Type -> Type} `{Monad M} (a : uint_size) (b : uint_size) (f : uint_size -> A -> M A) (init : M A) : M A :=
   @foldi (M A) a b (fun x y => bind y (f x)) init.
+<<<<<<< HEAD
 
 Definition lift_to_result {A B C} (r : result A C) (f : A -> B) : result B C :=
   result_bind r (fun x => result_ret (f x)).
@@ -1484,3 +1548,20 @@ Global Instance nat_mod_default {p : Z} : Default (nat_mod p) := {
 Global Instance prod_default {A B} `{Default A} `{Default B} : Default (A × B) := {
   default := (default, default)
 }.
+=======
+    
+Notation "'foldibnd' s 'to' e 'for' z '>>' f" :=
+  (* ((@foldi_bind _ result_monad s e f) (Ok z)) (at level 50). *)
+  (foldi s e (fun x y => result_bind y (f x)) (Ok z)) (at level 50).
+
+(*** Unsafe *)
+
+Definition result_unwrap {A B} (x : result A B) `{H: match x with Ok _ => True | _ => False end} : A :=
+  match x as r return (match r with
+                       | Ok _ => True
+                       | Err _ => False
+                       end -> A) with
+  | Ok a => fun _ : True => a
+  | Err _ => fun H0 : False => False_rect A H0
+  end H.
+>>>>>>> adb36e989 (Working on backend tests)

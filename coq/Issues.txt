@@ -1,0 +1,14 @@
+* Coq files with issues:
+** Aes - Unwrap (cannot infer implicit {H : match x with | Ok _ => True | Err _ => False end}).
+**
+
+
+Add tests for:
+- result_bind,  option_bind eg. (Ok a?) and (Some a?).
+-
+
+Nat mod tests:
+- 
+Axiom nat_mod_from_byte_seq_le : forall  {A n}, seq A -> nat_mod n.
+Axiom nat_mod_from_byte_seq_be : forall  {A n}, seq A -> nat_mod n.
+

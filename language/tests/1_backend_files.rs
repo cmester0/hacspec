@@ -53,3 +53,10 @@ fn positive_casting() {
               "Casting",
               HashMap::from([("coq", true)]));
 }
+
+#[test]
+fn positive_seq() {
+    run_tests("backend-tests/seq.rs",
+              "Seq",
+              HashMap::from([("coq", true)]));
+}

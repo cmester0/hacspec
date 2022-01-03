@@ -896,7 +896,7 @@ fn translate_expression<'a>(e: Expression, top_ctx: &'a TopLevelContext) -> RcDo
                         BaseTyp::Int16 => RcDoc::as_string("pub_i16"),
                         BaseTyp::Int32 => RcDoc::as_string("pub_i32"),
                         BaseTyp::Int64 => RcDoc::as_string("pub_i64"),
-                        BaseTyp::Int128 => RcDoc::as_string("pub_i28"),
+                        BaseTyp::Int128 => RcDoc::as_string("pub_i128"),
                         BaseTyp::Isize => RcDoc::as_string("isize"),
                         _ => panic!(), // should not happen
                     })
@@ -1015,7 +1015,7 @@ fn translate_statements<'a>(
     match s.0 {
         Statement::LetBinding((pat, _), typ, (expr, _), question_mark) => {
             if question_mark {
-                RcDoc::as_string("bind ")
+                RcDoc::as_string("result_bind ")
                     .append(make_paren(translate_expression(expr.clone(), top_ctx)))
                     .append(RcDoc::space())
                     .append(make_paren(
@@ -1052,7 +1052,7 @@ fn translate_statements<'a>(
         //TODO: not yet handled
         {
             if question_mark {
-                RcDoc::as_string("bind")
+                RcDoc::as_string("result_bind")
                     .append(RcDoc::space())
                     .append(make_paren(translate_expression(e1.clone(), top_ctx)))
                     .append(RcDoc::space())
@@ -1079,7 +1079,7 @@ fn translate_statements<'a>(
         Statement::ArrayUpdate((x, _), (e1, _), (e2, _), question_mark, typ) => {
             let array_or_seq = array_or_seq(typ.unwrap(), top_ctx);
             if question_mark {
-                RcDoc::as_string("bind")
+                RcDoc::as_string("result_bind")
                     .append(RcDoc::space())
                     .append(make_paren(translate_expression(e2.clone(), top_ctx)))
                     .append(RcDoc::space())
@@ -1284,7 +1284,7 @@ fn translate_statements<'a>(
                     .append(translate_block(b, true, top_ctx))
                     .append(RcDoc::as_string(")"));
 
-                RcDoc::as_string("bind")
+                RcDoc::as_string("result_bind")
                     .append(RcDoc::space())
                     .append(make_paren(loop_expr))
                     .append(RcDoc::space())

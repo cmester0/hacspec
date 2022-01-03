@@ -4,10 +4,25 @@
 src/MachineIntegers.v
 src/Lib.v
 src/QuickChickLib.v
+
+# src/Aes.v
+# src/Aes128_gcm.v
 src/Bls12_381.v
 src/Chacha20.v
-src/Poly1305.v
 src/Chacha20poly1305.v
 src/Curve25519.v
+
+src/P256.v
 src/Sha256.v
-src/Aes.v
+
+# src/Ecdsa_p256_sha256.v
+# src/Gf128.v
+# src/Gimli.v
+# src/Hkdf.v
+# src/Hmac.v
+# src/Ntru_prime.v
+src/Poly1305.v
+# src/Riot_bootloader.v
+# src/Riot_runqueue.v
+
+# src/Sha3.v
