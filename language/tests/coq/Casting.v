@@ -9,25 +9,25 @@ Require Import Hacspec.Lib.
 
 Definition test_casting  : unit :=
   let uint8v_0 : uint8 :=
-    secret (@repr WORDSIZE8 5) in 
+    secret (@repr WORDSIZE8 5) : int8 in 
   let uint16v_1 : uint16 :=
-    secret (@repr WORDSIZE16 5) in 
+    secret (@repr WORDSIZE16 5) : int16 in 
   let uint32v_2 : uint32 :=
-    secret (@repr WORDSIZE32 5) in 
+    secret (@repr WORDSIZE32 5) : int32 in 
   let uint64v_3 : uint64 :=
-    secret (@repr WORDSIZE64 5) in 
+    secret (@repr WORDSIZE64 5) : int64 in 
   let uint128v_4 : uint128 :=
-    secret (@repr WORDSIZE128 5) in 
-  let iint8v_5 : iint8 :=
-    secret (@repr WORDSIZE8 5) in 
-  let iint16v_6 : iint16 :=
-    secret (@repr WORDSIZE16 5) in 
-  let iint32v_7 : iint32 :=
-    secret (@repr WORDSIZE32 5) in 
-  let iint64v_8 : iint64 :=
-    secret (@repr WORDSIZE64 5) in 
-  let iint128v_9 : iint128 :=
-    secret (@repr WORDSIZE128 5) in 
+    secret (@repr WORDSIZE128 5) : int128 in 
+  let iint8v_5 : iint8_t :=
+    iint8 (@repr WORDSIZE8 5) in 
+  let iint16v_6 : iint16_t :=
+    iint16 (@repr WORDSIZE16 5) in 
+  let iint32v_7 : iint32_t :=
+    iint32 (@repr WORDSIZE32 5) in 
+  let iint64v_8 : iint64_t :=
+    iint64 (@repr WORDSIZE64 5) in 
+  let iint128v_9 : iint128_t :=
+    iint128 (@repr WORDSIZE128 5) in 
   let usizev_10 : uint_size :=
     usize 5 in 
   let u8v_11 : int8 :=
@@ -128,45 +128,45 @@ Definition test_casting  : unit :=
     uint64_from_usize (usizev_10) in 
   let _ : uint128 :=
     uint128_from_usize (usizev_10) in 
-  let _ : iint128 :=
+  let _ : iint128_t :=
     iint128_from_iint8 (iint8v_5) in 
-  let _ : iint8 :=
+  let _ : iint8_t :=
     iint8_from_iint128 (iint128v_9) in 
-  let _ : iint128 :=
+  let _ : iint128_t :=
     iint128_from_iint16 (iint16v_6) in 
-  let _ : iint16 :=
+  let _ : iint16_t :=
     iint16_from_iint128 (iint128v_9) in 
-  let _ : iint128 :=
+  let _ : iint128_t :=
     iint128_from_iint32 (iint32v_7) in 
-  let _ : iint32 :=
+  let _ : iint32_t :=
     iint32_from_iint128 (iint128v_9) in 
-  let _ : iint128 :=
+  let _ : iint128_t :=
     iint128_from_iint64 (iint64v_8) in 
-  let _ : iint64 :=
+  let _ : iint64_t :=
     iint64_from_iint128 (iint128v_9) in 
-  let _ : iint64 :=
+  let _ : iint64_t :=
     iint64_from_iint8 (iint8v_5) in 
-  let _ : iint8 :=
+  let _ : iint8_t :=
     iint8_from_iint64 (iint64v_8) in 
-  let _ : iint64 :=
+  let _ : iint64_t :=
     iint64_from_iint16 (iint16v_6) in 
-  let _ : iint16 :=
+  let _ : iint16_t :=
     iint16_from_iint64 (iint64v_8) in 
-  let _ : iint64 :=
+  let _ : iint64_t :=
     iint64_from_iint32 (iint32v_7) in 
-  let _ : iint32 :=
+  let _ : iint32_t :=
     iint32_from_iint64 (iint64v_8) in 
-  let _ : iint32 :=
+  let _ : iint32_t :=
     iint32_from_iint8 (iint8v_5) in 
-  let _ : iint8 :=
+  let _ : iint8_t :=
     iint8_from_iint32 (iint32v_7) in 
-  let _ : iint32 :=
+  let _ : iint32_t :=
     iint32_from_iint16 (iint16v_6) in 
-  let _ : iint16 :=
+  let _ : iint16_t :=
     iint16_from_iint32 (iint32v_7) in 
-  let _ : iint16 :=
+  let _ : iint16_t :=
     iint16_from_iint8 (iint8v_5) in 
-  let _ : iint8 :=
+  let _ : iint8_t :=
     iint8_from_iint16 (iint16v_6) in 
   tt.
 

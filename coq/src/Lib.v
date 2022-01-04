@@ -132,11 +132,18 @@ Definition pub_i128 (n : Z) : int128 := repr n.
 
 (**** Secret integers *)
 
-Definition iint8 := int8.
-Definition iint16 := int16.
-Definition iint32 := int32.
-Definition iint64 := int64.
-Definition iint128 := int128.
+Definition iint8_t := int8.
+Definition iint16_t := int16.
+Definition iint32_t := int32.
+Definition iint64_t := int64.
+Definition iint128_t := int128.
+
+(* TODO: Figure out correct definition? *)
+Definition iint8 := @secret WORDSIZE8.
+Definition iint16 := @secret WORDSIZE16.
+Definition iint32 := @secret WORDSIZE32.
+Definition iint64 := @secret WORDSIZE64.
+Definition iint128 := @secret WORDSIZE128.
 
 (**** Operations *)
 
@@ -191,20 +198,21 @@ Definition shift_right_ `{WS : WORDSIZE} (i : @int WS) (j : uint_size) :=
 Infix "shift_left" := (shift_left_) (at level 77) : hacspec_scope.
 Infix "shift_right" := (shift_right_) (at level 77) : hacspec_scope.
 
-Notation "-" := (MachineIntegers.neg) (at level 77) : hacspec_scope.
+Notation "-" := (fun a b => (MachineIntegers.neg a b) : int) (at level 77) : hacspec_scope.
 Infix "%%" := Z.rem (at level 40, left associativity) : Z_scope.
-Infix ".+" := (MachineIntegers.add) (at level 77) : hacspec_scope.
-Infix ".-" := (MachineIntegers.sub) (at level 77) : hacspec_scope.
-Infix ".*" := (MachineIntegers.mul) (at level 77) : hacspec_scope.
-Infix "./" := (MachineIntegers.divs) (at level 77) : hacspec_scope.
-Infix ".%" := (MachineIntegers.mods) (at level 77) : hacspec_scope.
-Infix ".^" := (MachineIntegers.xor) (at level 77) : hacspec_scope.
-Infix ".&" := (MachineIntegers.and) (at level 77) : hacspec_scope.
-Infix ".|" := (MachineIntegers.or) (at level 77) : hacspec_scope.
-Infix "==" := (MachineIntegers.eq) (at level 32) : hacspec_scope.
+Infix ".+" := (fun a b => (MachineIntegers.add a b) : int) (at level 77) : hacspec_scope.
+Infix ".-" := (fun a b => (MachineIntegers.sub a b) : int) (at level 77) : hacspec_scope.
+Infix ".*" := (fun a b => (MachineIntegers.mul a b) : int) (at level 77) : hacspec_scope.
+Infix "./" := (fun a b => (MachineIntegers.divs a b) : int) (at level 77) : hacspec_scope.
+Infix ".%" := (fun a b => (MachineIntegers.mods a b) : int) (at level 77) : hacspec_scope.
+Infix ".^" := (fun a b => (MachineIntegers.xor a b) : int) (at level 77) : hacspec_scope.
+Infix ".&" := (fun a b => (MachineIntegers.and a b) : int) (at level 77) : hacspec_scope.
+Infix ".|" := (fun a b => (MachineIntegers.or a b) : int) (at level 77) : hacspec_scope.
+Infix "==" := (fun a b => (MachineIntegers.eq a b) : int) (at level 32) : hacspec_scope.
 (* Definition one := (@one WORDSIZE32). *)
 (* Definition zero := (@zero WORDSIZE32). *)
 Notation "A × B" := (prod A B) (at level 79, left associativity) : hacspec_scope.
+
 (*** Loops *)
 
 Open Scope nat_scope.
@@ -281,6 +289,11 @@ Definition seq_new_ {A: Type} (init : A) (len: nat) : seq A :=
 
 Definition seq_new {A: Type} `{Default A} (len: nat) : seq A :=
   seq_new_ default len.
+
+Definition seq_with_capacity {A: Type} `{Default A} := @seq_new_ A default. (* TODO: Why does this exists? *)
+Definition seq_create {A: Type} `{Default A} := @seq_new_ A default. (* TODO: Why does this exists? *)
+
+Definition seq_reserve {A : Type} (a : seq A) {WS : WORDSIZE} (_ : @int WS) : seq A := a.
 
 Fixpoint array_from_list (A: Type) (l: list A) : nseq A (length l) :=
   match l return (nseq A (length l)) with
@@ -375,7 +388,7 @@ Definition slice {A} (l : seq A) (i j : nat) : seq A :=
 Definition lseq_slice {A n} (l : nseq A n) (i j : nat) : nseq A _ :=
   VectorDef.of_list (slice (VectorDef.to_list l) i j).
 
-Definition array_from_slice
+Definition array_from_slice_
   {a: Type}
  `{Default a}
   (default_value: a)
@@ -387,6 +400,17 @@ Definition array_from_slice
     let out := VectorDef.const default_value out_len in
     update_sub out 0 slice_len (lseq_slice (VectorDef.of_list input) start (start + slice_len)).
 
+Definition array_from_slice
+  {a: Type}
+ `{Default a}
+  (default_value: a)
+  (out_len: nat)
+  (input: seq a)
+  {WS : WORDSIZE}
+  (start: int)
+  (slice_len: int)
+  : nseq a out_len :=
+  array_from_slice_ default_value out_len input (Z.to_nat (signed start)) (Z.to_nat (signed slice_len)).
 
 Definition array_slice
   {a: Type}
@@ -454,16 +478,36 @@ Definition seq_slice
   (s: seq a)
   (start: nat)
   (len: nat)
-    : nseq a _ :=
+    : seq a := (* nseq a _ *)
   array_from_seq len (slice s start (start + len)).
 
+(* TODO: Does not exists in hacspec *)
 Definition seq_slice_range
   {a: Type}
  `{Default a}
   (input: seq a)
   (start_fin:(uint_size * uint_size))
-    : nseq a _ :=
+    : seq a := (* nseq a _ *)
   seq_slice input (from_uint_size (fst start_fin)) (from_uint_size (snd start_fin)).
+
+Definition seq_into_slice
+  {a: Type}
+ `{Default a}
+  (s: seq a)
+  (start: nat)
+  (len: nat)
+    : seq a :=
+  slice s start (start + len).
+
+Definition seq_split_off
+  {a: Type}
+ `{Default a}
+  (s: seq a)
+  (index: nat)
+    : (seq a * seq a) :=
+  (slice s 0 index, slice s index (length s)).
+
+
 
 (* updating a subsequence in a sequence *)
 Definition seq_update
@@ -518,7 +562,7 @@ Definition seq_update_slice
   (input: seq a)
   (start_in: nat)
   (len: nat)
-    : nseq a (length out)
+    : seq a (* nseq a (length out) *)
   :=
   update_sub (VectorDef.of_list out) start_out len
     (VectorDef.of_list (sub input start_in len)).
@@ -530,12 +574,16 @@ Definition seq_concat
   : seq a :=
   VectorDef.of_list (s1 ++ s2).
 
+Definition seq_concat_owned {a : Type} := @seq_concat a.
+
 Definition seq_push
   {a : Type}
   (s1 :seq a)
   (s2: a)
   : seq a :=
   VectorDef.of_list (s1 ++ [s2]).
+
+Definition seq_push_owned {a : Type} := @seq_push a.
 
 Definition seq_from_slice_range
   {a: Type}
@@ -1140,37 +1188,37 @@ Definition declassify_u128_from_uint64 (n : uint64) : int128 := uint128_from_uin
 Definition declassify_u128_from_uint128 (n : uint128) : int128 := n.
 
 
-Definition iint128_from_iint8 (n : iint8) : iint128 := repr (int8_to_nat n).
-Definition iint8_from_iint128 (n : iint128) : iint8 := repr (int128_to_nat n).
+Definition iint128_from_iint8 (n : iint8_t) : iint128_t := repr (int8_to_nat n).
+Definition iint8_from_iint128 (n : iint128_t) : iint8_t := repr (int128_to_nat n).
 
-Definition iint128_from_iint16 (n : iint16) : iint128 := repr (int16_to_nat n).
-Definition iint16_from_iint128 (n : iint128) : iint16 := repr (int128_to_nat n).
+Definition iint128_from_iint16 (n : iint16_t) : iint128_t := repr (int16_to_nat n).
+Definition iint16_from_iint128 (n : iint128_t) : iint16_t := repr (int128_to_nat n).
 
-Definition iint128_from_iint32 (n : iint32) : iint128 := repr (int32_to_nat n).
-Definition iint32_from_iint128 (n : iint128) : iint32 := repr (int128_to_nat n).
+Definition iint128_from_iint32 (n : iint32_t) : iint128_t := repr (int32_to_nat n).
+Definition iint32_from_iint128 (n : iint128_t) : iint32_t := repr (int128_to_nat n).
 
-Definition iint128_from_iint64 (n : iint64) : iint128 := repr (int64_to_nat n).
-Definition iint64_from_iint128 (n : iint128) : iint64 := repr (int128_to_nat n).
+Definition iint128_from_iint64 (n : iint64_t) : iint128_t := repr (int64_to_nat n).
+Definition iint64_from_iint128 (n : iint128_t) : iint64_t := repr (int128_to_nat n).
 
-Definition iint64_from_iint8 (n : iint8) : iint64 := repr (int8_to_nat n).
-Definition iint8_from_iint64 (n : iint64) : iint8 := repr (int64_to_nat n).
+Definition iint64_from_iint8 (n : iint8_t) : iint64_t := repr (int8_to_nat n).
+Definition iint8_from_iint64 (n : iint64_t) : iint8_t := repr (int64_to_nat n).
 
-Definition iint64_from_iint16 (n : iint16) : iint64 := repr (int16_to_nat n).
-Definition iint16_from_iint64 (n : iint64) : iint16 := repr (int64_to_nat n).
+Definition iint64_from_iint16 (n : iint16_t) : iint64_t := repr (int16_to_nat n).
+Definition iint16_from_iint64 (n : iint64_t) : iint16_t := repr (int64_to_nat n).
 
-Definition iint64_from_iint32 (n : iint32) : iint64 := repr (int32_to_nat n).
-Definition iint32_from_iint64 (n : iint64) : iint32 := repr (int64_to_nat n).
-
-
-Definition iint32_from_iint8 (n : iint8) : iint32 := repr (int8_to_nat n).
-Definition iint8_from_iint32 (n : iint32) : iint8 := repr (int32_to_nat n).
-
-Definition iint32_from_iint16 (n : iint16) : iint32 := repr (int16_to_nat n).
-Definition iint16_from_iint32 (n : iint32) : iint16 := repr (int32_to_nat n).
+Definition iint64_from_iint32 (n : iint32_t) : iint64_t := repr (int32_to_nat n).
+Definition iint32_from_iint64 (n : iint64_t) : iint32_t := repr (int64_to_nat n).
 
 
-Definition iint16_from_iint8 (n : iint8) : iint16 := repr (int8_to_nat n).
-Definition iint8_from_iint16 (n : iint16) : iint8 := repr (int16_to_nat n).
+Definition iint32_from_iint8 (n : iint8_t) : iint32_t := repr (int8_to_nat n).
+Definition iint8_from_iint32 (n : iint32_t) : iint8_t := repr (int32_to_nat n).
+
+Definition iint32_from_iint16 (n : iint16_t) : iint32_t := repr (int16_to_nat n).
+Definition iint16_from_iint32 (n : iint32_t) : iint16_t := repr (int32_to_nat n).
+
+
+Definition iint16_from_iint8 (n : iint8_t) : iint16_t := repr (int8_to_nat n).
+Definition iint8_from_iint16 (n : iint16_t) : iint8_t := repr (int16_to_nat n).
 
 
 (* Comparisons, boolean equality, and notation *)

@@ -434,43 +434,240 @@ fn translate_binop<'a, 'b>(
             ))
         }
         (BinOpKind::Sub, BaseTyp::Usize) | (BinOpKind::Sub, BaseTyp::Isize) => {
-            RcDoc::as_string("-")
+            RcDoc::as_string(".-")
         }
-        (BinOpKind::Add, BaseTyp::Usize) | (BinOpKind::Add, BaseTyp::Isize) => {
-            RcDoc::as_string("+")
-        }
-        (BinOpKind::Mul, BaseTyp::Usize) | (BinOpKind::Mul, BaseTyp::Isize) => {
-            RcDoc::as_string("*")
-        }
-        (BinOpKind::Div, BaseTyp::Usize) | (BinOpKind::Div, BaseTyp::Isize) => {
-            RcDoc::as_string("/")
-        }
-        (BinOpKind::Rem, BaseTyp::Usize) | (BinOpKind::Rem, BaseTyp::Isize) => {
-            RcDoc::as_string("%%")
-        }
+        (
+            BinOpKind::Sub,
+            BaseTyp::UInt128
+            | BaseTyp::UInt64
+            | BaseTyp::UInt32
+            | BaseTyp::UInt16
+            | BaseTyp::UInt8
+            | BaseTyp::Int128
+            | BaseTyp::Int64
+            | BaseTyp::Int32
+            | BaseTyp::Int16
+            | BaseTyp::Int8
+            | BaseTyp::Named(_, _), // TODO: Only accept numbers eg. U8, U16, U32, U64, U128
+        ) => RcDoc::as_string(".-"),
+        (
+            BinOpKind::Add,
+            BaseTyp::UInt128
+            | BaseTyp::UInt64
+            | BaseTyp::UInt32
+            | BaseTyp::UInt16
+            | BaseTyp::UInt8
+            | BaseTyp::Int128
+            | BaseTyp::Int64
+            | BaseTyp::Int32
+            | BaseTyp::Int16
+            | BaseTyp::Int8
+            | BaseTyp::Named(_, _), // TODO: Only accept numbers eg. U8, U16, U32, U64, U128
+        ) => RcDoc::as_string(".+"),
+        (BinOpKind::Add, BaseTyp::Isize | BaseTyp::Usize) => RcDoc::as_string(".+"),
+        (
+            BinOpKind::Mul,
+            BaseTyp::UInt128
+            | BaseTyp::UInt64
+            | BaseTyp::UInt32
+            | BaseTyp::UInt16
+            | BaseTyp::UInt8
+            | BaseTyp::Int128
+            | BaseTyp::Int64
+            | BaseTyp::Int32
+            | BaseTyp::Int16
+            | BaseTyp::Int8
+            | BaseTyp::Named(_, _), // TODO: Only accept numbers eg. U8, U16, U32, U64, U128
+        ) => RcDoc::as_string(".*"),
+        (BinOpKind::Mul, BaseTyp::Usize | BaseTyp::Isize) => RcDoc::as_string(".*"),
+        (
+            BinOpKind::Div,
+            BaseTyp::UInt128
+            | BaseTyp::UInt64
+            | BaseTyp::UInt32
+            | BaseTyp::UInt16
+            | BaseTyp::UInt8
+            | BaseTyp::Int128
+            | BaseTyp::Int64
+            | BaseTyp::Int32
+            | BaseTyp::Int16
+            | BaseTyp::Int8
+            | BaseTyp::Named(_, _), // TODO: Only accept numbers eg. U8, U16, U32, U64, U128
+        ) => RcDoc::as_string("./"),
+        (BinOpKind::Div, BaseTyp::Usize | BaseTyp::Isize) => RcDoc::as_string("./"),
+        (
+            BinOpKind::Rem,
+            BaseTyp::UInt128
+            | BaseTyp::UInt64
+            | BaseTyp::UInt32
+            | BaseTyp::UInt16
+            | BaseTyp::UInt8
+            | BaseTyp::Int128
+            | BaseTyp::Int64
+            | BaseTyp::Int32
+            | BaseTyp::Int16
+            | BaseTyp::Int8
+            | BaseTyp::Named(_, _), // TODO: Only accept numbers eg. U8, U16, U32, U64, U128
+        ) => RcDoc::as_string(".%"),
+        (BinOpKind::Rem, BaseTyp::Usize | BaseTyp::Isize) => RcDoc::as_string("%%"),
+        (
+            BinOpKind::Shl,
+            BaseTyp::UInt128
+            | BaseTyp::UInt64
+            | BaseTyp::UInt32
+            | BaseTyp::UInt16
+            | BaseTyp::UInt8
+            | BaseTyp::Int128
+            | BaseTyp::Int64
+            | BaseTyp::Int32
+            | BaseTyp::Int16
+            | BaseTyp::Int8
+            | BaseTyp::Named(_, _), // TODO: Only accept numbers eg. U8, U16, U32, U64, U128
+        ) => RcDoc::as_string("shift_left"),
         (BinOpKind::Shl, BaseTyp::Usize) => RcDoc::as_string("usize_shift_left"),
+        (
+            BinOpKind::Shr,
+            BaseTyp::UInt128
+            | BaseTyp::UInt64
+            | BaseTyp::UInt32
+            | BaseTyp::UInt16
+            | BaseTyp::UInt8
+            | BaseTyp::Int128
+            | BaseTyp::Int64
+            | BaseTyp::Int32
+            | BaseTyp::Int16
+            | BaseTyp::Int8
+            | BaseTyp::Named(_, _), // TODO: Only accept numbers eg. U8, U16, U32, U64, U128
+        ) => RcDoc::as_string("shift_right"),
         (BinOpKind::Shr, BaseTyp::Usize) => RcDoc::as_string("usize_shift_right"),
-        (BinOpKind::Rem, _) => RcDoc::as_string(".%"),
-        (BinOpKind::Sub, _) => RcDoc::as_string(".-"),
-        (BinOpKind::Add, _) => RcDoc::as_string(".+"),
-        (BinOpKind::Mul, _) => RcDoc::as_string(".*"),
-        (BinOpKind::Div, _) => RcDoc::as_string("./"),
-        (BinOpKind::BitXor, _) => RcDoc::as_string(".^"),
-        (BinOpKind::BitAnd, _) => RcDoc::as_string(".&"),
-        (BinOpKind::BitOr, _) => RcDoc::as_string(".|"),
-        (BinOpKind::Shl, _) => RcDoc::as_string("shift_left"),
-        (BinOpKind::Shr, _) => RcDoc::as_string("shift_right"),
-        (BinOpKind::Lt, _) => RcDoc::as_string("<.?"),
-        (BinOpKind::Le, _) => RcDoc::as_string("<=.?"),
-        (BinOpKind::Ge, _) => RcDoc::as_string(">=.?"),
-        (BinOpKind::Gt, _) => RcDoc::as_string(">.?"),
+        (
+            BinOpKind::BitXor,
+            BaseTyp::UInt128
+            | BaseTyp::UInt64
+            | BaseTyp::UInt32
+            | BaseTyp::UInt16
+            | BaseTyp::UInt8
+            | BaseTyp::Int128
+            | BaseTyp::Int64
+            | BaseTyp::Int32
+            | BaseTyp::Int16
+            | BaseTyp::Int8
+            | BaseTyp::Named(_, _), // TODO: Only accept numbers eg. U8, U16, U32, U64, U128
+        ) => RcDoc::as_string(".^"),
+        (
+            BinOpKind::BitAnd,
+            BaseTyp::UInt128
+            | BaseTyp::UInt64
+            | BaseTyp::UInt32
+            | BaseTyp::UInt16
+            | BaseTyp::UInt8
+            | BaseTyp::Int128
+            | BaseTyp::Int64
+            | BaseTyp::Int32
+            | BaseTyp::Int16
+            | BaseTyp::Int8
+            | BaseTyp::Named(_, _) // TODO: Only accept numbers eg. U8, U16, U32, U64, U128
+            | BaseTyp::Usize
+            | BaseTyp::Isize,
+        ) => RcDoc::as_string(".&"),
+        (
+            BinOpKind::BitOr,
+            BaseTyp::UInt128
+            | BaseTyp::UInt64
+            | BaseTyp::UInt32
+            | BaseTyp::UInt16
+            | BaseTyp::UInt8
+            | BaseTyp::Int128
+            | BaseTyp::Int64
+            | BaseTyp::Int32
+            | BaseTyp::Int16
+            | BaseTyp::Int8
+            | BaseTyp::Named(_, _) // TODO: Only accept numbers eg. U8, U16, U32, U64, U128
+            | BaseTyp::Usize
+            | BaseTyp::Isize,
+        ) => RcDoc::as_string(".|"),
+        (
+            BinOpKind::Lt,
+            BaseTyp::UInt128
+            | BaseTyp::UInt64
+            | BaseTyp::UInt32
+            | BaseTyp::UInt16
+            | BaseTyp::UInt8
+            | BaseTyp::Int128
+            | BaseTyp::Int64
+            | BaseTyp::Int32
+            | BaseTyp::Int16
+            | BaseTyp::Int8
+            | BaseTyp::Named(_, _) // TODO: Only accept numbers eg. U8, U16, U32, U64, U128
+            | BaseTyp::Usize
+            | BaseTyp::Isize,
+        ) => RcDoc::as_string("<.?"),
+        (
+            BinOpKind::Le,
+            BaseTyp::UInt128
+            | BaseTyp::UInt64
+            | BaseTyp::UInt32
+            | BaseTyp::UInt16
+            | BaseTyp::UInt8
+            | BaseTyp::Int128
+            | BaseTyp::Int64
+            | BaseTyp::Int32
+            | BaseTyp::Int16
+            | BaseTyp::Int8
+            | BaseTyp::Named(_, _) // TODO: Only accept numbers eg. U8, U16, U32, U64, U128
+            | BaseTyp::Usize
+            | BaseTyp::Isize,
+        ) => RcDoc::as_string("<=.?"),
+        (
+            BinOpKind::Ge,
+            BaseTyp::UInt128
+            | BaseTyp::UInt64
+            | BaseTyp::UInt32
+            | BaseTyp::UInt16
+            | BaseTyp::UInt8
+            | BaseTyp::Int128
+            | BaseTyp::Int64
+            | BaseTyp::Int32
+            | BaseTyp::Int16
+            | BaseTyp::Int8
+                | BaseTyp::Named(_, _) // TODO: Only accept numbers eg. U8, U16, U32, U64, U128
+            | BaseTyp::Usize
+            | BaseTyp::Isize,
+        ) => RcDoc::as_string(">=.?"),
+        (
+            BinOpKind::Gt,
+            BaseTyp::UInt128
+            | BaseTyp::UInt64
+            | BaseTyp::UInt32
+            | BaseTyp::UInt16
+            | BaseTyp::UInt8
+            | BaseTyp::Int128
+            | BaseTyp::Int64
+            | BaseTyp::Int32
+            | BaseTyp::Int16
+            | BaseTyp::Int8
+            | BaseTyp::Named(_, _) // TODO: Only accept numbers eg. U8, U16, U32, U64, U128
+            | BaseTyp::Usize
+            | BaseTyp::Isize,
+        ) => RcDoc::as_string(">.?"),
         (BinOpKind::Ne, _) => RcDoc::as_string("!=.?"),
         (BinOpKind::Eq, _) => RcDoc::as_string("=.?"),
         (BinOpKind::And, _) => RcDoc::as_string("&&"),
         (BinOpKind::Or, _) => RcDoc::as_string("||"),
+        _ => panic!("Strange operator combo ({:?}, {:?})", op, &(op_typ.1).0),
     }
 }
 
+// UInt128,
+// Int128,
+// UInt64,
+// Int64,
+// UInt32,
+// Int32,
+// UInt16,
+// Int16,
+// UInt8,
+// Int8,
 fn translate_unop<'a>(op: UnOpKind, _op_typ: Typ) -> RcDoc<'a, ()> {
     match (op, &(_op_typ.1).0) {
         (UnOpKind::Not, BaseTyp::Bool) => RcDoc::as_string("negb"),
@@ -666,8 +863,7 @@ fn translate_func_name<'a>(
                         FuncPrefix::Array(ArraySize::Ident(s), _) => {
                             if s.string == "{{constant}}".to_string() {
                                 additional_args.push(RcDoc::as_string("_"))
-                            }
-                            else {
+                            } else {
                                 additional_args.push(translate_ident(Ident::TopLevel(s.clone())))
                             }
                         }
@@ -690,7 +886,11 @@ fn translate_func_name<'a>(
             ) {
                 (ARRAY_MODULE, "length") => match &prefix_info {
                     FuncPrefix::Array(ArraySize::Ident(s), _) => {
-                        return (translate_ident(Ident::TopLevel(s.clone())), vec![], result_typ);
+                        return (
+                            translate_ident(Ident::TopLevel(s.clone())),
+                            vec![],
+                            result_typ,
+                        );
                     }
                     FuncPrefix::Array(ArraySize::Integer(i), _) => {
                         return (RcDoc::as_string(format!("{}", i)), vec![], result_typ);

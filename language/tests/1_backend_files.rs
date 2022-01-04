@@ -60,3 +60,10 @@ fn positive_seq() {
               "Seq",
               HashMap::from([("coq", true)]));
 }
+
+#[test]
+fn positive_binary_operations() {
+    run_tests("backend-tests/binary_operations.rs",
+              "Binary_operations",
+              HashMap::from([("coq", true)]));
+}

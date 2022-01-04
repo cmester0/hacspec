@@ -1,8 +1,47 @@
 use hacspec_lib::*;
 
+// TODO: Range<usize> or (usize, usize) // Can you create range objects?
+pub fn seq_test (// r : Range<usize>
+) { 
+    let mut a = ByteSeq::new(10);
+    let b = ByteSeq::with_capacity(10);
+    a = a.reserve(5);
+    a.len();
+    a.slice(0, 4);
+    // a.native_slice(); // Not hacspec
+    a = a.into_slice(0,4);
+    // a = a.slice_range( r );
+    // a.into_slice_range( Range<usize> { } );
+    let (mut a, c) = a.split_off(4);
+    a = a.truncate(2);
+    // from_slice(b, 0, 1); // TODO
+    a = a.concat(&c);
+    a = a.concat_owned(b);
+    a = a.push(&U8(4_u8));
+    a = a.push_owned(U8(5_u8));
+    // from_slice_range(b, Range<usize> { } );
+    a.num_chunks(3);
+    a.num_exact_chunks(3);
+    let (n, mut a) = a.get_chunk(3,1);
+    a = a.get_exact_chunk(3,1);
+    a = a.get_remainder_chunk(3);
+    a = a.set_chunk(3,1,&ByteSeq::new(3));
+    a = a.set_exact_chunk(3,1,&ByteSeq::new(3));
+    ByteSeq::create(10);
+    // a.iter(); // Not hacspec
+    a = a.update_slice(10,&ByteSeq::new(1),0,1);
+    a = a.update(2,&ByteSeq::new(1));
+    a = a.update_start(&ByteSeq::new(1));
+    // PublicByteSeq::new(10).index(3); // Not known ???
+    // PublicByteSeq::new(10).index_mut(3); // Not known ???
+    // a.from_vec(); // Not hacspec
+    // a.from_native_slice(); // Not hacspec
+    ByteSeq::from_seq(&a);
+}
+
 bytes!(Word, 4);
 
-pub fn seq_test (key : &ByteSeq, word : Word) -> Result<ByteSeq, ()> {
+pub fn seq_loop_result_test (key : &ByteSeq, word : Word) -> Result<ByteSeq, ()> {
     let mut byte_seq = ByteSeq::new(10);
     byte_seq = byte_seq.update_start(key);
 
@@ -12,21 +51,3 @@ pub fn seq_test (key : &ByteSeq, word : Word) -> Result<ByteSeq, ()> {
     }
     Result::<ByteSeq, ()>::Ok(byte_seq)
 }
-
-// ) -> ByteSeqResult {
-//     let mut key_ex = ByteSeq::new(key_schedule_length);
-//     key_ex = key_ex.update_start(key);
-//     let word_size = key_length;
-//     for j in 0..iterations {
-//         let i = j + word_size;
-//         let word = key_expansion_word(
-//             Word::from_slice(&key_ex, 4 * (i - word_size), 4),
-//             Word::from_slice(&key_ex, 4 * i - 4, 4),
-//             i,
-//             nk,
-//             nr,
-//         )?;
-//         key_ex = key_ex.update(4 * i, &word);
-//     }
-//     ByteSeqResult::Ok(key_ex)
-// }
