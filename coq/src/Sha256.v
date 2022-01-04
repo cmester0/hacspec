@@ -296,3 +296,4 @@ Definition hash (msg_39 : byte_seq) : sha256_digest_t :=
 
 Definition sha256 (msg_49 : byte_seq) : sha256_digest_t :=
   hash (msg_49).
+

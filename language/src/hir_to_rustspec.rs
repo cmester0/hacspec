@@ -432,6 +432,12 @@ enum SpecialTypeReturn {
     NotSpecial,
 }
 
+enum SizeResults {
+    Number(usize),
+    NotRetrieved,
+    Id(DefId),
+}
+
 fn check_non_enum_special_type_from_struct_shape(tcx: &TyCtxt, def: &ty::Ty) -> SpecialTypeReturn {
     // First we check whether the type is a special Hacspec type (array, abstract int, etc.)
     match def.kind() {
@@ -460,20 +466,24 @@ fn check_non_enum_special_type_from_struct_shape(tcx: &TyCtxt, def: &ty::Ty) -> 
                             return SpecialTypeReturn::NotSpecial;
                         }
                     };
+
                     let new_size = match &size.val {
                         // We can only retrieve the actual size of the array
                         // when the size has been declared as a literal value,
                         // not a reference to another const value
                         ConstKind::Value(value) => match value {
                             ConstValue::Scalar(scalar) => match scalar {
-                                Scalar::Int(s) => Some(s.to_bits(s.size()).unwrap() as usize),
-                                _ => Some(0),
+                                Scalar::Int(s) => {
+                                    Some(SizeResults::Number(s.to_bits(s.size()).unwrap() as usize))
+                                }
+                                _ => Some(SizeResults::Number(0)),
                             },
                             // TODO: replace placeholder value by indication
                             // that we could not retrieve the size
-                            _ => Some(0),
+                            _ => Some(SizeResults::NotRetrieved),
                         },
-                        _ => Some(0),
+                        ConstKind::Unevaluated(v) => Some(SizeResults::Id(v.def.did)),
+                        _ => panic!(),
                     };
                     if maybe_abstract_int {
                         // So here we cannot infer neither the secrecy nor the modulo
@@ -487,9 +497,31 @@ fn check_non_enum_special_type_from_struct_shape(tcx: &TyCtxt, def: &ty::Ty) -> 
                     } else {
                         match new_size {
                             None => return SpecialTypeReturn::NotSpecial,
-                            Some(new_size) => {
+                            Some(SizeResults::Number(new_size)) => {
                                 let array_typ = BaseTyp::Array(
                                     (ArraySize::Integer(new_size), DUMMY_SP.into()),
+                                    Box::new((new_cell_t, DUMMY_SP.into())),
+                                );
+                                return SpecialTypeReturn::Array(array_typ);
+                            }
+                            Some(SizeResults::NotRetrieved) => {
+                                return SpecialTypeReturn::NotSpecial
+                            }
+                            Some(SizeResults::Id(def_id)) => {
+                                let array_typ = BaseTyp::Array(
+                                    (
+                                        ArraySize::Ident(TopLevelIdent {
+                                            string: tcx
+                                                .def_path(def_id)
+                                                .data
+                                                .last()
+                                                .unwrap()
+                                                .data
+                                                .to_string(),
+                                            kind: TopLevelIdentKind::Constant,
+                                        }),
+                                        DUMMY_SP.into(),
+                                    ),
                                     Box::new((new_cell_t, DUMMY_SP.into())),
                                 );
                                 return SpecialTypeReturn::Array(array_typ);

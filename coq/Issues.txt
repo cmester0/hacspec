@@ -12,3 +12,62 @@ Nat mod tests:
 Axiom nat_mod_from_byte_seq_le : forall  {A n}, seq A -> nat_mod n.
 Axiom nat_mod_from_byte_seq_be : forall  {A n}, seq A -> nat_mod n.
 
+
+array_update_slice (3rd argument is a seq / list)
+
+-----------------------
+
+bytes!(Block, 16);
+Block::length();
+Gives incorrect value
+
+-----------------
+
+array_equal
+
+-----------------
+
+array_from_seq , using length defined in another crate will return size 0 ??. Todo'es placed at code. 
+
+-------------------
+
+seq_upd third argument is Z when negative however translated to int64
+
+-------------------
+
+Polynomial operations:
+Definition mul_poly_irr {WS : WORDSIZE} (a b irr : seq (@int WS)) (modulo: (@int WS)) : seq (@int WS).
+Proof. Admitted.
+
+Definition poly_to_ring {WS : WORDSIZE} (irr poly : seq (@int WS)) (modulus: (@int WS)) : (seq (@int WS) * bool).
+Proof. Admitted.
+
+Definition add_poly {WS : WORDSIZE} (a b : seq (@int WS)) (modulo: (@int WS)) : seq (@int WS).
+Proof. Admitted.
+
+Definition make_positive {WS : WORDSIZE} (poly : seq (@int WS)) (q: (@int WS)) : seq (@int WS).
+Proof. Admitted.
+
+-----------------------
+
+u32_word is seq int8 4 , this is not defined for predefined types !
+
+------------------------
+
+Same name different type:
+u32_word_t
+
+
+-------------------------
+
+
+TODO: Go file by file for library and write a test for each of those.
+
+-------------------------
+
+TODO: Go through stdlib supported types, and implement functions eg. leading_zeros
+
+
+---------------------------
+
+When to do "*" and ".*" - See sha3.

@@ -191,6 +191,7 @@ Definition shift_right_ `{WS : WORDSIZE} (i : @int WS) (j : uint_size) :=
 Infix "shift_left" := (shift_left_) (at level 77) : hacspec_scope.
 Infix "shift_right" := (shift_right_) (at level 77) : hacspec_scope.
 
+Notation "-" := (MachineIntegers.neg) (at level 77) : hacspec_scope.
 Infix "%%" := Z.rem (at level 40, left associativity) : Z_scope.
 Infix ".+" := (MachineIntegers.add) (at level 77) : hacspec_scope.
 Infix ".-" := (MachineIntegers.sub) (at level 77) : hacspec_scope.
@@ -235,8 +236,6 @@ Definition foldi
 Class Default (A : Type) := {
   default : A
 }.
-<<<<<<< HEAD
-=======
 
 (* Default instances for common types *)
 Global Instance nat_default : Default nat := {
@@ -257,7 +256,6 @@ Global Instance int_size_default : Default int_size := {
 Global Instance int_default {WS : WORDSIZE} : Default (@int WS) := {
   default := repr 0
 }.
->>>>>>> adb36e989 (Working on backend tests)
 Global Arguments default {_} {_}.
 
 (*** Seq *)
@@ -445,6 +443,8 @@ Definition array_update_start
 Definition array_len  {a: Type} {len: nat} (s: nseq a len) := len.
 (* May also come up as 'length' instead of 'len' *)
 Definition array_length  {a: Type} {len: nat} (s: nseq a len) := len.
+(* Definition array_length  {a: Type} {len: nat} (T : Type) `(T = nseq a len) := len. *)
+
 
 (**** Seq manipulation *)
 
@@ -502,7 +502,7 @@ Definition array_update_slice
   {l : nat}
   (out: nseq a l)
   (start_out: nat)
-  (input: nseq a l)
+  (input: seq a)
   (start_in: nat)
   (len: nat)
     : nseq a (length out)
@@ -675,6 +675,7 @@ Definition array_eq_
 Infix "array_eq" := (array_eq_ eq) (at level 33) : hacspec_scope.
 Infix "array_neq" := (fun s1 s2 => negb (array_eq_ eq s1 s2)) (at level 33) : hacspec_scope.
 
+Definition array_equal {WS} {len : nat} := @array_eq_ (@int WS) len eq.
 
 (**** Integers to arrays *)
 Axiom uint32_to_le_bytes : int32 -> nseq int8 4.
@@ -723,6 +724,22 @@ Axiom uint128_from_le_bytes : nseq int8 16 -> int128.
 
 Axiom uint128_from_be_bytes : nseq int8 16 -> int128.
 (* Definition uint128_from_be_bytes (s: nseq uint8 16) : uint128 :=
+  LBSeq.uint_from_bytes_be s *)
+
+Axiom u16_to_le_bytes : int16 -> nseq int8 2.
+(* Definition u16_to_le_bytes (x: pub_uint16) : nseq pub_uint8 4 :=
+  LBSeq.uint_to_bytes_le x *)
+
+Axiom u16_to_be_bytes : int16 -> nseq int8 2 .
+(* Definition u16_to_be_bytes (x: pub_uint16) : nseq pub_uint8 4 :=
+  LBSeq.uint_to_bytes_be x *)
+
+Axiom u16_from_le_bytes : nseq int8 2 -> int16.
+(* Definition u16_from_le_bytes (s: nseq pub_uint8 4) : pub_uint16 :=
+  LBSeq.uint_from_bytes_le s *)
+
+Axiom u16_from_be_bytes : nseq int8 2 -> int16.
+(* Definition u16_from_be_bytes (s: nseq pub_uint8 4) : pub_uint16 :=
   LBSeq.uint_from_bytes_be s *)
 
 Axiom u32_to_le_bytes : int32 -> nseq int8 4.
@@ -811,15 +828,11 @@ Definition nat_mod_exp {p : Z} (a:nat_mod p) (n : uint_size) : nat_mod p :=
     end in
   exp_ a n.
 
-<<<<<<< HEAD
-Definition nat_mod_pow {p} := @nat_mod_exp p.
-Definition nat_mod_pow_self {p} := @nat_mod_exp p.
-=======
-
 (* Definition nat_mod_pow {p} := @nat_mod_exp p. *)
+Definition nat_mod_pow_self {p} := @nat_mod_exp p.
+
 Definition nat_mod_pow {p} {WS : WORDSIZE} (a:nat_mod p) (n : @int WS) :=
   @nat_mod_exp p a (@repr WORDSIZE32 (unsigned n)).
->>>>>>> adb36e989 (Working on backend tests)
 
 Close Scope nat_scope.
 Open Scope Z_scope.
@@ -1109,9 +1122,7 @@ Definition declassify_u16_from_uint8 (n : uint8) : int16 := uint16_from_uint8 n.
 Definition declassify_u32_from_uint8 (n : uint8) : int32 := uint32_from_uint8 n.
 Definition declassify_u64_from_uint8 (n : uint8) : int64 := uint64_from_uint8 n.
 Definition declassify_u128_from_uint8 (n : uint8) : int128 := uint128_from_uint8 n.
-Definition declassify_usize_from_uint8 (n : uint8) : uint_size := uint_size_from_uint8 n.
-
-Definition uint8_from_usize (n : uint_size) : uint8 := repr n.
+Definition declassify_usize_from_uint8 (n : uint8) : uint_size := usize_from_uint8 n.
 
 Definition declassify_u16_from_uint16 (n : uint16) : int16 := n.
 Definition declassify_u32_from_uint16 (n : uint16) : int32 := uint32_from_uint16 n.
@@ -1128,8 +1139,6 @@ Definition declassify_u128_from_uint64 (n : uint64) : int128 := uint128_from_uin
 
 Definition declassify_u128_from_uint128 (n : uint128) : int128 := n.
 
-Definition uint64_from_usize (n : uint_size) : uint64 := repr n.
-Definition uint128_from_usize (n : uint_size) : uint128 := repr n.
 
 Definition iint128_from_iint8 (n : iint8) : iint128 := repr (int8_to_nat n).
 Definition iint8_from_iint128 (n : iint128) : iint8 := repr (int128_to_nat n).
@@ -1488,71 +1497,19 @@ Definition option_is_none {A} (x : option A) : bool :=
 
 Definition foldi_bind {A : Type} {M : Type -> Type} `{Monad M} (a : uint_size) (b : uint_size) (f : uint_size -> A -> M A) (init : M A) : M A :=
   @foldi (M A) a b (fun x y => bind y (f x)) init.
-<<<<<<< HEAD
-
-Definition lift_to_result {A B C} (r : result A C) (f : A -> B) : result B C :=
-  result_bind r (fun x => result_ret (f x)).
-
-Definition result_uint_size_to_result_int64 {C} (r : result uint_size C) := lift_to_result r uint_size_to_int64.
-
-Definition result_uint_size_unit := (result uint_size unit).
-Definition result_int64_unit := (result int64 unit).
-
-Definition result_uint_size_unit_to_result_int64_unit (r : result_uint_size_unit) : result_int64_unit := result_uint_size_to_result_int64 r.
-
-Global Coercion lift_to_result_coerce {A B C} (f : A -> B) := (fun (r : result A C) => lift_to_result r f).
-
-Global Coercion result_uint_size_unit_to_result_int64_unit : result_uint_size_unit >-> result_int64_unit.
-
-(*** Notation *)
-
-Notation "'ifbnd' b 'then' x 'else' y '>>' f" := (if b then f x else f y) (at level 200).
-Notation "'ifbnd' b 'thenbnd' x 'else' y '>>' f" := (if b then match x with
-    Ok a => f a
-  | Err e => Err e
-  end else f y) (at level 200).
-Notation "'ifbnd' b 'then' x 'elsebnd' y '>>' f" := (if b then f x else match y with
-    Ok a => f a
-  | Err e => Err e
-  end) (at level 200).
-Notation "'ifbnd' b 'thenbnd' x 'elsebnd' y '>>' f" := (if b then result_bind x f else result_bind y f) (at level 200).
-
-Notation "'foldibnd' s 'to' e 'for' z '>>' f" := (foldi s e (fun x y => result_bind y (f x)) (Ok z)) (at level 50).
-
-Axiom nat_mod_from_byte_seq_be : forall  {A n}, seq A -> nat_mod n.
+    
+Notation "'foldibnd' s 'to' e 'for' z '>>' f" :=
+  (* ((@foldi_bind _ result_monad s e f) (Ok z)) (at level 50). *)
+  (foldi s e (fun x y => result_bind y (f x)) (Ok z)) (at level 50).
 
 (*** Default *)
 
-(* Default instances for common types *)
-Global Instance nat_default : Default nat := {
-  default := 0%nat
-}.
-Global Instance N_default : Default N := {
-  default := 0%N
-}.
-Global Instance Z_default : Default Z := {
-  default := 0%Z
-}.
-Global Instance uint_size_default : Default uint_size := {
-  default := zero
-}.
-Global Instance int_size_default : Default int_size := {
-  default := zero
-}.
-Global Instance int_default {WS : WORDSIZE} : Default int := {
-  default := repr 0
-}.
 Global Instance nat_mod_default {p : Z} : Default (nat_mod p) := {
   default := nat_mod_zero
 }.
 Global Instance prod_default {A B} `{Default A} `{Default B} : Default (A × B) := {
   default := (default, default)
 }.
-=======
-    
-Notation "'foldibnd' s 'to' e 'for' z '>>' f" :=
-  (* ((@foldi_bind _ result_monad s e f) (Ok z)) (at level 50). *)
-  (foldi s e (fun x y => result_bind y (f x)) (Ok z)) (at level 50).
 
 (*** Unsafe *)
 
@@ -1564,4 +1521,25 @@ Definition result_unwrap {A B} (x : result A B) `{H: match x with Ok _ => True |
   | Ok a => fun _ : True => a
   | Err _ => fun H0 : False => False_rect A H0
   end H.
->>>>>>> adb36e989 (Working on backend tests)
+
+(* mul_poly_irr (r_8) (h_9) (irreducible_11) (q_10) *)
+(*** TODO *)
+(* Polynomial multiplication of two size fixed polynomials in R_modulo \ irr *)
+Definition mul_poly_irr {WS : WORDSIZE} (a b irr : seq (@int WS)) (modulo: (@int WS)) : seq (@int WS).
+Proof. Admitted.
+
+Definition poly_to_ring {WS : WORDSIZE} (irr poly : seq (@int WS)) (modulus: (@int WS)) : (seq (@int WS) * bool).
+Proof. Admitted.
+
+Definition add_poly {WS : WORDSIZE} (a b : seq (@int WS)) (modulo: (@int WS)) : seq (@int WS).
+Proof. Admitted.
+
+Definition make_positive {WS : WORDSIZE} (poly : seq (@int WS)) (q: (@int WS)) : seq (@int WS).
+Proof. Admitted.
+
+Definition u32_word_t := nseq int8 4.
+Definition u16_word_t := nseq int8 2.
+
+ (* Returns the number of leading zeros in the binary representation of self. *)
+Definition pub_uint32_leading_zeros (n : int32) : int32.
+Proof. Admitted.

@@ -14,15 +14,18 @@ src/Curve25519.v
 
 src/P256.v
 src/Sha256.v
+src/Ecdsa_p256_sha256.v
 
-# src/Ecdsa_p256_sha256.v
-# src/Gf128.v
-# src/Gimli.v
-# src/Hkdf.v
-# src/Hmac.v
-# src/Ntru_prime.v
+src/Gf128.v
+src/Gimli.v
+
+
+src/Hmac.v
+src/Hkdf.v
+
+src/Ntru_prime.v
 src/Poly1305.v
-# src/Riot_bootloader.v
-# src/Riot_runqueue.v
+src/Riot_bootloader.v
+src/Riot_runqueue.v
 
-# src/Sha3.v
+src/Sha3.v

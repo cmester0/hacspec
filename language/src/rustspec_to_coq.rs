@@ -664,7 +664,12 @@ fn translate_func_name<'a>(
                 | (ARRAY_MODULE, "from_slice_range") => {
                     match &prefix_info {
                         FuncPrefix::Array(ArraySize::Ident(s), _) => {
-                            additional_args.push(translate_ident(Ident::TopLevel(s.clone())))
+                            if s.string == "{{constant}}".to_string() {
+                                additional_args.push(RcDoc::as_string("_"))
+                            }
+                            else {
+                                additional_args.push(translate_ident(Ident::TopLevel(s.clone())))
+                            }
                         }
                         FuncPrefix::Array(ArraySize::Integer(i), _) => {
                             additional_args.push(RcDoc::as_string(format!("{}", i)))
@@ -678,6 +683,23 @@ fn translate_func_name<'a>(
                 }
                 _ => (),
             }
+
+            match (
+                format!("{}", module_name.pretty(0)).as_str(),
+                format!("{}", func_ident.pretty(0)).as_str(),
+            ) {
+                (ARRAY_MODULE, "length") => match &prefix_info {
+                    FuncPrefix::Array(ArraySize::Ident(s), _) => {
+                        return (translate_ident(Ident::TopLevel(s.clone())), vec![], result_typ);
+                    }
+                    FuncPrefix::Array(ArraySize::Integer(i), _) => {
+                        return (RcDoc::as_string(format!("{}", i)), vec![], result_typ);
+                    }
+                    _ => panic!(),
+                },
+                _ => (),
+            }
+
             (
                 module_name
                     .clone()
