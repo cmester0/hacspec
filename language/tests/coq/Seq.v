@@ -5,13 +5,14 @@ Import List.ListNotations.
 Open Scope Z_scope.
 Open Scope bool_scope.
 Open Scope hacspec_scope.
+Require Import String.
 Require Import Hacspec.Lib.
 
 Definition seq_test  : unit :=
   let a_0 : seq uint8 :=
     seq_new_ (default) (usize 10) in 
   let b_1 : seq uint8 :=
-    seq_new_ (default) (usize 10) in 
+    seq_with_capacity (usize 10) in 
   let a_0 :=
     seq_reserve (a_0) (usize 5) in 
   let _ : uint_size :=
@@ -20,10 +21,16 @@ Definition seq_test  : unit :=
     seq_slice (a_0) (usize 0) (usize 4) in 
   let a_0 :=
     seq_into_slice (a_0) (usize 0) (usize 4) in 
+  let a_0 :=
+    seq_slice_range (a_0) ((usize 0, usize 4)) in 
+  let a_0 :=
+    seq_into_slice_range (a_0) ((usize 0, usize 4)) in 
   let '(a_2, c_3) :=
     seq_split_off (a_0) (usize 4) in 
   let a_2 :=
     seq_truncate (a_2) (usize 2) in 
+  let _ : seq uint8 :=
+    seq_from_slice (seq_new_ (default) (usize 4)) (usize 0) (usize 1) in 
   let a_2 :=
     seq_concat (a_2) (c_3) in 
   let a_2 :=
@@ -32,6 +39,8 @@ Definition seq_test  : unit :=
     seq_push (a_2) (secret (@repr WORDSIZE8 4) : int8) in 
   let a_2 :=
     seq_push_owned (a_2) (secret (@repr WORDSIZE8 5) : int8) in 
+  let _ : seq uint8 :=
+    seq_from_slice_range (seq_new_ (default) (usize 4)) ((usize 0, usize 4)) in 
   let _ : uint_size :=
     seq_num_chunks (a_2) (usize 3) in 
   let _ : uint_size :=

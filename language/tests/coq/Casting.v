@@ -5,6 +5,7 @@ Import List.ListNotations.
 Open Scope Z_scope.
 Open Scope bool_scope.
 Open Scope hacspec_scope.
+Require Import String.
 Require Import Hacspec.Lib.
 
 Definition test_casting  : unit :=

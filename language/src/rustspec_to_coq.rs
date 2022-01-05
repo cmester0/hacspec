@@ -2264,6 +2264,7 @@ pub fn translate_and_write_to_file(
         Open Scope Z_scope.\n\
         Open Scope bool_scope.\n\
         Open Scope hacspec_scope.\n\
+        Require Import String.\n\
         {}",
         if export_quick_check {
             "From QuickChick Require Import QuickChick.\n\

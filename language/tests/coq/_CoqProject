@@ -12,3 +12,5 @@ Types.v
 Casting.v
 Seq.v
 Binary_operations.v
+Array.v
+StringTest.v

@@ -5,6 +5,7 @@ Import List.ListNotations.
 Open Scope Z_scope.
 Open Scope bool_scope.
 Open Scope hacspec_scope.
+Require Import String.
 Definition test_usize_operations (i_0 : uint_size) : unit :=
   let o_1 : uint_size :=
     (usize 8) ./ ((i_0) .& (usize 7)) in 

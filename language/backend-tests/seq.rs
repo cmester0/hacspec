@@ -1,8 +1,6 @@
 use hacspec_lib::*;
 
-// TODO: Range<usize> or (usize, usize) // Can you create range objects?
-pub fn seq_test (// r : Range<usize>
-) { 
+pub fn seq_test () {
     let mut a = ByteSeq::new(10);
     let b = ByteSeq::with_capacity(10);
     a = a.reserve(5);
@@ -10,16 +8,16 @@ pub fn seq_test (// r : Range<usize>
     a.slice(0, 4);
     // a.native_slice(); // Not hacspec
     a = a.into_slice(0,4);
-    // a = a.slice_range( r );
-    // a.into_slice_range( Range<usize> { } );
+    a = a.slice_range( 0..4 );
+    a = a.into_slice_range( 0..4 );
     let (mut a, c) = a.split_off(4);
     a = a.truncate(2);
-    // from_slice(b, 0, 1); // TODO
+    ByteSeq::from_slice(&ByteSeq::new(4), 0, 1);
     a = a.concat(&c);
     a = a.concat_owned(b);
     a = a.push(&U8(4_u8));
     a = a.push_owned(U8(5_u8));
-    // from_slice_range(b, Range<usize> { } );
+    ByteSeq::from_slice_range(&ByteSeq::new(4), 0..4 );
     a.num_chunks(3);
     a.num_exact_chunks(3);
     let (n, mut a) = a.get_chunk(3,1);

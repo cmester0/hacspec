@@ -67,3 +67,17 @@ fn positive_binary_operations() {
               "Binary_operations",
               HashMap::from([("coq", true)]));
 }
+
+#[test]
+fn positive_array() {
+    run_tests("backend-tests/array.rs",
+              "Array",
+              HashMap::from([("coq", true)]));
+}
+
+#[test]
+fn positive_string() {
+    run_tests("backend-tests/string.rs",
+              "StringTest",
+              HashMap::from([("coq", true)]));
+}
