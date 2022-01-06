@@ -1822,21 +1822,21 @@ Global Instance prod_default {A B} `{Default A} `{Default B} : Default (A × B) 
 
 (*** Constants *)
 
-Definition min {WS} := @repr WS (@min_signed WS).
-Definition max {WS} := @repr WS (@max_signed WS).
+Definition min_v {WS} := @repr WS (@min_signed WS).
+Definition max_v {WS} := @repr WS (@max_signed WS).
 Coercion bool_to_prop (b : bool) : Prop := b = true.
 Definition pub_int64_checked_abs (a : int64) : option int64 :=
-  if a == min
+  if a == min_v
   then None
   else
     if a <=.? 0
     then Some (MachineIntegers.neg a)
     else Some (a).
 Definition pub_uint32_checked_add (a : int32) (b : int32) : option int32 :=
-  if (a .+ b) >=.? max
+  if (a .+ b) >=.? max_v
   then None
   else Some (a .+ b).
 Definition pub_uint32_checked_sub (a : int32) (b : int32) : option int32 :=
-  if (a .- b) <=.? min
+  if (a .- b) <=.? min_v
   then None
   else Some (a .- b).
