@@ -1,4 +1,4 @@
-# -R ../../../coq/src/ Hacspec
+-R ../../../coq/src/ Hacspec
 -arg -w
 -arg all
 
@@ -9,4 +9,5 @@
 Question_Mark.v
 Loops.v
 Types.v
+
 Auction.v

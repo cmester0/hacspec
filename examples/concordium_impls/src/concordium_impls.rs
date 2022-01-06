@@ -14,29 +14,30 @@ use creusot_contracts::*;
 
 pub type Reject = i32;
 
-#[cfg_attr(feature = "creusot", logic)]
+// #[cfg_attr(feature = "creusot", logic)]
 pub fn reject_impl_deafult() -> Reject {
     i32::MIN
 }
 
 pub type OptionReject = Option<Reject>;
 
-#[cfg_attr(feature = "creusot", logic)]
+// #[cfg_attr(feature = "creusot", logic)]
 pub fn new_reject_impl(x: i32) -> OptionReject {
     if x < 0i32 {
-	OptionReject::Some(x)
+        Option::<i32>::Some(x)
+	// OptionReject::Some(x)
     } else {
 	Option::<i32>::None // OptionReject
     }
 }
 
-#[cfg_attr(feature = "creusot", logic)]
+// #[cfg_attr(feature = "creusot", logic)]
 #[ensures(result != 0i32)]
 pub fn reject_impl_convert_from_unit() -> Reject {
     i32::MIN + 1i32
 }
 
-#[cfg_attr(feature = "creusot", logic)]
+// #[cfg_attr(feature = "creusot", logic)]
 #[ensures(result != 0i32)]
 pub fn reject_impl_convert_from_parse_error() -> Reject {
     i32::MIN + 2i32
@@ -52,7 +53,7 @@ pub enum LogError {
     Malformed,
 }
 
-#[cfg_attr(feature = "creusot", logic)]
+// #[cfg_attr(feature = "creusot", logic)]
 #[ensures(result != 0i32)]
 pub fn reject_impl_from_log_error(le: LogError) -> Reject {
     match le {
@@ -69,7 +70,7 @@ pub enum NewContractNameError {
     NewContractNameErrorInvalidCharacters,
 }
 
-#[cfg_attr(feature = "creusot", logic)]
+// #[cfg_attr(feature = "creusot", logic)]
 #[ensures(result != 0i32)]
 pub fn reject_impl_from_new_contract_name_error(nre: NewContractNameError) -> Reject {
     match nre {
@@ -87,7 +88,7 @@ pub enum NewReceiveNameError {
     NewReceiveNameErrorInvalidCharacters,
 }
 
-#[cfg_attr(feature = "creusot", logic)]
+// #[cfg_attr(feature = "creusot", logic)]
 #[ensures(result != 0i32)]
 pub fn reject_impl_from_new_receive_name_error(nre: NewReceiveNameError) -> Reject {
     match nre {
@@ -124,74 +125,77 @@ pub enum SeekFrom {
 pub type U32Option = Option<u32>;
 pub type I64Option = Option<i64>;
 
-#[cfg_attr(feature = "creusot", trusted)]
-#[requires(forall<delta : i64> pos === SeekFrom::End(delta) ==> exists<b : u32> current_position.checked_add(delta as u32) == U32Option::Some(b))]
+// #[cfg_attr(feature = "creusot", trusted)]
+// #[requires(forall<delta : i64> pos === SeekFrom::End(delta) ==> exists<b : u32> current_position.checked_add(delta as u32) == U32Option::Some(b))]
 pub fn contract_state_impl_seek(current_position: ContractState, pos: SeekFrom) -> SeekResult {
     match pos {
-	SeekFrom::Start(offset) => SeekResult::Ok((offset as u32, offset)),
-	SeekFrom::End(delta) => {
-	    if delta >= 0_i64 {
-		match current_position.checked_add(delta as u32) {
-		    U32Option::Some(b) => SeekResult::Ok((b, delta as u64)),
-		    U32Option::None => SeekResult::Err(()),
-		}
-	    } else {
-		match delta.checked_abs() {
-		    I64Option::Some(b) =>
-		    // {
-		    // let new_pos = 4_u32 - (b as u32);
-		    {
-			SeekResult::Ok(((4_u32 - (b as u32)), (4_u32 - (b as u32)) as u64))
-		    }
-		    // }
-		    I64Option::None => SeekResult::Err(()),
-		}
-	    }
-	}
-	SeekFrom::Current(delta) => {
-	    if delta >= 0_i64 {
-		match current_position.checked_add(delta as u32) {
-		    U32Option::Some(offset) => SeekResult::Ok((offset, offset as u64)),
-		    U32Option::None => SeekResult::Err(()),
-		}
-	    } else {
-		match delta.checked_abs() {
-		    I64Option::Some(b) => match current_position.checked_sub(b as u32) {
-			U32Option::Some(offset) => SeekResult::Ok((offset, offset as u64)),
-			U32Option::None => SeekResult::Err(()),
-		    },
-		    I64Option::None => SeekResult::Err(()),
-		}
-	    }
-	}
+        SeekFrom::Start(offset) => Result::<(ContractState, u64), ()>::Ok((offset as u32, offset)),
+        SeekFrom::End(delta) => {
+            if delta >= 0_i64 {
+                match current_position.checked_add(delta as u32) {
+                    U32Option::Some(b) => Result::<(ContractState, u64), ()>::Ok((b, delta as u64)),
+                    U32Option::None => Result::<(ContractState, u64), ()>::Err(()),
+                }
+            } else {
+                match delta.checked_abs() {
+                    I64Option::Some(b) =>
+                    // {
+                    // let new_pos = 4_u32 - (b as u32);
+                    {
+                	Result::<(ContractState, u64), ()>::Ok(((4_u32 - (b as u32)), (4_u32 - (b as u32)) as u64))
+                    }
+                    // }
+                    I64Option::None => Result::<(ContractState, u64), ()>::Err(()),
+                }
+            }
+        }
+        SeekFrom::Current(delta) => {
+            if delta >= 0_i64 {
+                match current_position.checked_add(delta as u32) {
+                    U32Option::Some(offset) => Result::<(ContractState, u64), ()>::Ok((offset, offset as u64)),
+                    U32Option::None => Result::<(ContractState, u64), ()>::Err(()),
+                }
+            } else {
+                match delta.checked_abs() {
+                    I64Option::Some(b) => match current_position.checked_sub(b as u32) {
+                	U32Option::Some(offset) => Result::<(ContractState, u64), ()>::Ok((offset, offset as u64)),
+                	U32Option::None => Result::<(ContractState, u64), ()>::Err(()),
+                    },
+                    I64Option::None => Result::<(ContractState, u64), ()>::Err(()),
+                }
+            }
+        }
     }
 }
 
 #[cfg(not(feature = "hacspec"))]
-extern "C" {
-    pub(crate) fn load_state(start: *mut u8, length: u32, offset: u32) -> u32;
+// extern "C" {
+//     pub(crate) fn load_state(start: *mut u8, length: u32, offset: u32) -> u32;
+// }
+pub(crate) fn load_state(start: *mut u8, length: u32, offset: u32) -> u32 {
+    1u32
 }
 
 // #[cfg(feature = "hacspec")]
 // #[cfg_attr(feature = "creusot", trusted)]
-// #[requires(offset < buf.len())]
 #[cfg(feature = "hacspec")]
-#[ensures(result != (buf, 2u32))] // forall<b : u32> result = (buf,b) ==> 0u32 < offset + b
+// #[ensures(result != (buf, 2u32))]
 fn load_state_hacspec(buf : PublicByteSeq, offset: u32) -> (PublicByteSeq, u32) {
     (buf, 1u32)
 }
 
 #[cfg(not(feature = "hacspec"))]
 fn load_state_hacspec(buf : PublicByteSeq, offset: u32) -> (PublicByteSeq, u32) {
-    let mut temp_vec : Vec<u8> = (0..buf.len()).map(|i| {
-	buf.index(i).clone()
-    }).collect();
+    let mut temp_vec : Vec<u8> = Vec::new();
+    for i in 0..buf.len() {
+        temp_vec.push(buf.index(i).clone())
+    };
     let temp = &mut temp_vec[..];
     let i = unsafe { load_state(temp.as_mut_ptr(), buf.len() as u32, offset) };
     (PublicByteSeq::from_native_slice(temp), i)
 }
 
-#[cfg_attr(feature = "creusot", trusted)]
+// #[cfg_attr(feature = "creusot", trusted)]
 pub fn contract_state_impl_read_read(
     current_position: ContractState,
     buf : PublicByteSeq // Seq<u8>
@@ -203,7 +207,7 @@ pub fn contract_state_impl_read_read(
 
 /// Read a u32 in little-endian format. This is optimized to not
 /// initialize a dummy value before calling an external function.
-#[cfg_attr(feature = "creusot", logic)]
+// #[cfg_attr(feature = "creusot", logic)]
 pub fn contract_state_impl_read_read_u64(
     current_position: ContractState,
     num_read: u32,
@@ -213,7 +217,7 @@ pub fn contract_state_impl_read_read_u64(
 
 /// Read a u32 in little-endian format. This is optimized to not
 /// initialize a dummy value before calling an external function.
-#[cfg_attr(feature = "creusot", logic)]
+// #[cfg_attr(feature = "creusot", logic)]
 pub fn contract_state_impl_read_read_u32(
     current_position: ContractState,
     num_read: u32,
@@ -223,7 +227,7 @@ pub fn contract_state_impl_read_read_u32(
 
 /// Read a u8 in little-endian format. This is optimized to not
 /// initialize a dummy value before calling an external function.
-#[cfg_attr(feature = "creusot", logic)]
+// #[cfg_attr(feature = "creusot", logic)]
 pub fn contract_state_impl_read_read_u8(
     current_position: ContractState,
     num_read: u32,
@@ -231,12 +235,12 @@ pub fn contract_state_impl_read_read_u8(
     (current_position + num_read, num_read == 1_u32)
 }
 
-#[cfg_attr(feature = "creusot", logic)]
+// #[cfg_attr(feature = "creusot", logic)]
 pub fn write_impl_for_contract_state_test(current_position: ContractState, len: u32) -> bool {
     current_position.checked_add(len).is_none() // Check for overflow
 }
 
-#[cfg_attr(feature = "creusot", trusted)]
+// #[cfg_attr(feature = "creusot", trusted)]
 pub fn write_impl_for_contract_state(
     current_position: ContractState,
     num_bytes: u32,
@@ -244,25 +248,25 @@ pub fn write_impl_for_contract_state(
     (current_position + num_bytes, num_bytes as usize)
 }
 
-#[cfg_attr(feature = "creusot", logic)]
+// #[cfg_attr(feature = "creusot", logic)]
 pub fn has_contract_state_impl_for_contract_state_open() -> ContractState {
     0_u32
 }
 
-#[cfg_attr(feature = "creusot", logic)]
+// #[cfg_attr(feature = "creusot", logic)]
 pub fn has_contract_state_impl_for_contract_state_reserve_0(len: u32, cur_size: u32) -> bool {
     cur_size < len
 }
-#[cfg_attr(feature = "creusot", logic)]
+// #[cfg_attr(feature = "creusot", logic)]
 pub fn has_contract_state_impl_for_contract_state_reserve_1(res: u32) -> bool {
     res == 1_u32
 }
 
-#[cfg_attr(feature = "creusot", logic)]
+// #[cfg_attr(feature = "creusot", logic)]
 pub fn has_contract_state_impl_for_contract_state_truncate_0(cur_size: u32, new_size: u32) -> bool {
     cur_size > new_size
 }
-#[cfg_attr(feature = "creusot", logic)]
+// #[cfg_attr(feature = "creusot", logic)]
 pub fn has_contract_state_impl_for_contract_state_truncate_1(
     current_position: ContractState,
     new_size: u32,
@@ -276,7 +280,7 @@ pub fn has_contract_state_impl_for_contract_state_truncate_1(
 
 pub type Parameter = u32;
 
-#[cfg_attr(feature = "creusot", trusted)]
+// #[cfg_attr(feature = "creusot", trusted)]
 pub fn read_impl_for_parameter_read(
     current_position: Parameter,
     num_read: u32,
@@ -287,7 +291,7 @@ pub fn read_impl_for_parameter_read(
 // pub struct AttributeTag(pub u8);
 pub type AttributesCursor = (u32, u16);
 
-#[cfg_attr(feature = "creusot", trusted)]
+// #[cfg_attr(feature = "creusot", trusted)]
 pub fn has_policy_impl_for_policy_attributes_cursor_next_test(
     policy_attribute_items: AttributesCursor,
 ) -> bool {
@@ -295,7 +299,7 @@ pub fn has_policy_impl_for_policy_attributes_cursor_next_test(
     remaining_items == 0_u16
 }
 
-#[cfg_attr(feature = "creusot", trusted)]
+// #[cfg_attr(feature = "creusot", trusted)]
 pub fn has_policy_impl_for_policy_attributes_cursor_next_tag_invalid(
     policy_attribute_items: AttributesCursor,
     tag_value_len_1: u8,
@@ -306,7 +310,7 @@ pub fn has_policy_impl_for_policy_attributes_cursor_next_tag_invalid(
     (policy_attribute_items, tag_value_len_1 > 31_u8)
 }
 
-#[cfg_attr(feature = "creusot", trusted)]
+// #[cfg_attr(feature = "creusot", trusted)]
 pub fn has_policy_impl_for_policy_attributes_cursor_next(
     policy_attribute_items: AttributesCursor,
     num_read: u32,
