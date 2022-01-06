@@ -3,7 +3,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2022-01-06 Thu 12:23 -->
+<!-- 2022-01-06 Thu 14:20 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Concordium Smartcontract Infrastructure Implementations</title>
@@ -202,28 +202,28 @@
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents" role="doc-toc">
 <ul>
-<li><a href="#org3559763">1. Concordium "Impls" specification</a>
+<li><a href="#orgc2f7758">1. Concordium "Impls" specification</a>
 <ul>
-<li><a href="#orgcb2e017">1.1. Config</a></li>
-<li><a href="#org24b869e">1.2. Imports</a></li>
-<li><a href="#org240e46d">1.3. Rust code</a>
+<li><a href="#org7837a86">1.1. Config</a></li>
+<li><a href="#orgd58b529">1.2. Imports</a></li>
+<li><a href="#org42f9286">1.3. Rust code</a>
 <ul>
-<li><a href="#org28274e5">1.3.1. Reject</a></li>
-<li><a href="#org88fe0ea">1.3.2. Contract state</a></li>
-<li><a href="#orged9fe39">1.3.3. Parameter</a></li>
-<li><a href="#orgd6c64f2">1.3.4. AttributesCursor</a></li>
+<li><a href="#org0cf6394">1.3.1. Reject</a></li>
+<li><a href="#orgc41e5b2">1.3.2. Contract state</a></li>
+<li><a href="#orge3362a7">1.3.3. Parameter</a></li>
+<li><a href="#org2cfa7da">1.3.4. AttributesCursor</a></li>
 </ul>
 </li>
-<li><a href="#orgbf4a7f1">1.4. Rust Tests</a></li>
-<li><a href="#orgadc6d21">1.5. Resulting output</a></li>
-<li><a href="#orgff24c33">1.6. Generation of backend output</a>
+<li><a href="#org6052376">1.4. Rust Tests</a></li>
+<li><a href="#org05f75e7">1.5. Resulting output</a></li>
+<li><a href="#org1caa160">1.6. Generation of backend output</a>
 <ul>
-<li><a href="#org38ab639">1.6.1. The includes</a></li>
-<li><a href="#org427d530">1.6.2. Types and default implementations</a></li>
-<li><a href="#orga7ee377">1.6.3. Error handling</a></li>
-<li><a href="#org460e005">1.6.4. Contract state</a></li>
-<li><a href="#org4a6120a">1.6.5. Parameter</a></li>
-<li><a href="#orgbd414e3">1.6.6. Attributes Cursor</a></li>
+<li><a href="#orge141054">1.6.1. The includes</a></li>
+<li><a href="#orge4524b7">1.6.2. Types and default implementations</a></li>
+<li><a href="#org786bf91">1.6.3. Error handling</a></li>
+<li><a href="#org067155c">1.6.4. Contract state</a></li>
+<li><a href="#org244634e">1.6.5. Parameter</a></li>
+<li><a href="#org5577518">1.6.6. Attributes Cursor</a></li>
 </ul>
 </li>
 </ul>
@@ -232,12 +232,12 @@
 </div>
 </div>
 
-<div id="outline-container-org3559763" class="outline-2">
-<h2 id="org3559763"><span class="section-number-2">1.</span> Concordium "Impls" specification</h2>
+<div id="outline-container-orgc2f7758" class="outline-2">
+<h2 id="orgc2f7758"><span class="section-number-2">1.</span> Concordium "Impls" specification</h2>
 <div class="outline-text-2" id="text-1">
 </div>
-<div id="outline-container-orgcb2e017" class="outline-3">
-<h3 id="orgcb2e017"><span class="section-number-3">1.1.</span> Config</h3>
+<div id="outline-container-org7837a86" class="outline-3">
+<h3 id="org7837a86"><span class="section-number-3">1.1.</span> Config</h3>
 <div class="outline-text-3" id="text-1-1">
 <div class="org-src-container">
 <pre class="src src-toml">[<span style="color: #00ff00;">package</span>]
@@ -267,8 +267,8 @@
 </div>
 </div>
 
-<div id="outline-container-org24b869e" class="outline-3">
-<h3 id="org24b869e"><span class="section-number-3">1.2.</span> Imports</h3>
+<div id="outline-container-orgd58b529" class="outline-3">
+<h3 id="orgd58b529"><span class="section-number-3">1.2.</span> Imports</h3>
 <div class="outline-text-3" id="text-1-2">
 <div class="org-src-container">
 <pre class="src src-rust"><span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">cfg</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">not</span><span style="color: #cd8500;">(</span><span style="color: #4169e1;">feature = </span><span style="color: #bdb76b;">"hacspec"</span><span style="color: #cd8500;">)</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
@@ -289,20 +289,59 @@
 </div>
 </div>
 
-<div id="outline-container-org240e46d" class="outline-3">
-<h3 id="org240e46d"><span class="section-number-3">1.3.</span> Rust code</h3>
+<div id="outline-container-org42f9286" class="outline-3">
+<h3 id="org42f9286"><span class="section-number-3">1.3.</span> Rust code</h3>
 <div class="outline-text-3" id="text-1-3">
 </div>
-<div id="outline-container-org28274e5" class="outline-4">
-<h4 id="org28274e5"><span class="section-number-4">1.3.1.</span> Reject</h4>
+<div id="outline-container-org0cf6394" class="outline-4">
+<h4 id="org0cf6394"><span class="section-number-4">1.3.1.</span> Reject</h4>
 <div class="outline-text-4" id="text-1-3-1">
+<p>
+The <code>Rust</code> definition for Reject is
+</p>
+<div class="org-src-container">
+<pre class="src src-rust"><span style="color: light orange;">/// An error message, signalling rejection of a smart contract invocation.</span>
+<span style="color: light orange;">/// The client will see the error code as a reject reason; if a schema is</span>
+<span style="color: light orange;">/// provided, the error message corresponding to the error code will be</span>
+<span style="color: light orange;">/// displayed. The valid range for an error code is from i32::MIN to  -1.</span>
+<span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">derive</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">Eq, PartialEq, Debug</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
+<span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">repr</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">transparent</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
+<span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">struct</span> <span style="color: #00ff00;">Reject</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #b3b3b3;">pub</span> <span style="color: #9acd32;">error_code</span>: <span style="color: #b3b3b3;">crate</span>::<span style="color: #87ceeb;">num</span>::<span style="color: #00ff00;">NonZeroI32</span>,
+<span style="color: #7d26cd;">}</span>
+
+<span style="color: light orange;">/// Default error is i32::MIN.</span>
+<span style="color: #b3b3b3;">impl</span> <span style="color: #00ff00;">Default</span> <span style="color: #b3b3b3;">for</span> <span style="color: #00ff00;">Reject</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #4169e1;">#</span><span style="color: #cd0000;">[</span><span style="color: #4169e1;">inline</span><span style="color: #cd8500;">(</span><span style="color: #4169e1;">always</span><span style="color: #cd8500;">)</span><span style="color: #cd0000;">]</span>
+    <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">default</span><span style="color: #cd0000;">()</span> -&gt; <span style="color: #00ff00;">Self</span> <span style="color: #cd0000;">{</span>
+        <span style="color: #00ff00;">Self</span> <span style="color: #cd8500;">{</span>
+            <span style="color: #9acd32;">error_code</span>: <span style="color: #ff8c69;">unsafe</span> <span style="color: #cdcd00;">{</span> <span style="color: #b3b3b3;">crate</span>::<span style="color: #87ceeb;">num</span>::<span style="color: #00ff00;">NonZeroI32</span>::new_unchecked<span style="color: #00cd00;">(</span><span style="color: #00ff00;">i32</span>::<span style="color: #00ff00;">MIN</span><span style="color: #00cd00;">)</span> <span style="color: #cdcd00;">}</span>,
+        <span style="color: #cd8500;">}</span>
+    <span style="color: #cd0000;">}</span>
+<span style="color: #7d26cd;">}</span>
+
+<span style="color: #b3b3b3;">impl</span> <span style="color: #00ff00;">Reject</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: light orange;">/// This returns `None` for all values &gt;= 0 and `Some` otherwise.</span>
+    <span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">new</span><span style="color: #cd0000;">(</span><span style="color: #9acd32;">x</span>: <span style="color: #00ff00;">i32</span><span style="color: #cd0000;">)</span> -&gt; <span style="color: #00ff00;">Option</span><span style="color: #cd0000;">&lt;</span><span style="color: #00ff00;">Self</span><span style="color: #cd0000;">&gt;</span> <span style="color: #cd0000;">{</span>
+        <span style="color: #b3b3b3;">if</span> x &lt; 0 <span style="color: #cd8500;">{</span>
+            <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">error_code</span> = <span style="color: #ff8c69;">unsafe</span> <span style="color: #cdcd00;">{</span> <span style="color: #b3b3b3;">crate</span>::<span style="color: #87ceeb;">num</span>::<span style="color: #00ff00;">NonZeroI32</span>::new_unchecked<span style="color: #00cd00;">(</span>x<span style="color: #00cd00;">)</span> <span style="color: #cdcd00;">}</span>;
+            <span style="color: #00ff00;">Some</span><span style="color: #cdcd00;">(</span><span style="color: #00ff00;">Reject</span> <span style="color: #00cd00;">{</span>
+                error_code,
+            <span style="color: #00cd00;">}</span><span style="color: #cdcd00;">)</span>
+        <span style="color: #cd8500;">}</span> <span style="color: #b3b3b3;">else</span> <span style="color: #cd8500;">{</span>
+            <span style="color: #00ff00;">None</span>
+        <span style="color: #cd8500;">}</span>
+    <span style="color: #cd0000;">}</span>
+<span style="color: #7d26cd;">}</span>
+</pre>
+</div>
+
 <p>
 We modle reject as the underlying data, that is the error code. The default constructor is i32 min.
 </p>
 <div class="org-src-container">
 <pre class="src src-rust"><span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">type</span> <span style="color: #00ff00;">Reject</span> = <span style="color: #00ff00;">i32</span>;
 
-<span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">cfg_attr</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">feature = </span><span style="color: #bdb76b;">"creusot"</span><span style="color: #4169e1;">, logic</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
 <span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">reject_impl_deafult</span><span style="color: #7d26cd;">()</span> -&gt; <span style="color: #00ff00;">Reject</span> <span style="color: #7d26cd;">{</span>
     <span style="color: #00ff00;">i32</span>::<span style="color: #00ff00;">MIN</span>
 <span style="color: #7d26cd;">}</span>
@@ -310,14 +349,11 @@ We modle reject as the underlying data, that is the error code. The default cons
 </div>
 
 <div class="org-src-container">
-<pre class="src src-rust"><span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">type</span> <span style="color: #00ff00;">OptionReject</span> = <span style="color: #00ff00;">Option</span><span style="color: #7d26cd;">&lt;</span><span style="color: #00ff00;">Reject</span><span style="color: #7d26cd;">&gt;</span>;
-
-<span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">cfg_attr</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">feature = </span><span style="color: #bdb76b;">"creusot"</span><span style="color: #4169e1;">, logic</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
-<span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">new_reject_impl</span><span style="color: #7d26cd;">(</span><span style="color: #9acd32;">x</span>: <span style="color: #00ff00;">i32</span><span style="color: #7d26cd;">)</span> -&gt; <span style="color: #00ff00;">OptionReject</span> <span style="color: #7d26cd;">{</span>
+<pre class="src src-rust"><span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">new_reject_impl</span><span style="color: #7d26cd;">(</span><span style="color: #9acd32;">x</span>: <span style="color: #00ff00;">i32</span><span style="color: #7d26cd;">)</span> -&gt; <span style="color: #00ff00;">Option</span><span style="color: #7d26cd;">&lt;</span><span style="color: #00ff00;">Reject</span><span style="color: #7d26cd;">&gt;</span> <span style="color: #7d26cd;">{</span>
     <span style="color: #b3b3b3;">if</span> x &lt; 0i32 <span style="color: #cd0000;">{</span>
-        <span style="color: #00ff00;">OptionReject</span>::<span style="color: #00ff00;">Some</span><span style="color: #cd8500;">(</span>x<span style="color: #cd8500;">)</span>
+        <span style="color: #00ff00;">Option</span>::<span style="color: #cd8500;">&lt;</span><span style="color: #00ff00;">i32</span><span style="color: #cd8500;">&gt;</span>::<span style="color: #00ff00;">Some</span><span style="color: #cd8500;">(</span>x<span style="color: #cd8500;">)</span>
     <span style="color: #cd0000;">}</span> <span style="color: #b3b3b3;">else</span> <span style="color: #cd0000;">{</span>
-        <span style="color: #00ff00;">Option</span>::<span style="color: #cd8500;">&lt;</span><span style="color: #00ff00;">i32</span><span style="color: #cd8500;">&gt;</span>::<span style="color: #00ff00;">None</span> <span style="color: #7f7f7f;">// </span><span style="color: #7f7f7f;">OptionReject</span>
+        <span style="color: #00ff00;">Option</span>::<span style="color: #cd8500;">&lt;</span><span style="color: #00ff00;">i32</span><span style="color: #cd8500;">&gt;</span>::<span style="color: #00ff00;">None</span>
     <span style="color: #cd0000;">}</span>
 <span style="color: #7d26cd;">}</span>
 
@@ -326,7 +362,7 @@ We modle reject as the underlying data, that is the error code. The default cons
 </div>
 
 <ol class="org-ol">
-<li><a id="orga185296"></a>Reject - From trait<br />
+<li><a id="orgabd9f8d"></a>Reject - From trait<br />
 <div class="outline-text-5" id="text-1-3-1-1">
 <div class="org-src-container">
 <pre class="src src-rust"><span style="color: #b3b3b3;">impl</span> <span style="color: #87ceeb;">convert</span>::<span style="color: #00ff00;">From</span><span style="color: #7d26cd;">&lt;</span><span style="color: #cd0000;">()</span><span style="color: #7d26cd;">&gt;</span> <span style="color: #b3b3b3;">for</span> <span style="color: #00ff00;">Reject</span> <span style="color: #7d26cd;">{</span>
@@ -353,13 +389,11 @@ We modle reject as the underlying data, that is the error code. The default cons
 We modle the unsafe block with unchecked non zero as a precondition using requires giving us the hacspec equivalent
 </p>
 <div class="org-src-container">
-<pre class="src src-rust"><span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">cfg_attr</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">feature = </span><span style="color: #bdb76b;">"creusot"</span><span style="color: #4169e1;">, logic</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
-<span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">ensures</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">result != 0i32</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
+<pre class="src src-rust"><span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">ensures</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">result != 0i32</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
 <span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">reject_impl_convert_from_unit</span><span style="color: #7d26cd;">()</span> -&gt; <span style="color: #00ff00;">Reject</span> <span style="color: #7d26cd;">{</span>
     <span style="color: #00ff00;">i32</span>::<span style="color: #00ff00;">MIN</span> + 1i32
 <span style="color: #7d26cd;">}</span>
 
-<span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">cfg_attr</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">feature = </span><span style="color: #bdb76b;">"creusot"</span><span style="color: #4169e1;">, logic</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
 <span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">ensures</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">result != 0i32</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
 <span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">reject_impl_convert_from_parse_error</span><span style="color: #7d26cd;">()</span> -&gt; <span style="color: #00ff00;">Reject</span> <span style="color: #7d26cd;">{</span>
     <span style="color: #00ff00;">i32</span>::<span style="color: #00ff00;">MIN</span> + 2i32
@@ -391,7 +425,6 @@ We define a log error type and function converting from it to the reject type
     <span style="color: #00ff00;">Malformed</span>,
 <span style="color: #7d26cd;">}</span>
 
-<span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">cfg_attr</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">feature = </span><span style="color: #bdb76b;">"creusot"</span><span style="color: #4169e1;">, logic</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
 <span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">ensures</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">result != 0i32</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
 <span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">reject_impl_from_log_error</span><span style="color: #7d26cd;">(</span><span style="color: #9acd32;">le</span>: <span style="color: #00ff00;">LogError</span><span style="color: #7d26cd;">)</span> -&gt; <span style="color: #00ff00;">Reject</span> <span style="color: #7d26cd;">{</span>
     <span style="color: #b3b3b3;">match</span> le <span style="color: #cd0000;">{</span>
@@ -414,7 +447,6 @@ We define a type for new contract name errors and conversion from it to reject
     <span style="color: #00ff00;">NewContractNameErrorInvalidCharacters</span>,
 <span style="color: #7d26cd;">}</span>
 
-<span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">cfg_attr</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">feature = </span><span style="color: #bdb76b;">"creusot"</span><span style="color: #4169e1;">, logic</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
 <span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">ensures</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">result != 0i32</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
 <span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">reject_impl_from_new_contract_name_error</span><span style="color: #7d26cd;">(</span><span style="color: #9acd32;">nre</span>: <span style="color: #00ff00;">NewContractNameError</span><span style="color: #7d26cd;">)</span> -&gt; <span style="color: #00ff00;">Reject</span> <span style="color: #7d26cd;">{</span>
     <span style="color: #b3b3b3;">match</span> nre <span style="color: #cd0000;">{</span>
@@ -438,7 +470,6 @@ We define a type for new receive name errors and conversion from it to reject
     <span style="color: #00ff00;">NewReceiveNameErrorInvalidCharacters</span>,
 <span style="color: #7d26cd;">}</span>
 
-<span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">cfg_attr</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">feature = </span><span style="color: #bdb76b;">"creusot"</span><span style="color: #4169e1;">, logic</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
 <span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">ensures</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">result != 0i32</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
 <span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">reject_impl_from_new_receive_name_error</span><span style="color: #7d26cd;">(</span><span style="color: #9acd32;">nre</span>: <span style="color: #00ff00;">NewReceiveNameError</span><span style="color: #7d26cd;">)</span> -&gt; <span style="color: #00ff00;">Reject</span> <span style="color: #7d26cd;">{</span>
     <span style="color: #b3b3b3;">match</span> nre <span style="color: #cd0000;">{</span>
@@ -454,8 +485,8 @@ We define a type for new receive name errors and conversion from it to reject
 </li>
 </ol>
 </div>
-<div id="outline-container-org88fe0ea" class="outline-4">
-<h4 id="org88fe0ea"><span class="section-number-4">1.3.2.</span> Contract state</h4>
+<div id="outline-container-orgc41e5b2" class="outline-4">
+<h4 id="orgc41e5b2"><span class="section-number-4">1.3.2.</span> Contract state</h4>
 <div class="outline-text-4" id="text-1-3-2">
 <p>
 We define contract state as its inner state namely the current position of the type.
@@ -467,12 +498,10 @@ We define contract state as its inner state namely the current position of the t
 </div>
 </div>
 <ol class="org-ol">
-<li><a id="org6df5143"></a>Contract State &#x2013; Seek<br />
+<li><a id="org81a07f6"></a>Contract State &#x2013; Seek<br />
 <div class="outline-text-5" id="text-1-3-2-1">
 <div class="org-src-container">
-<pre class="src src-rust"><span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">type</span> <span style="color: #00ff00;">SeekResult</span> = <span style="color: #00ff00;">Result</span><span style="color: #7d26cd;">&lt;</span><span style="color: #cd0000;">(</span><span style="color: #00ff00;">ContractState</span>, <span style="color: #00ff00;">u64</span><span style="color: #cd0000;">)</span>, <span style="color: #cd0000;">()</span><span style="color: #7d26cd;">&gt;</span>;
-
-<span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">derive</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">Copy, Clone</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span> <span style="color: #7f7f7f;">// </span><span style="color: #7f7f7f;">, Debug, PartialEq, Eq</span>
+<pre class="src src-rust"><span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">derive</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">Copy, Clone</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span> <span style="color: #7f7f7f;">// </span><span style="color: #7f7f7f;">, Debug, PartialEq, Eq</span>
 <span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">enum</span> <span style="color: #00ff00;">SeekFrom</span> <span style="color: #7d26cd;">{</span>
     <span style="color: light orange;">/// Sets the offset to the provided number of bytes.</span>
     <span style="color: #00ff00;">Start</span><span style="color: #cd0000;">(</span><span style="color: #00ff00;">u64</span><span style="color: #cd0000;">)</span>,
@@ -495,43 +524,39 @@ We define contract state as its inner state namely the current position of the t
 <span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">type</span> <span style="color: #00ff00;">U32Option</span> = <span style="color: #00ff00;">Option</span><span style="color: #7d26cd;">&lt;</span><span style="color: #00ff00;">u32</span><span style="color: #7d26cd;">&gt;</span>;
 <span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">type</span> <span style="color: #00ff00;">I64Option</span> = <span style="color: #00ff00;">Option</span><span style="color: #7d26cd;">&lt;</span><span style="color: #00ff00;">i64</span><span style="color: #7d26cd;">&gt;</span>;
 
-<span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">cfg_attr</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">feature = </span><span style="color: #bdb76b;">"creusot"</span><span style="color: #4169e1;">, trusted</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
-<span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">requires</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">forall</span><span style="color: #cd8500;">&lt;</span><span style="color: #4169e1;">delta : </span><span style="color: #00ff00;">i64</span><span style="color: #cd8500;">&gt;</span><span style="color: #4169e1;"> pos === SeekFrom::End</span><span style="color: #cd8500;">(</span><span style="color: #4169e1;">delta</span><span style="color: #cd8500;">)</span><span style="color: #4169e1;"> ==&gt; exists&lt;b : </span><span style="color: #00ff00;">u32</span><span style="color: #4169e1;">&gt; current_position.checked_add</span><span style="color: #cd8500;">(</span><span style="color: #4169e1;">delta </span><span style="color: #b3b3b3;">as</span><span style="color: #4169e1;"> </span><span style="color: #00ff00;">u32</span><span style="color: #cd8500;">)</span><span style="color: #4169e1;"> == U32Option::Some</span><span style="color: #cd8500;">(</span><span style="color: #4169e1;">b</span><span style="color: #cd8500;">)</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
-<span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">contract_state_impl_seek</span><span style="color: #7d26cd;">(</span><span style="color: #9acd32;">current_position</span>: <span style="color: #00ff00;">ContractState</span>, <span style="color: #9acd32;">pos</span>: <span style="color: #00ff00;">SeekFrom</span><span style="color: #7d26cd;">)</span> -&gt; <span style="color: #00ff00;">SeekResult</span> <span style="color: #7d26cd;">{</span>
+<span style="color: #7f7f7f;">// </span><span style="color: #7f7f7f;">#[requires(forall&lt;delta : i64&gt; pos === SeekFrom::End(delta) ==&gt; exists&lt;b : u32&gt; current_position.checked_add(delta as u32) == U32Option::Some(b))]</span>
+<span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">contract_state_impl_seek</span><span style="color: #7d26cd;">(</span><span style="color: #9acd32;">current_position</span>: <span style="color: #00ff00;">ContractState</span>, <span style="color: #9acd32;">pos</span>: <span style="color: #00ff00;">SeekFrom</span><span style="color: #7d26cd;">)</span> -&gt; <span style="color: #00ff00;">Result</span><span style="color: #7d26cd;">&lt;</span><span style="color: #cd0000;">(</span><span style="color: #00ff00;">ContractState</span>, <span style="color: #00ff00;">u64</span><span style="color: #cd0000;">)</span>, <span style="color: #cd0000;">()</span><span style="color: #7d26cd;">&gt;</span> <span style="color: #7d26cd;">{</span>
     <span style="color: #b3b3b3;">match</span> pos <span style="color: #cd0000;">{</span>
-        <span style="color: #00ff00;">SeekFrom</span>::<span style="color: #00ff00;">Start</span><span style="color: #cd8500;">(</span>offset<span style="color: #cd8500;">)</span> =&gt; <span style="color: #00ff00;">SeekResult</span>::<span style="color: #00ff00;">Ok</span><span style="color: #cd8500;">(</span><span style="color: #cdcd00;">(</span>offset <span style="color: #b3b3b3;">as</span> <span style="color: #00ff00;">u32</span>, offset<span style="color: #cdcd00;">)</span><span style="color: #cd8500;">)</span>,
+        <span style="color: #00ff00;">SeekFrom</span>::<span style="color: #00ff00;">Start</span><span style="color: #cd8500;">(</span>offset<span style="color: #cd8500;">)</span> =&gt; <span style="color: #00ff00;">Result</span>::<span style="color: #cd8500;">&lt;</span><span style="color: #cdcd00;">(</span><span style="color: #00ff00;">ContractState</span>, <span style="color: #00ff00;">u64</span><span style="color: #cdcd00;">)</span>, <span style="color: #cdcd00;">()</span><span style="color: #cd8500;">&gt;</span>::<span style="color: #00ff00;">Ok</span><span style="color: #cd8500;">(</span><span style="color: #cdcd00;">(</span>offset <span style="color: #b3b3b3;">as</span> <span style="color: #00ff00;">u32</span>, offset<span style="color: #cdcd00;">)</span><span style="color: #cd8500;">)</span>,
         <span style="color: #00ff00;">SeekFrom</span>::<span style="color: #00ff00;">End</span><span style="color: #cd8500;">(</span>delta<span style="color: #cd8500;">)</span> =&gt; <span style="color: #cd8500;">{</span>
             <span style="color: #b3b3b3;">if</span> delta &gt;= 0_i64 <span style="color: #cdcd00;">{</span>
                 <span style="color: #b3b3b3;">match</span> current_position.checked_add<span style="color: #00cd00;">(</span>delta <span style="color: #b3b3b3;">as</span> <span style="color: #00ff00;">u32</span><span style="color: #00cd00;">)</span> <span style="color: #00cd00;">{</span>
-                    <span style="color: #00ff00;">U32Option</span>::<span style="color: #00ff00;">Some</span><span style="color: #00cdcd;">(</span>b<span style="color: #00cdcd;">)</span> =&gt; <span style="color: #00ff00;">SeekResult</span>::<span style="color: #00ff00;">Ok</span><span style="color: #00cdcd;">(</span><span style="color: #0000cd;">(</span>b, delta <span style="color: #b3b3b3;">as</span> <span style="color: #00ff00;">u64</span><span style="color: #0000cd;">)</span><span style="color: #00cdcd;">)</span>,
-                    <span style="color: #00ff00;">U32Option</span>::<span style="color: #00ff00;">None</span> =&gt; <span style="color: #00ff00;">SeekResult</span>::<span style="color: #00ff00;">Err</span><span style="color: #00cdcd;">(</span><span style="color: #0000cd;">()</span><span style="color: #00cdcd;">)</span>,
+                    <span style="color: #00ff00;">U32Option</span>::<span style="color: #00ff00;">Some</span><span style="color: #00cdcd;">(</span>b<span style="color: #00cdcd;">)</span> =&gt; <span style="color: #00ff00;">Result</span>::<span style="color: #00cdcd;">&lt;</span><span style="color: #0000cd;">(</span><span style="color: #00ff00;">ContractState</span>, <span style="color: #00ff00;">u64</span><span style="color: #0000cd;">)</span>, <span style="color: #0000cd;">()</span><span style="color: #00cdcd;">&gt;</span>::<span style="color: #00ff00;">Ok</span><span style="color: #00cdcd;">(</span><span style="color: #0000cd;">(</span>b, delta <span style="color: #b3b3b3;">as</span> <span style="color: #00ff00;">u64</span><span style="color: #0000cd;">)</span><span style="color: #00cdcd;">)</span>,
+                    <span style="color: #00ff00;">U32Option</span>::<span style="color: #00ff00;">None</span> =&gt; <span style="color: #00ff00;">Result</span>::<span style="color: #00cdcd;">&lt;</span><span style="color: #0000cd;">(</span><span style="color: #00ff00;">ContractState</span>, <span style="color: #00ff00;">u64</span><span style="color: #0000cd;">)</span>, <span style="color: #0000cd;">()</span><span style="color: #00cdcd;">&gt;</span>::<span style="color: #00ff00;">Err</span><span style="color: #00cdcd;">(</span><span style="color: #0000cd;">()</span><span style="color: #00cdcd;">)</span>,
                 <span style="color: #00cd00;">}</span>
             <span style="color: #cdcd00;">}</span> <span style="color: #b3b3b3;">else</span> <span style="color: #cdcd00;">{</span>
                 <span style="color: #b3b3b3;">match</span> delta.checked_abs<span style="color: #00cd00;">()</span> <span style="color: #00cd00;">{</span>
                     <span style="color: #00ff00;">I64Option</span>::<span style="color: #00ff00;">Some</span><span style="color: #00cdcd;">(</span>b<span style="color: #00cdcd;">)</span> =&gt;
-                    <span style="color: #7f7f7f;">// </span><span style="color: #7f7f7f;">{</span>
-                    <span style="color: #7f7f7f;">// </span><span style="color: #7f7f7f;">let new_pos = 4_u32 - (b as u32);</span>
                     <span style="color: #00cdcd;">{</span>
-                        <span style="color: #00ff00;">SeekResult</span>::<span style="color: #00ff00;">Ok</span><span style="color: #0000cd;">(</span><span style="color: #cd00cd;">(</span><span style="color: #cd1076;">(</span>4_u32 - <span style="color: #7d26cd;">(</span>b <span style="color: #b3b3b3;">as</span> <span style="color: #00ff00;">u32</span><span style="color: #7d26cd;">)</span><span style="color: #cd1076;">)</span>, <span style="color: #cd1076;">(</span>4_u32 - <span style="color: #7d26cd;">(</span>b <span style="color: #b3b3b3;">as</span> <span style="color: #00ff00;">u32</span><span style="color: #7d26cd;">)</span><span style="color: #cd1076;">)</span> <span style="color: #b3b3b3;">as</span> <span style="color: #00ff00;">u64</span><span style="color: #cd00cd;">)</span><span style="color: #0000cd;">)</span>
+                        <span style="color: #00ff00;">Result</span>::<span style="color: #0000cd;">&lt;</span><span style="color: #cd00cd;">(</span><span style="color: #00ff00;">ContractState</span>, <span style="color: #00ff00;">u64</span><span style="color: #cd00cd;">)</span>, <span style="color: #cd00cd;">()</span><span style="color: #0000cd;">&gt;</span>::<span style="color: #00ff00;">Ok</span><span style="color: #0000cd;">(</span><span style="color: #cd00cd;">(</span><span style="color: #cd1076;">(</span>4_u32 - <span style="color: #7d26cd;">(</span>b <span style="color: #b3b3b3;">as</span> <span style="color: #00ff00;">u32</span><span style="color: #7d26cd;">)</span><span style="color: #cd1076;">)</span>, <span style="color: #cd1076;">(</span>4_u32 - <span style="color: #7d26cd;">(</span>b <span style="color: #b3b3b3;">as</span> <span style="color: #00ff00;">u32</span><span style="color: #7d26cd;">)</span><span style="color: #cd1076;">)</span> <span style="color: #b3b3b3;">as</span> <span style="color: #00ff00;">u64</span><span style="color: #cd00cd;">)</span><span style="color: #0000cd;">)</span>
                     <span style="color: #00cdcd;">}</span>
-                    <span style="color: #7f7f7f;">// </span><span style="color: #7f7f7f;">}</span>
-                    <span style="color: #00ff00;">I64Option</span>::<span style="color: #00ff00;">None</span> =&gt; <span style="color: #00ff00;">SeekResult</span>::<span style="color: #00ff00;">Err</span><span style="color: #00cdcd;">(</span><span style="color: #0000cd;">()</span><span style="color: #00cdcd;">)</span>,
+                    <span style="color: #00ff00;">I64Option</span>::<span style="color: #00ff00;">None</span> =&gt; <span style="color: #00ff00;">Result</span>::<span style="color: #00cdcd;">&lt;</span><span style="color: #0000cd;">(</span><span style="color: #00ff00;">ContractState</span>, <span style="color: #00ff00;">u64</span><span style="color: #0000cd;">)</span>, <span style="color: #0000cd;">()</span><span style="color: #00cdcd;">&gt;</span>::<span style="color: #00ff00;">Err</span><span style="color: #00cdcd;">(</span><span style="color: #0000cd;">()</span><span style="color: #00cdcd;">)</span>,
                 <span style="color: #00cd00;">}</span>
             <span style="color: #cdcd00;">}</span>
         <span style="color: #cd8500;">}</span>
         <span style="color: #00ff00;">SeekFrom</span>::<span style="color: #00ff00;">Current</span><span style="color: #cd8500;">(</span>delta<span style="color: #cd8500;">)</span> =&gt; <span style="color: #cd8500;">{</span>
             <span style="color: #b3b3b3;">if</span> delta &gt;= 0_i64 <span style="color: #cdcd00;">{</span>
                 <span style="color: #b3b3b3;">match</span> current_position.checked_add<span style="color: #00cd00;">(</span>delta <span style="color: #b3b3b3;">as</span> <span style="color: #00ff00;">u32</span><span style="color: #00cd00;">)</span> <span style="color: #00cd00;">{</span>
-                    <span style="color: #00ff00;">U32Option</span>::<span style="color: #00ff00;">Some</span><span style="color: #00cdcd;">(</span>offset<span style="color: #00cdcd;">)</span> =&gt; <span style="color: #00ff00;">SeekResult</span>::<span style="color: #00ff00;">Ok</span><span style="color: #00cdcd;">(</span><span style="color: #0000cd;">(</span>offset, offset <span style="color: #b3b3b3;">as</span> <span style="color: #00ff00;">u64</span><span style="color: #0000cd;">)</span><span style="color: #00cdcd;">)</span>,
-                    <span style="color: #00ff00;">U32Option</span>::<span style="color: #00ff00;">None</span> =&gt; <span style="color: #00ff00;">SeekResult</span>::<span style="color: #00ff00;">Err</span><span style="color: #00cdcd;">(</span><span style="color: #0000cd;">()</span><span style="color: #00cdcd;">)</span>,
+                    <span style="color: #00ff00;">U32Option</span>::<span style="color: #00ff00;">Some</span><span style="color: #00cdcd;">(</span>offset<span style="color: #00cdcd;">)</span> =&gt; <span style="color: #00ff00;">Result</span>::<span style="color: #00cdcd;">&lt;</span><span style="color: #0000cd;">(</span><span style="color: #00ff00;">ContractState</span>, <span style="color: #00ff00;">u64</span><span style="color: #0000cd;">)</span>, <span style="color: #0000cd;">()</span><span style="color: #00cdcd;">&gt;</span>::<span style="color: #00ff00;">Ok</span><span style="color: #00cdcd;">(</span><span style="color: #0000cd;">(</span>offset, offset <span style="color: #b3b3b3;">as</span> <span style="color: #00ff00;">u64</span><span style="color: #0000cd;">)</span><span style="color: #00cdcd;">)</span>,
+                    <span style="color: #00ff00;">U32Option</span>::<span style="color: #00ff00;">None</span> =&gt; <span style="color: #00ff00;">Result</span>::<span style="color: #00cdcd;">&lt;</span><span style="color: #0000cd;">(</span><span style="color: #00ff00;">ContractState</span>, <span style="color: #00ff00;">u64</span><span style="color: #0000cd;">)</span>, <span style="color: #0000cd;">()</span><span style="color: #00cdcd;">&gt;</span>::<span style="color: #00ff00;">Err</span><span style="color: #00cdcd;">(</span><span style="color: #0000cd;">()</span><span style="color: #00cdcd;">)</span>,
                 <span style="color: #00cd00;">}</span>
             <span style="color: #cdcd00;">}</span> <span style="color: #b3b3b3;">else</span> <span style="color: #cdcd00;">{</span>
                 <span style="color: #b3b3b3;">match</span> delta.checked_abs<span style="color: #00cd00;">()</span> <span style="color: #00cd00;">{</span>
                     <span style="color: #00ff00;">I64Option</span>::<span style="color: #00ff00;">Some</span><span style="color: #00cdcd;">(</span>b<span style="color: #00cdcd;">)</span> =&gt; <span style="color: #b3b3b3;">match</span> current_position.checked_sub<span style="color: #00cdcd;">(</span>b <span style="color: #b3b3b3;">as</span> <span style="color: #00ff00;">u32</span><span style="color: #00cdcd;">)</span> <span style="color: #00cdcd;">{</span>
-                        <span style="color: #00ff00;">U32Option</span>::<span style="color: #00ff00;">Some</span><span style="color: #0000cd;">(</span>offset<span style="color: #0000cd;">)</span> =&gt; <span style="color: #00ff00;">SeekResult</span>::<span style="color: #00ff00;">Ok</span><span style="color: #0000cd;">(</span><span style="color: #cd00cd;">(</span>offset, offset <span style="color: #b3b3b3;">as</span> <span style="color: #00ff00;">u64</span><span style="color: #cd00cd;">)</span><span style="color: #0000cd;">)</span>,
-                        <span style="color: #00ff00;">U32Option</span>::<span style="color: #00ff00;">None</span> =&gt; <span style="color: #00ff00;">SeekResult</span>::<span style="color: #00ff00;">Err</span><span style="color: #0000cd;">(</span><span style="color: #cd00cd;">()</span><span style="color: #0000cd;">)</span>,
+                        <span style="color: #00ff00;">U32Option</span>::<span style="color: #00ff00;">Some</span><span style="color: #0000cd;">(</span>offset<span style="color: #0000cd;">)</span> =&gt; <span style="color: #00ff00;">Result</span>::<span style="color: #0000cd;">&lt;</span><span style="color: #cd00cd;">(</span><span style="color: #00ff00;">ContractState</span>, <span style="color: #00ff00;">u64</span><span style="color: #cd00cd;">)</span>, <span style="color: #cd00cd;">()</span><span style="color: #0000cd;">&gt;</span>::<span style="color: #00ff00;">Ok</span><span style="color: #0000cd;">(</span><span style="color: #cd00cd;">(</span>offset, offset <span style="color: #b3b3b3;">as</span> <span style="color: #00ff00;">u64</span><span style="color: #cd00cd;">)</span><span style="color: #0000cd;">)</span>,
+                        <span style="color: #00ff00;">U32Option</span>::<span style="color: #00ff00;">None</span> =&gt; <span style="color: #00ff00;">Result</span>::<span style="color: #0000cd;">&lt;</span><span style="color: #cd00cd;">(</span><span style="color: #00ff00;">ContractState</span>, <span style="color: #00ff00;">u64</span><span style="color: #cd00cd;">)</span>, <span style="color: #cd00cd;">()</span><span style="color: #0000cd;">&gt;</span>::<span style="color: #00ff00;">Err</span><span style="color: #0000cd;">(</span><span style="color: #cd00cd;">()</span><span style="color: #0000cd;">)</span>,
                     <span style="color: #00cdcd;">}</span>,
-                    <span style="color: #00ff00;">I64Option</span>::<span style="color: #00ff00;">None</span> =&gt; <span style="color: #00ff00;">SeekResult</span>::<span style="color: #00ff00;">Err</span><span style="color: #00cdcd;">(</span><span style="color: #0000cd;">()</span><span style="color: #00cdcd;">)</span>,
+                    <span style="color: #00ff00;">I64Option</span>::<span style="color: #00ff00;">None</span> =&gt; <span style="color: #00ff00;">Result</span>::<span style="color: #00cdcd;">&lt;</span><span style="color: #0000cd;">(</span><span style="color: #00ff00;">ContractState</span>, <span style="color: #00ff00;">u64</span><span style="color: #0000cd;">)</span>, <span style="color: #0000cd;">()</span><span style="color: #00cdcd;">&gt;</span>::<span style="color: #00ff00;">Err</span><span style="color: #00cdcd;">(</span><span style="color: #0000cd;">()</span><span style="color: #00cdcd;">)</span>,
                 <span style="color: #00cd00;">}</span>
             <span style="color: #cdcd00;">}</span>
         <span style="color: #cd8500;">}</span>
@@ -541,7 +566,7 @@ We define contract state as its inner state namely the current position of the t
 </div>
 </div>
 </li>
-<li><a id="org61ee22d"></a>Contract State &#x2013; Load<br />
+<li><a id="org822763e"></a>Contract State &#x2013; Load<br />
 <div class="outline-text-5" id="text-1-3-2-2">
 <div class="org-src-container">
 <pre class="src src-rust"><span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">cfg</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">not</span><span style="color: #cd8500;">(</span><span style="color: #4169e1;">feature = </span><span style="color: #bdb76b;">"hacspec"</span><span style="color: #cd8500;">)</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
@@ -549,34 +574,38 @@ We define contract state as its inner state namely the current position of the t
     <span style="color: #b3b3b3;">pub</span><span style="color: #cd0000;">(</span><span style="color: #b3b3b3;">crate</span><span style="color: #cd0000;">)</span> <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">load_state</span><span style="color: #cd0000;">(</span><span style="color: #9acd32;">start</span>: *<span style="color: #b3b3b3;">mut</span> <span style="color: #00ff00;">u8</span>, <span style="color: #9acd32;">length</span>: <span style="color: #00ff00;">u32</span>, <span style="color: #9acd32;">offset</span>: <span style="color: #00ff00;">u32</span><span style="color: #cd0000;">)</span> -&gt; <span style="color: #00ff00;">u32</span>;
 <span style="color: #7d26cd;">}</span>
 
-<span style="color: #7f7f7f;">// </span><span style="color: #7f7f7f;">#[cfg(feature = "hacspec")]</span>
-<span style="color: #7f7f7f;">// </span><span style="color: #7f7f7f;">#[cfg_attr(feature = "creusot", trusted)]</span>
-<span style="color: #7f7f7f;">// </span><span style="color: #7f7f7f;">#[requires(offset &lt; buf.len())]</span>
+<span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">cfg</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">not</span><span style="color: #cd8500;">(</span><span style="color: #4169e1;">feature = </span><span style="color: #bdb76b;">"hacspec"</span><span style="color: #cd8500;">)</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
+<span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">trusted</span><span style="color: #7d26cd;">]</span>
+<span style="color: #b3b3b3;">pub</span><span style="color: #7d26cd;">(</span><span style="color: #b3b3b3;">crate</span><span style="color: #7d26cd;">)</span> <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">load_state_creusot</span><span style="color: #7d26cd;">(</span><span style="color: #9acd32;">start</span>: *<span style="color: #b3b3b3;">mut</span> <span style="color: #00ff00;">u8</span>, <span style="color: #9acd32;">length</span>: <span style="color: #00ff00;">u32</span>, <span style="color: #9acd32;">offset</span>: <span style="color: #00ff00;">u32</span><span style="color: #7d26cd;">)</span> -&gt; <span style="color: #00ff00;">u32</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #ff8c69;">unsafe</span> <span style="color: #cd0000;">{</span> load_state<span style="color: #cd8500;">(</span>start, length, offset<span style="color: #cd8500;">)</span> <span style="color: #cd0000;">}</span>
+<span style="color: #7d26cd;">}</span>
+
 <span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">cfg</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">feature = </span><span style="color: #bdb76b;">"hacspec"</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
-<span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">ensures</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">result != </span><span style="color: #cd8500;">(</span><span style="color: #4169e1;">buf, 2u32</span><span style="color: #cd8500;">)</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span> <span style="color: #7f7f7f;">// </span><span style="color: #7f7f7f;">forall&lt;b : u32&gt; result = (buf,b) ==&gt; 0u32 &lt; offset + b</span>
-<span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">load_state_hacspec</span><span style="color: #7d26cd;">(</span><span style="color: #9acd32;">buf</span> : <span style="color: #00ff00;">PublicByteSeq</span>, <span style="color: #9acd32;">offset</span>: <span style="color: #00ff00;">u32</span><span style="color: #7d26cd;">)</span> -&gt; <span style="color: #7d26cd;">(</span><span style="color: #00ff00;">PublicByteSeq</span>, <span style="color: #00ff00;">u32</span><span style="color: #7d26cd;">)</span> <span style="color: #7d26cd;">{</span>
+<span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">load_state_hacspec</span><span style="color: #7d26cd;">(</span><span style="color: #9acd32;">buf</span>: <span style="color: #00ff00;">PublicByteSeq</span>, <span style="color: #9acd32;">offset</span>: <span style="color: #00ff00;">u32</span><span style="color: #7d26cd;">)</span> -&gt; <span style="color: #7d26cd;">(</span><span style="color: #00ff00;">PublicByteSeq</span>, <span style="color: #00ff00;">u32</span><span style="color: #7d26cd;">)</span> <span style="color: #7d26cd;">{</span>
     <span style="color: #cd0000;">(</span>buf, 1u32<span style="color: #cd0000;">)</span>
 <span style="color: #7d26cd;">}</span>
 
 <span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">cfg</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">not</span><span style="color: #cd8500;">(</span><span style="color: #4169e1;">feature = </span><span style="color: #bdb76b;">"hacspec"</span><span style="color: #cd8500;">)</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
-<span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">load_state_hacspec</span><span style="color: #7d26cd;">(</span><span style="color: #9acd32;">buf</span> : <span style="color: #00ff00;">PublicByteSeq</span>, <span style="color: #9acd32;">offset</span>: <span style="color: #00ff00;">u32</span><span style="color: #7d26cd;">)</span> -&gt; <span style="color: #7d26cd;">(</span><span style="color: #00ff00;">PublicByteSeq</span>, <span style="color: #00ff00;">u32</span><span style="color: #7d26cd;">)</span> <span style="color: #7d26cd;">{</span>
-    <span style="color: #b3b3b3;">let</span> <span style="color: #b3b3b3;">mut</span> <span style="color: #9acd32;">temp_vec</span> : <span style="color: #00ff00;">Vec</span><span style="color: #cd0000;">&lt;</span><span style="color: #00ff00;">u8</span><span style="color: #cd0000;">&gt;</span> = <span style="color: #cd0000;">(</span>0..buf.len<span style="color: #cd8500;">()</span><span style="color: #cd0000;">)</span>.map<span style="color: #cd0000;">(</span>|i| <span style="color: #cd8500;">{</span>
-        buf.index<span style="color: #cdcd00;">(</span>i<span style="color: #cdcd00;">)</span>.clone<span style="color: #cdcd00;">()</span>
-    <span style="color: #cd8500;">}</span><span style="color: #cd0000;">)</span>.collect<span style="color: #cd0000;">()</span>;
+<span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">load_state_hacspec</span><span style="color: #7d26cd;">(</span><span style="color: #9acd32;">buf</span>: <span style="color: #00ff00;">PublicByteSeq</span>, <span style="color: #9acd32;">offset</span>: <span style="color: #00ff00;">u32</span><span style="color: #7d26cd;">)</span> -&gt; <span style="color: #7d26cd;">(</span><span style="color: #00ff00;">PublicByteSeq</span>, <span style="color: #00ff00;">u32</span><span style="color: #7d26cd;">)</span> <span style="color: #7d26cd;">{</span>
+    <span style="color: #b3b3b3;">let</span> <span style="color: #b3b3b3;">mut</span> <span style="color: #9acd32;">temp_vec</span>: <span style="color: #00ff00;">Vec</span><span style="color: #cd0000;">&lt;</span><span style="color: #00ff00;">u8</span><span style="color: #cd0000;">&gt;</span> = <span style="color: #00ff00;">Vec</span>::new<span style="color: #cd0000;">()</span>;
+    <span style="color: #b3b3b3;">for</span> <span style="color: #9acd32;">i</span> <span style="color: #b3b3b3;">in</span> 0..buf.len<span style="color: #cd0000;">()</span> <span style="color: #cd0000;">{</span>
+        temp_vec.push<span style="color: #cd8500;">(</span>buf.index<span style="color: #cdcd00;">(</span>i<span style="color: #cdcd00;">)</span>.clone<span style="color: #cdcd00;">()</span><span style="color: #cd8500;">)</span>
+    <span style="color: #cd0000;">}</span>
     <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">temp</span> = &amp;<span style="color: #b3b3b3;">mut</span> temp_vec<span style="color: #cd0000;">[</span>..<span style="color: #cd0000;">]</span>;
-    <span style="color: #b3b3b3;">let</span> <span style="color: #9acd32;">i</span> = <span style="color: #ff8c69;">unsafe</span> <span style="color: #cd0000;">{</span> load_state<span style="color: #cd8500;">(</span>temp.as_mut_ptr<span style="color: #cdcd00;">()</span>, buf.len<span style="color: #cdcd00;">()</span> <span style="color: #b3b3b3;">as</span> <span style="color: #00ff00;">u32</span>, offset<span style="color: #cd8500;">)</span> <span style="color: #cd0000;">}</span>;
-    <span style="color: #cd0000;">(</span><span style="color: #00ff00;">PublicByteSeq</span>::from_native_slice<span style="color: #cd8500;">(</span>temp<span style="color: #cd8500;">)</span>, i<span style="color: #cd0000;">)</span>
+    <span style="color: #cd0000;">(</span>
+        <span style="color: #00ff00;">PublicByteSeq</span>::from_native_slice<span style="color: #cd8500;">(</span>temp<span style="color: #cd8500;">)</span>,
+        load_state_creusot<span style="color: #cd8500;">(</span>temp.as_mut_ptr<span style="color: #cdcd00;">()</span>, buf.len<span style="color: #cdcd00;">()</span> <span style="color: #b3b3b3;">as</span> <span style="color: #00ff00;">u32</span>, offset<span style="color: #cd8500;">)</span>,
+    <span style="color: #cd0000;">)</span>
 <span style="color: #7d26cd;">}</span>
 
 </pre>
 </div>
 </div>
 </li>
-<li><a id="org5558ce8"></a>Contract State &#x2013; Read<br />
+<li><a id="org51ccb62"></a>Contract State &#x2013; Read<br />
 <div class="outline-text-5" id="text-1-3-2-3">
 <div class="org-src-container">
-<pre class="src src-rust"><span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">cfg_attr</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">feature = </span><span style="color: #bdb76b;">"creusot"</span><span style="color: #4169e1;">, trusted</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
-<span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">contract_state_impl_read_read</span><span style="color: #7d26cd;">(</span>
+<pre class="src src-rust"><span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">contract_state_impl_read_read</span><span style="color: #7d26cd;">(</span>
     <span style="color: #9acd32;">current_position</span>: <span style="color: #00ff00;">ContractState</span>,
     <span style="color: #9acd32;">buf</span> : <span style="color: #00ff00;">PublicByteSeq</span> <span style="color: #7f7f7f;">// </span><span style="color: #7f7f7f;">Seq&lt;u8&gt;</span>
     <span style="color: #7f7f7f;">// </span><span style="color: #7f7f7f;">num_read: u32,</span>
@@ -587,7 +616,6 @@ We define contract state as its inner state namely the current position of the t
 
 <span style="color: light orange;">/// Read a u32 in little-endian format. This is optimized to not</span>
 <span style="color: light orange;">/// initialize a dummy value before calling an external function.</span>
-<span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">cfg_attr</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">feature = </span><span style="color: #bdb76b;">"creusot"</span><span style="color: #4169e1;">, logic</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
 <span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">contract_state_impl_read_read_u64</span><span style="color: #7d26cd;">(</span>
     <span style="color: #9acd32;">current_position</span>: <span style="color: #00ff00;">ContractState</span>,
     <span style="color: #9acd32;">num_read</span>: <span style="color: #00ff00;">u32</span>,
@@ -597,7 +625,6 @@ We define contract state as its inner state namely the current position of the t
 
 <span style="color: light orange;">/// Read a u32 in little-endian format. This is optimized to not</span>
 <span style="color: light orange;">/// initialize a dummy value before calling an external function.</span>
-<span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">cfg_attr</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">feature = </span><span style="color: #bdb76b;">"creusot"</span><span style="color: #4169e1;">, logic</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
 <span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">contract_state_impl_read_read_u32</span><span style="color: #7d26cd;">(</span>
     <span style="color: #9acd32;">current_position</span>: <span style="color: #00ff00;">ContractState</span>,
     <span style="color: #9acd32;">num_read</span>: <span style="color: #00ff00;">u32</span>,
@@ -607,7 +634,6 @@ We define contract state as its inner state namely the current position of the t
 
 <span style="color: light orange;">/// Read a u8 in little-endian format. This is optimized to not</span>
 <span style="color: light orange;">/// initialize a dummy value before calling an external function.</span>
-<span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">cfg_attr</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">feature = </span><span style="color: #bdb76b;">"creusot"</span><span style="color: #4169e1;">, logic</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
 <span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">contract_state_impl_read_read_u8</span><span style="color: #7d26cd;">(</span>
     <span style="color: #9acd32;">current_position</span>: <span style="color: #00ff00;">ContractState</span>,
     <span style="color: #9acd32;">num_read</span>: <span style="color: #00ff00;">u32</span>,
@@ -619,15 +645,13 @@ We define contract state as its inner state namely the current position of the t
 </div>
 </div>
 </li>
-<li><a id="org9bd2d2c"></a>Contract State &#x2013; Write<br />
+<li><a id="org1c7ed1a"></a>Contract State &#x2013; Write<br />
 <div class="outline-text-5" id="text-1-3-2-4">
 <div class="org-src-container">
-<pre class="src src-rust"><span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">cfg_attr</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">feature = </span><span style="color: #bdb76b;">"creusot"</span><span style="color: #4169e1;">, logic</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
-<span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">write_impl_for_contract_state_test</span><span style="color: #7d26cd;">(</span><span style="color: #9acd32;">current_position</span>: <span style="color: #00ff00;">ContractState</span>, <span style="color: #9acd32;">len</span>: <span style="color: #00ff00;">u32</span><span style="color: #7d26cd;">)</span> -&gt; <span style="color: #00ff00;">bool</span> <span style="color: #7d26cd;">{</span>
+<pre class="src src-rust"><span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">write_impl_for_contract_state_test</span><span style="color: #7d26cd;">(</span><span style="color: #9acd32;">current_position</span>: <span style="color: #00ff00;">ContractState</span>, <span style="color: #9acd32;">len</span>: <span style="color: #00ff00;">u32</span><span style="color: #7d26cd;">)</span> -&gt; <span style="color: #00ff00;">bool</span> <span style="color: #7d26cd;">{</span>
     current_position.checked_add<span style="color: #cd0000;">(</span>len<span style="color: #cd0000;">)</span>.is_none<span style="color: #cd0000;">()</span> <span style="color: #7f7f7f;">// </span><span style="color: #7f7f7f;">Check for overflow</span>
 <span style="color: #7d26cd;">}</span>
 
-<span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">cfg_attr</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">feature = </span><span style="color: #bdb76b;">"creusot"</span><span style="color: #4169e1;">, trusted</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
 <span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">write_impl_for_contract_state</span><span style="color: #7d26cd;">(</span>
     <span style="color: #9acd32;">current_position</span>: <span style="color: #00ff00;">ContractState</span>,
     <span style="color: #9acd32;">num_bytes</span>: <span style="color: #00ff00;">u32</span>,
@@ -639,28 +663,25 @@ We define contract state as its inner state namely the current position of the t
 </div>
 </div>
 </li>
-<li><a id="orgba0a818"></a>Contract State &#x2013; Misc.<br />
+<li><a id="org0b20b74"></a>Contract State &#x2013; Misc.<br />
 <div class="outline-text-5" id="text-1-3-2-5">
 <div class="org-src-container">
-<pre class="src src-rust"><span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">cfg_attr</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">feature = </span><span style="color: #bdb76b;">"creusot"</span><span style="color: #4169e1;">, logic</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
-<span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">has_contract_state_impl_for_contract_state_open</span><span style="color: #7d26cd;">()</span> -&gt; <span style="color: #00ff00;">ContractState</span> <span style="color: #7d26cd;">{</span>
+<pre class="src src-rust"><span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">has_contract_state_impl_for_contract_state_open</span><span style="color: #7d26cd;">()</span> -&gt; <span style="color: #00ff00;">ContractState</span> <span style="color: #7d26cd;">{</span>
     0_u32
 <span style="color: #7d26cd;">}</span>
 
-<span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">cfg_attr</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">feature = </span><span style="color: #bdb76b;">"creusot"</span><span style="color: #4169e1;">, logic</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
 <span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">has_contract_state_impl_for_contract_state_reserve_0</span><span style="color: #7d26cd;">(</span><span style="color: #9acd32;">len</span>: <span style="color: #00ff00;">u32</span>, <span style="color: #9acd32;">cur_size</span>: <span style="color: #00ff00;">u32</span><span style="color: #7d26cd;">)</span> -&gt; <span style="color: #00ff00;">bool</span> <span style="color: #7d26cd;">{</span>
     cur_size &lt; len
 <span style="color: #7d26cd;">}</span>
-<span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">cfg_attr</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">feature = </span><span style="color: #bdb76b;">"creusot"</span><span style="color: #4169e1;">, logic</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
+
 <span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">has_contract_state_impl_for_contract_state_reserve_1</span><span style="color: #7d26cd;">(</span><span style="color: #9acd32;">res</span>: <span style="color: #00ff00;">u32</span><span style="color: #7d26cd;">)</span> -&gt; <span style="color: #00ff00;">bool</span> <span style="color: #7d26cd;">{</span>
     res == 1_u32
 <span style="color: #7d26cd;">}</span>
 
-<span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">cfg_attr</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">feature = </span><span style="color: #bdb76b;">"creusot"</span><span style="color: #4169e1;">, logic</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
 <span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">has_contract_state_impl_for_contract_state_truncate_0</span><span style="color: #7d26cd;">(</span><span style="color: #9acd32;">cur_size</span>: <span style="color: #00ff00;">u32</span>, <span style="color: #9acd32;">new_size</span>: <span style="color: #00ff00;">u32</span><span style="color: #7d26cd;">)</span> -&gt; <span style="color: #00ff00;">bool</span> <span style="color: #7d26cd;">{</span>
     cur_size &gt; new_size
 <span style="color: #7d26cd;">}</span>
-<span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">cfg_attr</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">feature = </span><span style="color: #bdb76b;">"creusot"</span><span style="color: #4169e1;">, logic</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
+
 <span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">has_contract_state_impl_for_contract_state_truncate_1</span><span style="color: #7d26cd;">(</span>
     <span style="color: #9acd32;">current_position</span>: <span style="color: #00ff00;">ContractState</span>,
     <span style="color: #9acd32;">new_size</span>: <span style="color: #00ff00;">u32</span>,
@@ -678,13 +699,12 @@ We define contract state as its inner state namely the current position of the t
 </li>
 </ol>
 </div>
-<div id="outline-container-orged9fe39" class="outline-4">
-<h4 id="orged9fe39"><span class="section-number-4">1.3.3.</span> Parameter</h4>
+<div id="outline-container-orge3362a7" class="outline-4">
+<h4 id="orge3362a7"><span class="section-number-4">1.3.3.</span> Parameter</h4>
 <div class="outline-text-4" id="text-1-3-3">
 <div class="org-src-container">
 <pre class="src src-rust"><span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">type</span> <span style="color: #00ff00;">Parameter</span> = <span style="color: #00ff00;">u32</span>;
 
-<span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">cfg_attr</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">feature = </span><span style="color: #bdb76b;">"creusot"</span><span style="color: #4169e1;">, trusted</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
 <span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">read_impl_for_parameter_read</span><span style="color: #7d26cd;">(</span>
     <span style="color: #9acd32;">current_position</span>: <span style="color: #00ff00;">Parameter</span>,
     <span style="color: #9acd32;">num_read</span>: <span style="color: #00ff00;">u32</span>,
@@ -696,14 +716,13 @@ We define contract state as its inner state namely the current position of the t
 </div>
 </div>
 </div>
-<div id="outline-container-orgd6c64f2" class="outline-4">
-<h4 id="orgd6c64f2"><span class="section-number-4">1.3.4.</span> AttributesCursor</h4>
+<div id="outline-container-org2cfa7da" class="outline-4">
+<h4 id="org2cfa7da"><span class="section-number-4">1.3.4.</span> AttributesCursor</h4>
 <div class="outline-text-4" id="text-1-3-4">
 <div class="org-src-container">
 <pre class="src src-rust"><span style="color: #7f7f7f;">// </span><span style="color: #7f7f7f;">pub struct AttributeTag(pub u8);</span>
 <span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">type</span> <span style="color: #00ff00;">AttributesCursor</span> = <span style="color: #7d26cd;">(</span><span style="color: #00ff00;">u32</span>, <span style="color: #00ff00;">u16</span><span style="color: #7d26cd;">)</span>;
 
-<span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">cfg_attr</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">feature = </span><span style="color: #bdb76b;">"creusot"</span><span style="color: #4169e1;">, trusted</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
 <span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">has_policy_impl_for_policy_attributes_cursor_next_test</span><span style="color: #7d26cd;">(</span>
     <span style="color: #9acd32;">policy_attribute_items</span>: <span style="color: #00ff00;">AttributesCursor</span>,
 <span style="color: #7d26cd;">)</span> -&gt; <span style="color: #00ff00;">bool</span> <span style="color: #7d26cd;">{</span>
@@ -711,7 +730,6 @@ We define contract state as its inner state namely the current position of the t
     remaining_items == 0_u16
 <span style="color: #7d26cd;">}</span>
 
-<span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">cfg_attr</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">feature = </span><span style="color: #bdb76b;">"creusot"</span><span style="color: #4169e1;">, trusted</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
 <span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">has_policy_impl_for_policy_attributes_cursor_next_tag_invalid</span><span style="color: #7d26cd;">(</span>
     <span style="color: #9acd32;">policy_attribute_items</span>: <span style="color: #00ff00;">AttributesCursor</span>,
     <span style="color: #9acd32;">tag_value_len_1</span>: <span style="color: #00ff00;">u8</span>,
@@ -722,7 +740,6 @@ We define contract state as its inner state namely the current position of the t
     <span style="color: #cd0000;">(</span>policy_attribute_items, tag_value_len_1 &gt; 31_u8<span style="color: #cd0000;">)</span>
 <span style="color: #7d26cd;">}</span>
 
-<span style="color: #4169e1;">#</span><span style="color: #7d26cd;">[</span><span style="color: #4169e1;">cfg_attr</span><span style="color: #cd0000;">(</span><span style="color: #4169e1;">feature = </span><span style="color: #bdb76b;">"creusot"</span><span style="color: #4169e1;">, trusted</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">]</span>
 <span style="color: #b3b3b3;">pub</span> <span style="color: #b3b3b3;">fn</span> <span style="color: #00ffff;">has_policy_impl_for_policy_attributes_cursor_next</span><span style="color: #7d26cd;">(</span>
     <span style="color: #9acd32;">policy_attribute_items</span>: <span style="color: #00ff00;">AttributesCursor</span>,
     <span style="color: #9acd32;">num_read</span>: <span style="color: #00ff00;">u32</span>,
@@ -735,8 +752,8 @@ We define contract state as its inner state namely the current position of the t
 </div>
 </div>
 </div>
-<div id="outline-container-orgbf4a7f1" class="outline-3">
-<h3 id="orgbf4a7f1"><span class="section-number-3">1.4.</span> Rust Tests</h3>
+<div id="outline-container-org6052376" class="outline-3">
+<h3 id="org6052376"><span class="section-number-3">1.4.</span> Rust Tests</h3>
 <div class="outline-text-3" id="text-1-4">
 <div class="org-src-container">
 <pre class="src src-rust">
@@ -745,8 +762,8 @@ We define contract state as its inner state namely the current position of the t
 </div>
 </div>
 
-<div id="outline-container-orgadc6d21" class="outline-3">
-<h3 id="orgadc6d21"><span class="section-number-3">1.5.</span> Resulting output</h3>
+<div id="outline-container-org05f75e7" class="outline-3">
+<h3 id="org05f75e7"><span class="section-number-3">1.5.</span> Resulting output</h3>
 <div class="outline-text-3" id="text-1-5">
 <div class="org-src-container">
 <pre class="src src-sh">cargo clean
@@ -775,12 +792,12 @@ We define contract state as its inner state namely the current position of the t
 </div>
 </div>
 
-<div id="outline-container-orgff24c33" class="outline-3">
-<h3 id="orgff24c33"><span class="section-number-3">1.6.</span> Generation of backend output</h3>
+<div id="outline-container-org1caa160" class="outline-3">
+<h3 id="org1caa160"><span class="section-number-3">1.6.</span> Generation of backend output</h3>
 <div class="outline-text-3" id="text-1-6">
 </div>
-<div id="outline-container-org38ab639" class="outline-4">
-<h4 id="org38ab639"><span class="section-number-4">1.6.1.</span> The includes</h4>
+<div id="outline-container-orge141054" class="outline-4">
+<h4 id="orge141054"><span class="section-number-4">1.6.1.</span> The includes</h4>
 <div class="outline-text-4" id="text-1-6-1">
 <div class="org-src-container">
 <pre class="src src-coq"><span style="color: light orange;">(** This file was automatically generated using Hacspec **)</span>
@@ -797,353 +814,333 @@ We define contract state as its inner state namely the current position of the t
 </div>
 </div>
 
-<div id="outline-container-org427d530" class="outline-4">
-<h4 id="org427d530"><span class="section-number-4">1.6.2.</span> Types and default implementations</h4>
+<div id="outline-container-orge4524b7" class="outline-4">
+<h4 id="orge4524b7"><span class="section-number-4">1.6.2.</span> Types and default implementations</h4>
 <div class="outline-text-4" id="text-1-6-2">
 <div class="org-src-container">
-<pre class="src src-coq"><span style="color: #b3b3b3;">Notation</span> <span style="color: #bdb76b;">"'reject'"</span> := <span style="color: #7d26cd;">(</span>int32<span style="color: #7d26cd;">)</span> : hacspec_scope.
+<pre class="src src-coq"><span style="color: #b3b3b3;">Notation</span> <span style="color: #bdb76b;">"'reject_t'"</span> := <span style="color: #7d26cd;">(</span>int32<span style="color: #7d26cd;">)</span> : hacspec_scope.
 
 </pre>
 </div>
 
 <div class="org-src-container">
-<pre class="src src-coq"><span style="color: #b3b3b3;">Definition</span> <span style="color: #00ffff;">reject_impl_deafult</span>  : reject :=
-  min.
+<pre class="src src-coq"><span style="color: #b3b3b3;">Definition</span> <span style="color: #00ffff;">reject_impl_deafult</span>  : reject_t :=
+  min_v.
 
 </pre>
 </div>
 
 <div class="org-src-container">
-<pre class="src src-coq"><span style="color: #b3b3b3;">Notation</span> <span style="color: #bdb76b;">"'option_reject'"</span> := <span style="color: #7d26cd;">(</span><span style="color: #cd0000;">(</span>option reject<span style="color: #cd0000;">)</span><span style="color: #7d26cd;">)</span> : hacspec_scope.
-
-</pre>
-</div>
-
-<div class="org-src-container">
-<pre class="src src-coq"><span style="color: #b3b3b3;">Definition</span> <span style="color: #00ffff;">new_reject_impl</span> <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">x_0</span> : int32<span style="color: #7d26cd;">)</span> : option_reject :=
-  <span style="color: #7d26cd;">(</span><span style="color: #00ff00;">if</span> <span style="color: #cd0000;">(</span><span style="color: #cd8500;">(</span>x_0<span style="color: #cd8500;">)</span> &lt;.? <span style="color: #cd8500;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE32 0<span style="color: #cd8500;">)</span><span style="color: #cd0000;">)</span>:bool <span style="color: #00ff00;">then</span> <span style="color: #cd0000;">(</span><span style="color: #87ceeb;">@</span>Some reject <span style="color: #cd8500;">(</span>x_0<span style="color: #cd8500;">)</span><span style="color: #cd0000;">)</span> <span style="color: #00ff00;">else</span> <span style="color: #cd0000;">(</span>
+<pre class="src src-coq"><span style="color: #b3b3b3;">Definition</span> <span style="color: #00ffff;">new_reject_impl</span> <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">x_0</span> : int32<span style="color: #7d26cd;">)</span> : <span style="color: #7d26cd;">(</span>option reject_t<span style="color: #7d26cd;">)</span> :=
+  <span style="color: #7d26cd;">(</span><span style="color: #00ff00;">if</span> <span style="color: #cd0000;">(</span><span style="color: #cd8500;">(</span>x_0<span style="color: #cd8500;">)</span> &lt;.? <span style="color: #cd8500;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE32 0<span style="color: #cd8500;">)</span><span style="color: #cd0000;">)</span>:bool <span style="color: #00ff00;">then</span> <span style="color: #cd0000;">(</span><span style="color: #87ceeb;">@</span>Some int32 <span style="color: #cd8500;">(</span>x_0<span style="color: #cd8500;">)</span><span style="color: #cd0000;">)</span> <span style="color: #00ff00;">else</span> <span style="color: #cd0000;">(</span>
       <span style="color: #87ceeb;">@</span>None int32<span style="color: #cd0000;">)</span><span style="color: #7d26cd;">)</span>.
 
 </pre>
 </div>
+
+<div class="org-src-container">
+<pre class="src src-coq"><span style="color: #b3b3b3;">Definition</span> <span style="color: #00ffff;">reject_impl_convert_from_unit</span>  : reject_t :=
+  <span style="color: #7d26cd;">(</span>min_v<span style="color: #7d26cd;">)</span> .+ <span style="color: #7d26cd;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE32 1<span style="color: #7d26cd;">)</span>.
+
+</pre>
+</div>
 </div>
 </div>
 
-<div id="outline-container-orga7ee377" class="outline-4">
-<h4 id="orga7ee377"><span class="section-number-4">1.6.3.</span> Error handling</h4>
+<div id="outline-container-org786bf91" class="outline-4">
+<h4 id="org786bf91"><span class="section-number-4">1.6.3.</span> Error handling</h4>
 <div class="outline-text-4" id="text-1-6-3">
 <div class="org-src-container">
-<pre class="src src-coq"><span style="color: #b3b3b3;">Definition</span> <span style="color: #00ffff;">reject_impl_convert_from_unit</span>  : reject :=
-  <span style="color: #7d26cd;">(</span>min<span style="color: #7d26cd;">)</span> .+ <span style="color: #7d26cd;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE32 1<span style="color: #7d26cd;">)</span>.
-
-<span style="color: #b3b3b3;">Theorem</span> <span style="color: #00ffff;">ensures_reject_impl_convert_from_unit</span> : <span style="color: #00ff00;">forall</span> <span style="color: #9acd32;">result_1</span> ,
+<pre class="src src-coq"><span style="color: #b3b3b3;">Theorem</span> <span style="color: #00ffff;">ensures_reject_impl_convert_from_unit</span> : <span style="color: #00ff00;">forall</span> <span style="color: #9acd32;">result_1</span> ,
 <span style="color: #87ceeb;">@</span>reject_impl_convert_from_unit  = result_1 -&gt;
 <span style="color: #7d26cd;">(</span>result_1<span style="color: #7d26cd;">)</span> !=.? <span style="color: #7d26cd;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE32 0<span style="color: #7d26cd;">)</span>.
-<span style="color: #b3b3b3;">Proof</span>. 
-  <span style="color: #9370db;">intros</span> ; <span style="color: #9370db;">subst</span>.
-  <span style="color: #ff0000;">reflexivity</span>.
-<span style="color: #b3b3b3;">Qed</span>.
+<span style="color: #b3b3b3;">Proof</span>. <span style="background-color: #ff0000;">Admitted</span>.
 
+<span style="color: #b3b3b3;">Definition</span> <span style="color: #00ffff;">reject_impl_convert_from_parse_error</span>  : reject_t :=
+  <span style="color: #7d26cd;">(</span>min_v<span style="color: #7d26cd;">)</span> .+ <span style="color: #7d26cd;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE32 2<span style="color: #7d26cd;">)</span>.
 
 </pre>
 </div>
 
 <div class="org-src-container">
-<pre class="src src-coq"><span style="color: #b3b3b3;">Definition</span> <span style="color: #00ffff;">reject_impl_convert_from_parse_error</span>  : reject :=
-  <span style="color: #7d26cd;">(</span>min<span style="color: #7d26cd;">)</span> .+ <span style="color: #7d26cd;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE32 2<span style="color: #7d26cd;">)</span>.
-
-<span style="color: #b3b3b3;">Theorem</span> <span style="color: #00ffff;">ensures_reject_impl_convert_from_parse_error</span> : <span style="color: #00ff00;">forall</span> <span style="color: #9acd32;">result_1</span> ,
+<pre class="src src-coq"><span style="color: #b3b3b3;">Theorem</span> <span style="color: #00ffff;">ensures_reject_impl_convert_from_parse_error</span> : <span style="color: #00ff00;">forall</span> <span style="color: #9acd32;">result_1</span> ,
 <span style="color: #87ceeb;">@</span>reject_impl_convert_from_parse_error  = result_1 -&gt;
 <span style="color: #7d26cd;">(</span>result_1<span style="color: #7d26cd;">)</span> !=.? <span style="color: #7d26cd;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE32 0<span style="color: #7d26cd;">)</span>.
-<span style="color: #b3b3b3;">Proof</span>. 
-  <span style="color: #9370db;">intros</span> ; <span style="color: #9370db;">subst</span>.
-  <span style="color: #ff0000;">reflexivity</span>.
-<span style="color: #b3b3b3;">Qed</span>.
+<span style="color: #b3b3b3;">Proof</span>. <span style="background-color: #ff0000;">Admitted</span>.
+
+<span style="color: #b3b3b3;">Inductive</span> <span style="color: #00ffff;">log_error_t</span> :=
+| Full : log_error_t
+| Malformed : log_error_t.
 
 </pre>
 </div>
 
 <div class="org-src-container">
-<pre class="src src-coq"><span style="color: #b3b3b3;">Inductive</span> <span style="color: #00ffff;">log_error</span> :=
-| Full : log_error
-| Malformed : log_error.
-
-<span style="color: #b3b3b3;">Definition</span> <span style="color: #00ffff;">reject_impl_from_log_error</span> <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">le_2</span> : log_error<span style="color: #7d26cd;">)</span> : reject :=
+<pre class="src src-coq"><span style="color: #b3b3b3;">Definition</span> <span style="color: #00ffff;">reject_impl_from_log_error</span> <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">le_2</span> : log_error_t<span style="color: #7d26cd;">)</span> : reject_t :=
   <span style="color: #00ff00;">match</span> le_2 <span style="color: #00ff00;">with</span>
-  | Full =&gt; <span style="color: #7d26cd;">(</span>min<span style="color: #7d26cd;">)</span> .+ <span style="color: #7d26cd;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE32 3<span style="color: #7d26cd;">)</span>
-  | Malformed =&gt; <span style="color: #7d26cd;">(</span>min<span style="color: #7d26cd;">)</span> .+ <span style="color: #7d26cd;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE32 4<span style="color: #7d26cd;">)</span>
+  | Full =&gt; <span style="color: #7d26cd;">(</span>min_v<span style="color: #7d26cd;">)</span> .+ <span style="color: #7d26cd;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE32 3<span style="color: #7d26cd;">)</span>
+  | Malformed =&gt; <span style="color: #7d26cd;">(</span>min_v<span style="color: #7d26cd;">)</span> .+ <span style="color: #7d26cd;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE32 4<span style="color: #7d26cd;">)</span>
   <span style="color: #00ff00;">end</span>.
 
-<span style="color: #b3b3b3;">Theorem</span> <span style="color: #00ffff;">ensures_reject_impl_from_log_error</span> : <span style="color: #00ff00;">forall</span> result_1 <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">le_2</span> : log_error<span style="color: #7d26cd;">)</span>,
+<span style="color: #b3b3b3;">Theorem</span> <span style="color: #00ffff;">ensures_reject_impl_from_log_error</span> : <span style="color: #00ff00;">forall</span> result_1 <span style="color: #7d26cd;">(</span>
+  <span style="color: #9acd32;">le_2</span> : log_error_t<span style="color: #7d26cd;">)</span>,
 <span style="color: #87ceeb;">@</span>reject_impl_from_log_error le_2 = result_1 -&gt;
 <span style="color: #7d26cd;">(</span>result_1<span style="color: #7d26cd;">)</span> !=.? <span style="color: #7d26cd;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE32 0<span style="color: #7d26cd;">)</span>.
-<span style="color: #b3b3b3;">Proof</span>.  
-  <span style="color: #9370db;">intros</span> ; <span style="color: #9370db;">subst</span>.
-  <span style="color: #9370db;">destruct</span> le_2 ; <span style="color: #ff0000;">reflexivity</span>.
-<span style="color: #b3b3b3;">Qed</span>.
+<span style="color: #b3b3b3;">Proof</span>. <span style="background-color: #ff0000;">Admitted</span>.
+
+<span style="color: #b3b3b3;">Inductive</span> <span style="color: #00ffff;">new_contract_name_error_t</span> :=
+| NewContractNameErrorMissingInitPrefix : new_contract_name_error_t
+| NewContractNameErrorTooLong : new_contract_name_error_t
+| NewContractNameErrorContainsDot : new_contract_name_error_t
+| NewContractNameErrorInvalidCharacters : new_contract_name_error_t.
 
 </pre>
 </div>
 
 <div class="org-src-container">
-<pre class="src src-coq"><span style="color: #b3b3b3;">Inductive</span> <span style="color: #00ffff;">new_contract_name_error</span> :=
-| NewContractNameErrorMissingInitPrefix : new_contract_name_error
-| NewContractNameErrorTooLong : new_contract_name_error
-| NewContractNameErrorContainsDot : new_contract_name_error
-| NewContractNameErrorInvalidCharacters : new_contract_name_error.
-
-<span style="color: #b3b3b3;">Definition</span> <span style="color: #00ffff;">reject_impl_from_new_contract_name_error</span>
-  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">nre_3</span> : new_contract_name_error<span style="color: #7d26cd;">)</span>
-  : reject :=
+<pre class="src src-coq"><span style="color: #b3b3b3;">Definition</span> <span style="color: #00ffff;">reject_impl_from_new_contract_name_error</span>
+  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">nre_3</span> : new_contract_name_error_t<span style="color: #7d26cd;">)</span>
+  : reject_t :=
   <span style="color: #00ff00;">match</span> nre_3 <span style="color: #00ff00;">with</span>
-  | NewContractNameErrorMissingInitPrefix =&gt; <span style="color: #7d26cd;">(</span>min<span style="color: #7d26cd;">)</span> .+ <span style="color: #7d26cd;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE32 5<span style="color: #7d26cd;">)</span>
-  | NewContractNameErrorTooLong =&gt; <span style="color: #7d26cd;">(</span>min<span style="color: #7d26cd;">)</span> .+ <span style="color: #7d26cd;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE32 6<span style="color: #7d26cd;">)</span>
-  | NewContractNameErrorContainsDot =&gt; <span style="color: #7d26cd;">(</span>min<span style="color: #7d26cd;">)</span> .+ <span style="color: #7d26cd;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE32 9<span style="color: #7d26cd;">)</span>
-  | NewContractNameErrorInvalidCharacters =&gt; <span style="color: #7d26cd;">(</span>min<span style="color: #7d26cd;">)</span> .+ <span style="color: #7d26cd;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE32 10<span style="color: #7d26cd;">)</span>
+  | NewContractNameErrorMissingInitPrefix =&gt; <span style="color: #7d26cd;">(</span>min_v<span style="color: #7d26cd;">)</span> .+ <span style="color: #7d26cd;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE32 5<span style="color: #7d26cd;">)</span>
+  | NewContractNameErrorTooLong =&gt; <span style="color: #7d26cd;">(</span>min_v<span style="color: #7d26cd;">)</span> .+ <span style="color: #7d26cd;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE32 6<span style="color: #7d26cd;">)</span>
+  | NewContractNameErrorContainsDot =&gt; <span style="color: #7d26cd;">(</span>min_v<span style="color: #7d26cd;">)</span> .+ <span style="color: #7d26cd;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE32 9<span style="color: #7d26cd;">)</span>
+  | NewContractNameErrorInvalidCharacters =&gt; <span style="color: #7d26cd;">(</span>min_v<span style="color: #7d26cd;">)</span> .+ <span style="color: #7d26cd;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE32 10<span style="color: #7d26cd;">)</span>
   <span style="color: #00ff00;">end</span>.
 
 <span style="color: #b3b3b3;">Theorem</span> <span style="color: #00ffff;">ensures_reject_impl_from_new_contract_name_error</span> : <span style="color: #00ff00;">forall</span> result_1 <span style="color: #7d26cd;">(</span>
-  <span style="color: #9acd32;">nre_3</span> : new_contract_name_error<span style="color: #7d26cd;">)</span>,
+  <span style="color: #9acd32;">nre_3</span> : new_contract_name_error_t<span style="color: #7d26cd;">)</span>,
 <span style="color: #87ceeb;">@</span>reject_impl_from_new_contract_name_error nre_3 = result_1 -&gt;
 <span style="color: #7d26cd;">(</span>result_1<span style="color: #7d26cd;">)</span> !=.? <span style="color: #7d26cd;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE32 0<span style="color: #7d26cd;">)</span>.
-<span style="color: #b3b3b3;">Proof</span>. 
-  <span style="color: #9370db;">intros</span> ; <span style="color: #9370db;">subst</span>.
-  <span style="color: #9370db;">destruct</span> nre_3 ; <span style="color: #ff0000;">reflexivity</span>.
-<span style="color: #b3b3b3;">Qed</span>.
+<span style="color: #b3b3b3;">Proof</span>. <span style="background-color: #ff0000;">Admitted</span>.
+
+<span style="color: #b3b3b3;">Inductive</span> <span style="color: #00ffff;">new_receive_name_error_t</span> :=
+| NewReceiveNameErrorMissingDotSeparator : new_receive_name_error_t
+| NewReceiveNameErrorTooLong : new_receive_name_error_t
+| NewReceiveNameErrorInvalidCharacters : new_receive_name_error_t.
 
 </pre>
 </div>
 
 <div class="org-src-container">
-<pre class="src src-coq"><span style="color: #b3b3b3;">Inductive</span> <span style="color: #00ffff;">new_receive_name_error</span> :=
-| NewReceiveNameErrorMissingDotSeparator : new_receive_name_error
-| NewReceiveNameErrorTooLong : new_receive_name_error
-| NewReceiveNameErrorInvalidCharacters : new_receive_name_error.
-
-<span style="color: #b3b3b3;">Definition</span> <span style="color: #00ffff;">reject_impl_from_new_receive_name_error</span>
-  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">nre_4</span> : new_receive_name_error<span style="color: #7d26cd;">)</span>
-  : reject :=
+<pre class="src src-coq"><span style="color: #b3b3b3;">Definition</span> <span style="color: #00ffff;">reject_impl_from_new_receive_name_error</span>
+  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">nre_4</span> : new_receive_name_error_t<span style="color: #7d26cd;">)</span>
+  : reject_t :=
   <span style="color: #00ff00;">match</span> nre_4 <span style="color: #00ff00;">with</span>
-  | NewReceiveNameErrorMissingDotSeparator =&gt; <span style="color: #7d26cd;">(</span>min<span style="color: #7d26cd;">)</span> .+ <span style="color: #7d26cd;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE32 7<span style="color: #7d26cd;">)</span>
-  | NewReceiveNameErrorTooLong =&gt; <span style="color: #7d26cd;">(</span>min<span style="color: #7d26cd;">)</span> .+ <span style="color: #7d26cd;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE32 8<span style="color: #7d26cd;">)</span>
-  | NewReceiveNameErrorInvalidCharacters =&gt; <span style="color: #7d26cd;">(</span>min<span style="color: #7d26cd;">)</span> .+ <span style="color: #7d26cd;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE32 11<span style="color: #7d26cd;">)</span>
+  | NewReceiveNameErrorMissingDotSeparator =&gt; <span style="color: #7d26cd;">(</span>min_v<span style="color: #7d26cd;">)</span> .+ <span style="color: #7d26cd;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE32 7<span style="color: #7d26cd;">)</span>
+  | NewReceiveNameErrorTooLong =&gt; <span style="color: #7d26cd;">(</span>min_v<span style="color: #7d26cd;">)</span> .+ <span style="color: #7d26cd;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE32 8<span style="color: #7d26cd;">)</span>
+  | NewReceiveNameErrorInvalidCharacters =&gt; <span style="color: #7d26cd;">(</span>min_v<span style="color: #7d26cd;">)</span> .+ <span style="color: #7d26cd;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE32 11<span style="color: #7d26cd;">)</span>
   <span style="color: #00ff00;">end</span>.
 
 <span style="color: #b3b3b3;">Theorem</span> <span style="color: #00ffff;">ensures_reject_impl_from_new_receive_name_error</span> : <span style="color: #00ff00;">forall</span> result_1 <span style="color: #7d26cd;">(</span>
-  <span style="color: #9acd32;">nre_4</span> : new_receive_name_error<span style="color: #7d26cd;">)</span>,
+  <span style="color: #9acd32;">nre_4</span> : new_receive_name_error_t<span style="color: #7d26cd;">)</span>,
 <span style="color: #87ceeb;">@</span>reject_impl_from_new_receive_name_error nre_4 = result_1 -&gt;
 <span style="color: #7d26cd;">(</span>result_1<span style="color: #7d26cd;">)</span> !=.? <span style="color: #7d26cd;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE32 0<span style="color: #7d26cd;">)</span>.
-<span style="color: #b3b3b3;">Proof</span>.
-  <span style="color: #9370db;">intros</span> ; <span style="color: #9370db;">subst</span>.
-  <span style="color: #9370db;">destruct</span> nre_4 ; <span style="color: #ff0000;">reflexivity</span>.
-<span style="color: #b3b3b3;">Qed</span>.
+<span style="color: #b3b3b3;">Proof</span>. <span style="background-color: #ff0000;">Admitted</span>.
+
+<span style="color: #b3b3b3;">Notation</span> <span style="color: #bdb76b;">"'contract_state_t'"</span> := <span style="color: #7d26cd;">(</span>int32<span style="color: #7d26cd;">)</span> : hacspec_scope.
 
 </pre>
 </div>
 </div>
 </div>
 
-<div id="outline-container-org460e005" class="outline-4">
-<h4 id="org460e005"><span class="section-number-4">1.6.4.</span> Contract state</h4>
+<div id="outline-container-org067155c" class="outline-4">
+<h4 id="org067155c"><span class="section-number-4">1.6.4.</span> Contract state</h4>
 <div class="outline-text-4" id="text-1-6-4">
 <div class="org-src-container">
-<pre class="src src-coq"><span style="color: #b3b3b3;">Notation</span> <span style="color: #bdb76b;">"'contract_state'"</span> := <span style="color: #7d26cd;">(</span>int32<span style="color: #7d26cd;">)</span> : hacspec_scope.
+<pre class="src src-coq"><span style="color: #b3b3b3;">Inductive</span> <span style="color: #00ffff;">seek_from_t</span> :=
+| Start : int64 -&gt; seek_from_t
+| <span style="color: #b3b3b3;">End</span> : int64 -&gt; seek_from_t
+| Current : int64 -&gt; seek_from_t.
 
 </pre>
 </div>
 
 <div class="org-src-container">
-<pre class="src src-coq"><span style="color: #b3b3b3;">Notation</span> <span style="color: #bdb76b;">"'seek_result'"</span> := <span style="color: #7d26cd;">(</span><span style="color: #cd0000;">(</span>result <span style="color: #cd8500;">(</span>contract_state &#215; int64
-  <span style="color: #cd8500;">)</span> unit<span style="color: #cd0000;">)</span><span style="color: #7d26cd;">)</span> : hacspec_scope.
+<pre class="src src-coq"><span style="color: #b3b3b3;">Notation</span> <span style="color: #bdb76b;">"'uint32_option_t'"</span> := <span style="color: #7d26cd;">(</span><span style="color: #cd0000;">(</span>option int32<span style="color: #cd0000;">)</span><span style="color: #7d26cd;">)</span> : hacspec_scope.
 
-<span style="color: #b3b3b3;">Inductive</span> <span style="color: #00ffff;">seek_from</span> :=
-| Start : int64 -&gt; seek_from
-| <span style="color: #b3b3b3;">End</span> : int64 -&gt; seek_from
-| Current : int64 -&gt; seek_from.
-
-</pre>
-</div>
-
-<div class="org-src-container">
-<pre class="src src-coq"><span style="color: #b3b3b3;">Notation</span> <span style="color: #bdb76b;">"'uint32_option'"</span> := <span style="color: #7d26cd;">(</span><span style="color: #cd0000;">(</span>option int32<span style="color: #cd0000;">)</span><span style="color: #7d26cd;">)</span> : hacspec_scope.
-
-<span style="color: #b3b3b3;">Notation</span> <span style="color: #bdb76b;">"'iint64_option'"</span> := <span style="color: #7d26cd;">(</span><span style="color: #cd0000;">(</span>option int64<span style="color: #cd0000;">)</span><span style="color: #7d26cd;">)</span> : hacspec_scope.
+<span style="color: #b3b3b3;">Notation</span> <span style="color: #bdb76b;">"'iint64_option_t'"</span> := <span style="color: #7d26cd;">(</span><span style="color: #cd0000;">(</span>option int64<span style="color: #cd0000;">)</span><span style="color: #7d26cd;">)</span> : hacspec_scope.
 
 </pre>
 </div>
 
 <div class="org-src-container">
 <pre class="src src-coq"><span style="color: #b3b3b3;">Definition</span> <span style="color: #00ffff;">contract_state_impl_seek</span>
-  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">current_position_5</span> : contract_state<span style="color: #7d26cd;">)</span>
-  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">pos_6</span> : seek_from<span style="color: #7d26cd;">)</span>
-  `<span style="color: #7d26cd;">{</span><span style="color: #00ff00;">forall</span> <span style="color: #9acd32;">delta_7</span> : int64,
-  pos_6 = <span style="color: #b3b3b3;">End</span> <span style="color: #cd0000;">(</span>delta_7<span style="color: #cd0000;">)</span> -&gt;
-  <span style="color: #9370db;">exists</span> <span style="color: #9acd32;">b_8</span> : int32,
-  <span style="color: #cd0000;">(</span>pub_uint32_checked_add <span style="color: #cd8500;">(</span>current_position_5<span style="color: #cd8500;">)</span> <span style="color: #cd8500;">(</span><span style="color: #87ceeb;">@</span>cast _ uint32 _ <span style="color: #cdcd00;">(</span>
-        delta_7<span style="color: #cdcd00;">)</span><span style="color: #cd8500;">)</span><span style="color: #cd0000;">)</span> =.? <span style="color: #cd0000;">(</span><span style="color: #87ceeb;">@</span>Some int32 <span style="color: #cd8500;">(</span>b_8<span style="color: #cd8500;">)</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">}</span>
-  : seek_result :=
+  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">current_position_5</span> : contract_state_t<span style="color: #7d26cd;">)</span>
+  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">pos_6</span> : seek_from_t<span style="color: #7d26cd;">)</span>
+  : <span style="color: #7d26cd;">(</span>result <span style="color: #cd0000;">(</span>contract_state_t &#215; int64<span style="color: #cd0000;">)</span> unit<span style="color: #7d26cd;">)</span> :=
   <span style="color: #00ff00;">match</span> pos_6 <span style="color: #00ff00;">with</span>
-  | Start offset_9 =&gt; <span style="color: #87ceeb;">@</span>Ok <span style="color: #7d26cd;">(</span>contract_state &#215; int64<span style="color: #7d26cd;">)</span> unit <span style="color: #7d26cd;">(</span><span style="color: #cd0000;">(</span>
-      <span style="color: #87ceeb;">@</span>cast _ uint32 _ <span style="color: #cd8500;">(</span>offset_9<span style="color: #cd8500;">)</span>,
-      offset_9
+  | Start offset_7 =&gt; <span style="color: #87ceeb;">@</span>Ok <span style="color: #7d26cd;">(</span>contract_state_t &#215; int64<span style="color: #7d26cd;">)</span> unit <span style="color: #7d26cd;">(</span><span style="color: #cd0000;">(</span>
+      <span style="color: #87ceeb;">@</span>cast _ uint32 _ <span style="color: #cd8500;">(</span>offset_7<span style="color: #cd8500;">)</span>,
+      offset_7
     <span style="color: #cd0000;">)</span><span style="color: #7d26cd;">)</span>
-  | <span style="color: #b3b3b3;">End</span> delta_10 =&gt; <span style="color: #7d26cd;">(</span><span style="color: #00ff00;">if</span> <span style="color: #cd0000;">(</span><span style="color: #cd8500;">(</span>delta_10<span style="color: #cd8500;">)</span> &gt;=.? <span style="color: #cd8500;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE64 0<span style="color: #cd8500;">)</span><span style="color: #cd0000;">)</span>:bool <span style="color: #00ff00;">then</span> <span style="color: #cd0000;">(</span>
+  | <span style="color: #b3b3b3;">End</span> delta_8 =&gt; <span style="color: #7d26cd;">(</span><span style="color: #00ff00;">if</span> <span style="color: #cd0000;">(</span><span style="color: #cd8500;">(</span>delta_8<span style="color: #cd8500;">)</span> &gt;=.? <span style="color: #cd8500;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE64 0<span style="color: #cd8500;">)</span><span style="color: #cd0000;">)</span>:bool <span style="color: #00ff00;">then</span> <span style="color: #cd0000;">(</span>
       <span style="color: #00ff00;">match</span> pub_uint32_checked_add <span style="color: #cd8500;">(</span>current_position_5<span style="color: #cd8500;">)</span> <span style="color: #cd8500;">(</span><span style="color: #87ceeb;">@</span>cast _ uint32 _ <span style="color: #cdcd00;">(</span>
-          delta_10<span style="color: #cdcd00;">)</span><span style="color: #cd8500;">)</span> <span style="color: #00ff00;">with</span>
-      | Some b_11 =&gt; <span style="color: #87ceeb;">@</span>Ok <span style="color: #cd8500;">(</span>contract_state &#215; int64<span style="color: #cd8500;">)</span> unit <span style="color: #cd8500;">(</span><span style="color: #cdcd00;">(</span>
-          b_11,
-          <span style="color: #87ceeb;">@</span>cast _ uint64 _ <span style="color: #00cd00;">(</span>delta_10<span style="color: #00cd00;">)</span>
+          delta_8<span style="color: #cdcd00;">)</span><span style="color: #cd8500;">)</span> <span style="color: #00ff00;">with</span>
+      | Some b_9 =&gt; <span style="color: #87ceeb;">@</span>Ok <span style="color: #cd8500;">(</span>contract_state_t &#215; int64<span style="color: #cd8500;">)</span> unit <span style="color: #cd8500;">(</span><span style="color: #cdcd00;">(</span>
+          b_9,
+          <span style="color: #87ceeb;">@</span>cast _ uint64 _ <span style="color: #00cd00;">(</span>delta_8<span style="color: #00cd00;">)</span>
         <span style="color: #cdcd00;">)</span><span style="color: #cd8500;">)</span>
-      | None =&gt; <span style="color: #87ceeb;">@</span>Err <span style="color: #cd8500;">(</span>contract_state &#215; int64<span style="color: #cd8500;">)</span> unit <span style="color: #cd8500;">(</span>tt<span style="color: #cd8500;">)</span>
-      <span style="color: #00ff00;">end</span><span style="color: #cd0000;">)</span> <span style="color: #00ff00;">else</span> <span style="color: #cd0000;">(</span><span style="color: #00ff00;">match</span> pub_int64_checked_abs <span style="color: #cd8500;">(</span>delta_10<span style="color: #cd8500;">)</span> <span style="color: #00ff00;">with</span>
-      | Some b_12 =&gt; <span style="color: #87ceeb;">@</span>Ok <span style="color: #cd8500;">(</span>contract_state &#215; int64<span style="color: #cd8500;">)</span> unit <span style="color: #cd8500;">(</span><span style="color: #cdcd00;">(</span>
-          <span style="color: #00cd00;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE32 4<span style="color: #00cd00;">)</span> .- <span style="color: #00cd00;">(</span><span style="color: #87ceeb;">@</span>cast _ uint32 _ <span style="color: #00cdcd;">(</span>b_12<span style="color: #00cdcd;">)</span><span style="color: #00cd00;">)</span>,
-          <span style="color: #87ceeb;">@</span>cast _ uint64 _ <span style="color: #00cd00;">(</span><span style="color: #00cdcd;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE32 4<span style="color: #00cdcd;">)</span> .- <span style="color: #00cdcd;">(</span><span style="color: #87ceeb;">@</span>cast _ uint32 _ <span style="color: #0000cd;">(</span>b_12<span style="color: #0000cd;">)</span><span style="color: #00cdcd;">)</span><span style="color: #00cd00;">)</span>
+      | None =&gt; <span style="color: #87ceeb;">@</span>Err <span style="color: #cd8500;">(</span>contract_state_t &#215; int64<span style="color: #cd8500;">)</span> unit <span style="color: #cd8500;">(</span>tt<span style="color: #cd8500;">)</span>
+      <span style="color: #00ff00;">end</span><span style="color: #cd0000;">)</span> <span style="color: #00ff00;">else</span> <span style="color: #cd0000;">(</span><span style="color: #00ff00;">match</span> pub_int64_checked_abs <span style="color: #cd8500;">(</span>delta_8<span style="color: #cd8500;">)</span> <span style="color: #00ff00;">with</span>
+      | Some b_10 =&gt; <span style="color: #87ceeb;">@</span>Ok <span style="color: #cd8500;">(</span>contract_state_t &#215; int64<span style="color: #cd8500;">)</span> unit <span style="color: #cd8500;">(</span><span style="color: #cdcd00;">(</span>
+          <span style="color: #00cd00;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE32 4<span style="color: #00cd00;">)</span> .- <span style="color: #00cd00;">(</span><span style="color: #87ceeb;">@</span>cast _ uint32 _ <span style="color: #00cdcd;">(</span>b_10<span style="color: #00cdcd;">)</span><span style="color: #00cd00;">)</span>,
+          <span style="color: #87ceeb;">@</span>cast _ uint64 _ <span style="color: #00cd00;">(</span><span style="color: #00cdcd;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE32 4<span style="color: #00cdcd;">)</span> .- <span style="color: #00cdcd;">(</span><span style="color: #87ceeb;">@</span>cast _ uint32 _ <span style="color: #0000cd;">(</span>b_10<span style="color: #0000cd;">)</span><span style="color: #00cdcd;">)</span><span style="color: #00cd00;">)</span>
         <span style="color: #cdcd00;">)</span><span style="color: #cd8500;">)</span>
-      | None =&gt; <span style="color: #87ceeb;">@</span>Err <span style="color: #cd8500;">(</span>contract_state &#215; int64<span style="color: #cd8500;">)</span> unit <span style="color: #cd8500;">(</span>tt<span style="color: #cd8500;">)</span>
+      | None =&gt; <span style="color: #87ceeb;">@</span>Err <span style="color: #cd8500;">(</span>contract_state_t &#215; int64<span style="color: #cd8500;">)</span> unit <span style="color: #cd8500;">(</span>tt<span style="color: #cd8500;">)</span>
       <span style="color: #00ff00;">end</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">)</span>
-  | Current delta_13 =&gt; <span style="color: #7d26cd;">(</span><span style="color: #00ff00;">if</span> <span style="color: #cd0000;">(</span><span style="color: #cd8500;">(</span>delta_13<span style="color: #cd8500;">)</span> &gt;=.? <span style="color: #cd8500;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE64 0<span style="color: #cd8500;">)</span><span style="color: #cd0000;">)</span>:bool <span style="color: #00ff00;">then</span> <span style="color: #cd0000;">(</span>
+  | Current delta_11 =&gt; <span style="color: #7d26cd;">(</span><span style="color: #00ff00;">if</span> <span style="color: #cd0000;">(</span><span style="color: #cd8500;">(</span>delta_11<span style="color: #cd8500;">)</span> &gt;=.? <span style="color: #cd8500;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE64 0<span style="color: #cd8500;">)</span><span style="color: #cd0000;">)</span>:bool <span style="color: #00ff00;">then</span> <span style="color: #cd0000;">(</span>
       <span style="color: #00ff00;">match</span> pub_uint32_checked_add <span style="color: #cd8500;">(</span>current_position_5<span style="color: #cd8500;">)</span> <span style="color: #cd8500;">(</span><span style="color: #87ceeb;">@</span>cast _ uint32 _ <span style="color: #cdcd00;">(</span>
-          delta_13<span style="color: #cdcd00;">)</span><span style="color: #cd8500;">)</span> <span style="color: #00ff00;">with</span>
-      | Some offset_14 =&gt; <span style="color: #87ceeb;">@</span>Ok <span style="color: #cd8500;">(</span>contract_state &#215; int64<span style="color: #cd8500;">)</span> unit <span style="color: #cd8500;">(</span><span style="color: #cdcd00;">(</span>
+          delta_11<span style="color: #cdcd00;">)</span><span style="color: #cd8500;">)</span> <span style="color: #00ff00;">with</span>
+      | Some offset_12 =&gt; <span style="color: #87ceeb;">@</span>Ok <span style="color: #cd8500;">(</span>contract_state_t &#215; int64<span style="color: #cd8500;">)</span> unit <span style="color: #cd8500;">(</span><span style="color: #cdcd00;">(</span>
+          offset_12,
+          <span style="color: #87ceeb;">@</span>cast _ uint64 _ <span style="color: #00cd00;">(</span>offset_12<span style="color: #00cd00;">)</span>
+        <span style="color: #cdcd00;">)</span><span style="color: #cd8500;">)</span>
+      | None =&gt; <span style="color: #87ceeb;">@</span>Err <span style="color: #cd8500;">(</span>contract_state_t &#215; int64<span style="color: #cd8500;">)</span> unit <span style="color: #cd8500;">(</span>tt<span style="color: #cd8500;">)</span>
+      <span style="color: #00ff00;">end</span><span style="color: #cd0000;">)</span> <span style="color: #00ff00;">else</span> <span style="color: #cd0000;">(</span><span style="color: #00ff00;">match</span> pub_int64_checked_abs <span style="color: #cd8500;">(</span>delta_11<span style="color: #cd8500;">)</span> <span style="color: #00ff00;">with</span>
+      | Some b_13 =&gt; <span style="color: #00ff00;">match</span> pub_uint32_checked_sub <span style="color: #cd8500;">(</span>current_position_5<span style="color: #cd8500;">)</span> <span style="color: #cd8500;">(</span>
+        <span style="color: #87ceeb;">@</span>cast _ uint32 _ <span style="color: #cdcd00;">(</span>b_13<span style="color: #cdcd00;">)</span><span style="color: #cd8500;">)</span> <span style="color: #00ff00;">with</span>
+      | Some offset_14 =&gt; <span style="color: #87ceeb;">@</span>Ok <span style="color: #cd8500;">(</span>contract_state_t &#215; int64<span style="color: #cd8500;">)</span> unit <span style="color: #cd8500;">(</span><span style="color: #cdcd00;">(</span>
           offset_14,
           <span style="color: #87ceeb;">@</span>cast _ uint64 _ <span style="color: #00cd00;">(</span>offset_14<span style="color: #00cd00;">)</span>
         <span style="color: #cdcd00;">)</span><span style="color: #cd8500;">)</span>
-      | None =&gt; <span style="color: #87ceeb;">@</span>Err <span style="color: #cd8500;">(</span>contract_state &#215; int64<span style="color: #cd8500;">)</span> unit <span style="color: #cd8500;">(</span>tt<span style="color: #cd8500;">)</span>
-      <span style="color: #00ff00;">end</span><span style="color: #cd0000;">)</span> <span style="color: #00ff00;">else</span> <span style="color: #cd0000;">(</span><span style="color: #00ff00;">match</span> pub_int64_checked_abs <span style="color: #cd8500;">(</span>delta_13<span style="color: #cd8500;">)</span> <span style="color: #00ff00;">with</span>
-      | Some b_15 =&gt; <span style="color: #00ff00;">match</span> pub_uint32_checked_sub <span style="color: #cd8500;">(</span>current_position_5<span style="color: #cd8500;">)</span> <span style="color: #cd8500;">(</span>
-        <span style="color: #87ceeb;">@</span>cast _ uint32 _ <span style="color: #cdcd00;">(</span>b_15<span style="color: #cdcd00;">)</span><span style="color: #cd8500;">)</span> <span style="color: #00ff00;">with</span>
-      | Some offset_16 =&gt; <span style="color: #87ceeb;">@</span>Ok <span style="color: #cd8500;">(</span>contract_state &#215; int64<span style="color: #cd8500;">)</span> unit <span style="color: #cd8500;">(</span><span style="color: #cdcd00;">(</span>
-          offset_16,
-          <span style="color: #87ceeb;">@</span>cast _ uint64 _ <span style="color: #00cd00;">(</span>offset_16<span style="color: #00cd00;">)</span>
-        <span style="color: #cdcd00;">)</span><span style="color: #cd8500;">)</span>
-      | None =&gt; <span style="color: #87ceeb;">@</span>Err <span style="color: #cd8500;">(</span>contract_state &#215; int64<span style="color: #cd8500;">)</span> unit <span style="color: #cd8500;">(</span>tt<span style="color: #cd8500;">)</span>
+      | None =&gt; <span style="color: #87ceeb;">@</span>Err <span style="color: #cd8500;">(</span>contract_state_t &#215; int64<span style="color: #cd8500;">)</span> unit <span style="color: #cd8500;">(</span>tt<span style="color: #cd8500;">)</span>
       <span style="color: #00ff00;">end</span>
-      | None =&gt; <span style="color: #87ceeb;">@</span>Err <span style="color: #cd8500;">(</span>contract_state &#215; int64<span style="color: #cd8500;">)</span> unit <span style="color: #cd8500;">(</span>tt<span style="color: #cd8500;">)</span>
+      | None =&gt; <span style="color: #87ceeb;">@</span>Err <span style="color: #cd8500;">(</span>contract_state_t &#215; int64<span style="color: #cd8500;">)</span> unit <span style="color: #cd8500;">(</span>tt<span style="color: #cd8500;">)</span>
       <span style="color: #00ff00;">end</span><span style="color: #cd0000;">)</span><span style="color: #7d26cd;">)</span>
   <span style="color: #00ff00;">end</span>.
 
-</pre>
-</div>
-</div>
-
-<ol class="org-ol">
-<li><a id="org20983d5"></a>Contract state - Read Trait<br />
-<div class="outline-text-5" id="text-1-6-4-1">
-<div class="org-src-container">
-<pre class="src src-coq"><span style="color: #b3b3b3;">Definition</span> <span style="color: #00ffff;">load_state_hacspec</span>
-  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">buf_17</span> : public_byte_seq<span style="color: #7d26cd;">)</span>
-  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">offset_18</span> : int32<span style="color: #7d26cd;">)</span>
+<span style="color: #b3b3b3;">Definition</span> <span style="color: #00ffff;">load_state_hacspec</span>
+  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">buf_15</span> : public_byte_seq<span style="color: #7d26cd;">)</span>
+  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">offset_16</span> : int32<span style="color: #7d26cd;">)</span>
   : <span style="color: #7d26cd;">(</span>public_byte_seq &#215; int32<span style="color: #7d26cd;">)</span> :=
-  <span style="color: #7d26cd;">(</span>buf_17, <span style="color: #87ceeb;">@</span>repr WORDSIZE32 1<span style="color: #7d26cd;">)</span>.
-
-<span style="color: #b3b3b3;">Theorem</span> <span style="color: #00ffff;">ensures_load_state_hacspec</span> : <span style="color: #00ff00;">forall</span> result_1 <span style="color: #7d26cd;">(</span>
-  <span style="color: #9acd32;">buf_17</span> : public_byte_seq<span style="color: #7d26cd;">)</span> <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">offset_18</span> : int32<span style="color: #7d26cd;">)</span>,
-<span style="color: #87ceeb;">@</span>load_state_hacspec buf_17 offset_18 = result_1 -&gt;
-<span style="color: #7d26cd;">(</span>result_1<span style="color: #7d26cd;">)</span> !=.? <span style="color: #7d26cd;">(</span><span style="color: #cd0000;">(</span>buf_17, <span style="color: #87ceeb;">@</span>repr WORDSIZE32 2<span style="color: #cd0000;">)</span><span style="color: #7d26cd;">)</span>.
-<span style="color: #b3b3b3;">Proof</span>.
-  <span style="color: #9370db;">intros</span> ; <span style="color: #9370db;">subst</span>.
-  <span style="color: #9370db;">unfold</span> negb.
-  <span style="color: #9370db;">cbn</span>.
-  <span style="color: #9370db;">rewrite</span> list_eqdec_refl.
-  <span style="color: #9370db;">cbn</span>.
-  <span style="color: #9370db;">rewrite</span> <span style="color: #7d26cd;">(</span><span style="color: #87ceeb;">@</span>eq_false WORDSIZE32 <span style="color: #cd0000;">(</span>repr 1<span style="color: #cd0000;">)</span> <span style="color: #cd0000;">(</span>repr 2<span style="color: #cd0000;">)</span><span style="color: #7d26cd;">)</span> ; <span style="color: #ff0000;">easy</span>.
-<span style="color: #b3b3b3;">Qed</span>.  
+  <span style="color: #7d26cd;">(</span>buf_15, <span style="color: #87ceeb;">@</span>repr WORDSIZE32 1<span style="color: #7d26cd;">)</span>.
 
 </pre>
 </div>
 
 <div class="org-src-container">
 <pre class="src src-coq"><span style="color: #b3b3b3;">Definition</span> <span style="color: #00ffff;">contract_state_impl_read_read</span>
-  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">current_position_19</span> : contract_state<span style="color: #7d26cd;">)</span>
-  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">buf_20</span> : public_byte_seq<span style="color: #7d26cd;">)</span>
-  : <span style="color: #7d26cd;">(</span>contract_state &#215; uint_size<span style="color: #7d26cd;">)</span> :=
-  <span style="color: #00ff00;">let</span> '<span style="color: #7d26cd;">(</span>buf_21, num_read_22<span style="color: #7d26cd;">)</span> :=
-    load_state_hacspec <span style="color: #7d26cd;">(</span>buf_20<span style="color: #7d26cd;">)</span> <span style="color: #7d26cd;">(</span>current_position_19<span style="color: #7d26cd;">)</span> <span style="color: #00ff00;">in</span> 
-  <span style="color: #7d26cd;">(</span><span style="color: #cd0000;">(</span>current_position_19<span style="color: #cd0000;">)</span> .+ <span style="color: #cd0000;">(</span>num_read_22<span style="color: #cd0000;">)</span>, <span style="color: #87ceeb;">@</span>cast _ uint32 _ <span style="color: #cd0000;">(</span>num_read_22<span style="color: #cd0000;">)</span><span style="color: #7d26cd;">)</span>.
+  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">current_position_17</span> : contract_state_t<span style="color: #7d26cd;">)</span>
+  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">buf_18</span> : public_byte_seq<span style="color: #7d26cd;">)</span>
+  : <span style="color: #7d26cd;">(</span>contract_state_t &#215; uint_size<span style="color: #7d26cd;">)</span> :=
+  <span style="color: #00ff00;">let</span> '<span style="color: #7d26cd;">(</span>buf_19, num_read_20<span style="color: #7d26cd;">)</span> :=
+    load_state_hacspec <span style="color: #7d26cd;">(</span>buf_18<span style="color: #7d26cd;">)</span> <span style="color: #7d26cd;">(</span>current_position_17<span style="color: #7d26cd;">)</span> <span style="color: #00ff00;">in</span> 
+  <span style="color: #7d26cd;">(</span><span style="color: #cd0000;">(</span>current_position_17<span style="color: #cd0000;">)</span> .+ <span style="color: #cd0000;">(</span>num_read_20<span style="color: #cd0000;">)</span>, <span style="color: #87ceeb;">@</span>cast _ uint32 _ <span style="color: #cd0000;">(</span>num_read_20<span style="color: #cd0000;">)</span><span style="color: #7d26cd;">)</span>.
 
-<span style="color: #b3b3b3;">Definition</span> <span style="color: #00ffff;">contract_state_impl_read_read_u64</span>
-  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">current_position_23</span> : contract_state<span style="color: #7d26cd;">)</span>
-  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">num_read_24</span> : int32<span style="color: #7d26cd;">)</span>
-  : <span style="color: #7d26cd;">(</span>contract_state &#215; bool<span style="color: #7d26cd;">)</span> :=
+</pre>
+</div>
+</div>
+
+<ol class="org-ol">
+<li><a id="org53dd58f"></a>Contract state - Read Trait<br />
+<div class="outline-text-5" id="text-1-6-4-1">
+<div class="org-src-container">
+<pre class="src src-coq"><span style="color: #b3b3b3;">Definition</span> <span style="color: #00ffff;">contract_state_impl_read_read_u64</span>
+  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">current_position_21</span> : contract_state_t<span style="color: #7d26cd;">)</span>
+  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">num_read_22</span> : int32<span style="color: #7d26cd;">)</span>
+  : <span style="color: #7d26cd;">(</span>contract_state_t &#215; bool<span style="color: #7d26cd;">)</span> :=
   <span style="color: #7d26cd;">(</span>
-    <span style="color: #cd0000;">(</span>current_position_23<span style="color: #cd0000;">)</span> .+ <span style="color: #cd0000;">(</span>num_read_24<span style="color: #cd0000;">)</span>,
-    <span style="color: #cd0000;">(</span>num_read_24<span style="color: #cd0000;">)</span> =.? <span style="color: #cd0000;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE32 8<span style="color: #cd0000;">)</span>
+    <span style="color: #cd0000;">(</span>current_position_21<span style="color: #cd0000;">)</span> .+ <span style="color: #cd0000;">(</span>num_read_22<span style="color: #cd0000;">)</span>,
+    <span style="color: #cd0000;">(</span>num_read_22<span style="color: #cd0000;">)</span> =.? <span style="color: #cd0000;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE32 8<span style="color: #cd0000;">)</span>
   <span style="color: #7d26cd;">)</span>.
 
 <span style="color: #b3b3b3;">Definition</span> <span style="color: #00ffff;">contract_state_impl_read_read_u32</span>
-  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">current_position_25</span> : contract_state<span style="color: #7d26cd;">)</span>
-  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">num_read_26</span> : int32<span style="color: #7d26cd;">)</span>
-  : <span style="color: #7d26cd;">(</span>contract_state &#215; bool<span style="color: #7d26cd;">)</span> :=
+  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">current_position_23</span> : contract_state_t<span style="color: #7d26cd;">)</span>
+  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">num_read_24</span> : int32<span style="color: #7d26cd;">)</span>
+  : <span style="color: #7d26cd;">(</span>contract_state_t &#215; bool<span style="color: #7d26cd;">)</span> :=
   <span style="color: #7d26cd;">(</span>
-    <span style="color: #cd0000;">(</span>current_position_25<span style="color: #cd0000;">)</span> .+ <span style="color: #cd0000;">(</span>num_read_26<span style="color: #cd0000;">)</span>,
-    <span style="color: #cd0000;">(</span>num_read_26<span style="color: #cd0000;">)</span> =.? <span style="color: #cd0000;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE32 4<span style="color: #cd0000;">)</span>
+    <span style="color: #cd0000;">(</span>current_position_23<span style="color: #cd0000;">)</span> .+ <span style="color: #cd0000;">(</span>num_read_24<span style="color: #cd0000;">)</span>,
+    <span style="color: #cd0000;">(</span>num_read_24<span style="color: #cd0000;">)</span> =.? <span style="color: #cd0000;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE32 4<span style="color: #cd0000;">)</span>
   <span style="color: #7d26cd;">)</span>.
 
 <span style="color: #b3b3b3;">Definition</span> <span style="color: #00ffff;">contract_state_impl_read_read_u8</span>
-  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">current_position_27</span> : contract_state<span style="color: #7d26cd;">)</span>
-  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">num_read_28</span> : int32<span style="color: #7d26cd;">)</span>
-  : <span style="color: #7d26cd;">(</span>contract_state &#215; bool<span style="color: #7d26cd;">)</span> :=
+  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">current_position_25</span> : contract_state_t<span style="color: #7d26cd;">)</span>
+  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">num_read_26</span> : int32<span style="color: #7d26cd;">)</span>
+  : <span style="color: #7d26cd;">(</span>contract_state_t &#215; bool<span style="color: #7d26cd;">)</span> :=
   <span style="color: #7d26cd;">(</span>
-    <span style="color: #cd0000;">(</span>current_position_27<span style="color: #cd0000;">)</span> .+ <span style="color: #cd0000;">(</span>num_read_28<span style="color: #cd0000;">)</span>,
-    <span style="color: #cd0000;">(</span>num_read_28<span style="color: #cd0000;">)</span> =.? <span style="color: #cd0000;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE32 1<span style="color: #cd0000;">)</span>
+    <span style="color: #cd0000;">(</span>current_position_25<span style="color: #cd0000;">)</span> .+ <span style="color: #cd0000;">(</span>num_read_26<span style="color: #cd0000;">)</span>,
+    <span style="color: #cd0000;">(</span>num_read_26<span style="color: #cd0000;">)</span> =.? <span style="color: #cd0000;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE32 1<span style="color: #cd0000;">)</span>
   <span style="color: #7d26cd;">)</span>.
-
 </pre>
 </div>
-</div>
-</li>
 
-<li><a id="org47e5f62"></a>Contract state - Write Trait<br />
-<div class="outline-text-5" id="text-1-6-4-2">
 <div class="org-src-container">
-<pre class="src src-coq"><span style="color: #b3b3b3;">Definition</span> <span style="color: #00ffff;">write_impl_for_contract_state_test</span>
-  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">current_position_29</span> : contract_state<span style="color: #7d26cd;">)</span>
-  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">len_30</span> : int32<span style="color: #7d26cd;">)</span>
+<pre class="src src-coq">
+<span style="color: #b3b3b3;">Definition</span> <span style="color: #00ffff;">write_impl_for_contract_state_test</span>
+  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">current_position_27</span> : contract_state_t<span style="color: #7d26cd;">)</span>
+  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">len_28</span> : int32<span style="color: #7d26cd;">)</span>
   : bool :=
-  option_is_none <span style="color: #7d26cd;">(</span>pub_uint32_checked_add <span style="color: #cd0000;">(</span>current_position_29<span style="color: #cd0000;">)</span> <span style="color: #cd0000;">(</span>len_30<span style="color: #cd0000;">)</span><span style="color: #7d26cd;">)</span>.
+  option_is_none <span style="color: #7d26cd;">(</span>pub_uint32_checked_add <span style="color: #cd0000;">(</span>current_position_27<span style="color: #cd0000;">)</span> <span style="color: #cd0000;">(</span>len_28<span style="color: #cd0000;">)</span><span style="color: #7d26cd;">)</span>.
 
 <span style="color: #b3b3b3;">Definition</span> <span style="color: #00ffff;">write_impl_for_contract_state</span>
-  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">current_position_31</span> : contract_state<span style="color: #7d26cd;">)</span>
-  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">num_bytes_32</span> : int32<span style="color: #7d26cd;">)</span>
-  : <span style="color: #7d26cd;">(</span>contract_state &#215; uint_size<span style="color: #7d26cd;">)</span> :=
-  <span style="color: #7d26cd;">(</span><span style="color: #cd0000;">(</span>current_position_31<span style="color: #cd0000;">)</span> .+ <span style="color: #cd0000;">(</span>num_bytes_32<span style="color: #cd0000;">)</span>, <span style="color: #87ceeb;">@</span>cast _ uint32 _ <span style="color: #cd0000;">(</span>num_bytes_32<span style="color: #cd0000;">)</span><span style="color: #7d26cd;">)</span>.
+  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">current_position_29</span> : contract_state_t<span style="color: #7d26cd;">)</span>
+  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">num_bytes_30</span> : int32<span style="color: #7d26cd;">)</span>
+  : <span style="color: #7d26cd;">(</span>contract_state_t &#215; uint_size<span style="color: #7d26cd;">)</span> :=
+  <span style="color: #7d26cd;">(</span><span style="color: #cd0000;">(</span>current_position_29<span style="color: #cd0000;">)</span> .+ <span style="color: #cd0000;">(</span>num_bytes_30<span style="color: #cd0000;">)</span>, <span style="color: #87ceeb;">@</span>cast _ uint32 _ <span style="color: #cd0000;">(</span>num_bytes_30<span style="color: #cd0000;">)</span><span style="color: #7d26cd;">)</span>.
 
-</pre>
-</div>
-</div>
-</li>
+<span style="color: #b3b3b3;">Definition</span> <span style="color: #00ffff;">has_contract_state_impl_for_contract_state_open</span>
 
-<li><a id="org4f9b76e"></a>Contract State - Misc.<br />
-<div class="outline-text-5" id="text-1-6-4-3">
-<div class="org-src-container">
-<pre class="src src-coq"><span style="color: #b3b3b3;">Definition</span> <span style="color: #00ffff;">has_contract_state_impl_for_contract_state_open</span>  : contract_state :=
+  : contract_state_t :=
   <span style="color: #87ceeb;">@</span>repr WORDSIZE32 0.
 
 <span style="color: #b3b3b3;">Definition</span> <span style="color: #00ffff;">has_contract_state_impl_for_contract_state_reserve_0</span>
-  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">len_33</span> : int32<span style="color: #7d26cd;">)</span>
-  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">cur_size_34</span> : int32<span style="color: #7d26cd;">)</span>
+  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">len_31</span> : int32<span style="color: #7d26cd;">)</span>
+  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">cur_size_32</span> : int32<span style="color: #7d26cd;">)</span>
   : bool :=
-  <span style="color: #7d26cd;">(</span>cur_size_34<span style="color: #7d26cd;">)</span> &lt;.? <span style="color: #7d26cd;">(</span>len_33<span style="color: #7d26cd;">)</span>.
+  <span style="color: #7d26cd;">(</span>cur_size_32<span style="color: #7d26cd;">)</span> &lt;.? <span style="color: #7d26cd;">(</span>len_31<span style="color: #7d26cd;">)</span>.
+</pre>
+</div>
+</div>
+</li>
 
+<li><a id="orgbf3518b"></a>Contract state - Write Trait<br />
+<div class="outline-text-5" id="text-1-6-4-2">
+<div class="org-src-container">
+<pre class="src src-coq">
 <span style="color: #b3b3b3;">Definition</span> <span style="color: #00ffff;">has_contract_state_impl_for_contract_state_reserve_1</span>
-  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">res_35</span> : int32<span style="color: #7d26cd;">)</span>
+  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">res_33</span> : int32<span style="color: #7d26cd;">)</span>
   : bool :=
-  <span style="color: #7d26cd;">(</span>res_35<span style="color: #7d26cd;">)</span> =.? <span style="color: #7d26cd;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE32 1<span style="color: #7d26cd;">)</span>.
+  <span style="color: #7d26cd;">(</span>res_33<span style="color: #7d26cd;">)</span> =.? <span style="color: #7d26cd;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE32 1<span style="color: #7d26cd;">)</span>.
 
 <span style="color: #b3b3b3;">Definition</span> <span style="color: #00ffff;">has_contract_state_impl_for_contract_state_truncate_0</span>
-  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">cur_size_36</span> : int32<span style="color: #7d26cd;">)</span>
-  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">new_size_37</span> : int32<span style="color: #7d26cd;">)</span>
+  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">cur_size_34</span> : int32<span style="color: #7d26cd;">)</span>
+  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">new_size_35</span> : int32<span style="color: #7d26cd;">)</span>
   : bool :=
-  <span style="color: #7d26cd;">(</span>cur_size_36<span style="color: #7d26cd;">)</span> &gt;.? <span style="color: #7d26cd;">(</span>new_size_37<span style="color: #7d26cd;">)</span>.
+  <span style="color: #7d26cd;">(</span>cur_size_34<span style="color: #7d26cd;">)</span> &gt;.? <span style="color: #7d26cd;">(</span>new_size_35<span style="color: #7d26cd;">)</span>.
+</pre>
+</div>
+</div>
+</li>
 
+<li><a id="org47013f5"></a>Contract State - Misc.<br />
+<div class="outline-text-5" id="text-1-6-4-3">
+<div class="org-src-container">
+<pre class="src src-coq">
 <span style="color: #b3b3b3;">Definition</span> <span style="color: #00ffff;">has_contract_state_impl_for_contract_state_truncate_1</span>
-  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">current_position_38</span> : contract_state<span style="color: #7d26cd;">)</span>
-  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">new_size_39</span> : int32<span style="color: #7d26cd;">)</span>
-  : contract_state :=
-  <span style="color: #7d26cd;">(</span><span style="color: #00ff00;">if</span> <span style="color: #cd0000;">(</span><span style="color: #cd8500;">(</span>new_size_39<span style="color: #cd8500;">)</span> &lt;.? <span style="color: #cd8500;">(</span>current_position_38<span style="color: #cd8500;">)</span><span style="color: #cd0000;">)</span>:bool <span style="color: #00ff00;">then</span> <span style="color: #cd0000;">(</span>new_size_39<span style="color: #cd0000;">)</span> <span style="color: #00ff00;">else</span> <span style="color: #cd0000;">(</span>
-      current_position_38<span style="color: #cd0000;">)</span><span style="color: #7d26cd;">)</span>.
+  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">current_position_36</span> : contract_state_t<span style="color: #7d26cd;">)</span>
+  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">new_size_37</span> : int32<span style="color: #7d26cd;">)</span>
+  : contract_state_t :=
+  <span style="color: #7d26cd;">(</span><span style="color: #00ff00;">if</span> <span style="color: #cd0000;">(</span><span style="color: #cd8500;">(</span>new_size_37<span style="color: #cd8500;">)</span> &lt;.? <span style="color: #cd8500;">(</span>current_position_36<span style="color: #cd8500;">)</span><span style="color: #cd0000;">)</span>:bool <span style="color: #00ff00;">then</span> <span style="color: #cd0000;">(</span>new_size_37<span style="color: #cd0000;">)</span> <span style="color: #00ff00;">else</span> <span style="color: #cd0000;">(</span>
+      current_position_36<span style="color: #cd0000;">)</span><span style="color: #7d26cd;">)</span>.
 
+<span style="color: #b3b3b3;">Notation</span> <span style="color: #bdb76b;">"'parameter_t'"</span> := <span style="color: #7d26cd;">(</span>int32<span style="color: #7d26cd;">)</span> : hacspec_scope.
+
+<span style="color: #b3b3b3;">Definition</span> <span style="color: #00ffff;">read_impl_for_parameter_read</span>
+  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">current_position_38</span> : parameter_t<span style="color: #7d26cd;">)</span>
+  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">num_read_39</span> : int32<span style="color: #7d26cd;">)</span>
+  : <span style="color: #7d26cd;">(</span>parameter_t &#215; uint_size<span style="color: #7d26cd;">)</span> :=
+  <span style="color: #7d26cd;">(</span><span style="color: #cd0000;">(</span>current_position_38<span style="color: #cd0000;">)</span> .+ <span style="color: #cd0000;">(</span>num_read_39<span style="color: #cd0000;">)</span>, <span style="color: #87ceeb;">@</span>cast _ uint32 _ <span style="color: #cd0000;">(</span>num_read_39<span style="color: #cd0000;">)</span><span style="color: #7d26cd;">)</span>.
+
+<span style="color: #b3b3b3;">Notation</span> <span style="color: #bdb76b;">"'attributes_cursor_t'"</span> := <span style="color: #7d26cd;">(</span><span style="color: #cd0000;">(</span>int32 &#215; int16<span style="color: #cd0000;">)</span><span style="color: #7d26cd;">)</span> : hacspec_scope.
+
+<span style="color: #b3b3b3;">Definition</span> <span style="color: #00ffff;">has_policy_impl_for_policy_attributes_cursor_next_test</span>
+  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">policy_attribute_items_40</span> : attributes_cursor_t<span style="color: #7d26cd;">)</span>
+  : bool :=
+  <span style="color: #00ff00;">let</span> '<span style="color: #7d26cd;">(</span>_, remaining_items_41<span style="color: #7d26cd;">)</span> :=
+    policy_attribute_items_40 <span style="color: #00ff00;">in</span> 
+  <span style="color: #7d26cd;">(</span>remaining_items_41<span style="color: #7d26cd;">)</span> =.? <span style="color: #7d26cd;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE16 0<span style="color: #7d26cd;">)</span>.
 </pre>
 </div>
 </div>
@@ -1151,58 +1148,42 @@ We define contract state as its inner state namely the current position of the t
 </ol>
 </div>
 
-<div id="outline-container-org4a6120a" class="outline-4">
-<h4 id="org4a6120a"><span class="section-number-4">1.6.5.</span> Parameter</h4>
+<div id="outline-container-org244634e" class="outline-4">
+<h4 id="org244634e"><span class="section-number-4">1.6.5.</span> Parameter</h4>
 <div class="outline-text-4" id="text-1-6-5">
 <div class="org-src-container">
-<pre class="src src-coq"><span style="color: #b3b3b3;">Notation</span> <span style="color: #bdb76b;">"'parameter'"</span> := <span style="color: #7d26cd;">(</span>int32<span style="color: #7d26cd;">)</span> : hacspec_scope.
+<pre class="src src-coq">
+<span style="color: #b3b3b3;">Definition</span> <span style="color: #00ffff;">has_policy_impl_for_policy_attributes_cursor_next_tag_invalid</span>
+  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">policy_attribute_items_42</span> : attributes_cursor_t<span style="color: #7d26cd;">)</span>
+  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">tag_value_len_1_43</span> : int8<span style="color: #7d26cd;">)</span>
+  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">num_read_44</span> : int32<span style="color: #7d26cd;">)</span>
+  : <span style="color: #7d26cd;">(</span>attributes_cursor_t &#215; bool<span style="color: #7d26cd;">)</span> :=
+  <span style="color: #00ff00;">let</span> '<span style="color: #7d26cd;">(</span>current_position_45, remaining_items_46<span style="color: #7d26cd;">)</span> :=
+    policy_attribute_items_42 <span style="color: #00ff00;">in</span> 
+  <span style="color: #00ff00;">let</span> policy_attribute_items_47 : <span style="color: #7d26cd;">(</span>int32 &#215; int16<span style="color: #7d26cd;">)</span> :=
+    <span style="color: #7d26cd;">(</span><span style="color: #cd0000;">(</span>current_position_45<span style="color: #cd0000;">)</span> .+ <span style="color: #cd0000;">(</span>num_read_44<span style="color: #cd0000;">)</span>, remaining_items_46<span style="color: #7d26cd;">)</span> <span style="color: #00ff00;">in</span> 
+  <span style="color: #7d26cd;">(</span>policy_attribute_items_47, <span style="color: #cd0000;">(</span>tag_value_len_1_43<span style="color: #cd0000;">)</span> &gt;.? <span style="color: #cd0000;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE8 31<span style="color: #cd0000;">)</span><span style="color: #7d26cd;">)</span>.
 
-<span style="color: #b3b3b3;">Definition</span> <span style="color: #00ffff;">read_impl_for_parameter_read</span>
-  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">current_position_40</span> : parameter<span style="color: #7d26cd;">)</span>
-  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">num_read_41</span> : int32<span style="color: #7d26cd;">)</span>
-  : <span style="color: #7d26cd;">(</span>parameter &#215; uint_size<span style="color: #7d26cd;">)</span> :=
-  <span style="color: #7d26cd;">(</span><span style="color: #cd0000;">(</span>current_position_40<span style="color: #cd0000;">)</span> .+ <span style="color: #cd0000;">(</span>num_read_41<span style="color: #cd0000;">)</span>, <span style="color: #87ceeb;">@</span>cast _ uint32 _ <span style="color: #cd0000;">(</span>num_read_41<span style="color: #cd0000;">)</span><span style="color: #7d26cd;">)</span>.
-
+<span style="color: #b3b3b3;">Definition</span> <span style="color: #00ffff;">has_policy_impl_for_policy_attributes_cursor_next</span>
+  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">policy_attribute_items_48</span> : attributes_cursor_t<span style="color: #7d26cd;">)</span>
+  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">num_read_49</span> : int32<span style="color: #7d26cd;">)</span>
+  : attributes_cursor_t :=
+  <span style="color: #00ff00;">let</span> '<span style="color: #7d26cd;">(</span>current_position_50, remaining_items_51<span style="color: #7d26cd;">)</span> :=
+    policy_attribute_items_48 <span style="color: #00ff00;">in</span> 
+  <span style="color: #7d26cd;">(</span>
+    <span style="color: #cd0000;">(</span>current_position_50<span style="color: #cd0000;">)</span> .+ <span style="color: #cd0000;">(</span>num_read_49<span style="color: #cd0000;">)</span>,
+    <span style="color: #cd0000;">(</span>remaining_items_51<span style="color: #cd0000;">)</span> .- <span style="color: #cd0000;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE16 1<span style="color: #cd0000;">)</span>
+  <span style="color: #7d26cd;">)</span>.
 </pre>
 </div>
 </div>
 </div>
 
-<div id="outline-container-orgbd414e3" class="outline-4">
-<h4 id="orgbd414e3"><span class="section-number-4">1.6.6.</span> Attributes Cursor</h4>
+<div id="outline-container-org5577518" class="outline-4">
+<h4 id="org5577518"><span class="section-number-4">1.6.6.</span> Attributes Cursor</h4>
 <div class="outline-text-4" id="text-1-6-6">
 <div class="org-src-container">
-<pre class="src src-coq"><span style="color: #b3b3b3;">Notation</span> <span style="color: #bdb76b;">"'attributes_cursor'"</span> := <span style="color: #7d26cd;">(</span><span style="color: #cd0000;">(</span>int32 &#215; int16<span style="color: #cd0000;">)</span><span style="color: #7d26cd;">)</span> : hacspec_scope.
-
-<span style="color: #b3b3b3;">Definition</span> <span style="color: #00ffff;">has_policy_impl_for_policy_attributes_cursor_next_test</span>
-  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">policy_attribute_items_42</span> : attributes_cursor<span style="color: #7d26cd;">)</span>
-  : bool :=
-  <span style="color: #00ff00;">let</span> '<span style="color: #7d26cd;">(</span>_, remaining_items_43<span style="color: #7d26cd;">)</span> :=
-    policy_attribute_items_42 <span style="color: #00ff00;">in</span> 
-  <span style="color: #7d26cd;">(</span>remaining_items_43<span style="color: #7d26cd;">)</span> =.? <span style="color: #7d26cd;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE16 0<span style="color: #7d26cd;">)</span>.
-
-<span style="color: #b3b3b3;">Definition</span> <span style="color: #00ffff;">has_policy_impl_for_policy_attributes_cursor_next_tag_invalid</span>
-  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">policy_attribute_items_44</span> : attributes_cursor<span style="color: #7d26cd;">)</span>
-  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">tag_value_len_1_45</span> : int8<span style="color: #7d26cd;">)</span>
-  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">num_read_46</span> : int32<span style="color: #7d26cd;">)</span>
-  : <span style="color: #7d26cd;">(</span>attributes_cursor &#215; bool<span style="color: #7d26cd;">)</span> :=
-  <span style="color: #00ff00;">let</span> '<span style="color: #7d26cd;">(</span>current_position_47, remaining_items_48<span style="color: #7d26cd;">)</span> :=
-    policy_attribute_items_44 <span style="color: #00ff00;">in</span> 
-  <span style="color: #00ff00;">let</span> policy_attribute_items_49 : <span style="color: #7d26cd;">(</span>int32 &#215; int16<span style="color: #7d26cd;">)</span> :=
-    <span style="color: #7d26cd;">(</span><span style="color: #cd0000;">(</span>current_position_47<span style="color: #cd0000;">)</span> .+ <span style="color: #cd0000;">(</span>num_read_46<span style="color: #cd0000;">)</span>, remaining_items_48<span style="color: #7d26cd;">)</span> <span style="color: #00ff00;">in</span> 
-  <span style="color: #7d26cd;">(</span>policy_attribute_items_49, <span style="color: #cd0000;">(</span>tag_value_len_1_45<span style="color: #cd0000;">)</span> &gt;.? <span style="color: #cd0000;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE8 31<span style="color: #cd0000;">)</span><span style="color: #7d26cd;">)</span>.
-
-<span style="color: #b3b3b3;">Definition</span> <span style="color: #00ffff;">has_policy_impl_for_policy_attributes_cursor_next</span>
-  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">policy_attribute_items_50</span> : attributes_cursor<span style="color: #7d26cd;">)</span>
-  <span style="color: #7d26cd;">(</span><span style="color: #9acd32;">num_read_51</span> : int32<span style="color: #7d26cd;">)</span>
-  : attributes_cursor :=
-  <span style="color: #00ff00;">let</span> '<span style="color: #7d26cd;">(</span>current_position_52, remaining_items_53<span style="color: #7d26cd;">)</span> :=
-    policy_attribute_items_50 <span style="color: #00ff00;">in</span> 
-  <span style="color: #7d26cd;">(</span>
-    <span style="color: #cd0000;">(</span>current_position_52<span style="color: #cd0000;">)</span> .+ <span style="color: #cd0000;">(</span>num_read_51<span style="color: #cd0000;">)</span>,
-    <span style="color: #cd0000;">(</span>remaining_items_53<span style="color: #cd0000;">)</span> .- <span style="color: #cd0000;">(</span><span style="color: #87ceeb;">@</span>repr WORDSIZE16 1<span style="color: #cd0000;">)</span>
-  <span style="color: #7d26cd;">)</span>.
-
+<pre class="src src-coq">
 </pre>
 </div>
 </div>
@@ -1212,7 +1193,7 @@ We define contract state as its inner state namely the current position of the t
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: Lasse Letager Hansen</p>
-<p class="date">Created: 2022-01-06 Thu 12:23</p>
+<p class="date">Created: 2022-01-06 Thu 14:20</p>
 <p class="validation"><a href="https://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>

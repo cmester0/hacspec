@@ -12,9 +12,7 @@ Notation "'reject_t'" := (int32) : hacspec_scope.
 Definition reject_impl_deafult  : reject_t :=
   min_v.
 
-Notation "'option_reject_t'" := ((option reject_t)) : hacspec_scope.
-
-Definition new_reject_impl (x_0 : int32) : option_reject_t :=
+Definition new_reject_impl (x_0 : int32) : (option reject_t) :=
   (if ((x_0) <.? (@repr WORDSIZE32 0)):bool then (@Some int32 (x_0)) else (
       @None int32)).
 
@@ -94,9 +92,6 @@ Proof. Admitted.
 
 Notation "'contract_state_t'" := (int32) : hacspec_scope.
 
-Notation "'seek_result_t'" := ((result (contract_state_t × int64
-  ) unit)) : hacspec_scope.
-
 Inductive seek_from_t :=
 | Start : int64 -> seek_from_t
 | End : int64 -> seek_from_t
@@ -109,7 +104,7 @@ Notation "'iint64_option_t'" := ((option int64)) : hacspec_scope.
 Definition contract_state_impl_seek
   (current_position_5 : contract_state_t)
   (pos_6 : seek_from_t)
-  : seek_result_t :=
+  : (result (contract_state_t × int64) unit) :=
   match pos_6 with
   | Start offset_7 => @Ok (contract_state_t × int64) unit ((
       @cast _ uint32 _ (offset_7),
