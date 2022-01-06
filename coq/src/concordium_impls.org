@@ -53,6 +53,43 @@ rand = "0.8"
 
 ** Rust code
 *** Reject
+The ~Rust~ definition for Reject is
+#+begin_src rust :tangle no :eval never
+/// An error message, signalling rejection of a smart contract invocation.
+/// The client will see the error code as a reject reason; if a schema is
+/// provided, the error message corresponding to the error code will be
+/// displayed. The valid range for an error code is from i32::MIN to  -1.
+#[derive(Eq, PartialEq, Debug)]
+#[repr(transparent)]
+pub struct Reject {
+    pub error_code: crate::num::NonZeroI32,
+}
+
+/// Default error is i32::MIN.
+impl Default for Reject {
+    #[inline(always)]
+    fn default() -> Self {
+        Self {
+            error_code: unsafe { crate::num::NonZeroI32::new_unchecked(i32::MIN) },
+        }
+    }
+}
+
+impl Reject {
+    /// This returns `None` for all values >= 0 and `Some` otherwise.
+    pub fn new(x: i32) -> Option<Self> {
+        if x < 0 {
+            let error_code = unsafe { crate::num::NonZeroI32::new_unchecked(x) };
+            Some(Reject {
+                error_code,
+            })
+        } else {
+            None
+        }
+    }
+}
+#+end_src
+# NonZeroI32 is located in rust/library/core/src/num/nonzero.rs
 We modle reject as the underlying data, that is the src_rust[:eval never]{i32} error code. The default constructor is i32 min.
 #+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
   pub type Reject = i32;
@@ -550,7 +587,7 @@ Add Rec LoadPath "src/" as Hacspec.
 
 *** The includes
 #+NAME: linum0
-#+CALL: next(ARG="0 9", linum="0 0")
+#+CALL: next(ARG="0 9", linum="0 0") :exports none
 #+NAME: seg0
 #+CALL: split-file(ARG=linum0) :eval
 #+RESULTS: seg0
@@ -568,7 +605,7 @@ Require Import Hacspec.Lib.
 
 *** Types and default implementations
 #+NAME: linum1
-#+CALL: next(ARG="0 2", linum=linum0)
+#+CALL: next(ARG="0 2", linum=linum0) :exports none
 #+NAME: seg1
 #+CALL: split-file(ARG=linum1) :eval
 #+RESULTS: seg1
@@ -578,7 +615,7 @@ Notation "'reject'" := (int32) : hacspec_scope.
 #+end_src
 
 #+NAME: linum2
-#+CALL: next(ARG="0 2", linum=linum1)
+#+CALL: next(ARG="0 2", linum=linum1) :exports none
 #+NAME: seg2
 #+CALL: split-file(ARG=linum2) :eval
 #+RESULTS: seg2
@@ -589,7 +626,7 @@ Definition reject_impl_deafult  : reject :=
 #+end_src
 
 #+NAME: linum3
-#+CALL: next(ARG="0 2", linum=linum2)
+#+CALL: next(ARG="0 2", linum=linum2) :exports none
 #+NAME: seg3
 #+CALL: split-file(ARG=linum3) :eval
 #+RESULTS: seg3
@@ -599,7 +636,7 @@ Notation "'option_reject'" := ((option reject)) : hacspec_scope.
 #+end_src
 
 #+NAME: linum4
-#+CALL: next(ARG="0 2", linum=linum3)
+#+CALL: next(ARG="0 2", linum=linum3) :exports none
 #+NAME: seg4
 #+CALL: split-file(ARG=linum4) :eval
 #+RESULTS: seg4
@@ -612,7 +649,7 @@ Definition new_reject_impl (x_0 : int32) : option_reject :=
 
 *** Error handling
 #+NAME: linum5
-#+CALL: next(ARG="0 5", linum=linum4)
+#+CALL: next(ARG="0 5", linum=linum4) :exports none
 #+NAME: seg5
 #+CALL: split-file(ARG=linum5) :eval
 #+RESULTS: seg5
@@ -632,7 +669,7 @@ Qed.
 #+end_src
 
 #+NAME: linum6
-#+CALL: next(ARG="0 5", linum=linum5)
+#+CALL: next(ARG="0 5", linum=linum5) :exports none
 #+NAME: seg6
 #+CALL: split-file(ARG=linum6) :eval
 #+RESULTS: seg6
@@ -651,7 +688,7 @@ Qed.
 #+end_src
 
 #+NAME: linum7
-#+CALL: next(ARG="0 7", linum=linum6)
+#+CALL: next(ARG="0 7", linum=linum6) :exports none
 #+NAME: seg7
 #+CALL: split-file(ARG=linum7) :eval
 #+RESULTS: seg7
@@ -677,7 +714,7 @@ Qed.
 #+end_src
 
 #+NAME: linum8
-#+CALL: next(ARG="0 7", linum=linum7)
+#+CALL: next(ARG="0 7", linum=linum7) :exports none
 #+NAME: seg8
 #+CALL: split-file(ARG=linum8) :eval
 #+RESULTS: seg8
@@ -710,7 +747,7 @@ Qed.
 #+end_src
 
 #+NAME: linum9
-#+CALL: next(ARG="0 7", linum=linum8)
+#+CALL: next(ARG="0 7", linum=linum8) :exports none
 #+NAME: seg9
 #+CALL: split-file(ARG=linum9) :eval
 #+RESULTS: seg9
@@ -742,7 +779,7 @@ Qed.
 
 *** Contract state
 #+NAME: linum10
-#+CALL: next(ARG="0 2", linum=linum9)
+#+CALL: next(ARG="0 2", linum=linum9) :exports none
 #+NAME: seg10
 #+CALL: split-file(ARG=linum10) :eval
 #+RESULTS: seg10
@@ -752,7 +789,7 @@ Notation "'contract_state'" := (int32) : hacspec_scope.
 #+end_src
 
 #+NAME: linum11
-#+CALL: next(ARG="0 4", linum=linum10)
+#+CALL: next(ARG="0 4", linum=linum10) :exports none
 #+NAME: seg11
 #+CALL: split-file(ARG=linum11) :eval
 #+RESULTS: seg11
@@ -768,7 +805,7 @@ Inductive seek_from :=
 #+end_src
 
 #+NAME: linum12
-#+CALL: next(ARG="0 4", linum=linum11)
+#+CALL: next(ARG="0 4", linum=linum11) :exports none
 #+NAME: seg12
 #+CALL: split-file(ARG=linum12) :eval
 #+RESULTS: seg12
@@ -780,7 +817,7 @@ Notation "'iint64_option'" := ((option int64)) : hacspec_scope.
 #+end_src
 
 #+NAME: linum13
-#+CALL: next(ARG="0 2", linum=linum12)
+#+CALL: next(ARG="0 2", linum=linum12) :exports none
 #+NAME: seg13
 #+CALL: split-file(ARG=linum13) :eval
 #+RESULTS: seg13
@@ -839,7 +876,7 @@ Definition contract_state_impl_seek
 
 **** Contract state - Read Trait
 #+NAME: linum14
-#+CALL: next(ARG="0 5", linum=linum13)
+#+CALL: next(ARG="0 5", linum=linum13) :exports none
 #+NAME: seg14
 #+CALL: split-file(ARG=linum14) :eval
 #+RESULTS: seg14
@@ -866,7 +903,7 @@ Qed.
 #+end_src
 
 #+NAME: linum15
-#+CALL: next(ARG="0 8", linum=linum14)
+#+CALL: next(ARG="0 8", linum=linum14) :exports none
 #+NAME: seg15
 #+CALL: split-file(ARG=linum15) :eval
 #+RESULTS: seg15
@@ -910,7 +947,7 @@ Definition contract_state_impl_read_read_u8
 
 **** Contract state - Write Trait
 #+NAME: linum16
-#+CALL: next(ARG="0 4", linum=linum15)
+#+CALL: next(ARG="0 4", linum=linum15) :exports none
 #+NAME: seg16
 #+CALL: split-file(ARG=linum16) :eval
 #+RESULTS: seg16
@@ -931,7 +968,7 @@ Definition write_impl_for_contract_state
 
 **** Contract State - Misc.
 #+NAME: linum17
-#+CALL: next(ARG="0 10", linum=linum16)
+#+CALL: next(ARG="0 10", linum=linum16) :exports none
 #+NAME: seg17
 #+CALL: split-file(ARG=linum17) :eval
 #+RESULTS: seg17
@@ -967,7 +1004,7 @@ Definition has_contract_state_impl_for_contract_state_truncate_1
 
 *** Parameter
 #+NAME: linum18
-#+CALL: next(ARG="0 4", linum=linum17)
+#+CALL: next(ARG="0 4", linum=linum17) :exports none
 #+NAME: seg18
 #+CALL: split-file(ARG=linum18) :eval
 #+RESULTS: seg18
@@ -984,7 +1021,7 @@ Definition read_impl_for_parameter_read
 
 *** Attributes Cursor
 #+NAME: linum19
-#+CALL: next(ARG="0 -1", linum=linum18)
+#+CALL: next(ARG="0 -1", linum=linum18) :exports none
 #+NAME: seg19
 #+CALL: split-file(ARG=linum19) :eval
 #+RESULTS: seg19
