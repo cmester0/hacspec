@@ -3017,12 +3017,6 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
                 ref generics,
                 ref body,
             ) = fn_kind.as_ref();
-            // let FnKind {
-            //     defaultness,
-            //     ref sig,
-            //     ref generics,
-            //     ref body,
-            // } = fn_kind.as_ref();
             // First, checking that no fancy function qualifier is here
             match defaultness {
                 Defaultness::Default(span) => {
@@ -3291,12 +3285,6 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
                 _,
                 ty,
             ) = ty_alias_kind.as_ref();
-            // let TyAliasKind {
-            //     defaultness,
-            //     generics,
-            //     ty,
-            //     ..
-            // } = ty_alias_kind.as_ref();
             match defaultness {
                 Defaultness::Final => (),
                 Defaultness::Default(span) => {
