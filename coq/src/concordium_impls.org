@@ -9,29 +9,31 @@
 
 * Concordium "Impls" specification
 ** Config
-#+BEGIN_SRC toml :eval never
-[package]
-name = "concordium_impls"
-version = "0.1.0"
-authors = [""]
-edition = "2018"
+#+BEGIN_SRC toml :tangle ../../examples/concordium_impls/Cargo.toml :eval never
+  [package]
+  name = "concordium_impls"
+  version = "0.1.0"
+  authors = [""]
+  edition = "2018"
 
-[lib]
-path = "src/concordium_impls.rs"
+  [lib]
+  path = "src/concordium_impls.rs"
 
-[dependencies]
-hacspec-lib = { path = "../../lib" }
-hacspec-attributes = { path = "../../utils/attributes", version = "0.1.0-beta.1" , features = ["print_attributes", "hacspec_unsafe"] } # , features = ["hacspec_unsafe"] , , optional = true
-# pearlite-syn = { path = "../../../../creusot/pearlite-syn" }
-creusot-contracts = { path = "../../../../creusot/creusot-contracts" }
+  [dependencies]
+  hacspec-lib = { path = "../../lib" }
+  hacspec-attributes = { path = "../../utils/attributes", version = "0.1.0-beta.1" , features = ["print_attributes", "hacspec_unsafe"] } # , features = ["hacspec_unsafe"] , , optional = true
+  # pearlite-syn = { path = "../../../../creusot/pearlite-syn" }
+  creusot-contracts = { path = "../../../../creusot/creusot-contracts" }
+  concordium-contracts-common = { path = "../../../../concordium-rust-smart-contracts/concordium-contracts-common" }
+  concordium-std = { path = "../../../../concordium-rust-smart-contracts/concordium-std" }
 
-[features]
-use_attributes = ["hacspec-attributes/print_attributes", "hacspec-attributes/hacspec_unsafe"]
+  [features]
+  use_attributes = ["hacspec-attributes/print_attributes", "hacspec-attributes/hacspec_unsafe"]
 
-[dev-dependencies]
-hacspec-dev = { path = "../../utils/dev" }
-criterion = "0.3"
-rand = "0.8"
+  [dev-dependencies]
+  hacspec-dev = { path = "../../utils/dev" }
+  criterion = "0.3"
+  rand = "0.8"
 #+END_SRC
 
 ** Imports
@@ -45,6 +47,35 @@ rand = "0.8"
   #[cfg(feature = "hacspec")]
   use hacspec_attributes::*;
 
+  // Rust-hacspec Interface
+  #[cfg(not(feature = "hacspec"))]
+  extern crate concordium_std;
+  #[cfg(not(feature = "hacspec"))]
+  use concordium_std::*;
+
+  #[cfg(not(feature = "hacspec"))]
+  // use ::std::collections::{BTreeMap, BTreeSet};
+  use ::std::{
+      collections::{BTreeMap, BTreeSet},
+      convert::{self, TryFrom, TryInto},
+      hash::Hash,
+      mem, num, // prims,
+      // prims::*,
+      // traits::*,
+      // types::*,
+      vec::Vec,
+      // String,
+  };
+
+  // #[cfg(not(feature = "hacspec"))]
+  // extern crate concordium_contracts_common;
+  // #[cfg(not(feature = "hacspec"))]
+  // use concordium_contracts_common::*;
+
+  #[cfg(not(feature = "hacspec"))]
+  use mem::MaybeUninit;
+
+  // Creusot
   #[cfg(not(feature = "hacspec"))]
   extern crate creusot_contracts;
   #[cfg(not(feature = "hacspec"))]
@@ -55,52 +86,58 @@ rand = "0.8"
 *** Reject
 The ~Rust~ definition for Reject is
 #+begin_src rust :tangle no :eval never
-/// An error message, signalling rejection of a smart contract invocation.
-/// The client will see the error code as a reject reason; if a schema is
-/// provided, the error message corresponding to the error code will be
-/// displayed. The valid range for an error code is from i32::MIN to  -1.
-#[derive(Eq, PartialEq, Debug)]
-#[repr(transparent)]
-pub struct Reject {
-    pub error_code: crate::num::NonZeroI32,
-}
+  /// An error message, signalling rejection of a smart contract invocation.
+  /// The client will see the error code as a reject reason; if a schema is
+  /// provided, the error message corresponding to the error code will be
+  /// displayed. The valid range for an error code is from i32::MIN to  -1.
+  #[derive(Eq, PartialEq, Debug)]
+  #[repr(transparent)]
+  pub struct Reject {
+      pub error_code: crate::num::NonZeroI32,
+  }
 
-/// Default error is i32::MIN.
-impl Default for Reject {
-    #[inline(always)]
-    fn default() -> Self {
-        Self {
-            error_code: unsafe { crate::num::NonZeroI32::new_unchecked(i32::MIN) },
-        }
-    }
-}
+  /// Default error is i32::MIN.
+  impl Default for Reject {
+      #[inline(always)]
+      fn default() -> Self {
+	  Self {
+	      error_code: unsafe { crate::num::NonZeroI32::new_unchecked(i32::MIN) },
+	  }
+      }
+  }
 
-impl Reject {
-    /// This returns `None` for all values >= 0 and `Some` otherwise.
-    pub fn new(x: i32) -> Option<Self> {
-        if x < 0 {
-            let error_code = unsafe { crate::num::NonZeroI32::new_unchecked(x) };
-            Some(Reject {
-                error_code,
-            })
-        } else {
-            None
-        }
-    }
-}
+  impl Reject {
+      /// This returns `None` for all values >= 0 and `Some` otherwise.
+      pub fn new(x: i32) -> Option<Self> {
+	  if x < 0 {
+	      let error_code = unsafe { crate::num::NonZeroI32::new_unchecked(x) };
+	      Some(Reject { error_code })
+	  } else {
+	      None
+	  }
+      }
+  }
 #+end_src
 # NonZeroI32 is located in rust/library/core/src/num/nonzero.rs
 We modle reject as the underlying data, that is the src_rust[:eval never]{i32} error code. The default constructor is i32 min.
 #+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
-  pub type Reject = i32;
+  #[cfg(not(feature = "hacspec"))]
+  #[derive(Eq, PartialEq, Debug)]
+  #[repr(transparent)]
+  pub struct Reject {
+      pub error_code: crate::num::NonZeroI32,
+  }
 
-  pub fn reject_impl_deafult() -> Reject {
+  pub type RejectHacspec = i32;
+
+  pub fn reject_impl_deafult() -> RejectHacspec {
       i32::MIN
   }
-#+end_src
 
+#+end_src
+We then implement the new operations for Reject.
 #+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
-  pub fn new_reject_impl(x: i32) -> Option<Reject> {
+  pub fn new_reject_impl(x: i32) -> Option<RejectHacspec> {
       if x < 0i32 {
 	  Option::<i32>::Some(x)
       } else {
@@ -108,6 +145,39 @@ We modle reject as the underlying data, that is the src_rust[:eval never]{i32} e
       }
   }
 
+#+end_src
+We define the coercion function for Reject, and implement the traits
+#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+  #[cfg(not(feature = "hacspec"))]
+  pub fn coerce_hacspec_to_rust_reject(hacspec_reject: RejectHacspec) -> Reject {
+      Reject {
+	  error_code: unsafe { num::NonZeroI32::new_unchecked(hacspec_reject) },
+      }
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  /// Default error is i32::MIN.
+  impl Default for Reject {
+      #[inline(always)]
+      fn default() -> Self {
+	  Self {
+	      error_code: unsafe { crate::num::NonZeroI32::new_unchecked(i32::MIN) },
+	  }
+      }
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  impl Reject {
+      /// This returns `None` for all values >= 0 and `Some` otherwise.
+      pub fn new(x: i32) -> Option<Self> {
+	  if x < 0 {
+	      let error_code = unsafe { crate::num::NonZeroI32::new_unchecked(x) };
+	      Some(Reject { error_code })
+	  } else {
+	      None
+	  }
+      }
+  }  
 #+end_src
 
 **** Reject - From trait
@@ -134,20 +204,30 @@ We modle reject as the underlying data, that is the src_rust[:eval never]{i32} e
 We modle the unsafe block with unchecked non zero as a precondition using requires giving us the hacspec equivalent
 #+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
   #[ensures(result != 0i32)]
-  pub fn reject_impl_convert_from_unit() -> Reject {
+  pub fn reject_impl_convert_from_unit() -> RejectHacspec {
       i32::MIN + 1i32
   }
 
   #[ensures(result != 0i32)]
-  pub fn reject_impl_convert_from_parse_error() -> Reject {
+  pub fn reject_impl_convert_from_parse_error() -> RejectHacspec {
       i32::MIN + 2i32
   }
 #+end_src
-which we can insert as the definition of the from functions in the trait implementation by using a coerce function
-#+begin_src rust :tangle no :eval never
-  pub fn coerce_hacspec_to_rust_reject(hacspec_reject: ConcordiumImpls::Reject) -> Reject {
-      Reject {
-	  error_code: hacspec_reject,
+We then implement the traits
+#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+  #[cfg(not(feature = "hacspec"))]
+  impl convert::From<()> for Reject {
+      #[inline(always)]
+      fn from(_: ()) -> Self {
+	  coerce_hacspec_to_rust_reject(reject_impl_convert_from_unit())
+      }
+  }
+  
+  #[cfg(not(feature = "hacspec"))]
+  impl convert::From<ParseError> for Reject {
+      #[inline(always)]
+      fn from(_: ParseError) -> Self {
+	  coerce_hacspec_to_rust_reject(reject_impl_convert_from_parse_error())
       }
   }
 #+end_src
@@ -164,10 +244,22 @@ We define a log error type and function converting from it to the reject type
   }
 
   #[ensures(result != 0i32)]
-  pub fn reject_impl_from_log_error(le: LogError) -> Reject {
+  pub fn reject_impl_from_log_error(le: LogError) -> RejectHacspec {
       match le {
 	  LogError::Full => i32::MIN + 3i32,
 	  LogError::Malformed => i32::MIN + 4i32,
+      }
+  }
+
+#+end_src
+We then implement the traits
+#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+  #[cfg(not(feature = "hacspec"))]
+  /// Full is mapped to i32::MIN+3, Malformed is mapped to i32::MIN+4.
+  impl From<LogError> for Reject {
+      #[inline(always)]
+      fn from(le: LogError) -> Self {
+	  coerce_hacspec_to_rust_reject(reject_impl_from_log_error(le))
       }
   }
 
@@ -183,12 +275,26 @@ We define a type for new contract name errors and conversion from it to reject
   }
 
   #[ensures(result != 0i32)]
-  pub fn reject_impl_from_new_contract_name_error(nre: NewContractNameError) -> Reject {
+  pub fn reject_impl_from_new_contract_name_error(nre: NewContractNameError) -> RejectHacspec {
       match nre {
 	  NewContractNameError::NewContractNameErrorMissingInitPrefix => i32::MIN + 5i32,
 	  NewContractNameError::NewContractNameErrorTooLong => i32::MIN + 6i32,
 	  NewContractNameError::NewContractNameErrorContainsDot => i32::MIN + 9i32,
 	  NewContractNameError::NewContractNameErrorInvalidCharacters => i32::MIN + 10i32,
+      }
+  }
+
+#+end_src
+We then implement the traits
+#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+  #[cfg(not(feature = "hacspec"))]
+  /// MissingInitPrefix is mapped to i32::MIN + 5,
+  /// TooLong to i32::MIN + 6,
+  /// ContainsDot to i32::MIN + 9, and
+  /// InvalidCharacters to i32::MIN + 10.
+  impl From<NewContractNameError> for Reject {
+      fn from(nre: NewContractNameError) -> Self {
+	  coerce_hacspec_to_rust_reject(reject_impl_from_new_contract_name_error(nre))
       }
   }
 
@@ -203,7 +309,7 @@ We define a type for new receive name errors and conversion from it to reject
   }
 
   #[ensures(result != 0i32)]
-  pub fn reject_impl_from_new_receive_name_error(nre: NewReceiveNameError) -> Reject {
+  pub fn reject_impl_from_new_receive_name_error(nre: NewReceiveNameError) -> RejectHacspec {
       match nre {
 	  NewReceiveNameError::NewReceiveNameErrorMissingDotSeparator => i32::MIN + 7i32,
 	  NewReceiveNameError::NewReceiveNameErrorTooLong => i32::MIN + 8i32,
@@ -212,11 +318,32 @@ We define a type for new receive name errors and conversion from it to reject
   }
 
 #+end_src
+We then implement the traits
+#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+  #[cfg(not(feature = "hacspec"))]
+  /// MissingDotSeparator is mapped to i32::MIN + 7,
+  /// TooLong to i32::MIN + 8, and
+  /// InvalidCharacters to i32::MIN + 11.
+  impl From<NewReceiveNameError> for Reject {
+      fn from(nre: NewReceiveNameError) -> Self {
+	  coerce_hacspec_to_rust_reject(reject_impl_from_new_receive_name_error(nre))
+      }
+  }
+
+#+end_src
+
 *** Contract state
 We define contract state as its inner state namely the current position of the src_rust[:eval never]{u32} type.
 #+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
-  pub type ContractState = u32;
+  #[cfg(not(feature = "hacspec"))]
+  /// A type representing the constract state bytes.
+  #[derive(Default)]
+  pub struct ContractState {
+      pub(crate) current_position: u32,
+  }
 
+  pub type ContractStateHacspec = u32;
+  
 #+end_src
 **** Contract State -- Seek
 #+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
@@ -244,44 +371,98 @@ We define contract state as its inner state namely the current position of the s
   pub type I64Option = Option<i64>;
 
   // #[requires(forall<delta : i64> pos === SeekFrom::End(delta) ==> exists<b : u32> current_position.checked_add(delta as u32) == U32Option::Some(b))]
-  pub fn contract_state_impl_seek(current_position: ContractState, pos: SeekFrom) -> Result<(ContractState, u64), ()> {
+  pub fn contract_state_impl_seek(current_position: ContractStateHacspec, pos: SeekFrom) -> Result<(ContractStateHacspec, u64), ()> {
       match pos {
-	  SeekFrom::Start(offset) => Result::<(ContractState, u64), ()>::Ok((offset as u32, offset)),
+	  SeekFrom::Start(offset) => Result::<(ContractStateHacspec, u64), ()>::Ok((offset as u32, offset)),
 	  SeekFrom::End(delta) => {
 	      if delta >= 0_i64 {
 		  match current_position.checked_add(delta as u32) {
-		      U32Option::Some(b) => Result::<(ContractState, u64), ()>::Ok((b, delta as u64)),
-		      U32Option::None => Result::<(ContractState, u64), ()>::Err(()),
+		      U32Option::Some(b) => Result::<(ContractStateHacspec, u64), ()>::Ok((b, delta as u64)),
+		      U32Option::None => Result::<(ContractStateHacspec, u64), ()>::Err(()),
 		  }
 	      } else {
 		  match delta.checked_abs() {
 		      I64Option::Some(b) =>
 		      {
-			  Result::<(ContractState, u64), ()>::Ok(((4_u32 - (b as u32)), (4_u32 - (b as u32)) as u64))
+			  Result::<(ContractStateHacspec, u64), ()>::Ok(((4_u32 - (b as u32)), (4_u32 - (b as u32)) as u64))
 		      }
-		      I64Option::None => Result::<(ContractState, u64), ()>::Err(()),
+		      I64Option::None => Result::<(ContractStateHacspec, u64), ()>::Err(()),
 		  }
 	      }
 	  }
 	  SeekFrom::Current(delta) => {
 	      if delta >= 0_i64 {
 		  match current_position.checked_add(delta as u32) {
-		      U32Option::Some(offset) => Result::<(ContractState, u64), ()>::Ok((offset, offset as u64)),
-		      U32Option::None => Result::<(ContractState, u64), ()>::Err(()),
+		      U32Option::Some(offset) => Result::<(ContractStateHacspec, u64), ()>::Ok((offset, offset as u64)),
+		      U32Option::None => Result::<(ContractStateHacspec, u64), ()>::Err(()),
 		  }
 	      } else {
 		  match delta.checked_abs() {
 		      I64Option::Some(b) => match current_position.checked_sub(b as u32) {
-			  U32Option::Some(offset) => Result::<(ContractState, u64), ()>::Ok((offset, offset as u64)),
-			  U32Option::None => Result::<(ContractState, u64), ()>::Err(()),
+			  U32Option::Some(offset) => Result::<(ContractStateHacspec, u64), ()>::Ok((offset, offset as u64)),
+			  U32Option::None => Result::<(ContractStateHacspec, u64), ()>::Err(()),
 		      },
-		      I64Option::None => Result::<(ContractState, u64), ()>::Err(()),
+		      I64Option::None => Result::<(ContractStateHacspec, u64), ()>::Err(()),
 		  }
 	      }
 	  }
       }
   }
 #+end_src
+We then implement the traits
+#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+  #[cfg(not(feature = "hacspec"))]
+  pub fn coerce_rust_to_hacspec_contract_state(
+      rust_contract_state: &mut ContractState,
+  ) -> ContractStateHacspec {
+      rust_contract_state.current_position.clone()
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  pub fn coerce_hacspec_to_rust_contract_state(
+      rust_contract_state: &mut ContractState,
+      hacspec_contract_state: ContractStateHacspec,
+  ) {
+      rust_contract_state.current_position = hacspec_contract_state;
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  pub fn coerce_hacspec_to_rust_seek_result(
+      rust_contract_state: &mut ContractState,
+      hacspec_seek_result: Result<(ContractStateHacspec, u64), ()>,
+  ) -> Result<u64, ()> {
+      let (hacspec_result, rust_result) = hacspec_seek_result?;
+      coerce_hacspec_to_rust_contract_state(rust_contract_state, hacspec_result);
+      Ok(rust_result)
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  pub fn coerce_rust_to_hacspec_seek_from(rust_seek_from: concordium_std::SeekFrom) -> SeekFrom {
+      match rust_seek_from {
+	  concordium_std::SeekFrom::Start(v) => SeekFrom::Start(v),
+	  concordium_std::SeekFrom::End(v) => SeekFrom::End(v),
+	  concordium_std::SeekFrom::Current(v) => SeekFrom::Current(v),
+      }
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  /// # Contract state trait implementations.
+  impl Seek for ContractState {
+      type Err = ();
+
+      fn seek(&mut self, pos: concordium_std::SeekFrom) -> Result<u64, Self::Err> {
+	  let contract_state = coerce_rust_to_hacspec_contract_state(self);
+	  coerce_hacspec_to_rust_seek_result(
+	      self,
+	      contract_state_impl_seek(
+		  contract_state,
+		  coerce_rust_to_hacspec_seek_from(pos),
+	      ),
+	  )
+      }
+  }
+#+end_src
+
 **** Contract State -- Load
 #+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
@@ -314,13 +495,13 @@ We define contract state as its inner state namely the current position of the s
   }
     
 #+end_src
+
 **** Contract State -- Read
 #+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
   pub fn contract_state_impl_read_read(
-      current_position: ContractState,
-      buf : PublicByteSeq // Seq<u8>
-      // num_read: u32,
-  ) -> (ContractState, usize) {
+      current_position: ContractStateHacspec,
+      buf : PublicByteSeq,
+  ) -> (ContractStateHacspec, usize) {
       let (buf, num_read) = load_state_hacspec(buf, current_position);
       (current_position + num_read, num_read as usize)
   }
@@ -328,117 +509,909 @@ We define contract state as its inner state namely the current position of the s
   /// Read a u32 in little-endian format. This is optimized to not
   /// initialize a dummy value before calling an external function.
   pub fn contract_state_impl_read_read_u64(
-      current_position: ContractState,
-      num_read: u32,
-  ) -> (ContractState, bool) {
-      (current_position + num_read, num_read == 8_u32)
+      current_position: ContractStateHacspec,
+  ) -> (ContractStateHacspec, u64) {
+      // let mut bytes: MaybeUninit<[u8; 8]> = MaybeUninit::uninit();
+      let buf = PublicByteSeq::new(8);
+      let (buf, num_read) = load_state_hacspec(buf, current_position);
+      (current_position + num_read, u64_from_le_bytes(u64Word::from_seq(&buf))) // num_read as u64
   }
 
   /// Read a u32 in little-endian format. This is optimized to not
   /// initialize a dummy value before calling an external function.
   pub fn contract_state_impl_read_read_u32(
-      current_position: ContractState,
-      num_read: u32,
-  ) -> (ContractState, bool) {
-      (current_position + num_read, num_read == 4_u32)
+      current_position: ContractStateHacspec,
+  ) -> (ContractStateHacspec, u32) {
+      // let mut bytes: MaybeUninit<[u8; 4]> = MaybeUninit::uninit();
+      let buf = PublicByteSeq::new(4);
+      let (buf, num_read) = load_state_hacspec(buf, current_position);
+      (current_position + num_read, u32_from_le_bytes(u32Word::from_seq(&buf))) // num_read as u64
   }
 
   /// Read a u8 in little-endian format. This is optimized to not
   /// initialize a dummy value before calling an external function.
   pub fn contract_state_impl_read_read_u8(
-      current_position: ContractState,
-      num_read: u32,
-  ) -> (ContractState, bool) {
-      (current_position + num_read, num_read == 1_u32)
+      current_position: ContractStateHacspec,
+  ) -> (ContractStateHacspec, u8) {
+      let buf = PublicByteSeq::new(1);
+      let (buf, num_read) = load_state_hacspec(buf, current_position);
+      (current_position + num_read, buf[0]) // num_read as u64
   }
 
 #+end_src
+We then implement the traits
+#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+  #[cfg(not(feature = "hacspec"))]
+  pub fn coerce_rust_to_hacspec_public_byte_seq_read(
+      buf: &mut [u8],
+  ) -> // Result<
+	  PublicByteSeq
+       // , concordium_std::ParseError>
+  {
+      // let len: u32 = {
+      //     match buf.len().try_into() {
+      //         Ok(v) => v,
+      //         _ => return Err(ParseError::default()),
+      //     }
+      // };
+
+      // Ok(
+      PublicByteSeq::from_native_slice(buf) // ) // PublicByteSeq::new(len as usize);
+  }
+  
+  #[cfg(not(feature = "hacspec"))]
+  impl Read for ContractState {
+      fn read(&mut self, buf: &mut [u8]) -> ParseResult<usize> {
+	  let (cs, nr) = contract_state_impl_read_read(
+	      coerce_rust_to_hacspec_contract_state(self),
+	      coerce_rust_to_hacspec_public_byte_seq_read(buf),
+	  );
+	  coerce_hacspec_to_rust_contract_state(self, cs);
+	  Ok(nr)
+      }
+
+      // TODO: !! Probably incorrect !!
+      /// Read a `u32` in little-endian format. This is optimized to not
+      /// initialize a dummy value before calling an external function.
+      fn read_u64(&mut self) -> ParseResult<u64> {	  
+	  let (cs, nr) = contract_state_impl_read_read_u64(
+	      coerce_rust_to_hacspec_contract_state(self),
+	  );
+	  coerce_hacspec_to_rust_contract_state(self, cs);
+	  Ok(nr)
+	  // if num_read == 8 {
+	  //     unsafe { Ok(u64::from_le_bytes(bytes.assume_init())) }
+	  // } else {
+	  //     Err(ParseError::default())
+	  // }
+      }
+
+      /// Read a `u32` in little-endian format. This is optimized to not
+      /// initialize a dummy value before calling an external function.
+      fn read_u32(&mut self) -> ParseResult<u32> {
+	  let (cs, nr) = contract_state_impl_read_read_u32(
+	      coerce_rust_to_hacspec_contract_state(self),
+	  );
+	  coerce_hacspec_to_rust_contract_state(self, cs);
+	  Ok(nr)
+
+	      // let mut bytes: MaybeUninit<[u8; 4]> = MaybeUninit::uninit();
+	  // let num_read =
+	  //     unsafe { load_state(bytes.as_mut_ptr() as *mut u8, 4, self.current_position) };
+	  // self.current_position += num_read;
+	  // if num_read == 4 {
+	  //     unsafe { Ok(u32::from_le_bytes(bytes.assume_init())) }
+	  // } else {
+	  //     Err(ParseError::default())
+	  // }
+      }
+
+      /// Read a `u8` in little-endian format. This is optimized to not
+      /// initialize a dummy value before calling an external function.
+      fn read_u8(&mut self) -> ParseResult<u8> {
+	  let (cs, nr) = contract_state_impl_read_read_u8(
+	      coerce_rust_to_hacspec_contract_state(self),
+	  );
+	  coerce_hacspec_to_rust_contract_state(self, cs);
+	  Ok(nr)
+      }
+  }
+#+end_src
+
 **** Contract State -- Write
 #+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
-  pub fn write_impl_for_contract_state_test(current_position: ContractState, len: u32) -> bool {
-      current_position.checked_add(len).is_none() // Check for overflow
+  #[cfg(not(feature = "hacspec"))]
+  extern "C" {
+      pub(crate) fn write_state(start: *mut u8, length: u32, offset: u32) -> u32;
   }
 
-  pub fn write_impl_for_contract_state(
-      current_position: ContractState,
-      num_bytes: u32,
-  ) -> (ContractState, usize) {
-      (current_position + num_bytes, num_bytes as usize)
+  #[cfg(not(feature = "hacspec"))]
+  #[trusted]
+  pub(crate) fn write_state_creusot(start: *mut u8, length: u32, offset: u32) -> u32 {
+      unsafe { write_state(start, length, offset) }
+  }
+
+  #[cfg(feature = "hacspec")]
+  fn write_state_hacspec(buf: PublicByteSeq, offset: u32) -> (PublicByteSeq, u32) {
+      (buf, 1u32)
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  fn write_state_hacspec(buf: PublicByteSeq, offset: u32) -> (PublicByteSeq, u32) {
+      let mut temp_vec: Vec<u8> = Vec::new();
+      for i in 0..buf.len() {
+	  temp_vec.push(buf.index(i).clone())
+      }
+      let temp = &mut temp_vec[..];
+      (
+	  PublicByteSeq::from_native_slice(temp),
+	  write_state_creusot(temp.as_mut_ptr(), buf.len() as u32, offset),
+      )
+  }
+
+  pub fn contract_state_impl_write(
+      current_position: ContractStateHacspec,
+      buf : PublicByteSeq
+  ) -> Result<(ContractStateHacspec, usize), ()> {
+      if current_position.checked_add(buf.len() as u32).is_none() {
+	  Result::<(ContractStateHacspec, usize), ()>::Err(())?;
+      }
+      let (buf, num_bytes) = write_state_hacspec(buf, current_position);
+      Result::<(ContractStateHacspec, usize), ()>::Ok((current_position + num_bytes, num_bytes as usize))
   }
 
 #+end_src
-**** Contract State -- Misc.
+We then implement the traits
 #+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
-  pub fn has_contract_state_impl_for_contract_state_open() -> ContractState {
+  #[cfg(not(feature = "hacspec"))]
+  pub fn coerce_rust_to_hacspec_public_byte_seq_write(
+      buf: &[u8],
+  ) -> // Result<
+	  PublicByteSeq
+       // , ()>
+  {
+      // let len: u32 = {
+      //     match buf.len().try_into() {
+      //         Ok(v) => v,
+      //         _ => return Err(ParseError::default()),
+      //     }
+      // };
+
+      // Ok(
+      PublicByteSeq::from_native_slice(buf) // ) // PublicByteSeq::new(len as usize);
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  impl Write for ContractState {
+      type Err = ();
+
+      fn write(&mut self, buf: &[u8]) -> Result<usize, Self::Err> {
+	  let (cs, nr) = contract_state_impl_write(
+	      coerce_rust_to_hacspec_contract_state(self),
+	      coerce_rust_to_hacspec_public_byte_seq_write(buf),
+	  )?;
+	  coerce_hacspec_to_rust_contract_state(self, cs);
+	  Ok(nr)
+      }
+  }
+#+end_src
+
+**** Contract State -- Misc.
+State size extern
+#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+  #[cfg(not(feature = "hacspec"))]
+  extern "C" {
+      pub(crate) fn state_size() -> u32;
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  #[trusted]
+  pub(crate) fn state_size_creusot() -> u32 {
+      unsafe { state_size() }
+  }
+
+  #[cfg(feature = "hacspec")]
+  fn state_size_hacspec() -> u32 {
+      1u32
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  fn state_size_hacspec() -> u32 {
+      state_size_creusot()
+  }
+  
+#+end_src
+Resize state extern
+#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+  #[cfg(not(feature = "hacspec"))]
+  extern "C" {
+      // Resize state to the new value (truncate if new size is smaller). Return 0 if
+      // this was unsuccesful (new state too big), or 1 if successful.
+      pub(crate) fn resize_state(new_size: u32) -> u32; // returns 0 or 1.
+							// get current state size in bytes.
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  #[trusted]
+  pub(crate) fn resize_state_creusot(new_size: u32) -> u32 {
+      unsafe { resize_state(new_size) }
+  }
+
+  #[cfg(feature = "hacspec")]
+  fn resize_state_hacspec(new_size: u32) -> u32 {
+      1u32
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  fn resize_state_hacspec(new_size: u32) -> u32 {
+      resize_state_creusot(new_size)
+  }
+#+end_src
+
+#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+  pub fn has_contract_state_impl_for_contract_state_open() -> ContractStateHacspec {
       0_u32
   }
 
-  pub fn has_contract_state_impl_for_contract_state_reserve_0(len: u32, cur_size: u32) -> bool {
-      cur_size < len
-  }
-  
-  pub fn has_contract_state_impl_for_contract_state_reserve_1(res: u32) -> bool {
-      res == 1_u32
-  }
+  // pub fn has_contract_state_impl_for_contract_state_reserve_0(len: u32, cur_size: u32) -> bool {
+  //     cur_size < len
+  // }
 
-  pub fn has_contract_state_impl_for_contract_state_truncate_0(cur_size: u32, new_size: u32) -> bool {
-      cur_size > new_size
-  }
+  // pub fn has_contract_state_impl_for_contract_state_reserve_1(res: u32) -> bool {
+  //     res == 1_u32
+  // }
 
-  pub fn has_contract_state_impl_for_contract_state_truncate_1(
-      current_position: ContractState,
-      new_size: u32,
-  ) -> ContractState {
-      if new_size < current_position {
-	  new_size
+  pub fn has_contract_state_impl_for_contract_state_reserve(
+      contract_state: ContractStateHacspec,
+      len: u32,
+  ) -> bool {
+      let cur_size = state_size_hacspec();
+      if cur_size < len {
+	  resize_state_hacspec(len) == 1_u32
       } else {
-	  current_position
+	  true
       }
   }
 
+  pub fn has_contract_state_impl_for_contract_state_truncate(
+      current_position : ContractStateHacspec,
+      cur_size: u32,
+      new_size: u32,
+  ) -> ContractStateHacspec {
+      if cur_size > new_size {
+	  resize_state_hacspec(new_size);
+      }
+      if new_size < current_position {
+	  new_size
+      }
+      else {
+	  current_position
+      }
+  }
 #+end_src
-*** Parameter
+We then implement the traits
 #+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
-  pub type Parameter = u32;
+  #[cfg(not(feature = "hacspec"))]
+  impl HasContractState<()> for ContractState {
+      type ContractStateData = ();
+
+      #[inline(always)]
+      fn open(_: Self::ContractStateData) -> Self {
+	  ContractState {
+	      current_position: has_contract_state_impl_for_contract_state_open(),
+	  }
+      }
+
+      fn reserve(&mut self, len: u32) -> bool {
+	  has_contract_state_impl_for_contract_state_reserve(
+	      coerce_rust_to_hacspec_contract_state(self),
+	      len,
+	  )
+      }
+
+      #[inline(always)]
+      fn size(&self) -> u32 {
+	  state_size_hacspec()
+      }
+
+      fn truncate(&mut self, new_size: u32) {
+	  let current_position = coerce_rust_to_hacspec_contract_state(self);
+	  coerce_hacspec_to_rust_contract_state(
+	      self,
+	      has_contract_state_impl_for_contract_state_truncate(
+		  current_position,
+		  self.size(),
+		  new_size,
+	      ),
+	  )
+      }
+  }
+  
+#+end_src
+
+*** Parameter
+Extern for parameter section
+#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+  #[cfg(not(feature = "hacspec"))]
+  extern "C" {
+      // Write a section of the parameter to the given location. Return the number
+      // of bytes written. The location is assumed to contain enough memory to
+      // write the requested length into.
+      pub(crate) fn get_parameter_section(param_bytes: *mut u8, length: u32, offset: u32) -> u32;
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  #[trusted]
+  pub(crate) fn get_parameter_section_creusot(start: *mut u8, length: u32, offset: u32) -> u32 {
+      unsafe { get_parameter_section(start, length, offset) }
+  }
+
+  #[cfg(feature = "hacspec")]
+  fn get_parameter_section_hacspec(buf: PublicByteSeq, offset: u32) -> (PublicByteSeq, u32) {
+      (buf, 1u32)
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  fn get_parameter_section_hacspec(buf: PublicByteSeq, offset: u32) -> (PublicByteSeq, u32) {
+      let mut temp_vec: Vec<u8> = Vec::new();
+      for i in 0..buf.len() {
+	  temp_vec.push(buf.index(i).clone())
+      }
+      let temp = &mut temp_vec[..];
+      (
+	  PublicByteSeq::from_native_slice(temp),
+	  get_parameter_section_creusot(temp.as_mut_ptr(), buf.len() as u32, offset),
+      )
+  }
+
+#+end_src
+We define parameter
+#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+  #[cfg(not(feature = "hacspec"))]
+  #[derive(Default)]
+  /// A type representing the parameter to init and receive methods.
+  pub struct Parameter {
+      pub(crate) current_position: u32,
+  }
+
+  pub type ParameterHacspec = u32;
 
   pub fn read_impl_for_parameter_read(
-      current_position: Parameter,
-      num_read: u32,
-  ) -> (Parameter, usize) {
+      current_position: ParameterHacspec,
+      buf: PublicByteSeq,
+  ) -> (ParameterHacspec, usize) {
+      let (buf, num_read) = get_parameter_section_hacspec(buf, current_position);
       (current_position + num_read, num_read as usize)
   }
 
 #+end_src
-*** AttributesCursor
+We then implement the traits
 #+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
-  // pub struct AttributeTag(pub u8);
-  pub type AttributesCursor = (u32, u16);
-
-  pub fn has_policy_impl_for_policy_attributes_cursor_next_test(
-      policy_attribute_items: AttributesCursor,
-  ) -> bool {
-      let (_, remaining_items) = policy_attribute_items;
-      remaining_items == 0_u16
+  #[cfg(not(feature = "hacspec"))]
+  pub fn coerce_rust_to_hacspec_parameter(
+      rust_parameter: &mut Parameter,
+  ) -> ParameterHacspec {
+      rust_parameter.current_position.clone()
   }
 
-  pub fn has_policy_impl_for_policy_attributes_cursor_next_tag_invalid(
-      policy_attribute_items: AttributesCursor,
-      tag_value_len_1: u8,
-      num_read: u32,
-  ) -> (AttributesCursor, bool) {
-      let (current_position, remaining_items) = policy_attribute_items;
-      let policy_attribute_items = (current_position + num_read, remaining_items);
-      (policy_attribute_items, tag_value_len_1 > 31_u8)
+  #[cfg(not(feature = "hacspec"))]
+  pub fn coerce_hacspec_to_rust_parameter(
+      rust_parameter: &mut Parameter,
+      hacspec_parameter: ParameterHacspec,
+  ) {
+      rust_parameter.current_position = hacspec_parameter;
   }
 
-  pub fn has_policy_impl_for_policy_attributes_cursor_next(
-      policy_attribute_items: AttributesCursor,
-      num_read: u32,
-  ) -> AttributesCursor {
-      let (current_position, remaining_items) = policy_attribute_items;
-      (current_position + num_read, remaining_items - 1_u16)
+  
+  #[cfg(not(feature = "hacspec"))]
+  /// # Trait implementations for Parameter
+  impl Read for Parameter {
+      fn read(&mut self, buf: &mut [u8]) -> ParseResult<usize> {
+	  let (cs, nr) = read_impl_for_parameter_read(
+	      coerce_rust_to_hacspec_parameter(self),
+	      coerce_rust_to_hacspec_public_byte_seq_read(buf),
+	  );
+	  coerce_hacspec_to_rust_parameter(self, cs);
+	  Ok(nr)
+      }
+  }
+
+#+end_src
+Extern for parameter size and ~HasParameter~ trait.
+#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+  #[cfg(not(feature = "hacspec"))]
+  extern "C" {
+      // Get the size of the parameter to the method (either init or receive).
+      pub(crate) fn get_parameter_size() -> u32;
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  #[trusted]
+  pub(crate) fn get_parameter_size_creusot() -> u32 {
+      unsafe { get_parameter_size() }
+  }
+
+  #[cfg(feature = "hacspec")]
+  fn get_parameter_size_hacspec() -> u32 {
+      1u32
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  fn get_parameter_size_hacspec() -> u32 {
+      get_parameter_size_creusot()
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  impl HasParameter for Parameter {
+      #[inline(always)]
+      fn size(&self) -> u32 {
+	  get_parameter_size_hacspec()
+      }
+  }
+
+#+end_src
+*** ChainMetaExtern
+Get slot time extern
+#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+  #[cfg(not(feature = "hacspec"))]
+  extern "C" {
+    // Getters for the chain meta data
+    /// Slot time (in milliseconds) from chain meta data
+    pub(crate) fn get_slot_time() -> u64;
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  #[trusted]
+  pub(crate) fn get_slot_time_creusot() -> u64 {
+      unsafe { get_slot_time() }
+  }
+
+  #[cfg(feature = "hacspec")]
+  fn get_slot_time_hacspec() -> u64 {
+      1u64
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  fn get_slot_time_hacspec() -> u64 {
+      get_slot_time_creusot()
   }
 #+end_src
+We define and implement traits for ~ChainMetaExtern~.
+#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+  #[cfg(not(feature = "hacspec"))]
+  #[doc(hidden)]
+  pub struct ChainMetaExtern {}
+
+  #[cfg(not(feature = "hacspec"))]
+  /// # Trait implementations for the chain metadata.
+  impl HasChainMetadata for ChainMetaExtern {
+      #[inline(always)]
+      fn slot_time(&self) -> SlotTime {
+	  Timestamp::from_timestamp_millis(get_slot_time_hacspec() )
+      }
+  }
+#+end_src
+
+*** AttributesCursor
+Get policy section extern
+#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+  #[cfg(not(feature = "hacspec"))]
+  extern "C" {
+    // Write a section of the policy to the given location. Return the number
+    // of bytes written. The location is assumed to contain enough memory to
+    // write the requested length into.
+    pub(crate) fn get_policy_section(policy_bytes: *mut u8, length: u32, offset: u32) -> u32;
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  #[trusted]
+  pub(crate) fn get_policy_section_creusot(policy_bytes: *mut u8, length: u32, offset: u32) -> u32 {
+      unsafe { get_policy_section(policy_bytes, length, offset) }
+  }
+
+  #[cfg(feature = "hacspec")]
+  fn get_policy_section_hacspec(policy_bytes: PublicByteSeq, offset: u32) -> (PublicByteSeq, u32) {
+      (policy_bytes, 1u32)
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  fn get_policy_section_hacspec(policy_bytes: PublicByteSeq, offset: u32) -> (PublicByteSeq, u32) {
+      let mut temp_vec: Vec<u8> = Vec::new();
+      for i in 0..policy_bytes.len() {
+	  temp_vec.push(policy_bytes.index(i).clone())
+      }
+      let temp = &mut temp_vec[..];
+      (
+	  PublicByteSeq::from_native_slice(temp),
+	  get_policy_section_creusot(temp.as_mut_ptr(), policy_bytes.len() as u32, offset),
+      )
+  }
+
+#+end_src
+
+
+#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+  #[cfg(not(feature = "hacspec"))]
+  /// A type representing the attributes, lazily acquired from the host.
+  #[derive(Default)]
+  pub struct AttributesCursor {
+      /// Current position of the cursor, starting from 0.
+      /// Note that this is only for the variable attributes.
+      /// `created_at` and `valid_to` will require.
+      pub(crate) current_position: u32,
+      /// The number of remaining items in the policy.
+      pub(crate) remaining_items: u16,
+  }
+
+  // pub struct AttributeTag(pub u8);
+  pub type AttributesCursorHacspec = (u32, u16);
+
+  // pub fn has_policy_impl_for_policy_attributes_cursor_next_test(
+  //     policy_attribute_items: AttributesCursorHacspec,
+  // ) -> bool {
+  //     let (_, remaining_items) = policy_attribute_items;
+  //     remaining_items == 0_u16
+  // }
+
+  // pub fn has_policy_impl_for_policy_attributes_cursor_next_tag_invalid(
+  //     policy_attribute_items: AttributesCursorHacspec,
+  //     tag_value_len_1: u8,
+  //     num_read: u32,
+  // ) -> (AttributesCursorHacspec, bool) {
+  //     let (current_position, remaining_items) = policy_attribute_items;
+  //     let policy_attribute_items = (current_position + num_read, remaining_items);
+  //     (policy_attribute_items, tag_value_len_1 > 31_u8)
+  // }
+
+  pub fn has_policy_impl_for_policy_attributes_cursor_next_item(
+      policy_attribute_items: AttributesCursorHacspec,
+      buf: PublicByteSeq,
+  ) -> Option<(AttributesCursorHacspec, (u8, u8))> {
+
+      let (mut current_position, mut remaining_items) = policy_attribute_items;
+
+      // // TODO: implement ? for option types and uncomment
+      // if remaining_items == 0u16 {
+      //     Option::<(AttributesCursorHacspec, (AttributeTag, u8))>::None?;
+      // }
+
+      let mut tag_value_len = PublicByteSeq::new(2);
+      let (tag_value_len, num_read) = get_policy_section_hacspec(tag_value_len, current_position);
+      current_position = current_position + num_read;
+
+      // // TODO: implement ? for option types and uncomment
+      // if tag_value_len[1] > 31u8 {
+      //     // Should not happen because all attributes fit into 31 bytes.
+      //     Option::<(AttributesCursorHacspec, (AttributeTag, u8))>::None?;
+      // }
+
+      let (buf, num_read) = get_policy_section_hacspec(buf, current_position);
+      current_position = current_position + num_read;
+      remaining_items = remaining_items - 1u16;
+      Option::<(AttributesCursorHacspec, (u8, u8))>::Some(((current_position, remaining_items), (tag_value_len[0], tag_value_len[1])))
+  }
+  
+#+end_src
+We then define traits
+#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+  #[cfg(not(feature = "hacspec"))]
+  pub fn coerce_rust_to_hacspec_public_byte_seq_has_policy(
+      buf: &mut [u8; 31],
+  ) -> // Result<
+	  PublicByteSeq
+       // , concordium_std::ParseError>
+  {
+      // let len: u32 = {
+      //     match buf.len().try_into() {
+      //         Ok(v) => v,
+      //         _ => return Err(ParseError::default()),
+      //     }
+      // };
+
+      // Ok(
+      PublicByteSeq::from_native_slice(buf) // ) // PublicByteSeq::new(len as usize);
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  pub fn coerce_rust_to_hacspec_attributes_cursor(
+      rust_attributes_cursor: &mut AttributesCursor,
+  ) -> AttributesCursorHacspec {
+      (rust_attributes_cursor.current_position.clone(), rust_attributes_cursor.remaining_items.clone())
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  pub fn coerce_hacspec_to_rust_attributes_cursor(
+      rust_attributes_cursor: &mut AttributesCursor,
+      hacspec_attributes_cursor: AttributesCursorHacspec,
+  ) {
+      let (current_position, remaining_items) = hacspec_attributes_cursor;
+      rust_attributes_cursor.current_position = current_position;
+      rust_attributes_cursor.remaining_items = remaining_items;
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  /// Policy on the credential of the account.
+  ///
+  /// This is one of the key features of the Concordium blockchain. Each account
+  /// on the chain is backed by an identity. The policy is verified and signed by
+  /// the identity provider before an account can be created on the chain.
+  ///
+  /// The type is parameterized by the choice of `Attributes`. These are either
+  /// borrowed or owned, in the form of an iterator over key-value pairs or a
+  /// vector of such. This flexibility is needed so that attributes can be
+  /// accessed efficiently, as well as constructed conveniently for testing.
+  #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
+  #[derive(Debug, Clone)]
+  pub struct Policy<Attributes> {
+      /// Identity of the identity provider who signed the identity object that
+      /// this policy is derived from.
+      pub identity_provider: IdentityProvider,
+      /// Timestamp at the beginning of the month when the identity object backing
+      /// this policy was created. This timestamp has very coarse granularity
+      /// in order for the identity provider to not be able to link identities
+      /// they have created with accounts that users created on the chain.
+      /// as a timestamp (which has millisecond granularity) in order to make it
+      /// easier to compare with, e.g., `slot_time`.
+      pub created_at: Timestamp,
+      /// Beginning of the month where the identity is __no longer valid__.
+      pub valid_to: Timestamp,
+      /// List of attributes, in ascending order of the tag.
+      pub items: Attributes,
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  impl HasPolicy for Policy<AttributesCursor> {
+      fn identity_provider(&self) -> IdentityProvider {
+	  self.identity_provider
+      }
+
+      fn created_at(&self) -> Timestamp {
+	  self.created_at
+      }
+
+      fn valid_to(&self) -> Timestamp {
+	  self.valid_to
+      }
+
+      fn next_item(&mut self, buf: &mut [u8; 31]) -> Option<(AttributeTag, u8)> {	  
+	  let (ac, (at, v)) = has_policy_impl_for_policy_attributes_cursor_next_item(
+	      coerce_rust_to_hacspec_attributes_cursor(&mut self.items),
+	      coerce_rust_to_hacspec_public_byte_seq_has_policy(buf),
+	  )?;
+	  coerce_hacspec_to_rust_attributes_cursor(&mut self.items, ac);
+	  Some ((AttributeTag(at),v))
+      }
+  }
+#+end_src
+
+*** Policy iterator
+#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+  #[cfg(not(feature = "hacspec"))]
+  /// An iterator over policies using host functions to supply the data.
+  /// The main interface to using this type is via the methods of the [Iterator](https://doc.rust-lang.org/std/iter/trait.Iterator.html)
+  /// and [ExactSizeIterator](https://doc.rust-lang.org/std/iter/trait.ExactSizeIterator.html) traits.
+  pub struct PoliciesIterator {
+      /// Position in the policies binary serialization.
+      pos: u32,
+      /// Number of remaining items in the stream.
+      remaining_items: u16,
+  }
+
+  pub type PoliciesIteratorHacspec = (u32, u16);
+
+  // TODO: use PolicyAttributesCursorHacspec for implementation above instead of just AttributesCursorHacspec
+  pub type PolicyAttributesCursorHacspec = (u32, u64, u64, AttributesCursorHacspec); // IdentityProvider, Timestamp, Timestamp, AttributesCursor
+
+  fn iterator_impl_for_policies_iterator_next(policies_iterator : PoliciesIteratorHacspec) -> Option<(PoliciesIteratorHacspec, PolicyAttributesCursorHacspec)> {
+      let (mut pos, _) = policies_iterator;
+      // // TODO: implement ? for option types and uncomment
+      // if remaining_items == 0 {
+      //     None?;
+      // }
+
+      // 2 for total size of this section, 4 for identity_provider,
+      // 8 bytes for created_at, 8 for valid_to, and 2 for
+      // the length
+      let (buf, _) = get_policy_section_hacspec(PublicByteSeq::new(2 + 4 + 8 + 8 + 2), pos);
+      let skip_part: PublicByteSeq = buf.slice_range(0..2);
+      let ip_part: PublicByteSeq = buf.slice_range(2..2 + 4);
+      let created_at_part: PublicByteSeq = buf.slice_range(2 + 4..2 + 4 + 8);
+      let valid_to_part: PublicByteSeq = buf.slice_range(2 + 4 + 8..2 + 4 + 8 + 8);
+      let len_part: PublicByteSeq = buf.slice_range(2 + 4 + 8 + 8..2 + 4 + 8 + 8 + 2);
+      let identity_provider = u32_from_le_bytes(u32Word::from_seq(&ip_part)); // IdentityProvider = u32 // UnsignedPublicInteger
+      let created_at = u64_from_le_bytes(u64Word::from_seq(&created_at_part)); // Timestamp = Timestamp::from_timestamp_millis(u64)
+      let valid_to = u64_from_le_bytes(u64Word::from_seq(&valid_to_part)); // Timestamp = u64)
+      let mut remaining_items = u16_from_le_bytes(u16Word::from_seq(&len_part));
+      let attributes_start = pos + 2u32 + 4u32 + 8u32 + 8u32 + 2u32;
+      pos = pos + (u16_from_le_bytes(u16Word::from_seq(&skip_part)) as u32) + 2u32;
+      remaining_items = remaining_items - 1u16;
+      Some(((pos, remaining_items),
+	    (
+	  identity_provider,
+	  created_at,
+	  valid_to,
+	  (
+	      attributes_start,
+	      remaining_items,
+	  ),
+      )))
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  impl Iterator for PoliciesIterator {
+      type Item = Policy<AttributesCursor>;
+
+      fn next(&mut self) -> Option<Self::Item> {
+	  let ((pos, remaining_items), (identity_provider, created_at, valid_to, (cp,ri))) = iterator_impl_for_policies_iterator_next((self.pos, self.remaining_items))?;
+
+	  // TODO: make into coerce function
+	  self.pos = pos;
+	  self.remaining_items = remaining_items;
+
+	  Some(Policy {
+	      identity_provider,
+	      created_at: Timestamp::from_timestamp_millis(created_at),
+	      valid_to: Timestamp::from_timestamp_millis(valid_to),
+	      items: AttributesCursor {
+		  current_position: cp,
+		  remaining_items: ri,
+	      },
+	  })
+      }
+
+      fn size_hint(&self) -> (usize, Option<usize>) {
+	  let rem = self.remaining_items as usize;
+	  (rem, Some(rem))
+      }
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  impl ExactSizeIterator for PoliciesIterator {
+      #[inline(always)]
+      fn len(&self) -> usize {
+	  self.remaining_items as usize
+      }
+  }
+
+#+end_src
+
+*** External context
+# TODO: Can we implement something like 'ExternContext<T>', which is genralized over a type 'T', in hacspec ??
+#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never :tangle no
+  #[cfg(not(feature = "hacspec"))]
+  impl<T: sealed::ContextType> HasCommonData for ExternContext<T> {
+      type MetadataType = ChainMetaExtern;
+      type ParamType = Parameter;
+      type PolicyIteratorType = PoliciesIterator;
+      type PolicyType = Policy<AttributesCursor>;
+
+      #[inline(always)]
+      fn metadata(&self) -> &Self::MetadataType {
+	  &ChainMetaExtern {}
+      }
+
+      fn policies(&self) -> PoliciesIterator {
+	  let mut buf: MaybeUninit<[u8; 2]> = MaybeUninit::uninit();
+	  let buf = unsafe {
+	      get_policy_section(buf.as_mut_ptr() as *mut u8, 2, 0);
+	      buf.assume_init()
+	  };
+	  PoliciesIterator {
+	      pos: 2, // 2 because we already read 2 bytes.
+	      remaining_items: u16::from_le_bytes(buf),
+	  }
+      }
+
+      #[inline(always)]
+      fn parameter_cursor(&self) -> Self::ParamType {
+	  Parameter {
+	      current_position: 0,
+	  }
+      }
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  /// # Trait implementations for the init context
+  impl HasInitContext for ExternContext<crate::types::InitContextExtern> {
+      type InitData = ();
+
+      /// Create a new init context by using an external call.
+      fn open(_: Self::InitData) -> Self {
+	  ExternContext::default()
+      }
+
+      #[inline(always)]
+      fn init_origin(&self) -> AccountAddress {
+	  let mut bytes: MaybeUninit<[u8; ACCOUNT_ADDRESS_SIZE]> = MaybeUninit::uninit();
+	  let ptr = bytes.as_mut_ptr();
+	  let address = unsafe {
+	      get_init_origin(ptr as *mut u8);
+	      bytes.assume_init()
+	  };
+	  AccountAddress(address)
+      }
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  /// # Trait implementations for the receive context
+  impl HasReceiveContext for ExternContext<crate::types::ReceiveContextExtern> {
+      type ReceiveData = ();
+
+      /// Create a new receive context
+      fn open(_: Self::ReceiveData) -> Self {
+	  ExternContext::default()
+      }
+
+      #[inline(always)]
+      fn invoker(&self) -> AccountAddress {
+	  let mut bytes: MaybeUninit<[u8; ACCOUNT_ADDRESS_SIZE]> = MaybeUninit::uninit();
+	  let ptr = bytes.as_mut_ptr();
+	  let address = unsafe {
+	      get_receive_invoker(ptr as *mut u8);
+	      bytes.assume_init()
+	  };
+	  AccountAddress(address)
+      }
+
+      #[inline(always)]
+      fn self_address(&self) -> ContractAddress {
+	  let mut bytes: MaybeUninit<[u8; 16]> = MaybeUninit::uninit();
+	  let ptr = bytes.as_mut_ptr();
+	  let address = unsafe {
+	      get_receive_self_address(ptr as *mut u8);
+	      bytes.assume_init()
+	  };
+	  match from_bytes(&address) {
+	      Ok(v) => v,
+	      Err(_) => crate::trap(),
+	  }
+      }
+
+      #[inline(always)]
+      fn self_balance(&self) -> Amount {
+	  Amount::from_micro_gtu(unsafe { get_receive_self_balance() })
+      }
+
+      #[inline(always)]
+      fn sender(&self) -> Address {
+	  let mut bytes: MaybeUninit<[u8; 33]> = MaybeUninit::uninit();
+	  let ptr = bytes.as_mut_ptr() as *mut u8;
+	  unsafe {
+	      get_receive_sender(ptr);
+	      let tag = *ptr;
+	      match tag {
+		  0u8 => {
+		      match from_bytes(core::slice::from_raw_parts(
+			  ptr.add(1),
+			  ACCOUNT_ADDRESS_SIZE,
+		      )) {
+			  Ok(v) => Address::Account(v),
+			  Err(_) => crate::trap(),
+		      }
+		  }
+		  1u8 => match from_bytes(core::slice::from_raw_parts(ptr.add(1), 16)) {
+		      Ok(v) => Address::Contract(v),
+		      Err(_) => crate::trap(),
+		  },
+		  _ => crate::trap(), // unreachable!("Host violated precondition."),
+	      }
+	  }
+      }
+
+      #[inline(always)]
+      fn owner(&self) -> AccountAddress {
+	  let mut bytes: MaybeUninit<[u8; ACCOUNT_ADDRESS_SIZE]> = MaybeUninit::uninit();
+	  let ptr = bytes.as_mut_ptr();
+	  let address = unsafe {
+	      get_receive_owner(ptr as *mut u8);
+	      bytes.assume_init()
+	  };
+	  AccountAddress(address)
+      }
+  }
+#+end_src
+
+
 ** Rust Tests
 #+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
 
@@ -446,542 +1419,8 @@ We define contract state as its inner state namely the current position of the s
 
 ** Interface between Rust and Hacspec
 This file should replace the import of the concordium ~impls.rs~ file.
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls_interface.rs :eval never
-  use crate::{
-      collections::{BTreeMap, BTreeSet},
-      convert::{self, TryFrom, TryInto},
-      hash::Hash,
-      mem, num, prims,
-      prims::*,
-      traits::*,
-      types::*,
-      vec::Vec,
-      String,
-  };
-  use concordium_contracts_common::*;
-  use mem::MaybeUninit;
-
-  use concordium_impls::*;
-
-  pub fn coerce_hacspec_to_rust_reject(hacspec_reject: ConcordiumImpls::Reject) -> Reject {
-      Reject {
-	  error_code: hacspec_reject,
-      }
-  }
-
-  impl convert::From<()> for Reject {
-      #[inline(always)]
-      fn from(_: ()) -> Self {
-	  coerce_hacspec_to_rust_reject(reject_impl_convert_from_unit())
-      }
-  }
-
-  impl convert::From<ParseError> for Reject {
-      #[inline(always)]
-      fn from(_: ParseError) -> Self {
-	  coerce_hacspec_to_rust_reject(reject_impl_convert_from_parse_error())
-      }
-  }
-
-  // pub fn coerce_hacspec_to_rust_log_error(hacspec_log_error: ConcordiumImpls::LogError) -> LogError {
-  //     match hacspec_log_error {
-  //         ConcordiumImpls::LogError::Full => LogError::Full,
-  //         ConcordiumImpls::LogError::Malformed => LogError::Malformed,
-  //     }
-  // }
-
-  pub fn coerce_rust_to_hacspec_log_error(rust_log_error: LogError) -> ConcordiumImpls::LogError {
-      match rust_log_error {
-	  LogError::Full => ConcordiumImpls::LogError::Full,
-	  LogError::Malformed => ConcordiumImpls::LogError::Malformed,
-      }
-  }
-
-  /// Full is mapped to i32::MIN+3, Malformed is mapped to i32::MIN+4.
-  impl From<LogError> for Reject {
-      #[inline(always)]
-      fn from(le: LogError) -> Self {
-	  coerce_hacspec_to_rust_reject(reject_impl_from_log_error(
-	      coerce_rust_to_hacspec_log_error(le),
-	  ))
-      }
-  }
-
-  pub fn coerce_rust_to_hacspec_new_contract_name_error(
-      rust_contract_name_error: NewContractNameError,
-  ) -> ConcordiumImpls::NewContractNameError {
-      match rust_log_error {
-	  NewContractNameError::NewContractNameErrorMissingInitPrefix => {
-	      ConcordiumImpls::NewContractNameError::NewContractNameErrorMissingInitPrefix
-	  }
-	  NewContractNameError::NewContractNameErrorTooLong => {
-	      ConcordiumImpls::NewContractNameError::NewContractNameErrorTooLong
-	  }
-	  NewContractNameError::NewContractNameErrorContainsDot => {
-	      ConcordiumImpls::NewContractNameError::NewContractNameErrorContainsDot
-	  }
-	  NewContractNameError::NewContractNameErrorInvalidCharacters => {
-	      ConcordiumImpls::NewContractNameError::NewContractNameErrorInvalidCharacters
-	  }
-      }
-  }
-
-  /// MissingInitPrefix is mapped to i32::MIN + 5,
-  /// TooLong to i32::MIN + 6,
-  /// ContainsDot to i32::MIN + 9, and
-  /// InvalidCharacters to i32::MIN + 10.
-  impl From<NewContractNameError> for Reject {
-      fn from(nre: NewContractNameError) -> Self {
-	  coerce_hacspec_to_rust_reject(reject_impl_from_new_contract_name_error(
-	      coerce_rust_to_hacspec_new_contract_name_error(nre),
-	  ))
-      }
-  }
-
-  pub fn coerce_rust_to_hacspec_new_receive_name_error(
-      rust_receive_name_error: NewReceiveNameError,
-  ) -> ConcordiumImpls::NewReceiveNameError {
-      match rust_log_error {
-	  NewReceiveNameError::NewReceiveNameErrorMissingInitPrefix => {
-	      ConcordiumImpls::NewReceiveNameError::NewReceiveNameErrorMissingInitPrefix
-	  }
-	  NewReceiveNameError::NewReceiveNameErrorTooLong => {
-	      ConcordiumImpls::NewReceiveNameError::NewReceiveNameErrorTooLong
-	  }
-	  NewReceiveNameError::NewReceiveNameErrorContainsDot => {
-	      ConcordiumImpls::NewReceiveNameError::NewReceiveNameErrorContainsDot
-	  }
-	  NewReceiveNameError::NewReceiveNameErrorInvalidCharacters => {
-	      ConcordiumImpls::NewReceiveNameError::NewReceiveNameErrorInvalidCharacters
-	  }
-      }
-  }
-
-  /// MissingDotSeparator is mapped to i32::MIN + 7,
-  /// TooLong to i32::MIN + 8, and
-  /// InvalidCharacters to i32::MIN + 11.
-  impl From<NewReceiveNameError> for Reject {
-      fn from(nre: NewReceiveNameError) -> Self {
-	  coerce_hacspec_to_rust_reject(reject_impl_from_new_receive_name_error(
-	      coerce_rust_to_hacspec_new_receive_name_error(nre),
-	  ))
-      }
-  }
-
-  pub fn coerce_rust_to_hacspec_contract_state(
-      rust_contract_state: ContractState,
-  ) -> ConcordiumImpls::ContractState {
-      rust_contract_state.current_position
-  }
-
-  pub fn coerce_hacspec_to_rust_contract_state(
-      rust_contract_state: &ContractState,
-      hacspec_contract_state: ConcordiumImpls::ContractState,
-  ) -> ContractState {
-      rust_contract_state.current_position = hacspec_contract_state;
-  }
-
-  pub fn coerce_hacspec_to_rust_seek_result(
-      rust_contract_state: &ContractState,
-      hacspec_seek_result: Result<(ContractState, u64), ()>,
-  ) -> ConcordiumImpls::ContractState {
-      let (hacspec_result, rust_result) = hacspec_seek_result?;
-      coerce_hacspec_to_rust_contract_state(rust_contract_state, hacspec_result);
-      Ok(rust_result)
-  }
-
-  /// # Contract state trait implementations.
-  impl Seek for ContractState {
-      type Err = ();
-
-      fn seek(&mut self, pos: SeekFrom) -> Result<u64, Self::Err> {
-	  coerce_hacspec_to_rust_seek_result(
-	      &self,
-	      contract_state_impl_seek(coerce_rust_to_hacspec_contract_state(self), pos),
-	  )
-      }
-  }
-
-  // impl Read for ContractState {
-  //     fn read(&mut self, buf: &mut [u8]) -> ParseResult<usize> {
-  //         let len: u32 = {
-  //             match buf.len().try_into() {
-  //                 Ok(v) => v,
-  //                 _ => return Err(ParseError::default()),
-  //             }
-  //         };
-  //         let num_read = unsafe { load_state(buf.as_mut_ptr(), len, self.current_position) };
-  //         self.current_position += num_read;
-  //         Ok(num_read as usize)
-  //     }
-
-  //     /// Read a `u32` in little-endian format. This is optimized to not
-  //     /// initialize a dummy value before calling an external function.
-  //     fn read_u64(&mut self) -> ParseResult<u64> {
-  //         let mut bytes: MaybeUninit<[u8; 8]> = MaybeUninit::uninit();
-  //         let num_read =
-  //             unsafe { load_state(bytes.as_mut_ptr() as *mut u8, 8, self.current_position) };
-  //         self.current_position += num_read;
-  //         if num_read == 8 {
-  //             unsafe { Ok(u64::from_le_bytes(bytes.assume_init())) }
-  //         } else {
-  //             Err(ParseError::default())
-  //         }
-  //     }
-
-  //     /// Read a `u32` in little-endian format. This is optimized to not
-  //     /// initialize a dummy value before calling an external function.
-  //     fn read_u32(&mut self) -> ParseResult<u32> {
-  //         let mut bytes: MaybeUninit<[u8; 4]> = MaybeUninit::uninit();
-  //         let num_read =
-  //             unsafe { load_state(bytes.as_mut_ptr() as *mut u8, 4, self.current_position) };
-  //         self.current_position += num_read;
-  //         if num_read == 4 {
-  //             unsafe { Ok(u32::from_le_bytes(bytes.assume_init())) }
-  //         } else {
-  //             Err(ParseError::default())
-  //         }
-  //     }
-
-  //     /// Read a `u8` in little-endian format. This is optimized to not
-  //     /// initialize a dummy value before calling an external function.
-  //     fn read_u8(&mut self) -> ParseResult<u8> {
-  //         let mut bytes: MaybeUninit<[u8; 1]> = MaybeUninit::uninit();
-  //         let num_read =
-  //             unsafe { load_state(bytes.as_mut_ptr() as *mut u8, 1, self.current_position) };
-  //         self.current_position += num_read;
-  //         if num_read == 1 {
-  //             unsafe { Ok(bytes.assume_init()[0]) }
-  //         } else {
-  //             Err(ParseError::default())
-  //         }
-  //     }
-  // }
-
-  // impl Write for ContractState {
-  //     type Err = ();
-
-  //     fn write(&mut self, buf: &[u8]) -> Result<usize, Self::Err> {
-  //         let len: u32 = {
-  //             match buf.len().try_into() {
-  //                 Ok(v) => v,
-  //                 _ => return Err(()),
-  //             }
-  //         };
-  //         if self.current_position.checked_add(len).is_none() {
-  //             return Err(());
-  //         }
-  //         let num_bytes = unsafe { write_state(buf.as_ptr(), len, self.current_position) };
-  //         self.current_position += num_bytes; // safe because of check above that len + pos is small enough
-  //         Ok(num_bytes as usize)
-  //     }
-  // }
-
-  // impl HasContractState<()> for ContractState {
-  //     type ContractStateData = ();
-
-  //     #[inline(always)]
-  //     fn open(_: Self::ContractStateData) -> Self {
-  //         ContractState {
-  //             current_position: 0,
-  //         }
-  //     }
-
-  //     fn reserve(&mut self, len: u32) -> bool {
-  //         let cur_size = unsafe { state_size() };
-  //         if cur_size < len {
-  //             let res = unsafe { resize_state(len) };
-  //             res == 1
-  //         } else {
-  //             true
-  //         }
-  //     }
-
-  //     #[inline(always)]
-  //     fn size(&self) -> u32 {
-  //         unsafe { state_size() }
-  //     }
-
-  //     fn truncate(&mut self, new_size: u32) {
-  //         let cur_size = self.size();
-  //         if cur_size > new_size {
-  //             unsafe { resize_state(new_size) };
-  //         }
-  //         if new_size < self.current_position {
-  //             self.current_position = new_size
-  //         }
-  //     }
-  // }
-
-  // /// # Trait implementations for Parameter
-  // impl Read for Parameter {
-  //     fn read(&mut self, buf: &mut [u8]) -> ParseResult<usize> {
-  //         let len: u32 = {
-  //             match buf.len().try_into() {
-  //                 Ok(v) => v,
-  //                 _ => return Err(ParseError::default()),
-  //             }
-  //         };
-  //         let num_read =
-  //             unsafe { get_parameter_section(buf.as_mut_ptr(), len, self.current_position) };
-  //         self.current_position += num_read;
-  //         Ok(num_read as usize)
-  //     }
-  // }
-
-  // impl HasParameter for Parameter {
-  //     #[inline(always)]
-  //     fn size(&self) -> u32 {
-  //         unsafe { get_parameter_size() }
-  //     }
-  // }
-
-  // /// # Trait implementations for the chain metadata.
-  // impl HasChainMetadata for ChainMetaExtern {
-  //     #[inline(always)]
-  //     fn slot_time(&self) -> SlotTime {
-  //         Timestamp::from_timestamp_millis(unsafe { get_slot_time() })
-  //     }
-  // }
-
-  // impl HasPolicy for Policy<AttributesCursor> {
-  //     fn identity_provider(&self) -> IdentityProvider {
-  //         self.identity_provider
-  //     }
-
-  //     fn created_at(&self) -> Timestamp {
-  //         self.created_at
-  //     }
-
-  //     fn valid_to(&self) -> Timestamp {
-  //         self.valid_to
-  //     }
-
-  //     fn next_item(&mut self, buf: &mut [u8; 31]) -> Option<(AttributeTag, u8)> {
-  //         if self.items.remaining_items == 0 {
-  //             return None;
-  //         }
-
-  //         let (tag_value_len, num_read) = unsafe {
-  //             let mut tag_value_len = MaybeUninit::<[u8; 2]>::uninit();
-  //             // Should succeed, otherwise host violated precondition.
-  //             let num_read = get_policy_section(
-  //                 tag_value_len.as_mut_ptr() as *mut u8,
-  //                 2,
-  //                 self.items.current_position,
-  //             );
-  //             (tag_value_len.assume_init(), num_read)
-  //         };
-  //         self.items.current_position += num_read;
-  //         if tag_value_len[1] > 31 {
-  //             // Should not happen because all attributes fit into 31 bytes.
-  //             return None;
-  //         }
-  //         let num_read = unsafe {
-  //             get_policy_section(
-  //                 buf.as_mut_ptr(),
-  //                 u32::from(tag_value_len[1]),
-  //                 self.items.current_position,
-  //             )
-  //         };
-  //         self.items.current_position += num_read;
-  //         self.items.remaining_items -= 1;
-  //         Some((AttributeTag(tag_value_len[0]), tag_value_len[1]))
-  //     }
-  // }
-
-  // /// An iterator over policies using host functions to supply the data.
-  // /// The main interface to using this type is via the methods of the [Iterator](https://doc.rust-lang.org/std/iter/trait.Iterator.html)
-  // /// and [ExactSizeIterator](https://doc.rust-lang.org/std/iter/trait.ExactSizeIterator.html) traits.
-  // pub struct PoliciesIterator {
-  //     /// Position in the policies binary serialization.
-  //     pos: u32,
-  //     /// Number of remaining items in the stream.
-  //     remaining_items: u16,
-  // }
-
-  // impl Iterator for PoliciesIterator {
-  //     type Item = Policy<AttributesCursor>;
-
-  //     fn next(&mut self) -> Option<Self::Item> {
-  //         if self.remaining_items == 0 {
-  //             return None;
-  //         }
-  //         // 2 for total size of this section, 4 for identity_provider,
-  //         // 8 bytes for created_at, 8 for valid_to, and 2 for
-  //         // the length
-  //         let mut buf: MaybeUninit<[u8; 2 + 4 + 8 + 8 + 2]> = MaybeUninit::uninit();
-  //         let buf = unsafe {
-  //             get_policy_section(buf.as_mut_ptr() as *mut u8, 2 + 4 + 8 + 8 + 2, self.pos);
-  //             buf.assume_init()
-  //         };
-  //         let skip_part: [u8; 2] = buf[0..2].try_into().unwrap_abort();
-  //         let ip_part: [u8; 4] = buf[2..2 + 4].try_into().unwrap_abort();
-  //         let created_at_part: [u8; 8] = buf[2 + 4..2 + 4 + 8].try_into().unwrap_abort();
-  //         let valid_to_part: [u8; 8] = buf[2 + 4 + 8..2 + 4 + 8 + 8].try_into().unwrap_abort();
-  //         let len_part: [u8; 2] = buf[2 + 4 + 8 + 8..2 + 4 + 8 + 8 + 2]
-  //             .try_into()
-  //             .unwrap_abort();
-  //         let identity_provider = IdentityProvider::from_le_bytes(ip_part);
-  //         let created_at = Timestamp::from_timestamp_millis(u64::from_le_bytes(created_at_part));
-  //         let valid_to = Timestamp::from_timestamp_millis(u64::from_le_bytes(valid_to_part));
-  //         let remaining_items = u16::from_le_bytes(len_part);
-  //         let attributes_start = self.pos + 2 + 4 + 8 + 8 + 2;
-  //         self.pos += u32::from(u16::from_le_bytes(skip_part)) + 2;
-  //         self.remaining_items -= 1;
-  //         Some(Policy {
-  //             identity_provider,
-  //             created_at,
-  //             valid_to,
-  //             items: AttributesCursor {
-  //                 current_position: attributes_start,
-  //                 remaining_items,
-  //             },
-  //         })
-  //     }
-
-  //     fn size_hint(&self) -> (usize, Option<usize>) {
-  //         let rem = self.remaining_items as usize;
-  //         (rem, Some(rem))
-  //     }
-  // }
-
-  // impl ExactSizeIterator for PoliciesIterator {
-  //     #[inline(always)]
-  //     fn len(&self) -> usize {
-  //         self.remaining_items as usize
-  //     }
-  // }
-
-  // impl<T: sealed::ContextType> HasCommonData for ExternContext<T> {
-  //     type MetadataType = ChainMetaExtern;
-  //     type ParamType = Parameter;
-  //     type PolicyIteratorType = PoliciesIterator;
-  //     type PolicyType = Policy<AttributesCursor>;
-
-  //     #[inline(always)]
-  //     fn metadata(&self) -> &Self::MetadataType {
-  //         &ChainMetaExtern {}
-  //     }
-
-  //     fn policies(&self) -> PoliciesIterator {
-  //         let mut buf: MaybeUninit<[u8; 2]> = MaybeUninit::uninit();
-  //         let buf = unsafe {
-  //             get_policy_section(buf.as_mut_ptr() as *mut u8, 2, 0);
-  //             buf.assume_init()
-  //         };
-  //         PoliciesIterator {
-  //             pos: 2, // 2 because we already read 2 bytes.
-  //             remaining_items: u16::from_le_bytes(buf),
-  //         }
-  //     }
-
-  //     #[inline(always)]
-  //     fn parameter_cursor(&self) -> Self::ParamType {
-  //         Parameter {
-  //             current_position: 0,
-  //         }
-  //     }
-  // }
-
-  // /// # Trait implementations for the init context
-  // impl HasInitContext for ExternContext<crate::types::InitContextExtern> {
-  //     type InitData = ();
-
-  //     /// Create a new init context by using an external call.
-  //     fn open(_: Self::InitData) -> Self {
-  //         ExternContext::default()
-  //     }
-
-  //     #[inline(always)]
-  //     fn init_origin(&self) -> AccountAddress {
-  //         let mut bytes: MaybeUninit<[u8; ACCOUNT_ADDRESS_SIZE]> = MaybeUninit::uninit();
-  //         let ptr = bytes.as_mut_ptr();
-  //         let address = unsafe {
-  //             get_init_origin(ptr as *mut u8);
-  //             bytes.assume_init()
-  //         };
-  //         AccountAddress(address)
-  //     }
-  // }
-
-  // /// # Trait implementations for the receive context
-  // impl HasReceiveContext for ExternContext<crate::types::ReceiveContextExtern> {
-  //     type ReceiveData = ();
-
-  //     /// Create a new receive context
-  //     fn open(_: Self::ReceiveData) -> Self {
-  //         ExternContext::default()
-  //     }
-
-  //     #[inline(always)]
-  //     fn invoker(&self) -> AccountAddress {
-  //         let mut bytes: MaybeUninit<[u8; ACCOUNT_ADDRESS_SIZE]> = MaybeUninit::uninit();
-  //         let ptr = bytes.as_mut_ptr();
-  //         let address = unsafe {
-  //             get_receive_invoker(ptr as *mut u8);
-  //             bytes.assume_init()
-  //         };
-  //         AccountAddress(address)
-  //     }
-
-  //     #[inline(always)]
-  //     fn self_address(&self) -> ContractAddress {
-  //         let mut bytes: MaybeUninit<[u8; 16]> = MaybeUninit::uninit();
-  //         let ptr = bytes.as_mut_ptr();
-  //         let address = unsafe {
-  //             get_receive_self_address(ptr as *mut u8);
-  //             bytes.assume_init()
-  //         };
-  //         match from_bytes(&address) {
-  //             Ok(v) => v,
-  //             Err(_) => crate::trap(),
-  //         }
-  //     }
-
-  //     #[inline(always)]
-  //     fn self_balance(&self) -> Amount {
-  //         Amount::from_micro_gtu(unsafe { get_receive_self_balance() })
-  //     }
-
-  //     #[inline(always)]
-  //     fn sender(&self) -> Address {
-  //         let mut bytes: MaybeUninit<[u8; 33]> = MaybeUninit::uninit();
-  //         let ptr = bytes.as_mut_ptr() as *mut u8;
-  //         unsafe {
-  //             get_receive_sender(ptr);
-  //             let tag = *ptr;
-  //             match tag {
-  //                 0u8 => {
-  //                     match from_bytes(core::slice::from_raw_parts(
-  //                         ptr.add(1),
-  //                         ACCOUNT_ADDRESS_SIZE,
-  //                     )) {
-  //                         Ok(v) => Address::Account(v),
-  //                         Err(_) => crate::trap(),
-  //                     }
-  //                 }
-  //                 1u8 => match from_bytes(core::slice::from_raw_parts(ptr.add(1), 16)) {
-  //                     Ok(v) => Address::Contract(v),
-  //                     Err(_) => crate::trap(),
-  //                 },
-  //                 _ => crate::trap(), // unreachable!("Host violated precondition."),
-  //             }
-  //         }
-  //     }
-
-  //     #[inline(always)]
-  //     fn owner(&self) -> AccountAddress {
-  //         let mut bytes: MaybeUninit<[u8; ACCOUNT_ADDRESS_SIZE]> = MaybeUninit::uninit();
-  //         let ptr = bytes.as_mut_ptr();
-  //         let address = unsafe {
-  //             get_receive_owner(ptr as *mut u8);
-  //             bytes.assume_init()
-  //         };
-  //         AccountAddress(address)
-  //     }
-  // }
-
+#+begin_src rust :tangle no :eval never
+  
   // /// #Implementations of the logger.
 
   // impl HasLogger for Logger {
