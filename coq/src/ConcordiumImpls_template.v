@@ -7,276 +7,363 @@ Open Scope bool_scope.
 Open Scope hacspec_scope.
 Require Import Hacspec.Lib.
 
-Notation "'reject'" := (int32) : hacspec_scope.
+Notation "'reject_hacspec_t'" := (int32) : hacspec_scope.
 
-Definition reject_impl_deafult  : reject :=
-  min.
+Definition reject_impl_deafult  : reject_hacspec_t :=
+  min_v.
 
-Notation "'option_reject'" := ((option reject)) : hacspec_scope.
-
-Definition new_reject_impl (x_0 : int32) : option_reject :=
-  (if ((x_0) <.? (@repr WORDSIZE32 0)):bool then (@Some reject (x_0)) else (
+Definition new_reject_impl (x_0 : int32) : (option reject_hacspec_t) :=
+  (if ((x_0) <.? (@repr WORDSIZE32 0)):bool then (@Some int32 (x_0)) else (
       @None int32)).
 
-Definition reject_impl_convert_from_unit  : reject :=
-  (min) .+ (@repr WORDSIZE32 1).
+Definition reject_impl_convert_from_unit  : reject_hacspec_t :=
+  (min_v) .+ (@repr WORDSIZE32 1).
 
 Theorem ensures_reject_impl_convert_from_unit : forall result_1 ,
 @reject_impl_convert_from_unit  = result_1 ->
 (result_1) !=.? (@repr WORDSIZE32 0).
 Proof. Admitted.
 
-Definition reject_impl_convert_from_parse_error  : reject :=
-  (min) .+ (@repr WORDSIZE32 2).
+Definition reject_impl_convert_from_parse_error  : reject_hacspec_t :=
+  (min_v) .+ (@repr WORDSIZE32 2).
 
 Theorem ensures_reject_impl_convert_from_parse_error : forall result_1 ,
 @reject_impl_convert_from_parse_error  = result_1 ->
 (result_1) !=.? (@repr WORDSIZE32 0).
 Proof. Admitted.
 
-Inductive log_error :=
-| Full : log_error
-| Malformed : log_error.
+Inductive log_error_t :=
+| Full : log_error_t
+| Malformed : log_error_t.
 
-Definition reject_impl_from_log_error (le_2 : log_error) : reject :=
+Definition reject_impl_from_log_error (le_2 : log_error_t) : reject_hacspec_t :=
   match le_2 with
-  | Full => (min) .+ (@repr WORDSIZE32 3)
-  | Malformed => (min) .+ (@repr WORDSIZE32 4)
+  | Full => (min_v) .+ (@repr WORDSIZE32 3)
+  | Malformed => (min_v) .+ (@repr WORDSIZE32 4)
   end.
 
-Theorem ensures_reject_impl_from_log_error : forall result_1 (le_2 : log_error),
+Theorem ensures_reject_impl_from_log_error : forall result_1 (
+  le_2 : log_error_t),
 @reject_impl_from_log_error le_2 = result_1 ->
 (result_1) !=.? (@repr WORDSIZE32 0).
 Proof. Admitted.
 
-Inductive new_contract_name_error :=
-| NewContractNameErrorMissingInitPrefix : new_contract_name_error
-| NewContractNameErrorTooLong : new_contract_name_error
-| NewContractNameErrorContainsDot : new_contract_name_error
-| NewContractNameErrorInvalidCharacters : new_contract_name_error.
+Inductive new_contract_name_error_t :=
+| NewContractNameErrorMissingInitPrefix : new_contract_name_error_t
+| NewContractNameErrorTooLong : new_contract_name_error_t
+| NewContractNameErrorContainsDot : new_contract_name_error_t
+| NewContractNameErrorInvalidCharacters : new_contract_name_error_t.
 
 Definition reject_impl_from_new_contract_name_error
-  (nre_3 : new_contract_name_error)
-  : reject :=
+  (nre_3 : new_contract_name_error_t)
+  : reject_hacspec_t :=
   match nre_3 with
-  | NewContractNameErrorMissingInitPrefix => (min) .+ (@repr WORDSIZE32 5)
-  | NewContractNameErrorTooLong => (min) .+ (@repr WORDSIZE32 6)
-  | NewContractNameErrorContainsDot => (min) .+ (@repr WORDSIZE32 9)
-  | NewContractNameErrorInvalidCharacters => (min) .+ (@repr WORDSIZE32 10)
+  | NewContractNameErrorMissingInitPrefix => (min_v) .+ (@repr WORDSIZE32 5)
+  | NewContractNameErrorTooLong => (min_v) .+ (@repr WORDSIZE32 6)
+  | NewContractNameErrorContainsDot => (min_v) .+ (@repr WORDSIZE32 9)
+  | NewContractNameErrorInvalidCharacters => (min_v) .+ (@repr WORDSIZE32 10)
   end.
 
 Theorem ensures_reject_impl_from_new_contract_name_error : forall result_1 (
-  nre_3 : new_contract_name_error),
+  nre_3 : new_contract_name_error_t),
 @reject_impl_from_new_contract_name_error nre_3 = result_1 ->
 (result_1) !=.? (@repr WORDSIZE32 0).
 Proof. Admitted.
 
-Inductive new_receive_name_error :=
-| NewReceiveNameErrorMissingDotSeparator : new_receive_name_error
-| NewReceiveNameErrorTooLong : new_receive_name_error
-| NewReceiveNameErrorInvalidCharacters : new_receive_name_error.
+Inductive new_receive_name_error_t :=
+| NewReceiveNameErrorMissingDotSeparator : new_receive_name_error_t
+| NewReceiveNameErrorTooLong : new_receive_name_error_t
+| NewReceiveNameErrorInvalidCharacters : new_receive_name_error_t.
 
 Definition reject_impl_from_new_receive_name_error
-  (nre_4 : new_receive_name_error)
-  : reject :=
+  (nre_4 : new_receive_name_error_t)
+  : reject_hacspec_t :=
   match nre_4 with
-  | NewReceiveNameErrorMissingDotSeparator => (min) .+ (@repr WORDSIZE32 7)
-  | NewReceiveNameErrorTooLong => (min) .+ (@repr WORDSIZE32 8)
-  | NewReceiveNameErrorInvalidCharacters => (min) .+ (@repr WORDSIZE32 11)
+  | NewReceiveNameErrorMissingDotSeparator => (min_v) .+ (@repr WORDSIZE32 7)
+  | NewReceiveNameErrorTooLong => (min_v) .+ (@repr WORDSIZE32 8)
+  | NewReceiveNameErrorInvalidCharacters => (min_v) .+ (@repr WORDSIZE32 11)
   end.
 
 Theorem ensures_reject_impl_from_new_receive_name_error : forall result_1 (
-  nre_4 : new_receive_name_error),
+  nre_4 : new_receive_name_error_t),
 @reject_impl_from_new_receive_name_error nre_4 = result_1 ->
 (result_1) !=.? (@repr WORDSIZE32 0).
 Proof. Admitted.
 
-Notation "'contract_state'" := (int32) : hacspec_scope.
+Notation "'contract_state_hacspec_t'" := (int32) : hacspec_scope.
 
-Notation "'seek_result'" := ((result (contract_state × int64
-  ) unit)) : hacspec_scope.
+Inductive seek_from_t :=
+| Start : int64 -> seek_from_t
+| End : int64 -> seek_from_t
+| Current : int64 -> seek_from_t.
 
-Inductive seek_from :=
-| Start : int64 -> seek_from
-| End : int64 -> seek_from
-| Current : int64 -> seek_from.
+Notation "'uint32_option_t'" := ((option int32)) : hacspec_scope.
 
-Notation "'uint32_option'" := ((option int32)) : hacspec_scope.
-
-Notation "'iint64_option'" := ((option int64)) : hacspec_scope.
+Notation "'iint64_option_t'" := ((option int64)) : hacspec_scope.
 
 Definition contract_state_impl_seek
-  (current_position_5 : contract_state)
-  (pos_6 : seek_from)
-  `{forall delta_7 : int64,
-  pos_6 = End (delta_7) ->
-  exists b_8 : int32,
-  (pub_uint32_checked_add (current_position_5) (@cast _ uint32 _ (
-        delta_7))) =.? (@Some int32 (b_8))}
-  : seek_result :=
+  (current_position_5 : contract_state_hacspec_t)
+  (pos_6 : seek_from_t)
+  : (result (contract_state_hacspec_t × int64) unit) :=
   match pos_6 with
-  | Start offset_9 => @Ok (contract_state × int64) unit ((
-      @cast _ uint32 _ (offset_9),
-      offset_9
+  | Start offset_7 => @Ok (contract_state_hacspec_t × int64) unit ((
+      @cast _ uint32 _ (offset_7),
+      offset_7
     ))
-  | End delta_10 => (if ((delta_10) >=.? (@repr WORDSIZE64 0)):bool then (
+  | End delta_8 => (if ((delta_8) >=.? (@repr WORDSIZE64 0)):bool then (
       match pub_uint32_checked_add (current_position_5) (@cast _ uint32 _ (
-          delta_10)) with
-      | Some b_11 => @Ok (contract_state × int64) unit ((
-          b_11,
-          @cast _ uint64 _ (delta_10)
+          delta_8)) with
+      | Some b_9 => @Ok (contract_state_hacspec_t × int64) unit ((
+          b_9,
+          @cast _ uint64 _ (delta_8)
         ))
-      | None => @Err (contract_state × int64) unit (tt)
-      end) else (match pub_int64_checked_abs (delta_10) with
-      | Some b_12 => @Ok (contract_state × int64) unit ((
-          (@repr WORDSIZE32 4) .- (@cast _ uint32 _ (b_12)),
-          @cast _ uint64 _ ((@repr WORDSIZE32 4) .- (@cast _ uint32 _ (b_12)))
+      | None => @Err (contract_state_hacspec_t × int64) unit (tt)
+      end) else (match pub_int64_checked_abs (delta_8) with
+      | Some b_10 => @Ok (contract_state_hacspec_t × int64) unit ((
+          (@repr WORDSIZE32 4) .- (@cast _ uint32 _ (b_10)),
+          @cast _ uint64 _ ((@repr WORDSIZE32 4) .- (@cast _ uint32 _ (b_10)))
         ))
-      | None => @Err (contract_state × int64) unit (tt)
+      | None => @Err (contract_state_hacspec_t × int64) unit (tt)
       end))
-  | Current delta_13 => (if ((delta_13) >=.? (@repr WORDSIZE64 0)):bool then (
+  | Current delta_11 => (if ((delta_11) >=.? (@repr WORDSIZE64 0)):bool then (
       match pub_uint32_checked_add (current_position_5) (@cast _ uint32 _ (
-          delta_13)) with
-      | Some offset_14 => @Ok (contract_state × int64) unit ((
+          delta_11)) with
+      | Some offset_12 => @Ok (contract_state_hacspec_t × int64) unit ((
+          offset_12,
+          @cast _ uint64 _ (offset_12)
+        ))
+      | None => @Err (contract_state_hacspec_t × int64) unit (tt)
+      end) else (match pub_int64_checked_abs (delta_11) with
+      | Some b_13 => match pub_uint32_checked_sub (current_position_5) (
+        @cast _ uint32 _ (b_13)) with
+      | Some offset_14 => @Ok (contract_state_hacspec_t × int64) unit ((
           offset_14,
           @cast _ uint64 _ (offset_14)
         ))
-      | None => @Err (contract_state × int64) unit (tt)
-      end) else (match pub_int64_checked_abs (delta_13) with
-      | Some b_15 => match pub_uint32_checked_sub (current_position_5) (
-        @cast _ uint32 _ (b_15)) with
-      | Some offset_16 => @Ok (contract_state × int64) unit ((
-          offset_16,
-          @cast _ uint64 _ (offset_16)
-        ))
-      | None => @Err (contract_state × int64) unit (tt)
+      | None => @Err (contract_state_hacspec_t × int64) unit (tt)
       end
-      | None => @Err (contract_state × int64) unit (tt)
+      | None => @Err (contract_state_hacspec_t × int64) unit (tt)
       end))
   end.
 
 Definition load_state_hacspec
-  (buf_17 : public_byte_seq)
-  (offset_18 : int32)
+  (buf_15 : public_byte_seq)
+  (offset_16 : int32)
   : (public_byte_seq × int32) :=
-  (buf_17, @repr WORDSIZE32 1).
-
-Theorem ensures_load_state_hacspec : forall result_1 (
-  buf_17 : public_byte_seq) (offset_18 : int32),
-@load_state_hacspec buf_17 offset_18 = result_1 ->
-(result_1) !=.? ((buf_17, @repr WORDSIZE32 2)).
-Proof. Admitted.
+  (buf_15, @repr WORDSIZE32 1).
 
 Definition contract_state_impl_read_read
-  (current_position_19 : contract_state)
-  (buf_20 : public_byte_seq)
-  : (contract_state × uint_size) :=
-  let '(buf_21, num_read_22) :=
-    load_state_hacspec (buf_20) (current_position_19) in 
-  ((current_position_19) .+ (num_read_22), @cast _ uint32 _ (num_read_22)).
+  (current_position_17 : contract_state_hacspec_t)
+  (buf_18 : public_byte_seq)
+  : (contract_state_hacspec_t × uint_size) :=
+  let '(buf_19, num_read_20) :=
+    load_state_hacspec (buf_18) (current_position_17) in 
+  ((current_position_17) .+ (num_read_20), @cast _ uint32 _ (num_read_20)).
 
 Definition contract_state_impl_read_read_u64
-  (current_position_23 : contract_state)
-  (num_read_24 : int32)
-  : (contract_state × bool) :=
+  (current_position_21 : contract_state_hacspec_t)
+  : (contract_state_hacspec_t × int64) :=
+  let buf_22 : seq int8 :=
+    seq_new_ (default) (usize 8) in 
+  let '(buf_23, num_read_24) :=
+    load_state_hacspec (buf_22) (current_position_21) in 
   (
-    (current_position_23) .+ (num_read_24),
-    (num_read_24) =.? (@repr WORDSIZE32 8)
+    (current_position_21) .+ (num_read_24),
+    u64_from_le_bytes (array_from_seq (8) (buf_23))
   ).
 
 Definition contract_state_impl_read_read_u32
-  (current_position_25 : contract_state)
-  (num_read_26 : int32)
-  : (contract_state × bool) :=
+  (current_position_25 : contract_state_hacspec_t)
+  : (contract_state_hacspec_t × int32) :=
+  let buf_26 : seq int8 :=
+    seq_new_ (default) (usize 4) in 
+  let '(buf_27, num_read_28) :=
+    load_state_hacspec (buf_26) (current_position_25) in 
   (
-    (current_position_25) .+ (num_read_26),
-    (num_read_26) =.? (@repr WORDSIZE32 4)
+    (current_position_25) .+ (num_read_28),
+    u32_from_le_bytes (array_from_seq (4) (buf_27))
   ).
 
 Definition contract_state_impl_read_read_u8
-  (current_position_27 : contract_state)
-  (num_read_28 : int32)
-  : (contract_state × bool) :=
-  (
-    (current_position_27) .+ (num_read_28),
-    (num_read_28) =.? (@repr WORDSIZE32 1)
-  ).
+  (current_position_29 : contract_state_hacspec_t)
+  : (contract_state_hacspec_t × int8) :=
+  let buf_30 : seq int8 :=
+    seq_new_ (default) (usize 1) in 
+  let '(buf_31, num_read_32) :=
+    load_state_hacspec (buf_30) (current_position_29) in 
+  ((current_position_29) .+ (num_read_32), seq_index (buf_31) (usize 0)).
 
-Definition write_impl_for_contract_state_test
-  (current_position_29 : contract_state)
-  (len_30 : int32)
-  : bool :=
-  option_is_none (pub_uint32_checked_add (current_position_29) (len_30)).
+Definition write_state_hacspec
+  (buf_33 : public_byte_seq)
+  (offset_34 : int32)
+  : (public_byte_seq × int32) :=
+  (buf_33, @repr WORDSIZE32 1).
 
-Definition write_impl_for_contract_state
-  (current_position_31 : contract_state)
-  (num_bytes_32 : int32)
-  : (contract_state × uint_size) :=
-  ((current_position_31) .+ (num_bytes_32), @cast _ uint32 _ (num_bytes_32)).
+Definition contract_state_impl_write
+  (current_position_35 : contract_state_hacspec_t)
+  (buf_36 : public_byte_seq)
+  : (result (contract_state_hacspec_t × uint_size) unit) :=
+  ifbnd option_is_none (pub_uint32_checked_add (current_position_35) (pub_u32 (
+        seq_len (buf_36)))) : bool
+  thenbnd (bind (@Err (contract_state_hacspec_t × uint_size) unit (tt)) (
+      fun _ => Ok (tt)))
+  else (tt) >> (fun 'tt =>
+  let '(buf_37, num_bytes_38) :=
+    write_state_hacspec (buf_36) (current_position_35) in 
+  @Ok (contract_state_hacspec_t × uint_size) unit ((
+      (current_position_35) .+ (num_bytes_38),
+      @cast _ uint32 _ (num_bytes_38)
+    ))).
 
-Definition has_contract_state_impl_for_contract_state_open  : contract_state :=
+Definition state_size_hacspec  : int32 :=
+  @repr WORDSIZE32 1.
+
+Definition resize_state_hacspec (new_size_39 : int32) : int32 :=
+  @repr WORDSIZE32 1.
+
+Definition has_contract_state_impl_for_contract_state_open
+  
+  : contract_state_hacspec_t :=
   @repr WORDSIZE32 0.
 
-Definition has_contract_state_impl_for_contract_state_reserve_0
-  (len_33 : int32)
-  (cur_size_34 : int32)
+Definition has_contract_state_impl_for_contract_state_reserve
+  (contract_state_40 : contract_state_hacspec_t)
+  (len_41 : int32)
   : bool :=
-  (cur_size_34) <.? (len_33).
+  let cur_size_42 : int32 :=
+    state_size_hacspec  in 
+  (if ((cur_size_42) <.? (len_41)):bool then ((resize_state_hacspec (
+          len_41)) =.? (@repr WORDSIZE32 1)) else (true)).
 
-Definition has_contract_state_impl_for_contract_state_reserve_1
-  (res_35 : int32)
-  : bool :=
-  (res_35) =.? (@repr WORDSIZE32 1).
+Definition has_contract_state_impl_for_contract_state_truncate
+  (current_position_43 : contract_state_hacspec_t)
+  (cur_size_44 : int32)
+  (new_size_45 : int32)
+  : contract_state_hacspec_t :=
+  let 'tt :=
+    if (cur_size_44) >.? (new_size_45):bool then (let _ : int32 :=
+        resize_state_hacspec (new_size_45) in 
+      tt) else (tt) in 
+  (if ((new_size_45) <.? (current_position_43)):bool then (new_size_45) else (
+      current_position_43)).
 
-Definition has_contract_state_impl_for_contract_state_truncate_0
-  (cur_size_36 : int32)
-  (new_size_37 : int32)
-  : bool :=
-  (cur_size_36) >.? (new_size_37).
+Definition get_parameter_section_hacspec
+  (buf_46 : public_byte_seq)
+  (offset_47 : int32)
+  : (public_byte_seq × int32) :=
+  (buf_46, @repr WORDSIZE32 1).
 
-Definition has_contract_state_impl_for_contract_state_truncate_1
-  (current_position_38 : contract_state)
-  (new_size_39 : int32)
-  : contract_state :=
-  (if ((new_size_39) <.? (current_position_38)):bool then (new_size_39) else (
-      current_position_38)).
-
-Notation "'parameter'" := (int32) : hacspec_scope.
+Notation "'parameter_hacspec_t'" := (int32) : hacspec_scope.
 
 Definition read_impl_for_parameter_read
-  (current_position_40 : parameter)
-  (num_read_41 : int32)
-  : (parameter × uint_size) :=
-  ((current_position_40) .+ (num_read_41), @cast _ uint32 _ (num_read_41)).
+  (current_position_48 : parameter_hacspec_t)
+  (buf_49 : public_byte_seq)
+  : (parameter_hacspec_t × uint_size) :=
+  let '(buf_50, num_read_51) :=
+    get_parameter_section_hacspec (buf_49) (current_position_48) in 
+  ((current_position_48) .+ (num_read_51), @cast _ uint32 _ (num_read_51)).
 
-Notation "'attributes_cursor'" := ((int32 × int16)) : hacspec_scope.
+Definition get_parameter_size_hacspec  : int32 :=
+  @repr WORDSIZE32 1.
 
-Definition has_policy_impl_for_policy_attributes_cursor_next_test
-  (policy_attribute_items_42 : attributes_cursor)
-  : bool :=
-  let '(_, remaining_items_43) :=
-    policy_attribute_items_42 in 
-  (remaining_items_43) =.? (@repr WORDSIZE16 0).
+Definition get_slot_time_hacspec  : int64 :=
+  @repr WORDSIZE64 1.
 
-Definition has_policy_impl_for_policy_attributes_cursor_next_tag_invalid
-  (policy_attribute_items_44 : attributes_cursor)
-  (tag_value_len_1_45 : int8)
-  (num_read_46 : int32)
-  : (attributes_cursor × bool) :=
-  let '(current_position_47, remaining_items_48) :=
-    policy_attribute_items_44 in 
-  let policy_attribute_items_49 : (int32 × int16) :=
-    ((current_position_47) .+ (num_read_46), remaining_items_48) in 
-  (policy_attribute_items_49, (tag_value_len_1_45) >.? (@repr WORDSIZE8 31)).
+Definition get_policy_section_hacspec
+  (policy_bytes_52 : public_byte_seq)
+  (offset_53 : int32)
+  : (public_byte_seq × int32) :=
+  (policy_bytes_52, @repr WORDSIZE32 1).
 
-Definition has_policy_impl_for_policy_attributes_cursor_next
-  (policy_attribute_items_50 : attributes_cursor)
-  (num_read_51 : int32)
-  : attributes_cursor :=
-  let '(current_position_52, remaining_items_53) :=
-    policy_attribute_items_50 in 
-  (
-    (current_position_52) .+ (num_read_51),
-    (remaining_items_53) .- (@repr WORDSIZE16 1)
-  ).
+Notation "'attributes_cursor_hacspec_t'" := ((int32 × int16)) : hacspec_scope.
+
+Definition has_policy_impl_for_policy_attributes_cursor_next_item
+  (policy_attribute_items_54 : attributes_cursor_hacspec_t)
+  (buf_55 : public_byte_seq)
+  : (option (attributes_cursor_hacspec_t × (int8 × int8))) :=
+  let '(current_position_56, remaining_items_57) :=
+    policy_attribute_items_54 in 
+  let tag_value_len_58 : seq int8 :=
+    seq_new_ (default) (usize 2) in 
+  let '(tag_value_len_59, num_read_60) :=
+    get_policy_section_hacspec (tag_value_len_58) (current_position_56) in 
+  let current_position_56 :=
+    (current_position_56) .+ (num_read_60) in 
+  let '(buf_61, num_read_62) :=
+    get_policy_section_hacspec (buf_55) (current_position_56) in 
+  let current_position_56 :=
+    (current_position_56) .+ (num_read_62) in 
+  let remaining_items_57 :=
+    (remaining_items_57) .- (@repr WORDSIZE16 1) in 
+  @Some (attributes_cursor_hacspec_t × (int8 × int8)) ((
+      (current_position_56, remaining_items_57),
+      (
+        seq_index (tag_value_len_59) (usize 0),
+        seq_index (tag_value_len_59) (usize 1)
+      )
+    )).
+
+Notation "'policies_iterator_hacspec_t'" := ((int32 × int16)) : hacspec_scope.
+
+Notation "'policy_attributes_cursor_hacspec_t'" := ((
+  int32 ×
+  int64 ×
+  int64 ×
+  attributes_cursor_hacspec_t
+)) : hacspec_scope.
+
+Definition iterator_impl_for_policies_iterator_next
+  (policies_iterator_63 : policies_iterator_hacspec_t)
+  : (option (policies_iterator_hacspec_t × policy_attributes_cursor_hacspec_t
+    )) :=
+  let '(pos_64, _) :=
+    policies_iterator_63 in 
+  let '(buf_65, _) :=
+    get_policy_section_hacspec (seq_new_ (default) (((((usize 2) + (
+                usize 4)) + (usize 8)) + (usize 8)) + (usize 2))) (pos_64) in 
+  let skip_part_66 : public_byte_seq :=
+    seq_slice_range (buf_65) ((usize 0, usize 2)) in 
+  let ip_part_67 : public_byte_seq :=
+    seq_slice_range (buf_65) ((usize 2, (usize 2) + (usize 4))) in 
+  let created_at_part_68 : public_byte_seq :=
+    seq_slice_range (buf_65) ((
+        (usize 2) + (usize 4),
+        ((usize 2) + (usize 4)) + (usize 8)
+      )) in 
+  let valid_to_part_69 : public_byte_seq :=
+    seq_slice_range (buf_65) ((
+        ((usize 2) + (usize 4)) + (usize 8),
+        (((usize 2) + (usize 4)) + (usize 8)) + (usize 8)
+      )) in 
+  let len_part_70 : public_byte_seq :=
+    seq_slice_range (buf_65) ((
+        (((usize 2) + (usize 4)) + (usize 8)) + (usize 8),
+        ((((usize 2) + (usize 4)) + (usize 8)) + (usize 8)) + (usize 2)
+      )) in 
+  let identity_provider_71 : int32 :=
+    u32_from_le_bytes (array_from_seq (4) (ip_part_67)) in 
+  let created_at_72 : int64 :=
+    u64_from_le_bytes (array_from_seq (8) (created_at_part_68)) in 
+  let valid_to_73 : int64 :=
+    u64_from_le_bytes (array_from_seq (8) (valid_to_part_69)) in 
+  let remaining_items_74 : int16 :=
+    u16_from_le_bytes (array_from_seq (2) (len_part_70)) in 
+  let attributes_start_75 : int32 :=
+    (((((pos_64) .+ (@repr WORDSIZE32 2)) .+ (@repr WORDSIZE32 4)) .+ (
+          @repr WORDSIZE32 8)) .+ (@repr WORDSIZE32 8)) .+ (
+      @repr WORDSIZE32 2) in 
+  let pos_64 :=
+    ((pos_64) .+ (@cast _ uint32 _ (u16_from_le_bytes (array_from_seq (2) (
+              skip_part_66))))) .+ (@repr WORDSIZE32 2) in 
+  let remaining_items_74 :=
+    (remaining_items_74) .- (@repr WORDSIZE16 1) in 
+  some ((
+      (pos_64, remaining_items_74),
+      (
+        identity_provider_71,
+        created_at_72,
+        valid_to_73,
+        (attributes_start_75, remaining_items_74)
+      )
+    )).
 

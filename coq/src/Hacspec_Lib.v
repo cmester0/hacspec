@@ -711,6 +711,22 @@ Axiom uint128_from_be_bytes : nseq int8 16 -> int128.
 (* Definition uint128_from_be_bytes (s: nseq uint8 16) : uint128 :=
   LBSeq.uint_from_bytes_be s *)
 
+Axiom u16_to_le_bytes : int16 -> nseq int8 2.
+(* Definition u16_to_le_bytes (x: pub_uint16) : nseq pub_uint8 4 :=
+  LBSeq.uint_to_bytes_le x *)
+
+Axiom u16_to_be_bytes : int16 -> nseq int8 2.
+(* Definition u16_to_be_bytes (x: pub_uint16) : nseq pub_uint8 4 :=
+  LBSeq.uint_to_bytes_be x *)
+
+Axiom u16_from_le_bytes : nseq int8 2 -> int16.
+(* Definition u16_from_le_bytes (s: nseq pub_uint8 4) : pub_uint16 :=
+  LBSeq.uint_from_bytes_le s *)
+
+Axiom u16_from_be_bytes : nseq int8 2 -> int16.
+(* Definition u16_from_be_bytes (s: nseq pub_uint8 4) : pub_uint16 :=
+  LBSeq.uint_from_bytes_be s *)
+
 Axiom u32_to_le_bytes : int32 -> nseq int8 4.
 (* Definition u32_to_le_bytes (x: pub_uint32) : nseq pub_uint8 4 :=
   LBSeq.uint_to_bytes_le x *)
