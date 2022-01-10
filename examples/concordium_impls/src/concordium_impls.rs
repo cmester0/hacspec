@@ -11,7 +11,31 @@ use hacspec_attributes::*;
 #[cfg(not(feature = "hacspec"))]
 extern crate concordium_std;
 #[cfg(not(feature = "hacspec"))]
-use concordium_std::*;
+use concordium_std::{
+    ParseError,
+    Seek,
+    Read,
+    ParseResult,
+    Write,
+    HasContractState,
+    HasParameter,
+    HasChainMetadata,
+    SlotTime,
+    Timestamp,
+    IdentityProvider,
+    HasPolicy,
+    AttributeTag,
+    HasCommonData,
+    HasInitContext,
+    AccountAddress,
+    ACCOUNT_ADDRESS_SIZE,
+    HasReceiveContext,
+    ContractAddress,
+    Amount,
+    Address,
+    HasActions,
+    ReceiveName,
+};
 
 #[cfg(not(feature = "hacspec"))]
 // use ::std::collections::{BTreeMap, BTreeSet};
@@ -839,20 +863,20 @@ pub fn has_policy_impl_for_policy_attributes_cursor_next_item(
 
     let (mut current_position, mut remaining_items) = policy_attribute_items;
 
-    // // TODO: implement ? for option types and uncomment
-    // if remaining_items == 0u16 {
-    //     Option::<(AttributesCursorHacspec, (AttributeTag, u8))>::None?;
-    // }
+    // TODO: implement ? for option types and uncomment
+    if remaining_items == 0u16 {
+	Option::<(AttributesCursorHacspec, (u8, u8))>::None?;
+    }
 
     let mut tag_value_len = PublicByteSeq::new(2);
     let (tag_value_len, num_read) = get_policy_section_hacspec(tag_value_len, current_position);
     current_position = current_position + num_read;
 
-    // // TODO: implement ? for option types and uncomment
-    // if tag_value_len[1] > 31u8 {
-    //     // Should not happen because all attributes fit into 31 bytes.
-    //     Option::<(AttributesCursorHacspec, (AttributeTag, u8))>::None?;
-    // }
+    // TODO: implement ? for option types and uncomment
+    if tag_value_len[1] > 31u8 {
+	// Should not happen because all attributes fit into 31 bytes.
+	Option::<(AttributesCursorHacspec, (u8, u8))>::None?;
+    }
 
     let (buf, num_read) = get_policy_section_hacspec(buf, current_position);
     current_position = current_position + num_read;
@@ -948,11 +972,10 @@ pub type PoliciesIteratorHacspec = (u32, u16);
 pub type PolicyAttributesCursorHacspec = (u32, u64, u64, AttributesCursorHacspec); // IdentityProvider, Timestamp, Timestamp, AttributesCursor
 
 fn iterator_impl_for_policies_iterator_next(policies_iterator : PoliciesIteratorHacspec) -> Option<(PoliciesIteratorHacspec, PolicyAttributesCursorHacspec)> {
-    let (mut pos, _) = policies_iterator;
-    // // TODO: implement ? for option types and uncomment
-    // if remaining_items == 0 {
-    //     None?;
-    // }
+    let (mut pos, remaining_items) = policies_iterator;
+    if remaining_items == 0u16 {
+	Option::<(PoliciesIteratorHacspec, PolicyAttributesCursorHacspec)>::None?;
+    }
 
     // 2 for total size of this section, 4 for identity_provider,
     // 8 bytes for created_at, 8 for valid_to, and 2 for
@@ -1015,6 +1038,304 @@ impl ExactSizeIterator for PoliciesIterator {
     #[inline(always)]
     fn len(&self) -> usize {
 	self.remaining_items as usize
+    }
+}
+
+#[cfg(not(feature = "hacspec"))]
+extern "C" {
+  // Getter for the init context.
+  /// Address of the sender, 32 bytes
+  pub(crate) fn get_init_origin(start: *mut u8);
+}
+
+#[cfg(not(feature = "hacspec"))]
+#[trusted]
+pub(crate) fn get_init_origin_creusot(start: *mut u8) {
+    unsafe { get_init_origin(start) }
+}
+
+#[cfg(feature = "hacspec")]
+fn get_init_origin_hacspec(start: PublicByteSeq) -> PublicByteSeq {
+    start
+}
+
+#[cfg(not(feature = "hacspec"))]
+fn get_init_origin_hacspec(start: PublicByteSeq) -> PublicByteSeq {
+    let temp = &mut coerce_hacspec_to_rust_public_byte_seq(start.clone())[..];
+    get_init_origin_creusot(temp.as_mut_ptr());
+    coerce_rust_to_hacspec_public_byte_seq(&temp)
+}
+
+#[cfg(not(feature = "hacspec"))]
+extern "C" {
+  /// Invoker of the top-level transaction, AccountAddress.
+  pub(crate) fn get_receive_invoker(start: *mut u8);
+}
+
+#[cfg(not(feature = "hacspec"))]
+#[trusted]
+pub(crate) fn get_receive_invoker_creusot(start: *mut u8) {
+    unsafe { get_receive_invoker(start) }
+}
+
+#[cfg(feature = "hacspec")]
+fn get_receive_invoker_hacspec(start: PublicByteSeq) -> PublicByteSeq {
+    start
+}
+
+#[cfg(not(feature = "hacspec"))]
+fn get_receive_invoker_hacspec(start: PublicByteSeq) -> PublicByteSeq {
+    let temp = &mut coerce_hacspec_to_rust_public_byte_seq(start.clone())[..];
+    get_receive_invoker_creusot(temp.as_mut_ptr());
+    coerce_rust_to_hacspec_public_byte_seq(&temp)
+}
+
+#[cfg(not(feature = "hacspec"))]
+extern "C" {
+  /// Address of the contract itself, ContractAddress.
+  pub(crate) fn get_receive_self_address(start: *mut u8);
+}
+
+#[cfg(not(feature = "hacspec"))]
+#[trusted]
+pub(crate) fn get_receive_self_address_creusot(start: *mut u8) {
+    unsafe { get_receive_self_address(start) }
+}
+
+#[cfg(feature = "hacspec")]
+fn get_receive_self_address_hacspec(start: PublicByteSeq) -> PublicByteSeq {
+    start
+}
+
+#[cfg(not(feature = "hacspec"))]
+fn get_receive_self_address_hacspec(start: PublicByteSeq) -> PublicByteSeq {
+    let temp = &mut coerce_hacspec_to_rust_public_byte_seq(start.clone())[..];
+    get_receive_self_address_creusot(temp.as_mut_ptr());
+    coerce_rust_to_hacspec_public_byte_seq(&temp)
+}
+
+#[cfg(not(feature = "hacspec"))]
+extern "C" {
+  /// Self-balance of the contract, returns the amount
+  pub(crate) fn get_receive_self_balance() -> u64;
+}
+
+#[cfg(not(feature = "hacspec"))]
+#[trusted]
+pub(crate) fn get_receive_self_balance_creusot() -> u64 {
+    unsafe { get_receive_self_balance() }
+}
+
+#[cfg(feature = "hacspec")]
+fn get_receive_self_balance_hacspec() -> u64 {
+    1u64
+}
+
+#[cfg(not(feature = "hacspec"))]
+fn get_receive_self_balance_hacspec() -> u64 {
+    get_receive_self_balance_creusot()
+}
+
+#[cfg(not(feature = "hacspec"))]
+extern "C" {
+  /// Immediate sender of the message (either contract or account).
+  pub(crate) fn get_receive_sender(start: *mut u8);
+}
+
+#[cfg(not(feature = "hacspec"))]
+#[trusted]
+pub(crate) fn get_receive_sender_creusot(start: *mut u8) {
+    unsafe { get_receive_invoker(start) }
+}
+
+#[cfg(feature = "hacspec")]
+fn get_receive_sender_hacspec(start: PublicByteSeq) -> PublicByteSeq {
+    start
+}
+
+#[cfg(not(feature = "hacspec"))]
+fn get_receive_sender_hacspec(start: PublicByteSeq) -> PublicByteSeq {
+    let temp = &mut coerce_hacspec_to_rust_public_byte_seq(start.clone())[..];
+    get_receive_sender_creusot(temp.as_mut_ptr());
+    coerce_rust_to_hacspec_public_byte_seq(&temp)
+}
+
+#[cfg(not(feature = "hacspec"))]
+extern "C" {
+  /// Owner of the contract, AccountAddress.
+  pub(crate) fn get_receive_owner(start: *mut u8);
+}
+
+#[cfg(not(feature = "hacspec"))]
+#[trusted]
+pub(crate) fn get_receive_owner_creusot(start: *mut u8) {
+    unsafe { get_receive_invoker(start) }
+}
+
+#[cfg(feature = "hacspec")]
+fn get_receive_owner_hacspec(start: PublicByteSeq) -> PublicByteSeq {
+    start
+}
+
+#[cfg(not(feature = "hacspec"))]
+fn get_receive_owner_hacspec(start: PublicByteSeq) -> PublicByteSeq {
+    let temp = &mut coerce_hacspec_to_rust_public_byte_seq(start.clone())[..];
+    get_receive_owner_creusot(temp.as_mut_ptr());
+    coerce_rust_to_hacspec_public_byte_seq(&temp)
+}
+
+#[cfg(not(feature = "hacspec"))]
+/// Context backed by host functions.
+#[derive(Default)]
+#[doc(hidden)]
+pub struct ExternContext<T: sealed::ContextType> {
+    marker: concordium_std::marker::PhantomData<T>,
+}
+
+#[cfg(not(feature = "hacspec"))]
+#[derive(Default)]
+#[doc(hidden)]
+pub struct InitContextExtern;
+#[cfg(not(feature = "hacspec"))]
+#[derive(Default)]
+#[doc(hidden)]
+pub struct ReceiveContextExtern;
+
+#[cfg(not(feature = "hacspec"))]
+pub(crate) mod sealed {
+    use super::*;
+    /// Marker trait intended to indicate which context type we have.
+    /// This is deliberately a sealed trait, so that it is only implementable
+    /// by types in this crate.
+    pub trait ContextType {}
+    impl ContextType for InitContextExtern {}
+    impl ContextType for ReceiveContextExtern {}
+}
+
+#[cfg(not(feature = "hacspec"))]
+impl<T: sealed::ContextType> HasCommonData for ExternContext<T> {
+    type MetadataType = ChainMetaExtern;
+    type ParamType = Parameter;
+    type PolicyIteratorType = PoliciesIterator;
+    type PolicyType = Policy<AttributesCursor>;
+
+    #[inline(always)]
+    fn metadata(&self) -> &Self::MetadataType {
+	&ChainMetaExtern {}
+    }
+
+    fn policies(&self) -> PoliciesIterator {
+	let (buf, _) = get_policy_section_hacspec(PublicByteSeq::new(2), 0);
+	PoliciesIterator {
+	    pos: 2, // 2 because we already read 2 bytes.
+	    remaining_items: u16_from_le_bytes(u16Word::from_seq(&buf)),
+	}
+    }
+
+    #[inline(always)]
+    fn parameter_cursor(&self) -> Self::ParamType {
+	Parameter {
+	    current_position: 0,
+	}
+    }
+}
+
+#[cfg(not(feature = "hacspec"))]
+/// # Trait implementations for the init context
+impl HasInitContext for ExternContext<InitContextExtern> {
+    type InitData = ();
+
+    /// Create a new init context by using an external call.
+    fn open(_: Self::InitData) -> Self {
+	ExternContext::default()
+    }
+
+    #[inline(always)]
+    fn init_origin(&self) -> AccountAddress {
+	let mut address: [u8; ACCOUNT_ADDRESS_SIZE] = Default::default();
+	address.clone_from_slice(
+	    &mut coerce_hacspec_to_rust_public_byte_seq(get_init_origin_hacspec(
+		PublicByteSeq::new(ACCOUNT_ADDRESS_SIZE),
+	    ))[..],
+	);
+	AccountAddress(address)
+    }
+}
+
+#[cfg(not(feature = "hacspec"))]
+/// # Trait implementations for the receive context
+impl HasReceiveContext for ExternContext<ReceiveContextExtern> {
+    type ReceiveData = ();
+
+    /// Create a new receive context
+    fn open(_: Self::ReceiveData) -> Self {
+	ExternContext::default()
+    }
+
+    #[inline(always)]
+    fn invoker(&self) -> AccountAddress {
+	let mut address: [u8; ACCOUNT_ADDRESS_SIZE] = Default::default();
+	address.clone_from_slice(
+	    &mut coerce_hacspec_to_rust_public_byte_seq(get_receive_invoker_hacspec(
+		PublicByteSeq::new(ACCOUNT_ADDRESS_SIZE),
+	    ))[..],
+	);
+	AccountAddress(address)
+    }
+
+    #[inline(always)]
+    fn self_address(&self) -> ContractAddress {
+	let mut address: [u8; ACCOUNT_ADDRESS_SIZE] = Default::default();
+	address.clone_from_slice(
+	    &mut coerce_hacspec_to_rust_public_byte_seq(get_receive_self_address_hacspec(
+		PublicByteSeq::new(ACCOUNT_ADDRESS_SIZE),
+	    ))[..],
+	);
+	match concordium_std::from_bytes(&address) {
+	    Ok(v) => v,
+	    Err(_) => concordium_std::trap(),
+	}
+    }
+
+    #[inline(always)]
+    fn self_balance(&self) -> Amount {
+	Amount::from_micro_gtu(get_receive_self_balance_hacspec())
+    }
+
+    // TODO: Remove/replace unsafe code !
+    #[inline(always)]
+    fn sender(&self) -> Address {
+	let ptr : *mut u8 = (&mut coerce_hacspec_to_rust_public_byte_seq(get_receive_sender_hacspec(
+	    PublicByteSeq::new(ACCOUNT_ADDRESS_SIZE),
+	))[..]).as_mut_ptr();
+	let tag = unsafe { *ptr };
+	match tag {
+	    0u8 => {
+		match concordium_std::from_bytes(unsafe { core::slice::from_raw_parts(
+		    ptr.add(1),
+		    ACCOUNT_ADDRESS_SIZE,
+		)} ) {
+		    Ok(v) => Address::Account(v),
+		    Err(_) => concordium_std::trap(),
+		}
+	    }
+	    1u8 => match concordium_std::from_bytes(unsafe { core::slice::from_raw_parts(ptr.add(1), 16) }) {
+		Ok(v) => Address::Contract(v),
+		Err(_) => concordium_std::trap(),
+	    },
+	    _ => concordium_std::trap(), // unreachable!("Host violated precondition."),
+	}
+    }
+
+    #[inline(always)]
+    fn owner(&self) -> AccountAddress {
+	let mut address: [u8; ACCOUNT_ADDRESS_SIZE] = Default::default();
+	address.clone_from_slice(
+	    &mut coerce_hacspec_to_rust_public_byte_seq(get_receive_self_address_hacspec(
+		PublicByteSeq::new(ACCOUNT_ADDRESS_SIZE),
+	    ))[..],
+	);
+	AccountAddress(address)
     }
 }
 

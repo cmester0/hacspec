@@ -298,12 +298,20 @@ Definition has_policy_impl_for_policy_attributes_cursor_next_item
   : (option (attributes_cursor_hacspec_t × (int8 × int8))) :=
   let '(current_position_56, remaining_items_57) :=
     policy_attribute_items_54 in 
+  ifbnd (remaining_items_57) =.? (@repr WORDSIZE16 0) : bool
+  thenbnd (bind (@None (attributes_cursor_hacspec_t × (int8 × int8))) (
+      fun _ => Some (tt)))
+  else (tt) >> (fun 'tt =>
   let tag_value_len_58 : seq int8 :=
     seq_new_ (default) (usize 2) in 
   let '(tag_value_len_59, num_read_60) :=
     get_policy_section_hacspec (tag_value_len_58) (current_position_56) in 
   let current_position_56 :=
     (current_position_56) .+ (num_read_60) in 
+  ifbnd (seq_index (tag_value_len_59) (usize 1)) >.? (@repr WORDSIZE8 31) : bool
+  thenbnd (bind (@None (attributes_cursor_hacspec_t × (int8 × int8))) (
+      fun _ => Some (tt)))
+  else (tt) >> (fun 'tt =>
   let '(buf_61, num_read_62) :=
     get_policy_section_hacspec (buf_55) (current_position_56) in 
   let current_position_56 :=
@@ -316,7 +324,7 @@ Definition has_policy_impl_for_policy_attributes_cursor_next_item
         seq_index (tag_value_len_59) (usize 0),
         seq_index (tag_value_len_59) (usize 1)
       )
-    )).
+    )))).
 
 Notation "'policies_iterator_hacspec_t'" := ((int32 × int16)) : hacspec_scope.
 
@@ -331,77 +339,111 @@ Definition iterator_impl_for_policies_iterator_next
   (policies_iterator_63 : policies_iterator_hacspec_t)
   : (option (policies_iterator_hacspec_t × policy_attributes_cursor_hacspec_t
     )) :=
-  let '(pos_64, _) :=
+  let '(pos_64, remaining_items_65) :=
     policies_iterator_63 in 
-  let '(buf_65, _) :=
+  ifbnd (remaining_items_65) =.? (@repr WORDSIZE16 0) : bool
+  thenbnd (bind (@None (
+        policies_iterator_hacspec_t ×
+        policy_attributes_cursor_hacspec_t
+      )) (fun _ => Some (tt)))
+  else (tt) >> (fun 'tt =>
+  let '(buf_66, _) :=
     get_policy_section_hacspec (seq_new_ (default) (((((usize 2) + (
                 usize 4)) + (usize 8)) + (usize 8)) + (usize 2))) (pos_64) in 
-  let skip_part_66 : public_byte_seq :=
-    seq_slice_range (buf_65) ((usize 0, usize 2)) in 
-  let ip_part_67 : public_byte_seq :=
-    seq_slice_range (buf_65) ((usize 2, (usize 2) + (usize 4))) in 
-  let created_at_part_68 : public_byte_seq :=
-    seq_slice_range (buf_65) ((
+  let skip_part_67 : public_byte_seq :=
+    seq_slice_range (buf_66) ((usize 0, usize 2)) in 
+  let ip_part_68 : public_byte_seq :=
+    seq_slice_range (buf_66) ((usize 2, (usize 2) + (usize 4))) in 
+  let created_at_part_69 : public_byte_seq :=
+    seq_slice_range (buf_66) ((
         (usize 2) + (usize 4),
         ((usize 2) + (usize 4)) + (usize 8)
       )) in 
-  let valid_to_part_69 : public_byte_seq :=
-    seq_slice_range (buf_65) ((
+  let valid_to_part_70 : public_byte_seq :=
+    seq_slice_range (buf_66) ((
         ((usize 2) + (usize 4)) + (usize 8),
         (((usize 2) + (usize 4)) + (usize 8)) + (usize 8)
       )) in 
-  let len_part_70 : public_byte_seq :=
-    seq_slice_range (buf_65) ((
+  let len_part_71 : public_byte_seq :=
+    seq_slice_range (buf_66) ((
         (((usize 2) + (usize 4)) + (usize 8)) + (usize 8),
         ((((usize 2) + (usize 4)) + (usize 8)) + (usize 8)) + (usize 2)
       )) in 
-  let identity_provider_71 : int32 :=
-    u32_from_le_bytes (array_from_seq (4) (ip_part_67)) in 
-  let created_at_72 : int64 :=
-    u64_from_le_bytes (array_from_seq (8) (created_at_part_68)) in 
-  let valid_to_73 : int64 :=
-    u64_from_le_bytes (array_from_seq (8) (valid_to_part_69)) in 
-  let remaining_items_74 : int16 :=
-    u16_from_le_bytes (array_from_seq (2) (len_part_70)) in 
-  let attributes_start_75 : int32 :=
+  let identity_provider_72 : int32 :=
+    u32_from_le_bytes (array_from_seq (4) (ip_part_68)) in 
+  let created_at_73 : int64 :=
+    u64_from_le_bytes (array_from_seq (8) (created_at_part_69)) in 
+  let valid_to_74 : int64 :=
+    u64_from_le_bytes (array_from_seq (8) (valid_to_part_70)) in 
+  let remaining_items_75 : int16 :=
+    u16_from_le_bytes (array_from_seq (2) (len_part_71)) in 
+  let attributes_start_76 : int32 :=
     (((((pos_64) .+ (@repr WORDSIZE32 2)) .+ (@repr WORDSIZE32 4)) .+ (
           @repr WORDSIZE32 8)) .+ (@repr WORDSIZE32 8)) .+ (
       @repr WORDSIZE32 2) in 
   let pos_64 :=
     ((pos_64) .+ (@cast _ uint32 _ (u16_from_le_bytes (array_from_seq (2) (
-              skip_part_66))))) .+ (@repr WORDSIZE32 2) in 
-  let remaining_items_74 :=
-    (remaining_items_74) .- (@repr WORDSIZE16 1) in 
+              skip_part_67))))) .+ (@repr WORDSIZE32 2) in 
+  let remaining_items_75 :=
+    (remaining_items_75) .- (@repr WORDSIZE16 1) in 
   @Some (policies_iterator_hacspec_t × policy_attributes_cursor_hacspec_t) ((
-      (pos_64, remaining_items_74),
+      (pos_64, remaining_items_75),
       (
-        identity_provider_71,
-        created_at_72,
-        valid_to_73,
-        (attributes_start_75, remaining_items_74)
+        identity_provider_72,
+        created_at_73,
+        valid_to_74,
+        (attributes_start_76, remaining_items_75)
       )
-    )).
+    ))).
+
+Definition get_init_origin_hacspec
+  (start_77 : public_byte_seq)
+  : public_byte_seq :=
+  start_77.
+
+Definition get_receive_invoker_hacspec
+  (start_78 : public_byte_seq)
+  : public_byte_seq :=
+  start_78.
+
+Definition get_receive_self_address_hacspec
+  (start_79 : public_byte_seq)
+  : public_byte_seq :=
+  start_79.
+
+Definition get_receive_self_balance_hacspec  : int64 :=
+  @repr WORDSIZE64 1.
+
+Definition get_receive_sender_hacspec
+  (start_80 : public_byte_seq)
+  : public_byte_seq :=
+  start_80.
+
+Definition get_receive_owner_hacspec
+  (start_81 : public_byte_seq)
+  : public_byte_seq :=
+  start_81.
 
 Definition accept_hacspec  : int32 :=
   @repr WORDSIZE32 1.
 
 Definition simple_transfer_hacspec
-  (buf_76 : public_byte_seq)
-  (amount_77 : int64)
+  (buf_82 : public_byte_seq)
+  (amount_83 : int64)
   : int32 :=
   @repr WORDSIZE32 1.
 
 Definition send_hacspec
-  (addr_index_78 : int64)
-  (addr_subindex_79 : int64)
-  (receive_name_80 : public_byte_seq)
-  (amount_81 : int64)
-  (parameter_82 : public_byte_seq)
+  (addr_index_84 : int64)
+  (addr_subindex_85 : int64)
+  (receive_name_86 : public_byte_seq)
+  (amount_87 : int64)
+  (parameter_88 : public_byte_seq)
   : int32 :=
   @repr WORDSIZE32 1.
 
-Definition combine_and_hacspec (l_83 : int32) (r_84 : int32) : int32 :=
+Definition combine_and_hacspec (l_89 : int32) (r_90 : int32) : int32 :=
   @repr WORDSIZE32 1.
 
-Definition combine_or_hacspec (l_85 : int32) (r_86 : int32) : int32 :=
+Definition combine_or_hacspec (l_91 : int32) (r_92 : int32) : int32 :=
   @repr WORDSIZE32 1.
