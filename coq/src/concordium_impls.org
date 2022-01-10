@@ -51,7 +51,31 @@
   #[cfg(not(feature = "hacspec"))]
   extern crate concordium_std;
   #[cfg(not(feature = "hacspec"))]
-  use concordium_std::*;
+  use concordium_std::{
+      ParseError,
+      Seek,
+      Read,
+      ParseResult,
+      Write,
+      HasContractState,
+      HasParameter,
+      HasChainMetadata,
+      SlotTime,
+      Timestamp,
+      IdentityProvider,
+      HasPolicy,
+      AttributeTag,
+      HasCommonData,
+      HasInitContext,
+      AccountAddress,
+      ACCOUNT_ADDRESS_SIZE,
+      HasReceiveContext,
+      ContractAddress,
+      Amount,
+      Address,
+      HasActions,
+      ReceiveName,
+  };
 
   #[cfg(not(feature = "hacspec"))]
   // use ::std::collections::{BTreeMap, BTreeSet};
@@ -1035,27 +1059,27 @@ Get policy section extern
 
       let (mut current_position, mut remaining_items) = policy_attribute_items;
 
-      // // TODO: implement ? for option types and uncomment
-      // if remaining_items == 0u16 {
-      //     Option::<(AttributesCursorHacspec, (AttributeTag, u8))>::None?;
-      // }
+      // TODO: implement ? for option types and uncomment
+      if remaining_items == 0u16 {
+	  Option::<(AttributesCursorHacspec, (u8, u8))>::None?;
+      }
 
       let mut tag_value_len = PublicByteSeq::new(2);
       let (tag_value_len, num_read) = get_policy_section_hacspec(tag_value_len, current_position);
       current_position = current_position + num_read;
 
-      // // TODO: implement ? for option types and uncomment
-      // if tag_value_len[1] > 31u8 {
-      //     // Should not happen because all attributes fit into 31 bytes.
-      //     Option::<(AttributesCursorHacspec, (AttributeTag, u8))>::None?;
-      // }
+      // TODO: implement ? for option types and uncomment
+      if tag_value_len[1] > 31u8 {
+	  // Should not happen because all attributes fit into 31 bytes.
+	  Option::<(AttributesCursorHacspec, (u8, u8))>::None?;
+      }
 
       let (buf, num_read) = get_policy_section_hacspec(buf, current_position);
       current_position = current_position + num_read;
       remaining_items = remaining_items - 1u16;
       Option::<(AttributesCursorHacspec, (u8, u8))>::Some(((current_position, remaining_items), (tag_value_len[0], tag_value_len[1])))
   }
-  
+
 #+end_src
 We then define traits
 #+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
@@ -1150,11 +1174,10 @@ We then define traits
   pub type PolicyAttributesCursorHacspec = (u32, u64, u64, AttributesCursorHacspec); // IdentityProvider, Timestamp, Timestamp, AttributesCursor
 
   fn iterator_impl_for_policies_iterator_next(policies_iterator : PoliciesIteratorHacspec) -> Option<(PoliciesIteratorHacspec, PolicyAttributesCursorHacspec)> {
-      let (mut pos, _) = policies_iterator;
-      // // TODO: implement ? for option types and uncomment
-      // if remaining_items == 0 {
-      //     None?;
-      // }
+      let (mut pos, remaining_items) = policies_iterator;
+      if remaining_items == 0u16 {
+	  Option::<(PoliciesIteratorHacspec, PolicyAttributesCursorHacspec)>::None?;
+      }
 
       // 2 for total size of this section, 4 for identity_provider,
       // 8 bytes for created_at, 8 for valid_to, and 2 for
@@ -1223,8 +1246,197 @@ We then define traits
 #+end_src
 
 *** External context
-# TODO: Can we implement something like 'ExternContext<T>', which is genralized over a type 'T', in hacspec ??
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never :tangle no
+Get init origin extern
+#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+  #[cfg(not(feature = "hacspec"))]
+  extern "C" {
+    // Getter for the init context.
+    /// Address of the sender, 32 bytes
+    pub(crate) fn get_init_origin(start: *mut u8);
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  #[trusted]
+  pub(crate) fn get_init_origin_creusot(start: *mut u8) {
+      unsafe { get_init_origin(start) }
+  }
+
+  #[cfg(feature = "hacspec")]
+  fn get_init_origin_hacspec(start: PublicByteSeq) -> PublicByteSeq {
+      start
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  fn get_init_origin_hacspec(start: PublicByteSeq) -> PublicByteSeq {
+      let temp = &mut coerce_hacspec_to_rust_public_byte_seq(start.clone())[..];
+      get_init_origin_creusot(temp.as_mut_ptr());
+      coerce_rust_to_hacspec_public_byte_seq(&temp)
+  }
+
+#+end_src
+Get receive invoker extern
+#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+  #[cfg(not(feature = "hacspec"))]
+  extern "C" {
+    /// Invoker of the top-level transaction, AccountAddress.
+    pub(crate) fn get_receive_invoker(start: *mut u8);
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  #[trusted]
+  pub(crate) fn get_receive_invoker_creusot(start: *mut u8) {
+      unsafe { get_receive_invoker(start) }
+  }
+
+  #[cfg(feature = "hacspec")]
+  fn get_receive_invoker_hacspec(start: PublicByteSeq) -> PublicByteSeq {
+      start
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  fn get_receive_invoker_hacspec(start: PublicByteSeq) -> PublicByteSeq {
+      let temp = &mut coerce_hacspec_to_rust_public_byte_seq(start.clone())[..];
+      get_receive_invoker_creusot(temp.as_mut_ptr());
+      coerce_rust_to_hacspec_public_byte_seq(&temp)
+  }
+
+#+end_src
+Get receive self address extern
+#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+  #[cfg(not(feature = "hacspec"))]
+  extern "C" {
+    /// Address of the contract itself, ContractAddress.
+    pub(crate) fn get_receive_self_address(start: *mut u8);
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  #[trusted]
+  pub(crate) fn get_receive_self_address_creusot(start: *mut u8) {
+      unsafe { get_receive_self_address(start) }
+  }
+
+  #[cfg(feature = "hacspec")]
+  fn get_receive_self_address_hacspec(start: PublicByteSeq) -> PublicByteSeq {
+      start
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  fn get_receive_self_address_hacspec(start: PublicByteSeq) -> PublicByteSeq {
+      let temp = &mut coerce_hacspec_to_rust_public_byte_seq(start.clone())[..];
+      get_receive_self_address_creusot(temp.as_mut_ptr());
+      coerce_rust_to_hacspec_public_byte_seq(&temp)
+  }
+
+#+end_src
+Get receive self balance extern
+#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+  #[cfg(not(feature = "hacspec"))]
+  extern "C" {
+    /// Self-balance of the contract, returns the amount
+    pub(crate) fn get_receive_self_balance() -> u64;
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  #[trusted]
+  pub(crate) fn get_receive_self_balance_creusot() -> u64 {
+      unsafe { get_receive_self_balance() }
+  }
+
+  #[cfg(feature = "hacspec")]
+  fn get_receive_self_balance_hacspec() -> u64 {
+      1u64
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  fn get_receive_self_balance_hacspec() -> u64 {
+      get_receive_self_balance_creusot()
+  }
+
+#+end_src
+Get receive sender extern
+#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+  #[cfg(not(feature = "hacspec"))]
+  extern "C" {
+    /// Immediate sender of the message (either contract or account).
+    pub(crate) fn get_receive_sender(start: *mut u8);
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  #[trusted]
+  pub(crate) fn get_receive_sender_creusot(start: *mut u8) {
+      unsafe { get_receive_invoker(start) }
+  }
+
+  #[cfg(feature = "hacspec")]
+  fn get_receive_sender_hacspec(start: PublicByteSeq) -> PublicByteSeq {
+      start
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  fn get_receive_sender_hacspec(start: PublicByteSeq) -> PublicByteSeq {
+      let temp = &mut coerce_hacspec_to_rust_public_byte_seq(start.clone())[..];
+      get_receive_sender_creusot(temp.as_mut_ptr());
+      coerce_rust_to_hacspec_public_byte_seq(&temp)
+  }
+
+#+end_src
+Get receive owner extern
+#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+  #[cfg(not(feature = "hacspec"))]
+  extern "C" {
+    /// Owner of the contract, AccountAddress.
+    pub(crate) fn get_receive_owner(start: *mut u8);
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  #[trusted]
+  pub(crate) fn get_receive_owner_creusot(start: *mut u8) {
+      unsafe { get_receive_invoker(start) }
+  }
+
+  #[cfg(feature = "hacspec")]
+  fn get_receive_owner_hacspec(start: PublicByteSeq) -> PublicByteSeq {
+      start
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  fn get_receive_owner_hacspec(start: PublicByteSeq) -> PublicByteSeq {
+      let temp = &mut coerce_hacspec_to_rust_public_byte_seq(start.clone())[..];
+      get_receive_owner_creusot(temp.as_mut_ptr());
+      coerce_rust_to_hacspec_public_byte_seq(&temp)
+  }
+
+#+end_src
+
+#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+  #[cfg(not(feature = "hacspec"))]
+  /// Context backed by host functions.
+  #[derive(Default)]
+  #[doc(hidden)]
+  pub struct ExternContext<T: sealed::ContextType> {
+      marker: concordium_std::marker::PhantomData<T>,
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  #[derive(Default)]
+  #[doc(hidden)]
+  pub struct InitContextExtern;
+  #[cfg(not(feature = "hacspec"))]
+  #[derive(Default)]
+  #[doc(hidden)]
+  pub struct ReceiveContextExtern;
+
+  #[cfg(not(feature = "hacspec"))]
+  pub(crate) mod sealed {
+      use super::*;
+      /// Marker trait intended to indicate which context type we have.
+      /// This is deliberately a sealed trait, so that it is only implementable
+      /// by types in this crate.
+      pub trait ContextType {}
+      impl ContextType for InitContextExtern {}
+      impl ContextType for ReceiveContextExtern {}
+  }
+
   #[cfg(not(feature = "hacspec"))]
   impl<T: sealed::ContextType> HasCommonData for ExternContext<T> {
       type MetadataType = ChainMetaExtern;
@@ -1238,14 +1450,10 @@ We then define traits
       }
 
       fn policies(&self) -> PoliciesIterator {
-	  let mut buf: MaybeUninit<[u8; 2]> = MaybeUninit::uninit();
-	  let buf = unsafe {
-	      get_policy_section(buf.as_mut_ptr() as *mut u8, 2, 0);
-	      buf.assume_init()
-	  };
+	  let (buf, _) = get_policy_section_hacspec(PublicByteSeq::new(2), 0);
 	  PoliciesIterator {
 	      pos: 2, // 2 because we already read 2 bytes.
-	      remaining_items: u16::from_le_bytes(buf),
+	      remaining_items: u16_from_le_bytes(u16Word::from_seq(&buf)),
 	  }
       }
 
@@ -1259,7 +1467,7 @@ We then define traits
 
   #[cfg(not(feature = "hacspec"))]
   /// # Trait implementations for the init context
-  impl HasInitContext for ExternContext<crate::types::InitContextExtern> {
+  impl HasInitContext for ExternContext<InitContextExtern> {
       type InitData = ();
 
       /// Create a new init context by using an external call.
@@ -1269,19 +1477,19 @@ We then define traits
 
       #[inline(always)]
       fn init_origin(&self) -> AccountAddress {
-	  let mut bytes: MaybeUninit<[u8; ACCOUNT_ADDRESS_SIZE]> = MaybeUninit::uninit();
-	  let ptr = bytes.as_mut_ptr();
-	  let address = unsafe {
-	      get_init_origin(ptr as *mut u8);
-	      bytes.assume_init()
-	  };
+	  let mut address: [u8; ACCOUNT_ADDRESS_SIZE] = Default::default();
+	  address.clone_from_slice(
+	      &mut coerce_hacspec_to_rust_public_byte_seq(get_init_origin_hacspec(
+		  PublicByteSeq::new(ACCOUNT_ADDRESS_SIZE),
+	      ))[..],
+	  );
 	  AccountAddress(address)
       }
   }
 
   #[cfg(not(feature = "hacspec"))]
   /// # Trait implementations for the receive context
-  impl HasReceiveContext for ExternContext<crate::types::ReceiveContextExtern> {
+  impl HasReceiveContext for ExternContext<ReceiveContextExtern> {
       type ReceiveData = ();
 
       /// Create a new receive context
@@ -1291,68 +1499,67 @@ We then define traits
 
       #[inline(always)]
       fn invoker(&self) -> AccountAddress {
-	  let mut bytes: MaybeUninit<[u8; ACCOUNT_ADDRESS_SIZE]> = MaybeUninit::uninit();
-	  let ptr = bytes.as_mut_ptr();
-	  let address = unsafe {
-	      get_receive_invoker(ptr as *mut u8);
-	      bytes.assume_init()
-	  };
+	  let mut address: [u8; ACCOUNT_ADDRESS_SIZE] = Default::default();
+	  address.clone_from_slice(
+	      &mut coerce_hacspec_to_rust_public_byte_seq(get_receive_invoker_hacspec(
+		  PublicByteSeq::new(ACCOUNT_ADDRESS_SIZE),
+	      ))[..],
+	  );
 	  AccountAddress(address)
       }
 
       #[inline(always)]
       fn self_address(&self) -> ContractAddress {
-	  let mut bytes: MaybeUninit<[u8; 16]> = MaybeUninit::uninit();
-	  let ptr = bytes.as_mut_ptr();
-	  let address = unsafe {
-	      get_receive_self_address(ptr as *mut u8);
-	      bytes.assume_init()
-	  };
-	  match from_bytes(&address) {
+	  let mut address: [u8; ACCOUNT_ADDRESS_SIZE] = Default::default();
+	  address.clone_from_slice(
+	      &mut coerce_hacspec_to_rust_public_byte_seq(get_receive_self_address_hacspec(
+		  PublicByteSeq::new(ACCOUNT_ADDRESS_SIZE),
+	      ))[..],
+	  );
+	  match concordium_std::from_bytes(&address) {
 	      Ok(v) => v,
-	      Err(_) => crate::trap(),
+	      Err(_) => concordium_std::trap(),
 	  }
       }
 
       #[inline(always)]
       fn self_balance(&self) -> Amount {
-	  Amount::from_micro_gtu(unsafe { get_receive_self_balance() })
+	  Amount::from_micro_gtu(get_receive_self_balance_hacspec())
       }
 
+      // TODO: Remove/replace unsafe code !
       #[inline(always)]
       fn sender(&self) -> Address {
-	  let mut bytes: MaybeUninit<[u8; 33]> = MaybeUninit::uninit();
-	  let ptr = bytes.as_mut_ptr() as *mut u8;
-	  unsafe {
-	      get_receive_sender(ptr);
-	      let tag = *ptr;
-	      match tag {
-		  0u8 => {
-		      match from_bytes(core::slice::from_raw_parts(
-			  ptr.add(1),
-			  ACCOUNT_ADDRESS_SIZE,
-		      )) {
-			  Ok(v) => Address::Account(v),
-			  Err(_) => crate::trap(),
-		      }
+	  let ptr : *mut u8 = (&mut coerce_hacspec_to_rust_public_byte_seq(get_receive_sender_hacspec(
+	      PublicByteSeq::new(ACCOUNT_ADDRESS_SIZE),
+	  ))[..]).as_mut_ptr();
+	  let tag = unsafe { *ptr };
+	  match tag {
+	      0u8 => {
+		  match concordium_std::from_bytes(unsafe { core::slice::from_raw_parts(
+		      ptr.add(1),
+		      ACCOUNT_ADDRESS_SIZE,
+		  )} ) {
+		      Ok(v) => Address::Account(v),
+		      Err(_) => concordium_std::trap(),
 		  }
-		  1u8 => match from_bytes(core::slice::from_raw_parts(ptr.add(1), 16)) {
-		      Ok(v) => Address::Contract(v),
-		      Err(_) => crate::trap(),
-		  },
-		  _ => crate::trap(), // unreachable!("Host violated precondition."),
 	      }
+	      1u8 => match concordium_std::from_bytes(unsafe { core::slice::from_raw_parts(ptr.add(1), 16) }) {
+		  Ok(v) => Address::Contract(v),
+		  Err(_) => concordium_std::trap(),
+	      },
+	      _ => concordium_std::trap(), // unreachable!("Host violated precondition."),
 	  }
       }
 
       #[inline(always)]
       fn owner(&self) -> AccountAddress {
-	  let mut bytes: MaybeUninit<[u8; ACCOUNT_ADDRESS_SIZE]> = MaybeUninit::uninit();
-	  let ptr = bytes.as_mut_ptr();
-	  let address = unsafe {
-	      get_receive_owner(ptr as *mut u8);
-	      bytes.assume_init()
-	  };
+	  let mut address: [u8; ACCOUNT_ADDRESS_SIZE] = Default::default();
+	  address.clone_from_slice(
+	      &mut coerce_hacspec_to_rust_public_byte_seq(get_receive_self_address_hacspec(
+		  PublicByteSeq::new(ACCOUNT_ADDRESS_SIZE),
+	      ))[..],
+	  );
 	  AccountAddress(address)
       }
   }
@@ -2473,12 +2680,20 @@ Definition has_policy_impl_for_policy_attributes_cursor_next_item
   : (option (attributes_cursor_hacspec_t × (int8 × int8))) :=
   let '(current_position_56, remaining_items_57) :=
     policy_attribute_items_54 in 
+  ifbnd (remaining_items_57) =.? (@repr WORDSIZE16 0) : bool
+  thenbnd (bind (@None (attributes_cursor_hacspec_t × (int8 × int8))) (
+      fun _ => Some (tt)))
+  else (tt) >> (fun 'tt =>
   let tag_value_len_58 : seq int8 :=
     seq_new_ (default) (usize 2) in 
   let '(tag_value_len_59, num_read_60) :=
     get_policy_section_hacspec (tag_value_len_58) (current_position_56) in 
   let current_position_56 :=
     (current_position_56) .+ (num_read_60) in 
+  ifbnd (seq_index (tag_value_len_59) (usize 1)) >.? (@repr WORDSIZE8 31) : bool
+  thenbnd (bind (@None (attributes_cursor_hacspec_t × (int8 × int8))) (
+      fun _ => Some (tt)))
+  else (tt) >> (fun 'tt =>
   let '(buf_61, num_read_62) :=
     get_policy_section_hacspec (buf_55) (current_position_56) in 
   let current_position_56 :=
@@ -2491,7 +2706,7 @@ Definition has_policy_impl_for_policy_attributes_cursor_next_item
         seq_index (tag_value_len_59) (usize 0),
         seq_index (tag_value_len_59) (usize 1)
       )
-    )).
+    )))).
 
 #+end_src
 
@@ -2515,88 +2730,130 @@ Definition iterator_impl_for_policies_iterator_next
   (policies_iterator_63 : policies_iterator_hacspec_t)
   : (option (policies_iterator_hacspec_t × policy_attributes_cursor_hacspec_t
     )) :=
-  let '(pos_64, _) :=
+  let '(pos_64, remaining_items_65) :=
     policies_iterator_63 in 
-  let '(buf_65, _) :=
+  ifbnd (remaining_items_65) =.? (@repr WORDSIZE16 0) : bool
+  thenbnd (bind (@None (
+        policies_iterator_hacspec_t ×
+        policy_attributes_cursor_hacspec_t
+      )) (fun _ => Some (tt)))
+  else (tt) >> (fun 'tt =>
+  let '(buf_66, _) :=
     get_policy_section_hacspec (seq_new_ (default) (((((usize 2) + (
                 usize 4)) + (usize 8)) + (usize 8)) + (usize 2))) (pos_64) in 
-  let skip_part_66 : public_byte_seq :=
-    seq_slice_range (buf_65) ((usize 0, usize 2)) in 
-  let ip_part_67 : public_byte_seq :=
-    seq_slice_range (buf_65) ((usize 2, (usize 2) + (usize 4))) in 
-  let created_at_part_68 : public_byte_seq :=
-    seq_slice_range (buf_65) ((
+  let skip_part_67 : public_byte_seq :=
+    seq_slice_range (buf_66) ((usize 0, usize 2)) in 
+  let ip_part_68 : public_byte_seq :=
+    seq_slice_range (buf_66) ((usize 2, (usize 2) + (usize 4))) in 
+  let created_at_part_69 : public_byte_seq :=
+    seq_slice_range (buf_66) ((
         (usize 2) + (usize 4),
         ((usize 2) + (usize 4)) + (usize 8)
       )) in 
-  let valid_to_part_69 : public_byte_seq :=
-    seq_slice_range (buf_65) ((
+  let valid_to_part_70 : public_byte_seq :=
+    seq_slice_range (buf_66) ((
         ((usize 2) + (usize 4)) + (usize 8),
         (((usize 2) + (usize 4)) + (usize 8)) + (usize 8)
       )) in 
-  let len_part_70 : public_byte_seq :=
-    seq_slice_range (buf_65) ((
+  let len_part_71 : public_byte_seq :=
+    seq_slice_range (buf_66) ((
         (((usize 2) + (usize 4)) + (usize 8)) + (usize 8),
         ((((usize 2) + (usize 4)) + (usize 8)) + (usize 8)) + (usize 2)
       )) in 
-  let identity_provider_71 : int32 :=
-    u32_from_le_bytes (array_from_seq (4) (ip_part_67)) in 
-  let created_at_72 : int64 :=
-    u64_from_le_bytes (array_from_seq (8) (created_at_part_68)) in 
-  let valid_to_73 : int64 :=
-    u64_from_le_bytes (array_from_seq (8) (valid_to_part_69)) in 
-  let remaining_items_74 : int16 :=
-    u16_from_le_bytes (array_from_seq (2) (len_part_70)) in 
-  let attributes_start_75 : int32 :=
+  let identity_provider_72 : int32 :=
+    u32_from_le_bytes (array_from_seq (4) (ip_part_68)) in 
+  let created_at_73 : int64 :=
+    u64_from_le_bytes (array_from_seq (8) (created_at_part_69)) in 
+  let valid_to_74 : int64 :=
+    u64_from_le_bytes (array_from_seq (8) (valid_to_part_70)) in 
+  let remaining_items_75 : int16 :=
+    u16_from_le_bytes (array_from_seq (2) (len_part_71)) in 
+  let attributes_start_76 : int32 :=
     (((((pos_64) .+ (@repr WORDSIZE32 2)) .+ (@repr WORDSIZE32 4)) .+ (
           @repr WORDSIZE32 8)) .+ (@repr WORDSIZE32 8)) .+ (
       @repr WORDSIZE32 2) in 
   let pos_64 :=
     ((pos_64) .+ (@cast _ uint32 _ (u16_from_le_bytes (array_from_seq (2) (
-              skip_part_66))))) .+ (@repr WORDSIZE32 2) in 
-  let remaining_items_74 :=
-    (remaining_items_74) .- (@repr WORDSIZE16 1) in 
+              skip_part_67))))) .+ (@repr WORDSIZE32 2) in 
+  let remaining_items_75 :=
+    (remaining_items_75) .- (@repr WORDSIZE16 1) in 
   @Some (policies_iterator_hacspec_t × policy_attributes_cursor_hacspec_t) ((
-      (pos_64, remaining_items_74),
+      (pos_64, remaining_items_75),
       (
-        identity_provider_71,
-        created_at_72,
-        valid_to_73,
-        (attributes_start_75, remaining_items_74)
+        identity_provider_72,
+        created_at_73,
+        valid_to_74,
+        (attributes_start_76, remaining_items_75)
       )
-    )).
+    ))).
+
+#+end_src
+*** External context
+#+NAME: linum21
+#+CALL: next(ARG="0 12", linum=linum20) :exports none
+#+NAME: seg21
+#+CALL: split-file(ARG=linum21) :eval
+#+RESULTS: seg21
+#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+Definition get_init_origin_hacspec
+  (start_77 : public_byte_seq)
+  : public_byte_seq :=
+  start_77.
+
+Definition get_receive_invoker_hacspec
+  (start_78 : public_byte_seq)
+  : public_byte_seq :=
+  start_78.
+
+Definition get_receive_self_address_hacspec
+  (start_79 : public_byte_seq)
+  : public_byte_seq :=
+  start_79.
+
+Definition get_receive_self_balance_hacspec  : int64 :=
+  @repr WORDSIZE64 1.
+
+Definition get_receive_sender_hacspec
+  (start_80 : public_byte_seq)
+  : public_byte_seq :=
+  start_80.
+
+Definition get_receive_owner_hacspec
+  (start_81 : public_byte_seq)
+  : public_byte_seq :=
+  start_81.
 
 #+end_src
 
 *** Action
-#+NAME: linum21
-#+CALL: next(ARG="0 -1", linum=linum20) :exports none
-#+NAME: seg21
-#+CALL: split-file(ARG=linum21) :eval
-#+RESULTS: seg21
+#+NAME: linum22
+#+CALL: next(ARG="0 -1", linum=linum21) :exports none
+#+NAME: seg22
+#+CALL: split-file(ARG=linum22) :eval
+#+RESULTS: seg22
 #+begin_src coq :tangle ConcordiumImpls.v :results output silent
 Definition accept_hacspec  : int32 :=
   @repr WORDSIZE32 1.
 
 Definition simple_transfer_hacspec
-  (buf_76 : public_byte_seq)
-  (amount_77 : int64)
+  (buf_82 : public_byte_seq)
+  (amount_83 : int64)
   : int32 :=
   @repr WORDSIZE32 1.
 
 Definition send_hacspec
-  (addr_index_78 : int64)
-  (addr_subindex_79 : int64)
-  (receive_name_80 : public_byte_seq)
-  (amount_81 : int64)
-  (parameter_82 : public_byte_seq)
+  (addr_index_84 : int64)
+  (addr_subindex_85 : int64)
+  (receive_name_86 : public_byte_seq)
+  (amount_87 : int64)
+  (parameter_88 : public_byte_seq)
   : int32 :=
   @repr WORDSIZE32 1.
 
-Definition combine_and_hacspec (l_83 : int32) (r_84 : int32) : int32 :=
+Definition combine_and_hacspec (l_89 : int32) (r_90 : int32) : int32 :=
   @repr WORDSIZE32 1.
 
-Definition combine_or_hacspec (l_85 : int32) (r_86 : int32) : int32 :=
+Definition combine_or_hacspec (l_91 : int32) (r_92 : int32) : int32 :=
   @repr WORDSIZE32 1.
 
 #+end_src
