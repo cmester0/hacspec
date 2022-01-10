@@ -12,38 +12,20 @@ use hacspec_attributes::*;
 extern crate concordium_std;
 #[cfg(not(feature = "hacspec"))]
 use concordium_std::{
-    ParseError,
-    Seek,
-    Read,
-    ParseResult,
-    Write,
-    HasContractState,
-    HasParameter,
-    HasChainMetadata,
-    SlotTime,
-    Timestamp,
-    IdentityProvider,
-    HasPolicy,
-    AttributeTag,
-    HasCommonData,
-    HasInitContext,
-    AccountAddress,
-    ACCOUNT_ADDRESS_SIZE,
-    HasReceiveContext,
-    ContractAddress,
-    Amount,
-    Address,
-    HasActions,
-    ReceiveName,
+    AccountAddress, Address, Amount, AttributeTag, ContractAddress, HasActions, HasChainMetadata,
+    HasCommonData, HasContractState, HasInitContext, HasParameter, HasPolicy, HasReceiveContext,
+    IdentityProvider, ParseError, ParseResult, Read, ReceiveName, Seek, SlotTime, Timestamp, Write,
+    ACCOUNT_ADDRESS_SIZE
 };
 
 #[cfg(not(feature = "hacspec"))]
 // use ::std::collections::{BTreeMap, BTreeSet};
 use ::std::{
-    collections::{BTreeMap, BTreeSet},
+    collections::{BTreeMap, BTreeSet, HashSet, HashMap},
     convert::{self, TryFrom, TryInto},
     hash::Hash,
-    mem, num, // prims,
+    mem,
+    num, // prims,
     // prims::*,
     // traits::*,
     // types::*,
@@ -51,10 +33,10 @@ use ::std::{
     // String,
 };
 
-// #[cfg(not(feature = "hacspec"))]
-// extern crate concordium_contracts_common;
-// #[cfg(not(feature = "hacspec"))]
-// use concordium_contracts_common::*;
+#[cfg(not(feature = "hacspec"))]
+extern crate concordium_contracts_common;
+#[cfg(not(feature = "hacspec"))]
+use concordium_contracts_common::*; // {Serial}
 
 #[cfg(not(feature = "hacspec"))]
 use mem::MaybeUninit;
@@ -867,8 +849,7 @@ pub fn has_policy_impl_for_policy_attributes_cursor_next_item(
 	Option::<(AttributesCursorHacspec, (u8, u8))>::None?;
     }
 
-    let mut tag_value_len = PublicByteSeq::new(2);
-    let (tag_value_len, num_read) = get_policy_section_hacspec(tag_value_len, current_position);
+    let (tag_value_len, num_read) = get_policy_section_hacspec(PublicByteSeq::new(2), current_position);
     current_position = current_position + num_read;
 
     if tag_value_len[1] > 31u8 {
@@ -1365,6 +1346,57 @@ fn log_event_hacspec(start: PublicByteSeq) -> (PublicByteSeq, i32) {
 }
 
 #[cfg(not(feature = "hacspec"))]
+/// A type representing the logger.
+#[derive(Default)]
+pub struct Logger {
+    pub(crate) _private: (),
+}
+
+#[cfg(not(feature = "hacspec"))]
+/// Objects which can serve as loggers.
+///
+/// Logging functionality can be used by smart contracts to record events that
+/// might be of interest to external parties. These events are not used on the
+/// chain, and cannot be observed by other contracts, but they are stored by the
+/// node, and can be queried to provide information to off-chain actors.
+pub trait HasLogger {
+    /// Initialize a logger.
+    fn init() -> Self;
+
+    /// Log the given slice as-is. If logging is not successful an error will be
+    /// returned.
+    fn log_raw(&mut self, event: &[u8]) -> Result<(), LogError>;
+
+    #[inline(always)]
+    /// Log a serializable event by serializing it with a supplied serializer.
+    fn log<S: Serial>(&mut self, event: &S) -> Result<(), LogError> {
+	let mut out = Vec::new();
+	if event.serial(&mut out).is_err() {
+	    concordium_std::trap(); // should not happen
+	}
+	self.log_raw(&out)
+    }
+}
+
+#[cfg(not(feature = "hacspec"))]
+/// #Implementations of the logger.
+impl HasLogger for Logger {
+    #[inline(always)]
+    fn init() -> Self {
+	Self { _private: () }
+    }
+
+    fn log_raw(&mut self, event: &[u8]) -> Result<(), LogError> {
+	let (_, res) = log_event_hacspec(coerce_rust_to_hacspec_public_byte_seq(event));
+	match res {
+	    1 => Ok(()),
+	    0 => Err(LogError::Full),
+	    _ => Err(LogError::Malformed),
+	}
+    }
+}
+
+#[cfg(not(feature = "hacspec"))]
 extern "C" {
     pub(crate) fn accept() -> u32;
 }
@@ -1571,6 +1603,630 @@ impl HasActions for Action {
     fn or_else(self, el: Self) -> Self {
 	let res = combine_or_hacspec(self._private, el._private);
 	Action { _private: res }
+    }
+}
+
+// TODO: Define functionality in hacspec instead!
+#[cfg(not(feature = "hacspec"))]
+/// Allocates a Vec of bytes prepended with its length as a `u32` into memory,
+/// and prevents them from being dropped. Returns the pointer.
+/// Used to pass bytes from a Wasm module to its host.
+#[doc(hidden)]
+pub fn put_in_memory(input: &[u8]) -> *mut u8 {
+    let bytes_length = input.len() as u32;
+    let mut bytes = concordium_std::to_bytes(&bytes_length);
+    bytes.extend_from_slice(input);
+    let ptr = bytes.as_mut_ptr();
+    #[cfg(feature = "std")]
+    ::std::mem::forget(bytes);
+    #[cfg(not(feature = "std"))]
+    core::mem::forget(bytes);
+    ptr
+}
+
+// TODO: Name collision
+// #[cfg(not(feature = "hacspec"))]
+// /// Wrapper for
+// /// [HasActions::send_raw](./trait.HasActions.html#tymethod.send_raw), which
+// /// automatically serializes the parameter. Note that if the parameter is
+// /// already a byte array or convertible to a byte array without allocations it
+// /// is preferrable to use [send_raw](./trait.HasActions.html#tymethod.send_raw).
+// /// It is more efficient and avoids memory allocations.
+// pub fn send<A: HasActions, P: Serial>(
+//     ca: &ContractAddress,
+//     receive_name: ReceiveName,
+//     amount: Amount,
+//     parameter: &P,
+// ) -> A {
+//     let param_bytes = concordium_std::to_bytes(parameter);
+//     A::send_raw(ca, receive_name, amount, &param_bytes)
+// }
+
+#[cfg(not(feature = "hacspec"))]
+/// Add optimized unwrap behaviour that aborts the process instead of
+/// panicking.
+pub trait UnwrapAbort {
+    /// The underlying result type of the unwrap, in case of success.
+    type Unwrap;
+    /// Unwrap or call [trap](./fn.trap.html). In contrast to
+    /// the unwrap methods on [Option::unwrap](https://doc.rust-lang.org/std/option/enum.Option.html#method.unwrap)
+    /// this method will tend to produce smaller code, at the cost of the
+    /// ability to handle the panic.
+    /// This is intended to be used only in `Wasm` code, where panics cannot be
+    /// handled anyhow.
+    fn unwrap_abort(self) -> Self::Unwrap;
+}
+
+#[cfg(not(feature = "hacspec"))]
+impl<A, E> UnwrapAbort for Result<A, E> {
+    type Unwrap = A;
+
+    #[inline]
+    fn unwrap_abort(self) -> Self::Unwrap {
+	match self {
+	    Ok(x) => x,
+	    Err(_) => concordium_std::trap(),
+	}
+    }
+}
+
+#[cfg(not(feature = "hacspec"))]
+/// Analogue of the `expect` methods on types such as [Option](https://doc.rust-lang.org/std/option/enum.Option.html),
+/// but useful in a Wasm setting.
+pub trait ExpectReport {
+    type Unwrap;
+    /// Like the default `expect` on, e.g., `Result`, but calling
+    /// [fail](macro.fail.html) with the given message, instead of `panic`.
+    fn expect_report(self, msg: &str) -> Self::Unwrap;
+}
+
+#[cfg(not(feature = "hacspec"))]
+#[cfg(not(feature = "std"))]
+use core::fmt;
+
+#[cfg(not(feature = "hacspec"))]
+#[cfg(feature = "std")]
+use std::fmt;
+
+#[cfg(not(feature = "hacspec"))]
+impl<A, E: fmt::Debug> ExpectReport for Result<A, E> {
+    type Unwrap = A;
+
+    fn expect_report(self, msg: &str) -> Self::Unwrap {
+	match self {
+	    Ok(x) => x,
+	    Err(e) => concordium_std::fail!("{}: {:?}", msg, e),
+	}
+    }
+}
+
+#[cfg(not(feature = "hacspec"))]  
+/// Analogue of the `expect_err` methods on [Result](https://doc.rust-lang.org/std/result/enum.Result.html),
+/// but useful in a Wasm setting.
+pub trait ExpectErrReport {
+    type Unwrap;
+    /// Like the default `expect_err` on, e.g., `Result`, but calling
+    /// [fail](macro.fail.html) with the given message, instead of `panic`.
+    fn expect_err_report(self, msg: &str) -> Self::Unwrap;
+}
+
+#[cfg(not(feature = "hacspec"))]
+impl<A: fmt::Debug, E> ExpectErrReport for Result<A, E> {
+    type Unwrap = E;
+
+    fn expect_err_report(self, msg: &str) -> Self::Unwrap {
+	match self {
+	    Ok(a) => concordium_std::fail!("{}: {:?}", msg, a),
+	    Err(e) => e,
+	}
+    }
+}
+
+#[cfg(not(feature = "hacspec"))]
+impl<A> UnwrapAbort for Option<A> {
+    type Unwrap = A;
+
+    #[inline(always)]
+    fn unwrap_abort(self) -> Self::Unwrap {
+	self.unwrap_or_else(|| concordium_std::trap())
+    }
+}
+
+#[cfg(not(feature = "hacspec"))]
+impl<A> ExpectReport for Option<A> {
+    type Unwrap = A;
+
+    fn expect_report(self, msg: &str) -> Self::Unwrap {
+	match self {
+	    Some(v) => v,
+	    None => concordium_std::fail!("{}", msg),
+	}
+    }
+}
+
+#[cfg(not(feature = "hacspec"))]
+/// Analogue of the `expect_none` methods on [Option](https://doc.rust-lang.org/std/option/enum.Option.html),
+/// but useful in a Wasm setting.
+pub trait ExpectNoneReport {
+    /// Like the default `expect_none_report` on, e.g., `Option`, but calling
+    /// [fail](macro.fail.html) with the given message, instead of `panic`.
+    fn expect_none_report(self, msg: &str);
+}
+
+#[cfg(not(feature = "hacspec"))]
+impl<A: fmt::Debug> ExpectNoneReport for Option<A> {
+    fn expect_none_report(self, msg: &str) {
+	if let Some(x) = self {
+	    concordium_std::fail!("{}: {:?}", msg, x)
+	}
+    }
+}
+
+// #[cfg(not(feature = "hacspec"))]
+// /// The `Serial` trait provides a means of writing structures into byte-sinks
+// /// (`Write`).
+// ///
+// /// Can be derived using `#[derive(Serial)]` for most cases.
+// pub trait Serial {
+//     /// Attempt to write the structure into the provided writer, failing if
+//     /// only part of the structure could be written.
+//     ///
+//     /// NB: We use Result instead of Option for better composability with other
+//     /// constructs.
+//     fn serial<W: Write>(&self, _out: &mut W) -> Result<(), W::Err>;
+// }
+
+#[cfg(not(feature = "hacspec"))]
+/// The `SerialCtx` trait provides a means of writing structures into byte-sinks
+/// (`Write`) using contextual information.
+/// The contextual information is:
+///
+///   - `size_length`: The number of bytes used to record the length of the
+///     data.
+pub trait SerialCtx {
+    /// Attempt to write the structure into the provided writer, failing if
+    /// if the length cannot be represented in the provided `size_length` or
+    /// only part of the structure could be written.
+    ///
+    /// NB: We use Result instead of Option for better composability with other
+    /// constructs.
+    fn serial_ctx<W: Write>(
+	&self,
+	size_length: concordium_std::schema::SizeLength,
+	out: &mut W,
+    ) -> Result<(), W::Err>;
+}
+
+#[cfg(not(feature = "hacspec"))]
+/// Write a [BTreeSet](https://doc.rust-lang.org/std/collections/struct.BTreeSet.html) as an ascending list of keys, without the length information.
+pub fn serial_set_no_length<W: Write, K: Serial>(
+    map: &BTreeSet<K>,
+    out: &mut W,
+) -> Result<(), W::Err> {
+    for k in map.iter() {
+	k.serial(out)?;
+    }
+    Ok(())
+}
+
+#[cfg(not(feature = "hacspec"))]
+impl<K: Serial + Ord> SerialCtx for BTreeSet<K> {
+    fn serial_ctx<W: Write>(
+	&self,
+	size_len: concordium_std::schema::SizeLength,
+	out: &mut W,
+    ) -> Result<(), W::Err> {
+	concordium_std::schema::serial_length(self.len(), size_len, out)?;
+	// concordium_std::
+	serial_set_no_length(self, out)
+    }
+}
+
+#[cfg(not(feature = "hacspec"))]
+/// The `DeserialCtx` trait provides a means of reading structures from
+/// byte-sources (`Read`) using contextual information.
+/// The contextual information is:
+///
+///   - `size_length`: The expected number of bytes used for the length of the
+///     data.
+///   - `ensure_ordered`: Whether the ordering should be ensured, for example
+///     that keys in `BTreeMap` and `BTreeSet` are in strictly increasing order.
+pub trait DeserialCtx: Sized {
+    /// Attempt to read a structure from a given source and context, failing if
+    /// an error occurs during deserialization or reading.
+    fn deserial_ctx<R: Read>(
+	size_length: concordium_std::schema::SizeLength,
+	ensure_ordered: bool,
+	source: &mut R,
+    ) -> ParseResult<Self>;
+}
+
+/// A more convenient wrapper around `Deserial` that makes it easier to write
+/// deserialization code. It has a blanked implementation for any read and
+/// serialize pair. The key idea is that the type to deserialize is inferred
+/// from the context, enabling one to write, for example,
+///
+/// ```rust
+/// # fn deserial<R: concordium_contracts_common::Read>(source: &mut R) -> concordium_contracts_common::ParseResult<(u8, u8)> {
+/// #  use crate::concordium_contracts_common::Get;
+///    let x = source.get()?;
+///    let y = source.get()?;
+/// #   Ok((x,y))
+/// # }
+/// ```
+/// where `source` is any type that implements `Read`.
+#[cfg(not(feature = "hacspec"))]
+pub trait Get<T> {
+    fn get(&mut self) -> ParseResult<T>;
+}
+
+#[cfg(not(feature = "hacspec"))]
+impl<R: Read, T: Deserial> Get<T> for R {
+    #[inline(always)]
+    fn get(&mut self) -> ParseResult<T> {
+	T::deserial(self)
+    }
+}
+
+#[cfg(not(feature = "hacspec"))]
+/// Read a [BTreeSet](https://doc.rust-lang.org/std/collections/struct.BTreeSet.html) as a list of keys, given some length.
+/// NB: This ensures there are no duplicates, hence the specialized type.
+/// Moreover this will only succeed if keys are listed in order.
+pub fn deserial_set_no_length<R: Read, K: Deserial + Ord + Copy>(
+    source: &mut R,
+    len: usize,
+) -> ParseResult<BTreeSet<K>> {
+    let mut out = BTreeSet::new();
+    let mut prev = None;
+    for _ in 0..len {
+	let key = source.get()?;
+	let next = Some(key);
+	if next <= prev {
+	    return Err(ParseError::default());
+	}
+	out.insert(key);
+	prev = next;
+    }
+    Ok(out)
+}
+
+#[cfg(not(feature = "hacspec"))]
+/// Read a [BTreeSet](https://doc.rust-lang.org/std/collections/struct.BTreeSet.html) as an list of key-value pairs given some length.
+/// Slightly faster version of `deserial_set_no_length` as it is skipping the
+/// order checking. The only check that is made to the set is that there are no
+/// duplicates.
+pub fn deserial_set_no_length_no_order_check<R: Read, K: Deserial + Ord>(
+    source: &mut R,
+    len: usize,
+) -> ParseResult<BTreeSet<K>> {
+    let mut out = BTreeSet::new();
+    for _ in 0..len {
+	let key = source.get()?;
+	if !out.insert(key) {
+	    return Err(ParseError::default());
+	}
+    }
+    Ok(out)
+}
+
+#[cfg(not(feature = "hacspec"))]
+impl<K: Deserial + Ord + Copy> DeserialCtx for BTreeSet<K> {
+    fn deserial_ctx<R: Read>(
+	size_len: concordium_std::schema::SizeLength,
+	ensure_ordered: bool,
+	source: &mut R,
+    ) -> ParseResult<Self> {
+	let len = concordium_std::schema::deserial_length(source, size_len)?;
+	if ensure_ordered {
+	    // concordium_std::
+	    deserial_set_no_length(source, len)
+	} else {
+	    // concordium_std::
+	    deserial_set_no_length_no_order_check(source, len)
+	}
+    }
+}
+
+#[cfg(not(feature = "hacspec"))]
+/// Write a Map as a list of key-value pairs ordered by the key, without the
+/// length information.
+pub fn serial_map_no_length<W: Write, K: Serial, V: Serial>(
+    map: &BTreeMap<K, V>,
+    out: &mut W,
+) -> Result<(), W::Err> {
+    for (k, v) in map.iter() {
+	k.serial(out)?;
+	v.serial(out)?;
+    }
+    Ok(())
+}
+
+#[cfg(not(feature = "hacspec"))]
+impl<K: Serial + Ord, V: Serial> SerialCtx for BTreeMap<K, V> {
+    fn serial_ctx<W: Write>(
+	&self,
+	size_len: concordium_std::schema::SizeLength,
+	out: &mut W,
+    ) -> Result<(), W::Err> {
+	concordium_std::schema::serial_length(self.len(), size_len, out)?;
+	// concordium_std::
+	serial_map_no_length(self, out)
+    }
+}
+
+#[cfg(not(feature = "hacspec"))]
+/// Read a [BTreeMap](https://doc.rust-lang.org/std/collections/struct.BTreeMap.html) as a list of key-value pairs given some length.
+/// NB: This ensures there are no duplicates, hence the specialized type.
+/// Moreover this will only succeed if keys are listed in order.
+pub fn deserial_map_no_length<R: Read, K: Deserial + Ord + Copy, V: Deserial>(
+    source: &mut R,
+    len: usize,
+) -> ParseResult<BTreeMap<K, V>> {
+    let mut out = BTreeMap::new();
+    let mut x = None;
+    for _ in 0..len {
+	let k = source.get()?;
+	let v = source.get()?;
+	match x {
+	    None => {
+		out.insert(k, v);
+	    }
+	    Some(kk) => {
+		if k > kk {
+		    out.insert(k, v);
+		} else {
+		    return Err(ParseError::default());
+		}
+	    }
+	}
+	x = Some(k);
+    }
+    Ok(out)
+}
+
+#[cfg(not(feature = "hacspec"))]  
+/// Read a [BTreeMap](https://doc.rust-lang.org/std/collections/struct.BTreeMap.html) as a list of key-value pairs given some length.
+/// Slightly faster version of `deserial_map_no_length` as it is skipping the
+/// order checking
+pub fn deserial_map_no_length_no_order_check<R: Read, K: Deserial + Ord, V: Deserial>(
+    source: &mut R,
+    len: usize,
+) -> ParseResult<BTreeMap<K, V>> {
+    let mut out = BTreeMap::new();
+    for _ in 0..len {
+	let k = source.get()?;
+	let v = source.get()?;
+	if out.insert(k, v).is_some() {
+	    return Err(ParseError::default());
+	}
+    }
+    Ok(out)
+}
+
+#[cfg(not(feature = "hacspec"))]  
+impl<K: Deserial + Ord + Copy, V: Deserial> DeserialCtx for BTreeMap<K, V> {
+    fn deserial_ctx<R: Read>(
+	size_len: concordium_std::schema::SizeLength,
+	ensure_ordered: bool,
+	source: &mut R,
+    ) -> ParseResult<Self> {
+	let len = concordium_std::schema::deserial_length(source, size_len)?;
+	if ensure_ordered {
+	    // concordium_std::
+	    deserial_map_no_length(source, len)
+	} else {
+	    // concordium_std::
+	    deserial_map_no_length_no_order_check(source, len)
+	}
+    }
+}
+
+#[cfg(not(feature = "hacspec"))]
+/// Write a [HashSet](https://doc.rust-lang.org/std/collections/struct.HashSet.html) as a list of keys in no particular order, without the length information.
+pub fn serial_hashset_no_length<W: Write, K: Serial>(
+    map: &HashSet<K>,
+    out: &mut W,
+) -> Result<(), W::Err> {
+    for k in map.iter() {
+	k.serial(out)?;
+    }
+    Ok(())
+}
+
+#[cfg(not(feature = "hacspec"))]
+/// Serialization for HashSet given a size_len.
+/// Values are not serialized in any particular order.
+impl<K: Serial> SerialCtx for HashSet<K> {
+    fn serial_ctx<W: Write>(
+	&self,
+	size_len: concordium_std::schema::SizeLength,
+	out: &mut W,
+    ) -> Result<(), W::Err> {
+	concordium_std::schema::serial_length(self.len(), size_len, out)?;
+	// concordium_std::
+	serial_hashset_no_length(self, out)
+    }
+}
+
+#[cfg(not(feature = "hacspec"))]
+/// Read a [HashSet](https://doc.rust-lang.org/std/collections/struct.HashSet.html) as a list of keys, given some length.
+/// NB: This ensures there are no duplicates.
+pub fn deserial_hashset_no_length<R: Read, K: Deserial + Eq + Hash>(
+    source: &mut R,
+    len: usize,
+) -> ParseResult<HashSet<K>> {
+    let mut out = HashSet::default();
+    for _ in 0..len {
+	let key = source.get()?;
+	if !out.insert(key) {
+	    return Err(ParseError::default());
+	}
+    }
+    Ok(out)
+}
+
+#[cfg(not(feature = "hacspec"))]  
+/// Deserialization for HashSet given a size_len.
+/// Values are not verified to be in any particular order and setting
+/// ensure_ordering have no effect.
+impl<K: Deserial + Eq + Hash> DeserialCtx for HashSet<K> {
+    fn deserial_ctx<R: Read>(
+	size_len: concordium_std::schema::SizeLength,
+	_ensure_ordered: bool,
+	source: &mut R,
+    ) -> ParseResult<Self> {
+	let len = concordium_std::schema::deserial_length(source, size_len)?;
+	deserial_hashset_no_length(source, len)
+    }
+}
+
+#[cfg(not(feature = "hacspec"))]  
+/// Write a HashMap as a list of key-value pairs in to particular order, without
+/// the length information.
+pub fn serial_hashmap_no_length<W: Write, K: Serial, V: Serial>(
+    map: &HashMap<K, V>,
+    out: &mut W,
+) -> Result<(), W::Err> {
+    for (k, v) in map.iter() {
+	k.serial(out)?;
+	v.serial(out)?;
+    }
+    Ok(())
+}
+
+#[cfg(not(feature = "hacspec"))]  
+/// Serialization for HashMap given a size_len.
+/// Keys are not serialized in any particular order.
+impl<K: Serial, V: Serial> SerialCtx for HashMap<K, V> {
+    fn serial_ctx<W: Write>(
+	&self,
+	size_len: concordium_std::schema::SizeLength,
+	out: &mut W,
+    ) -> Result<(), W::Err> {
+	concordium_std::schema::serial_length(self.len(), size_len, out)?;
+	serial_hashmap_no_length(self, out)
+    }
+}
+
+#[cfg(not(feature = "hacspec"))]
+/// Read a [HashMap](https://doc.rust-lang.org/std/collections/struct.HashMap.html) as a list of key-value pairs given some length.
+pub fn deserial_hashmap_no_length<R: Read, K: Deserial + Eq + Hash, V: Deserial>(
+    source: &mut R,
+    len: usize,
+) -> ParseResult<HashMap<K, V>> {
+    let mut out = HashMap::default();
+    for _ in 0..len {
+	let k = source.get()?;
+	let v = source.get()?;
+	if out.insert(k, v).is_some() {
+	    return Err(ParseError::default());
+	}
+    }
+    Ok(out)
+}
+
+#[cfg(not(feature = "hacspec"))]
+/// Deserialization for HashMap given a size_len.
+/// Keys are not verified to be in any particular order and setting
+/// ensure_ordering have no effect.
+impl<K: Deserial + Eq + Hash, V: Deserial> DeserialCtx for HashMap<K, V> {
+    fn deserial_ctx<R: Read>(
+	size_len: concordium_std::schema::SizeLength,
+	_ensure_ordered: bool,
+	source: &mut R,
+    ) -> ParseResult<Self> {
+	let len = concordium_std::schema::deserial_length(source, size_len)?;
+	// concordium_std::
+	deserial_hashmap_no_length(source, len)
+    }
+}
+
+#[cfg(not(feature = "hacspec"))]
+/// Write a slice of elements, without including length information.
+/// This is intended to be used either when the length is statically known,
+/// or when the length is serialized independently as part of a bigger
+/// structure.
+pub fn serial_vector_no_length<W: Write, T: Serial>(xs: &[T], out: &mut W) -> Result<(), W::Err> {
+    for x in xs {
+	x.serial(out)?;
+    }
+    Ok(())
+}
+
+#[cfg(not(feature = "hacspec"))]
+impl<T: Serial> SerialCtx for &[T] {
+    fn serial_ctx<W: Write>(
+	&self,
+	size_len: concordium_std::schema::SizeLength,
+	out: &mut W,
+    ) -> Result<(), W::Err> {
+	concordium_std::schema::serial_length(self.len(), size_len, out)?;
+	serial_vector_no_length(self, out)
+    }
+}
+
+#[cfg(not(feature = "hacspec"))]
+pub(crate) static MAX_PREALLOCATED_CAPACITY: usize = 4096;
+
+#[cfg(not(feature = "hacspec"))]
+/// Read a vector given a length.
+pub fn deserial_vector_no_length<R: Read, T: Deserial>(
+    reader: &mut R,
+    len: usize,
+) -> ParseResult<Vec<T>> {
+    let mut vec = Vec::with_capacity(core::cmp::min(len, MAX_PREALLOCATED_CAPACITY));
+    for _ in 0..len {
+	vec.push(T::deserial(reader)?);
+    }
+    Ok(vec)
+}
+
+#[cfg(not(feature = "hacspec"))]
+impl<T: Deserial> DeserialCtx for Vec<T> {
+    fn deserial_ctx<R: Read>(
+	size_len: concordium_std::schema::SizeLength,
+	_ensure_ordered: bool,
+	source: &mut R,
+    ) -> ParseResult<Self> {
+	let len = concordium_std::schema::deserial_length(source, size_len)?;
+	deserial_vector_no_length(source, len)
+    }
+}
+
+#[cfg(not(feature = "hacspec"))]
+impl SerialCtx for &str {
+    fn serial_ctx<W: Write>(
+	&self,
+	size_len: concordium_std::schema::SizeLength,
+	out: &mut W,
+    ) -> Result<(), W::Err> {
+	concordium_std::schema::serial_length(self.len(), size_len, out)?;
+	serial_vector_no_length(&self.as_bytes().to_vec(), out)
+    }
+}
+
+#[cfg(not(feature = "hacspec"))]
+impl SerialCtx for String {
+    fn serial_ctx<W: Write>(
+	&self,
+	size_len: concordium_std::schema::SizeLength,
+	out: &mut W,
+    ) -> Result<(), W::Err> {
+	self.as_str().serial_ctx(size_len, out)
+    }
+}
+
+#[cfg(not(feature = "hacspec"))]  
+impl DeserialCtx for String {
+    fn deserial_ctx<R: Read>(
+	size_len: concordium_std::schema::SizeLength,
+	_ensure_ordered: bool,
+	source: &mut R,
+    ) -> ParseResult<Self> {
+	let len = concordium_std::schema::deserial_length(source, size_len)?;
+	let bytes = deserial_vector_no_length(source, len)?;
+	let res = String::from_utf8(bytes).map_err(|_| ParseError::default())?;
+	Ok(res)
     }
 }
 
