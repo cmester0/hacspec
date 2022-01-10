@@ -22,10 +22,7 @@ Definition reject_impl_convert_from_unit  : reject_hacspec_t :=
 Theorem ensures_reject_impl_convert_from_unit : forall result_1 ,
 @reject_impl_convert_from_unit  = result_1 ->
 (result_1) !=.? (@repr WORDSIZE32 0).
-Proof. 
-  intros ; subst.
-  reflexivity.
-Qed.
+Proof. Admitted.
 
 Definition reject_impl_convert_from_parse_error  : reject_hacspec_t :=
   (min_v) .+ (@repr WORDSIZE32 2).
@@ -33,10 +30,7 @@ Definition reject_impl_convert_from_parse_error  : reject_hacspec_t :=
 Theorem ensures_reject_impl_convert_from_parse_error : forall result_1 ,
 @reject_impl_convert_from_parse_error  = result_1 ->
 (result_1) !=.? (@repr WORDSIZE32 0).
-Proof. 
-  intros ; subst.
-  reflexivity.
-Qed.
+Proof. Admitted.
 
 Inductive log_error_t :=
 | Full : log_error_t
@@ -52,10 +46,7 @@ Theorem ensures_reject_impl_from_log_error : forall result_1 (
   le_2 : log_error_t),
 @reject_impl_from_log_error le_2 = result_1 ->
 (result_1) !=.? (@repr WORDSIZE32 0).
-Proof.  
-  intros ; subst.
-  destruct le_2 ; reflexivity.
-Qed.
+Proof. Admitted.
 
 Inductive new_contract_name_error_t :=
 | NewContractNameErrorMissingInitPrefix : new_contract_name_error_t
@@ -77,10 +68,7 @@ Theorem ensures_reject_impl_from_new_contract_name_error : forall result_1 (
   nre_3 : new_contract_name_error_t),
 @reject_impl_from_new_contract_name_error nre_3 = result_1 ->
 (result_1) !=.? (@repr WORDSIZE32 0).
-Proof. 
-  intros ; subst.
-  destruct nre_3 ; reflexivity.
-Qed.
+Proof. Admitted.
 
 Inductive new_receive_name_error_t :=
 | NewReceiveNameErrorMissingDotSeparator : new_receive_name_error_t
@@ -100,10 +88,7 @@ Theorem ensures_reject_impl_from_new_receive_name_error : forall result_1 (
   nre_4 : new_receive_name_error_t),
 @reject_impl_from_new_receive_name_error nre_4 = result_1 ->
 (result_1) !=.? (@repr WORDSIZE32 0).
-Proof.
-  intros ; subst.
-  destruct nre_4 ; reflexivity.
-Qed.
+Proof. Admitted.
 
 Notation "'contract_state_hacspec_t'" := (int32) : hacspec_scope.
 
@@ -372,7 +357,7 @@ Definition iterator_impl_for_policies_iterator_next
               skip_part_66))))) .+ (@repr WORDSIZE32 2) in 
   let remaining_items_74 :=
     (remaining_items_74) .- (@repr WORDSIZE16 1) in 
-  Some ((
+  @Some (policies_iterator_hacspec_t × policy_attributes_cursor_hacspec_t) ((
       (pos_64, remaining_items_74),
       (
         identity_provider_71,
@@ -381,3 +366,4 @@ Definition iterator_impl_for_policies_iterator_next
         (attributes_start_75, remaining_items_74)
       )
     )).
+

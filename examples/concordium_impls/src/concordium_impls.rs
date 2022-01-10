@@ -1025,7 +1025,7 @@ fn iterator_impl_for_policies_iterator_next(policies_iterator : PoliciesIterator
     let attributes_start = pos + 2u32 + 4u32 + 8u32 + 8u32 + 2u32;
     pos = pos + (u16_from_le_bytes(u16Word::from_seq(&skip_part)) as u32) + 2u32;
     remaining_items = remaining_items - 1u16;
-    Some(((pos, remaining_items),
+    Option::<(PoliciesIteratorHacspec, PolicyAttributesCursorHacspec)>::Some(((pos, remaining_items),
 	  (
 	identity_provider,
 	created_at,
