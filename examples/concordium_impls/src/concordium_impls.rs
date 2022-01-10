@@ -863,7 +863,6 @@ pub fn has_policy_impl_for_policy_attributes_cursor_next_item(
 
     let (mut current_position, mut remaining_items) = policy_attribute_items;
 
-    // TODO: implement ? for option types and uncomment
     if remaining_items == 0u16 {
 	Option::<(AttributesCursorHacspec, (u8, u8))>::None?;
     }
@@ -872,7 +871,6 @@ pub fn has_policy_impl_for_policy_attributes_cursor_next_item(
     let (tag_value_len, num_read) = get_policy_section_hacspec(tag_value_len, current_position);
     current_position = current_position + num_read;
 
-    // TODO: implement ? for option types and uncomment
     if tag_value_len[1] > 31u8 {
 	// Should not happen because all attributes fit into 31 bytes.
 	Option::<(AttributesCursorHacspec, (u8, u8))>::None?;
@@ -1145,7 +1143,7 @@ extern "C" {
 #[cfg(not(feature = "hacspec"))]
 #[trusted]
 pub(crate) fn get_receive_sender_creusot(start: *mut u8) {
-    unsafe { get_receive_invoker(start) }
+    unsafe { get_receive_sender(start) }
 }
 
 #[cfg(feature = "hacspec")]
@@ -1169,7 +1167,7 @@ extern "C" {
 #[cfg(not(feature = "hacspec"))]
 #[trusted]
 pub(crate) fn get_receive_owner_creusot(start: *mut u8) {
-    unsafe { get_receive_invoker(start) }
+    unsafe { get_receive_owner(start) }
 }
 
 #[cfg(feature = "hacspec")]
@@ -1337,6 +1335,33 @@ impl HasReceiveContext for ExternContext<ReceiveContextExtern> {
 	);
 	AccountAddress(address)
     }
+}
+
+#[cfg(not(feature = "hacspec"))]
+extern "C" {
+    // Add a log item. Return values are
+    // - -1 if logging failed due to the message being too long
+    // - 0 if the log is already full
+    // - 1 if data was successfully logged.
+    pub(crate) fn log_event(start: *const u8, length: u32) -> i32;
+}
+
+#[cfg(not(feature = "hacspec"))]
+#[trusted]
+pub(crate) fn log_event_creusot(start: *const u8, length: u32) -> i32 {
+    unsafe { log_event(start, length) }
+}
+
+#[cfg(feature = "hacspec")]
+fn log_event_hacspec(start: PublicByteSeq) -> (PublicByteSeq, i32) {
+    (start, 1i32)
+}
+
+#[cfg(not(feature = "hacspec"))]
+fn log_event_hacspec(start: PublicByteSeq) -> (PublicByteSeq, i32) {
+    let temp = &mut coerce_hacspec_to_rust_public_byte_seq(start.clone())[..];
+    let result = log_event_creusot(temp.as_ptr(), start.len() as u32);
+    (coerce_rust_to_hacspec_public_byte_seq(&temp), result)
 }
 
 #[cfg(not(feature = "hacspec"))]
