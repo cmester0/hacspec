@@ -424,26 +424,31 @@ Definition get_receive_owner_hacspec
   : public_byte_seq :=
   start_81.
 
+Definition log_event_hacspec
+  (start_82 : public_byte_seq)
+  : (public_byte_seq × int32) :=
+  (start_82, @repr WORDSIZE32 1).
+
 Definition accept_hacspec  : int32 :=
   @repr WORDSIZE32 1.
 
 Definition simple_transfer_hacspec
-  (buf_82 : public_byte_seq)
-  (amount_83 : int64)
+  (buf_83 : public_byte_seq)
+  (amount_84 : int64)
   : int32 :=
   @repr WORDSIZE32 1.
 
 Definition send_hacspec
-  (addr_index_84 : int64)
-  (addr_subindex_85 : int64)
-  (receive_name_86 : public_byte_seq)
-  (amount_87 : int64)
-  (parameter_88 : public_byte_seq)
+  (addr_index_85 : int64)
+  (addr_subindex_86 : int64)
+  (receive_name_87 : public_byte_seq)
+  (amount_88 : int64)
+  (parameter_89 : public_byte_seq)
   : int32 :=
   @repr WORDSIZE32 1.
 
-Definition combine_and_hacspec (l_89 : int32) (r_90 : int32) : int32 :=
+Definition combine_and_hacspec (l_90 : int32) (r_91 : int32) : int32 :=
   @repr WORDSIZE32 1.
 
-Definition combine_or_hacspec (l_91 : int32) (r_92 : int32) : int32 :=
+Definition combine_or_hacspec (l_92 : int32) (r_93 : int32) : int32 :=
   @repr WORDSIZE32 1.
