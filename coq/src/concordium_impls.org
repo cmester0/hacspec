@@ -1018,7 +1018,6 @@ Get policy section extern
 
 #+end_src
 
-
 #+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   /// A type representing the attributes, lazily acquired from the host.
@@ -1059,7 +1058,6 @@ Get policy section extern
 
       let (mut current_position, mut remaining_items) = policy_attribute_items;
 
-      // TODO: implement ? for option types and uncomment
       if remaining_items == 0u16 {
 	  Option::<(AttributesCursorHacspec, (u8, u8))>::None?;
       }
@@ -1068,7 +1066,6 @@ Get policy section extern
       let (tag_value_len, num_read) = get_policy_section_hacspec(tag_value_len, current_position);
       current_position = current_position + num_read;
 
-      // TODO: implement ? for option types and uncomment
       if tag_value_len[1] > 31u8 {
 	  // Should not happen because all attributes fit into 31 bytes.
 	  Option::<(AttributesCursorHacspec, (u8, u8))>::None?;
@@ -1364,7 +1361,7 @@ Get receive sender extern
   #[cfg(not(feature = "hacspec"))]
   #[trusted]
   pub(crate) fn get_receive_sender_creusot(start: *mut u8) {
-      unsafe { get_receive_invoker(start) }
+      unsafe { get_receive_sender(start) }
   }
 
   #[cfg(feature = "hacspec")]
@@ -1391,7 +1388,7 @@ Get receive owner extern
   #[cfg(not(feature = "hacspec"))]
   #[trusted]
   pub(crate) fn get_receive_owner_creusot(start: *mut u8) {
-      unsafe { get_receive_invoker(start) }
+      unsafe { get_receive_owner(start) }
   }
 
   #[cfg(feature = "hacspec")]
@@ -1566,26 +1563,55 @@ Get receive owner extern
 #+end_src
 
 *** Logger
-# TODO: Implement logger
+Log event extern
+#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+  #[cfg(not(feature = "hacspec"))]
+  extern "C" {
+      // Add a log item. Return values are
+      // - -1 if logging failed due to the message being too long
+      // - 0 if the log is already full
+      // - 1 if data was successfully logged.
+      pub(crate) fn log_event(start: *const u8, length: u32) -> i32;
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  #[trusted]
+  pub(crate) fn log_event_creusot(start: *const u8, length: u32) -> i32 {
+      unsafe { log_event(start, length) }
+  }
+
+  #[cfg(feature = "hacspec")]
+  fn log_event_hacspec(start: PublicByteSeq) -> (PublicByteSeq, i32) {
+      (start, 1i32)
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  fn log_event_hacspec(start: PublicByteSeq) -> (PublicByteSeq, i32) {
+      let temp = &mut coerce_hacspec_to_rust_public_byte_seq(start.clone())[..];
+      let result = log_event_creusot(temp.as_ptr(), start.len() as u32);
+      (coerce_rust_to_hacspec_public_byte_seq(&temp), result)
+  }
+
+#+end_src
+
 #+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never :tangle no  
-  // #[cfg(not(feature = "hacspec"))]
-  // /// #Implementations of the logger.
-  // impl HasLogger for Logger {
-  //     #[inline(always)]
-  //     fn init() -> Self {
-  //         Self { _private: () }
-  //     }
+  #[cfg(not(feature = "hacspec"))]
+  /// #Implementations of the logger.
+  impl HasLogger for Logger {
+      #[inline(always)]
+      fn init() -> Self {
+	  Self { _private: () }
+      }
 
-  //     fn log_raw(&mut self, event: &[u8]) -> Result<(), LogError> {
-  //         let res = unsafe { log_event(event.as_ptr(), event.len() as u32) };
-  //         match res {
-  //             1 => Ok(()),
-  //             0 => Err(LogError::Full),
-  //             _ => Err(LogError::Malformed),
-  //         }
-  //     }
-  // }
-
+      fn log_raw(&mut self, event: &[u8]) -> Result<(), LogError> {
+	  let (_, res) = log_event_hacspec(coerce_rust_to_hacspec_public_byte_seq(event));
+	  match res {
+	      1 => Ok(()),
+	      0 => Err(LogError::Full),
+	      _ => Err(LogError::Malformed),
+	  }
+      }
+  }
 #+end_src
 *** Action
 Extern accept
@@ -2824,36 +2850,51 @@ Definition get_receive_owner_hacspec
   start_81.
 
 #+end_src
-
-*** Action
+*** Logger
 #+NAME: linum22
-#+CALL: next(ARG="0 -1", linum=linum21) :exports none
+#+CALL: next(ARG="0 2", linum=linum21) :exports none
 #+NAME: seg22
 #+CALL: split-file(ARG=linum22) :eval
+
 #+RESULTS: seg22
+#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+Definition log_event_hacspec
+  (start_82 : public_byte_seq)
+  : (public_byte_seq × int32) :=
+  (start_82, @repr WORDSIZE32 1).
+
+#+end_src
+
+
+*** Action
+#+NAME: linum23
+#+CALL: next(ARG="0 -1", linum=linum22) :exports none
+#+NAME: seg23
+#+CALL: split-file(ARG=linum23) :eval
+#+RESULTS: seg23
 #+begin_src coq :tangle ConcordiumImpls.v :results output silent
 Definition accept_hacspec  : int32 :=
   @repr WORDSIZE32 1.
 
 Definition simple_transfer_hacspec
-  (buf_82 : public_byte_seq)
-  (amount_83 : int64)
+  (buf_83 : public_byte_seq)
+  (amount_84 : int64)
   : int32 :=
   @repr WORDSIZE32 1.
 
 Definition send_hacspec
-  (addr_index_84 : int64)
-  (addr_subindex_85 : int64)
-  (receive_name_86 : public_byte_seq)
-  (amount_87 : int64)
-  (parameter_88 : public_byte_seq)
+  (addr_index_85 : int64)
+  (addr_subindex_86 : int64)
+  (receive_name_87 : public_byte_seq)
+  (amount_88 : int64)
+  (parameter_89 : public_byte_seq)
   : int32 :=
   @repr WORDSIZE32 1.
 
-Definition combine_and_hacspec (l_89 : int32) (r_90 : int32) : int32 :=
+Definition combine_and_hacspec (l_90 : int32) (r_91 : int32) : int32 :=
   @repr WORDSIZE32 1.
 
-Definition combine_or_hacspec (l_91 : int32) (r_92 : int32) : int32 :=
+Definition combine_or_hacspec (l_92 : int32) (r_93 : int32) : int32 :=
   @repr WORDSIZE32 1.
 
 #+end_src
