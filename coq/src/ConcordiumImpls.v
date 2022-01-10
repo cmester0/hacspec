@@ -381,3 +381,27 @@ Definition iterator_impl_for_policies_iterator_next
         (attributes_start_75, remaining_items_74)
       )
     )).
+
+Definition accept_hacspec  : int32 :=
+  @repr WORDSIZE32 1.
+
+Definition simple_transfer_hacspec
+  (buf_76 : public_byte_seq)
+  (amount_77 : int64)
+  : int32 :=
+  @repr WORDSIZE32 1.
+
+Definition send_hacspec
+  (addr_index_78 : int64)
+  (addr_subindex_79 : int64)
+  (receive_name_80 : public_byte_seq)
+  (amount_81 : int64)
+  (parameter_82 : public_byte_seq)
+  : int32 :=
+  @repr WORDSIZE32 1.
+
+Definition combine_and_hacspec (l_83 : int32) (r_84 : int32) : int32 :=
+  @repr WORDSIZE32 1.
+
+Definition combine_or_hacspec (l_85 : int32) (r_86 : int32) : int32 :=
+  @repr WORDSIZE32 1.
