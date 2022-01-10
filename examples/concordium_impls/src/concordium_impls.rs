@@ -324,6 +324,20 @@ impl Seek for ContractState {
 }
 
 #[cfg(not(feature = "hacspec"))]
+pub fn coerce_rust_to_hacspec_public_byte_seq(buf: &[u8]) -> PublicByteSeq {
+    PublicByteSeq::from_native_slice(buf)
+}
+
+#[cfg(not(feature = "hacspec"))]
+pub fn coerce_hacspec_to_rust_public_byte_seq(buf: PublicByteSeq) -> Vec<u8> {
+    let mut temp_vec: Vec<u8> = Vec::new();
+    for i in 0..buf.len() {
+	temp_vec.push(buf.index(i).clone())
+    }
+    temp_vec
+}
+
+#[cfg(not(feature = "hacspec"))]
 extern "C" {
     pub(crate) fn load_state(start: *mut u8, length: u32, offset: u32) -> u32;
 }
@@ -341,14 +355,11 @@ fn load_state_hacspec(buf: PublicByteSeq, offset: u32) -> (PublicByteSeq, u32) {
 
 #[cfg(not(feature = "hacspec"))]
 fn load_state_hacspec(buf: PublicByteSeq, offset: u32) -> (PublicByteSeq, u32) {
-    let mut temp_vec: Vec<u8> = Vec::new();
-    for i in 0..buf.len() {
-	temp_vec.push(buf.index(i).clone())
-    }
-    let temp = &mut temp_vec[..];
+    let temp = &mut coerce_hacspec_to_rust_public_byte_seq(buf.clone())[..];
+    let result = load_state_creusot(temp.as_mut_ptr(), buf.len() as u32, offset);
     (
-	PublicByteSeq::from_native_slice(temp),
-	load_state_creusot(temp.as_mut_ptr(), buf.len() as u32, offset),
+	coerce_rust_to_hacspec_public_byte_seq(&temp),
+	result,
     )
 }
 
@@ -393,29 +404,11 @@ pub fn contract_state_impl_read_read_u8(
 }
 
 #[cfg(not(feature = "hacspec"))]
-pub fn coerce_rust_to_hacspec_public_byte_seq_read(
-    buf: &mut [u8],
-) -> // Result<
-	PublicByteSeq
-     // , concordium_std::ParseError>
-{
-    // let len: u32 = {
-    //     match buf.len().try_into() {
-    //         Ok(v) => v,
-    //         _ => return Err(ParseError::default()),
-    //     }
-    // };
-
-    // Ok(
-    PublicByteSeq::from_native_slice(buf) // ) // PublicByteSeq::new(len as usize);
-}
-
-#[cfg(not(feature = "hacspec"))]
 impl Read for ContractState {
     fn read(&mut self, buf: &mut [u8]) -> ParseResult<usize> {
 	let (cs, nr) = contract_state_impl_read_read(
 	    coerce_rust_to_hacspec_contract_state(self),
-	    coerce_rust_to_hacspec_public_byte_seq_read(buf),
+	    coerce_rust_to_hacspec_public_byte_seq(buf),
 	);
 	coerce_hacspec_to_rust_contract_state(self, cs);
 	Ok(nr)
@@ -424,10 +417,9 @@ impl Read for ContractState {
     // TODO: !! Probably incorrect !!
     /// Read a `u32` in little-endian format. This is optimized to not
     /// initialize a dummy value before calling an external function.
-    fn read_u64(&mut self) -> ParseResult<u64> {	  
-	let (cs, nr) = contract_state_impl_read_read_u64(
-	    coerce_rust_to_hacspec_contract_state(self),
-	);
+    fn read_u64(&mut self) -> ParseResult<u64> {
+	let (cs, nr) =
+	    contract_state_impl_read_read_u64(coerce_rust_to_hacspec_contract_state(self));
 	coerce_hacspec_to_rust_contract_state(self, cs);
 	Ok(nr)
 	// if num_read == 8 {
@@ -440,13 +432,12 @@ impl Read for ContractState {
     /// Read a `u32` in little-endian format. This is optimized to not
     /// initialize a dummy value before calling an external function.
     fn read_u32(&mut self) -> ParseResult<u32> {
-	let (cs, nr) = contract_state_impl_read_read_u32(
-	    coerce_rust_to_hacspec_contract_state(self),
-	);
+	let (cs, nr) =
+	    contract_state_impl_read_read_u32(coerce_rust_to_hacspec_contract_state(self));
 	coerce_hacspec_to_rust_contract_state(self, cs);
 	Ok(nr)
 
-	    // let mut bytes: MaybeUninit<[u8; 4]> = MaybeUninit::uninit();
+	// let mut bytes: MaybeUninit<[u8; 4]> = MaybeUninit::uninit();
 	// let num_read =
 	//     unsafe { load_state(bytes.as_mut_ptr() as *mut u8, 4, self.current_position) };
 	// self.current_position += num_read;
@@ -460,9 +451,8 @@ impl Read for ContractState {
     /// Read a `u8` in little-endian format. This is optimized to not
     /// initialize a dummy value before calling an external function.
     fn read_u8(&mut self) -> ParseResult<u8> {
-	let (cs, nr) = contract_state_impl_read_read_u8(
-	    coerce_rust_to_hacspec_contract_state(self),
-	);
+	let (cs, nr) =
+	    contract_state_impl_read_read_u8(coerce_rust_to_hacspec_contract_state(self));
 	coerce_hacspec_to_rust_contract_state(self, cs);
 	Ok(nr)
     }
@@ -486,14 +476,11 @@ fn write_state_hacspec(buf: PublicByteSeq, offset: u32) -> (PublicByteSeq, u32) 
 
 #[cfg(not(feature = "hacspec"))]
 fn write_state_hacspec(buf: PublicByteSeq, offset: u32) -> (PublicByteSeq, u32) {
-    let mut temp_vec: Vec<u8> = Vec::new();
-    for i in 0..buf.len() {
-	temp_vec.push(buf.index(i).clone())
-    }
-    let temp = &mut temp_vec[..];
+    let temp = &mut coerce_hacspec_to_rust_public_byte_seq(buf.clone())[..];
+    let result = write_state_creusot(temp.as_mut_ptr(), buf.len() as u32, offset);
     (
-	PublicByteSeq::from_native_slice(temp),
-	write_state_creusot(temp.as_mut_ptr(), buf.len() as u32, offset),
+	coerce_rust_to_hacspec_public_byte_seq(&temp),
+	result,
     )
 }
 
@@ -509,31 +496,13 @@ pub fn contract_state_impl_write(
 }
 
 #[cfg(not(feature = "hacspec"))]
-pub fn coerce_rust_to_hacspec_public_byte_seq_write(
-    buf: &[u8],
-) -> // Result<
-	PublicByteSeq
-     // , ()>
-{
-    // let len: u32 = {
-    //     match buf.len().try_into() {
-    //         Ok(v) => v,
-    //         _ => return Err(ParseError::default()),
-    //     }
-    // };
-
-    // Ok(
-    PublicByteSeq::from_native_slice(buf) // ) // PublicByteSeq::new(len as usize);
-}
-
-#[cfg(not(feature = "hacspec"))]
 impl Write for ContractState {
     type Err = ();
 
     fn write(&mut self, buf: &[u8]) -> Result<usize, Self::Err> {
 	let (cs, nr) = contract_state_impl_write(
 	    coerce_rust_to_hacspec_contract_state(self),
-	    coerce_rust_to_hacspec_public_byte_seq_write(buf),
+	    coerce_rust_to_hacspec_public_byte_seq(buf),
 	)?;
 	coerce_hacspec_to_rust_contract_state(self, cs);
 	Ok(nr)
@@ -682,14 +651,11 @@ fn get_parameter_section_hacspec(buf: PublicByteSeq, offset: u32) -> (PublicByte
 
 #[cfg(not(feature = "hacspec"))]
 fn get_parameter_section_hacspec(buf: PublicByteSeq, offset: u32) -> (PublicByteSeq, u32) {
-    let mut temp_vec: Vec<u8> = Vec::new();
-    for i in 0..buf.len() {
-	temp_vec.push(buf.index(i).clone())
-    }
-    let temp = &mut temp_vec[..];
+    let temp = &mut coerce_hacspec_to_rust_public_byte_seq(buf.clone())[..];
+    let result = get_parameter_section_creusot(temp.as_mut_ptr(), buf.len() as u32, offset);
     (
-	PublicByteSeq::from_native_slice(temp),
-	get_parameter_section_creusot(temp.as_mut_ptr(), buf.len() as u32, offset),
+	coerce_rust_to_hacspec_public_byte_seq(&temp),
+	result,
     )
 }
 
@@ -732,7 +698,7 @@ impl Read for Parameter {
     fn read(&mut self, buf: &mut [u8]) -> ParseResult<usize> {
 	let (cs, nr) = read_impl_for_parameter_read(
 	    coerce_rust_to_hacspec_parameter(self),
-	    coerce_rust_to_hacspec_public_byte_seq_read(buf),
+	    coerce_rust_to_hacspec_public_byte_seq(buf),
 	);
 	coerce_hacspec_to_rust_parameter(self, cs);
 	Ok(nr)
@@ -826,14 +792,11 @@ fn get_policy_section_hacspec(policy_bytes: PublicByteSeq, offset: u32) -> (Publ
 
 #[cfg(not(feature = "hacspec"))]
 fn get_policy_section_hacspec(policy_bytes: PublicByteSeq, offset: u32) -> (PublicByteSeq, u32) {
-    let mut temp_vec: Vec<u8> = Vec::new();
-    for i in 0..policy_bytes.len() {
-	temp_vec.push(policy_bytes.index(i).clone())
-    }
-    let temp = &mut temp_vec[..];
+    let temp = &mut coerce_hacspec_to_rust_public_byte_seq(policy_bytes.clone())[..];
+    let result = get_policy_section_creusot(temp.as_mut_ptr(), policy_bytes.len() as u32, offset);
     (
-	PublicByteSeq::from_native_slice(temp),
-	get_policy_section_creusot(temp.as_mut_ptr(), policy_bytes.len() as u32, offset),
+	coerce_rust_to_hacspec_public_byte_seq(&temp),
+	result,
     )
 }
 
@@ -895,24 +858,6 @@ pub fn has_policy_impl_for_policy_attributes_cursor_next_item(
     current_position = current_position + num_read;
     remaining_items = remaining_items - 1u16;
     Option::<(AttributesCursorHacspec, (u8, u8))>::Some(((current_position, remaining_items), (tag_value_len[0], tag_value_len[1])))
-}
-
-#[cfg(not(feature = "hacspec"))]
-pub fn coerce_rust_to_hacspec_public_byte_seq_has_policy(
-    buf: &mut [u8; 31],
-) -> // Result<
-	PublicByteSeq
-     // , concordium_std::ParseError>
-{
-    // let len: u32 = {
-    //     match buf.len().try_into() {
-    //         Ok(v) => v,
-    //         _ => return Err(ParseError::default()),
-    //     }
-    // };
-
-    // Ok(
-    PublicByteSeq::from_native_slice(buf) // ) // PublicByteSeq::new(len as usize);
 }
 
 #[cfg(not(feature = "hacspec"))]
@@ -979,7 +924,7 @@ impl HasPolicy for Policy<AttributesCursor> {
     fn next_item(&mut self, buf: &mut [u8; 31]) -> Option<(AttributeTag, u8)> {	  
 	let (ac, (at, v)) = has_policy_impl_for_policy_attributes_cursor_next_item(
 	    coerce_rust_to_hacspec_attributes_cursor(&mut self.items),
-	    coerce_rust_to_hacspec_public_byte_seq_has_policy(buf),
+	    coerce_rust_to_hacspec_public_byte_seq(buf),
 	)?;
 	coerce_hacspec_to_rust_attributes_cursor(&mut self.items, ac);
 	Some ((AttributeTag(at),v))
@@ -1070,6 +1015,216 @@ impl ExactSizeIterator for PoliciesIterator {
     #[inline(always)]
     fn len(&self) -> usize {
 	self.remaining_items as usize
+    }
+}
+
+#[cfg(not(feature = "hacspec"))]
+extern "C" {
+    pub(crate) fn accept() -> u32;
+}
+
+#[cfg(not(feature = "hacspec"))]
+#[trusted]
+pub(crate) fn accept_creusot() -> u32 {
+    unsafe { accept() }
+}
+
+#[cfg(feature = "hacspec")]
+fn accept_hacspec() -> u32 {
+    1u32
+}
+
+#[cfg(not(feature = "hacspec"))]
+fn accept_hacspec() -> u32 {
+    accept_creusot()
+}
+
+#[cfg(not(feature = "hacspec"))]
+extern "C" {
+  // Basic action to send tokens to an account.
+  pub(crate) fn simple_transfer(addr_bytes: *const u8, amount: u64) -> u32;
+}
+
+#[cfg(not(feature = "hacspec"))]
+#[trusted]
+pub(crate) fn simple_transfer_creusot(addr_bytes: *const u8, amount: u64) -> u32 {
+    unsafe { simple_transfer(addr_bytes, amount) }
+}
+
+#[cfg(feature = "hacspec")]
+fn simple_transfer_hacspec(buf: PublicByteSeq, amount: u64) -> u32 {
+    1u32
+}
+
+#[cfg(not(feature = "hacspec"))]
+fn simple_transfer_hacspec(buf: PublicByteSeq, amount: u64) -> u32 {
+    let temp = &mut coerce_hacspec_to_rust_public_byte_seq(buf.clone())[..];
+    simple_transfer_creusot(temp.as_ptr(), amount)
+}
+
+#[cfg(not(feature = "hacspec"))]
+extern "C" {
+  // Send a message to a smart contract.
+  pub(crate) fn send(
+      addr_index: u64,
+      addr_subindex: u64,
+      receive_name: *const u8,
+      receive_name_len: u32,
+      amount: u64,
+      parameter: *const u8,
+      parameter_len: u32,
+  ) -> u32;
+}
+
+#[cfg(not(feature = "hacspec"))]
+#[trusted]
+pub(crate) fn send_creusot(
+      addr_index: u64,
+      addr_subindex: u64,
+      receive_name: *const u8,
+      receive_name_len: u32,
+      amount: u64,
+      parameter: *const u8,
+      parameter_len: u32,
+  ) -> u32 {
+    unsafe { send(addr_index, addr_subindex, receive_name, receive_name_len, amount, parameter, parameter_len) }
+}
+
+#[cfg(feature = "hacspec")]
+fn send_hacspec(
+      addr_index: u64,
+      addr_subindex: u64,
+      receive_name: PublicByteSeq,
+      amount: u64,
+      parameter: PublicByteSeq,
+  ) -> u32 {
+    1u32
+}
+
+#[cfg(not(feature = "hacspec"))]
+fn send_hacspec(
+      addr_index: u64,
+      addr_subindex: u64,
+      receive_name: PublicByteSeq,
+      amount: u64,
+      parameter: PublicByteSeq,
+  ) -> u32 {
+    let temp_receive_name = &mut coerce_hacspec_to_rust_public_byte_seq(receive_name.clone())[..];
+    let temp_parameter = &mut coerce_hacspec_to_rust_public_byte_seq(parameter.clone())[..];
+    send_creusot(addr_index, addr_subindex, temp_receive_name.as_ptr(), receive_name.len() as u32, amount, temp_parameter.as_ptr(), parameter.len() as u32)
+}
+
+#[cfg(not(feature = "hacspec"))]
+extern "C" {
+  // Combine two actions using normal sequencing. This is using the stack of
+  // actions already produced.
+  pub(crate) fn combine_and(l: u32, r: u32) -> u32;
+}
+
+#[cfg(not(feature = "hacspec"))]
+#[trusted]
+pub(crate) fn combine_and_creusot(l: u32, r: u32) -> u32 {
+    unsafe { combine_and(l, r) }
+}
+
+#[cfg(feature = "hacspec")]
+fn combine_and_hacspec(l: u32, r: u32) -> u32 {
+    1u32
+}
+
+#[cfg(not(feature = "hacspec"))]
+fn combine_and_hacspec(l: u32, r: u32) -> u32 {
+    combine_and_creusot(l,r)
+}
+
+#[cfg(not(feature = "hacspec"))]
+extern "C" {
+  // Combine two actions using normal sequencing. This is using the stack of
+  // actions already produced.
+  pub(crate) fn combine_or(l: u32, r: u32) -> u32;
+}
+
+#[cfg(not(feature = "hacspec"))]
+#[trusted]
+pub(crate) fn combine_or_creusot(l: u32, r: u32) -> u32 {
+    unsafe { combine_or(l, r) }
+}
+
+#[cfg(feature = "hacspec")]
+fn combine_or_hacspec(l: u32, r: u32) -> u32 {
+    1u32
+}
+
+#[cfg(not(feature = "hacspec"))]
+fn combine_or_hacspec(l: u32, r: u32) -> u32 {
+    combine_or_creusot(l,r)
+}
+
+#[cfg(not(feature = "hacspec"))]
+/// Actions that can be produced at the end of a contract execution. This
+/// type is deliberately not cloneable so that we can enforce that
+/// `and_then` and `or_else` can only be used when more than one event is
+/// created.
+///
+/// This type is marked as `must_use` since functions that produce
+/// values of the type are effectful.
+#[must_use]
+pub struct Action {
+    pub(crate) _private: u32,
+}
+
+#[cfg(not(feature = "hacspec"))]
+impl Action {
+    pub fn tag(&self) -> u32 { self._private }
+}
+
+
+#[cfg(not(feature = "hacspec"))]
+/// #Implementation of actions.
+/// These actions are implemented by direct calls to host functions.
+impl HasActions for Action {
+    #[inline(always)]
+    fn accept() -> Self {
+	Action {
+	    _private: accept_hacspec(),
+	}
+    }
+
+    #[inline(always)]
+    fn simple_transfer(acc: &AccountAddress, amount: Amount) -> Self {
+	let res = simple_transfer_hacspec(coerce_rust_to_hacspec_public_byte_seq(&acc.0), amount.micro_gtu);
+	Action { _private: res }
+    }
+
+    #[inline(always)]
+    fn send_raw(
+	ca: &ContractAddress,
+	receive_name: ReceiveName,
+	amount: Amount,
+	parameter: &[u8],
+    ) -> Self {
+	let receive_bytes = receive_name.get_chain_name().as_bytes();
+	let res = 
+	    send_hacspec(
+		ca.index,
+		ca.subindex,
+		coerce_rust_to_hacspec_public_byte_seq(&receive_bytes),
+		amount.micro_gtu,
+		coerce_rust_to_hacspec_public_byte_seq(&parameter),
+	    );
+	Action { _private: res }
+    }
+
+    #[inline(always)]
+    fn and_then(self, then: Self) -> Self {
+	let res = combine_and_hacspec(self._private, then._private);
+	Action { _private: res }
+    }
+
+    #[inline(always)]
+    fn or_else(self, el: Self) -> Self {
+	let res = combine_or_hacspec(self._private, el._private);
+	Action { _private: res }
     }
 }
 
