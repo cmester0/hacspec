@@ -1760,7 +1760,6 @@ This file should replace the import of the concordium ~impls.rs~ file.
 
 #+end_src
 
-
 ** Resulting output
 #+begin_src sh :eval no-export-query :results output silent
   cargo clean
@@ -1860,6 +1859,11 @@ This file should replace the import of the concordium ~impls.rs~ file.
   print (a+b+c,d)
 #+end_src
 
+#+NAME: empty
+#+begin_src python :results output silent :exports none
+#+end_src
+
+
 #+NAME: seginit
 #+begin_src python :wrap "src coq :results output silent" :result code :exports none :var loc=(file-name-directory buffer-file-name)
   with open("../_CoqProject") as f:
@@ -1946,7 +1950,7 @@ Definition reject_impl_convert_from_unit  : reject_hacspec_t :=
 Theorem ensures_reject_impl_convert_from_unit : forall result_1 ,
 @reject_impl_convert_from_unit  = result_1 ->
 (result_1) !=.? (@repr WORDSIZE32 0).
-Proof. 
+Proof.
   intros ; subst.
   reflexivity.
 Qed.
@@ -1965,7 +1969,7 @@ Definition reject_impl_convert_from_parse_error  : reject_hacspec_t :=
 Theorem ensures_reject_impl_convert_from_parse_error : forall result_1 ,
 @reject_impl_convert_from_parse_error  = result_1 ->
 (result_1) !=.? (@repr WORDSIZE32 0).
-Proof. 
+Proof.
   intros ; subst.
   reflexivity.
 Qed.
@@ -1992,7 +1996,7 @@ Theorem ensures_reject_impl_from_log_error : forall result_1 (
   le_2 : log_error_t),
 @reject_impl_from_log_error le_2 = result_1 ->
 (result_1) !=.? (@repr WORDSIZE32 0).
-Proof.  
+Proof.
   intros ; subst.
   destruct le_2 ; reflexivity.
 Qed.
@@ -2025,7 +2029,7 @@ Theorem ensures_reject_impl_from_new_contract_name_error : forall result_1 (
   nre_3 : new_contract_name_error_t),
 @reject_impl_from_new_contract_name_error nre_3 = result_1 ->
 (result_1) !=.? (@repr WORDSIZE32 0).
-Proof. 
+Proof.
   intros ; subst.
   destruct nre_3 ; reflexivity.
 Qed.
@@ -2432,7 +2436,7 @@ Definition iterator_impl_for_policies_iterator_next
               skip_part_66))))) .+ (@repr WORDSIZE32 2) in 
   let remaining_items_74 :=
     (remaining_items_74) .- (@repr WORDSIZE16 1) in 
-  Some ((
+  @Some (policies_iterator_hacspec_t × policy_attributes_cursor_hacspec_t) ((
       (pos_64, remaining_items_74),
       (
         identity_provider_71,
@@ -2441,4 +2445,8 @@ Definition iterator_impl_for_policies_iterator_next
         (attributes_start_75, remaining_items_74)
       )
     )).
+
 #+end_src
+
+# ,A3=seg3
+#+CALL: empty(A0=seg0,A1=seg1,A2=seg2,A4=seg4,A5=seg5,A6=seg6,A7=seg7,A8=seg8,A9=seg9,A10=seg10,A11=seg11,A12=seg12,A13=seg13,A14=seg14,A15=seg15,A16=seg16,A17=seg17,A18=seg18,A19=seg19,A20=seg20) :exports none

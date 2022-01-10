@@ -22,7 +22,10 @@ Definition reject_impl_convert_from_unit  : reject_hacspec_t :=
 Theorem ensures_reject_impl_convert_from_unit : forall result_1 ,
 @reject_impl_convert_from_unit  = result_1 ->
 (result_1) !=.? (@repr WORDSIZE32 0).
-Proof. Admitted.
+Proof.
+  intros ; subst.
+  reflexivity.
+Qed.
 
 Definition reject_impl_convert_from_parse_error  : reject_hacspec_t :=
   (min_v) .+ (@repr WORDSIZE32 2).
@@ -30,7 +33,10 @@ Definition reject_impl_convert_from_parse_error  : reject_hacspec_t :=
 Theorem ensures_reject_impl_convert_from_parse_error : forall result_1 ,
 @reject_impl_convert_from_parse_error  = result_1 ->
 (result_1) !=.? (@repr WORDSIZE32 0).
-Proof. Admitted.
+Proof.
+  intros ; subst.
+  reflexivity.
+Qed.
 
 Inductive log_error_t :=
 | Full : log_error_t
@@ -46,7 +52,10 @@ Theorem ensures_reject_impl_from_log_error : forall result_1 (
   le_2 : log_error_t),
 @reject_impl_from_log_error le_2 = result_1 ->
 (result_1) !=.? (@repr WORDSIZE32 0).
-Proof. Admitted.
+Proof.
+  intros ; subst.
+  destruct le_2 ; reflexivity.
+Qed.
 
 Inductive new_contract_name_error_t :=
 | NewContractNameErrorMissingInitPrefix : new_contract_name_error_t
@@ -68,7 +77,10 @@ Theorem ensures_reject_impl_from_new_contract_name_error : forall result_1 (
   nre_3 : new_contract_name_error_t),
 @reject_impl_from_new_contract_name_error nre_3 = result_1 ->
 (result_1) !=.? (@repr WORDSIZE32 0).
-Proof. Admitted.
+Proof.
+  intros ; subst.
+  destruct nre_3 ; reflexivity.
+Qed.
 
 Inductive new_receive_name_error_t :=
 | NewReceiveNameErrorMissingDotSeparator : new_receive_name_error_t
@@ -88,7 +100,10 @@ Theorem ensures_reject_impl_from_new_receive_name_error : forall result_1 (
   nre_4 : new_receive_name_error_t),
 @reject_impl_from_new_receive_name_error nre_4 = result_1 ->
 (result_1) !=.? (@repr WORDSIZE32 0).
-Proof. Admitted.
+Proof.
+  intros ; subst.
+  destruct nre_4 ; reflexivity.
+Qed.
 
 Notation "'contract_state_hacspec_t'" := (int32) : hacspec_scope.
 
@@ -366,4 +381,3 @@ Definition iterator_impl_for_policies_iterator_next
         (attributes_start_75, remaining_items_74)
       )
     )).
-
