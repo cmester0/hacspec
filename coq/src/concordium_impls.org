@@ -1132,7 +1132,7 @@ We then define traits
       fn next_item(&mut self, buf: &mut [u8; 31]) -> Option<(AttributeTag, u8)> {	  
 	  let (ac, (at, v)) = has_policy_impl_for_policy_attributes_cursor_next_item(
 	      coerce_rust_to_hacspec_attributes_cursor(&mut self.items),
-	      coerce_rust_to_hacspec_public_byte_seq(buf),
+	      coerce_rust_to_hacspec_public_byte_seq(&mut buf[..]),
 	  )?;
 	  coerce_hacspec_to_rust_attributes_cursor(&mut self.items, ac);
 	  Some ((AttributeTag(at),v))
