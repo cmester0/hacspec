@@ -1,3 +1,14 @@
+(** This file was automatically generated using Hacspec **)
+Require Import Lib MachineIntegers.
+From Coq Require Import ZArith.
+Import List.ListNotations.
+Open Scope Z_scope.
+Open Scope bool_scope.
+Open Scope hacspec_scope.
+From QuickChick Require Import QuickChick.
+Require Import QuickChickLib.
+Require Import Hacspec.Lib.
+
 Definition user_address := nseq (int8) (usize 32).
 
 Inductive auction_state :=
