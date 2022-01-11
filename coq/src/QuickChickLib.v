@@ -17,6 +17,12 @@ Definition g_int8 : G (int8) :=
   bindGen (* arbitrary *) (choose (0,1000)) (fun x => returnGen (pub_u8 x)).
 #[global] Instance gen_int8 : Gen (int8) := Build_Gen int8 g_int8.
 
+#[global] Instance show_int16 : Show (int16) :=
+  Build_Show (int16) (fun x => show (int16_to_nat x)).
+Definition g_int16 : G (int16) :=
+  bindGen (* arbitrary *) (choose (0,1000)) (fun x => returnGen (pub_u16 x)).
+#[global] Instance gen_int16 : Gen (int16) := Build_Gen int16 g_int16.
+
 #[global] Instance show_int32 : Show (int32) :=
   Build_Show (int32) (fun x => show (int32_to_nat x)).
 Definition g_int32 : G (int32) := (* restricted *)
