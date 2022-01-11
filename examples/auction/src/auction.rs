@@ -412,7 +412,6 @@ fn test_auction_bid_and_finalize(item: PublicByteSeq, time : u64, input_amount :
 
     // // 3rd bid: second account
     let (bob, bob_ctx) = new_account(time, 1_u8); // first argument is slot time
-    let fail : Context = bob_ctx.clone();
     let (bc1, bc2) = bob_ctx;
 
     let (state, bid_map, res_2, result_2) = verify_bid(

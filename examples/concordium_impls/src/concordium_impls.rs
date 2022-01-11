@@ -2239,14 +2239,21 @@ impl DeserialCtx for String {
 
 
 
-#[cfg(test)]
-extern crate quickcheck;
-#[cfg(test)]
-#[macro_use(quickcheck)]
-extern crate quickcheck_macros;
+// #[cfg(not(feature = "hacspec"))]
+// extern crate hacspec_lib;
 
-#[cfg(test)]
-use quickcheck::*;
+// use hacspec_lib::*;
+
+// #[cfg(feature = "hacspec_attributes")]
+#[cfg(not(feature = "hacspec"))]
+use hacspec_attributes::proof;
+#[cfg(feature = "hacspec")]
+use hacspec_attributes::*;
+
+// #[cfg(not(feature = "hacspec"))]
+// extern crate creusot_contracts;
+// #[cfg(not(feature = "hacspec"))]
+// use creusot_contracts::{ensures, requires};
 
 array!(UserAddress, 32, u8); // U8
 
@@ -2277,14 +2284,6 @@ pub struct State(
     pub SeqMap,
 );
 
-// #[cfg_attr(feature = "use_attributes", unsafe_hacspec)]
-// #[cfg_attr(feature = "use_attributes", ensures(true))]
-// #[hacspec_unsafe]
-// #[cfg(feature = "hacspec_unsafe")]
-// #[hacspec_unsafe]
-#[ensures(true)]
-// #[hacspec_unsafe] // ensures(result.0 === AuctionState::NotSoldYet)
-// #[ensures(forall<x : u32> x + x = x * 2)]
 pub fn fresh_state(itm: Itemtyp, exp: u64) -> State {
     State(
 	AuctionState::NotSoldYet,
@@ -2295,27 +2294,25 @@ pub fn fresh_state(itm: Itemtyp, exp: u64) -> State {
     )
 }
 
-// #[ensures(true)]
-// #[ensures(result === )]
 fn seq_map_entry(m: SeqMap, sender_address: UserAddress) -> (u64, SeqMap) {
     let SeqMap(m0, m1) = m;
 
     let mut res = // MapEntry::Entry
 	(
-	    0_u64,
-	    SeqMap(
-		m0.clone().concat(&sender_address),
-		m1.clone().concat(&u64_to_be_bytes(0_u64)),
-	    ),
-	);
+	0_u64,
+	SeqMap(
+	    m0.clone().concat(&sender_address),
+	    m1.clone().concat(&u64_to_be_bytes(0_u64)),
+	),
+    );
 
     for x in 0..m0.clone().len() / 32 {
 	if UserAddress::from_seq(&m0.clone().slice(x * 32, 32)) == sender_address {
 	    res = // MapEntry::Entry
 		(
-		    u64_from_be_bytes(u64Word::from_seq(&m1.clone().slice(x * 8, 8))),
-		    SeqMap(m0.clone(), m1.clone()),
-		);
+		u64_from_be_bytes(u64Word::from_seq(&m1.clone().slice(x * 8, 8))),
+		SeqMap(m0.clone(), m1.clone()),
+	    );
 	}
     }
 
@@ -2361,7 +2358,7 @@ pub enum BidError {
     // raised if bid is lower than highest amount
     BidsOverWaitingForAuctionFinalization, // raised if bid is placed after auction expiry time
     AuctionIsFinalized,                    /* raised if bid is placed after auction has been
-     * finalized */
+					    * finalized */
 }
 
 // pub type UserAddressSet = Option<UserAddress>;
@@ -2402,7 +2399,7 @@ pub fn auction_bid(ctx: Context, amount: u64, state: State) -> AuctionBidResult 
 	seq_map_entry(st4.clone(), sender_address) // {
     //     MapEntry::Entry(bid_to_update, new_map) => (bid_to_update, new_map),
     // }
-	;
+    ;
 
     let (updated_bid, updated_map) =
 	match seq_map_update_entry(st4.clone(), sender_address, bid_to_update + amount) {
@@ -2477,7 +2474,7 @@ pub fn auction_finalize(ctx: FinalizeContext, state: State) -> AuctionFinalizeRe
 		};
 	    } else {
 		// ensure!(remaining_bid.is_none(), FinalizeError::BidMapError);
-		if ! (remaining_bid == BidRemain::BidNone) {
+		if !(remaining_bid == BidRemain::BidNone) {
 		    AuctionFinalizeResult::Err(FinalizeError::BidMapError)?;
 		}
 		auction_state = AuctionState::Sold(addr);
@@ -2494,7 +2491,13 @@ pub fn auction_finalize(ctx: FinalizeContext, state: State) -> AuctionFinalizeRe
 		    AuctionFinalizeResult::Err(FinalizeError::BidMapError)
 		} else {
 		    AuctionFinalizeResult::Ok((
-			State(auction_state, highest_bid, st2, expiry, SeqMap(m0.clone(), m1.clone())),
+			State(
+			    auction_state,
+			    highest_bid,
+			    st2,
+			    expiry,
+			    SeqMap(m0.clone(), m1.clone()),
+			),
 			return_action,
 		    ))
 		}
@@ -2509,12 +2512,21 @@ pub fn auction_finalize(ctx: FinalizeContext, state: State) -> AuctionFinalizeRe
 }
 
 #[cfg(test)]
-// #[cfg(proof)]
+extern crate quickcheck;
+#[cfg(test)]
+#[macro_use(quickcheck)]
+extern crate quickcheck_macros;
+
+#[cfg(test)]
+use quickcheck::*;
+
+#[cfg(test)]
+#[proof]
 #[quickcheck]
 #[ensures(result === true)]
 /// Test that the smart-contract initialization sets the state correctly
 /// (no bids, active state, indicated auction-end time and item name).
-pub fn auction_test_init(item: PublicByteSeq, time : u64) -> bool {
+pub fn auction_test_init(item: PublicByteSeq, time: u64) -> bool {
     fresh_state(item.clone(), time)
 	== State(
 	    AuctionState::NotSoldYet,
@@ -2526,7 +2538,7 @@ pub fn auction_test_init(item: PublicByteSeq, time : u64) -> bool {
 }
 
 #[cfg(test)]
-// #[cfg(proof)]
+#[proof]
 fn verify_bid(
     item: PublicByteSeq,
     state: State,
@@ -2535,7 +2547,7 @@ fn verify_bid(
     amount: u64,
     bid_map: SeqMap,
     highest_bid: u64,
-    time : u64,
+    time: u64,
 ) -> (State, SeqMap, bool, bool) {
     let t = auction_bid(ctx, amount, state.clone());
 
@@ -2564,25 +2576,24 @@ fn verify_bid(
 }
 
 #[cfg(test)]
-// #[cfg(proof)]
-fn useraddress_from_u8(i : u8) -> UserAddress {
+#[proof]
+fn useraddress_from_u8(i: u8) -> UserAddress {
     UserAddress([
-	i, i, i, i, i, i, i, i, i, i, i, i, i, i, i,
-	i, i, i, i, i, i, i, i, i, i, i, i, i, i, i,
+	i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i,
 	i, i,
     ])
 }
 
 #[cfg(test)]
-// #[cfg(proof)]
-fn new_account(time : u64, i : u8) -> (UserAddress, Context) {
+#[proof]
+fn new_account(time: u64, i: u8) -> (UserAddress, Context) {
     let addr = useraddress_from_u8(i);
     let ctx = (time, UserAddressSet::UserAddressSome(addr));
     (addr, ctx)
 }
 
 #[cfg(test)]
-// #[cfg(proof)]
+#[proof]
 // #[quickcheck]
 // #[test]
 /// Test a sequence of bids and finalizations:
@@ -2595,9 +2606,22 @@ fn new_account(time : u64, i : u8) -> (UserAddress, Context) {
 /// auction after its end time.    Alice gets her money back, while
 /// Carol (the owner of the contract) collects the highest bid amount.
 /// 6. Attempts to subsequently bid or finalize fail.
+#[requires(18446744073709551615u64 > time)]
+#[requires(18446744073709551615u64 / 5u64 - 1u64 > input_amount)]
 #[ensures(result === true)]
 #[quickcheck]
-fn test_auction_bid_and_finalize(item: PublicByteSeq, time : u64, input_amount : u64) -> bool {
+fn test_auction_bid_and_finalize(item: PublicByteSeq, time: u64, input_amount: u64) -> bool {
+    let time = if time == 18446744073709551615u64 {
+	18446744073709551614u64
+    } else {
+	time
+    }; // Can overflow !
+    let input_amount: u64 = if input_amount > 18446744073709551615u64 / 5u64 - 1u64 {
+	100u64
+    } else {
+	input_amount
+    };
+
     let amount = input_amount + 1_u64;
     let winning_amount = amount * 3_u64; // 300_u64;
     let big_amount = amount * 5_u64; // 500_u64;
@@ -2610,11 +2634,13 @@ fn test_auction_bid_and_finalize(item: PublicByteSeq, time : u64, input_amount :
     // 1st bid: account1 bids amount1
     let (alice, alice_ctx) = new_account(time, 0_u8);
 
+    let (ac0, ac1) = alice_ctx;
+
     let (state, bid_map, res_0, result_0) = verify_bid(
 	item.clone(),
 	state,
 	alice,
-	alice_ctx.clone(),
+	(ac0.clone(), ac1.clone()),
 	amount,
 	bid_map,
 	amount,
@@ -2628,7 +2654,7 @@ fn test_auction_bid_and_finalize(item: PublicByteSeq, time : u64, input_amount :
 	item.clone(),
 	state,
 	alice,
-	alice_ctx,
+	(ac0.clone(), ac1.clone()),
 	amount,
 	bid_map,
 	amount + amount,
@@ -2637,12 +2663,13 @@ fn test_auction_bid_and_finalize(item: PublicByteSeq, time : u64, input_amount :
 
     // // 3rd bid: second account
     let (bob, bob_ctx) = new_account(time, 1_u8); // first argument is slot time
+    let (bc1, bc2) = bob_ctx;
 
     let (state, bid_map, res_2, result_2) = verify_bid(
 	item.clone(),
 	state,
 	bob,
-	bob_ctx.clone(),
+	(bc1.clone(), bc2.clone()),
 	winning_amount,
 	bid_map,
 	winning_amount,
@@ -2657,10 +2684,9 @@ fn test_auction_bid_and_finalize(item: PublicByteSeq, time : u64, input_amount :
 
     let finres = auction_finalize(ctx4, state.clone());
     let (state, result_3) = match finres {
-	AuctionFinalizeResult::Err(err) => (
-	    state.clone(),
-	    err == FinalizeError::AuctionStillActive
-	),
+	AuctionFinalizeResult::Err(err) => {
+	    (state.clone(), err == FinalizeError::AuctionStillActive)
+	}
 	AuctionFinalizeResult::Ok((state, _)) => (state, false),
     };
 
@@ -2703,7 +2729,7 @@ fn test_auction_bid_and_finalize(item: PublicByteSeq, time : u64, input_amount :
 	AuctionFinalizeResult::Ok((state, action)) => (state, false),
     };
 
-    let t = auction_bid(bob_ctx, big_amount, state.clone());
+    let t = auction_bid((bc1.clone(), bc2.clone()), big_amount, state.clone());
 
     // let result_7 = t == AuctionBidResult::Err (BidError::AuctionIsFinalized);
     let result_7 = match t {
