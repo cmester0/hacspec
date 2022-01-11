@@ -16,3 +16,13 @@ pub fn test_tuple_destructuring() {
     let tuple = MyTupleType(1u16, 2u8).clone();
     let MyTupleType(_a, _b) = tuple;
 }
+
+#[derive(Clone, PartialEq)]
+pub enum UserAddressSet {
+    UserAddressSome,
+    UserAddressNone,
+}
+pub type Context = (u64, UserAddressSet);
+pub fn test_alias_clone(bob_ctx : Context) {
+    let fail : Context = bob_ctx.clone();
+}

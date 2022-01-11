@@ -83,17 +83,3 @@ fn positive_types() {
     );
 }
 
-#[test]
-fn positive_pearlite_auction() {
-    run_tests("backend-tests/auction.rs",
-              "Auction",
-              HashMap::from([("coq", true)]));
-}
-
-#[test]
-fn positive_pearlite_concordium_imlps() {
-    run_tests("backend-tests/concordium_impls.rs",
-              "ConcordiumImpls",
-              HashMap::from([("coq", true)]));
-}
-
