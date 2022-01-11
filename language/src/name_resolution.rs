@@ -452,7 +452,6 @@ fn resolve_quantified_identifiers(
     (new_ids, new_context)
 }
 
-
 fn resolve_quantified_expression(
     sess: &Session,
     qe: Quantified<(Ident, Spanned<BaseTyp>), Spanned<Expression>>,
@@ -513,9 +512,14 @@ fn resolve_quantified_expression(
                 top_level_ctx,
             )?),
         )),
+        Quantified::Not(x) => Ok(Quantified::Not(Box::new(resolve_quantified_expression(
+            sess,
+            *x,
+            name_context,
+            top_level_ctx,
+        )?))),
     }
 }
-
 
 fn resolve_item(
     sess: &Session,
@@ -589,10 +593,12 @@ fn resolve_item(
                 })
                 .collect();
 
-            
             sig.args = new_sig_args;
             let new_b = resolve_block(sess, (b, b_span), &name_context, top_level_ctx)?;
-            Ok((Item::FnDecl((f, f_span), sig, new_b, new_requires, new_ensures), i_span))
+            Ok((
+                Item::FnDecl((f, f_span), sig, new_b, new_requires, new_ensures),
+                i_span,
+            ))
         }
     };
     match i {
