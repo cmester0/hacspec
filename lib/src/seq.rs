@@ -566,3 +566,19 @@ macro_rules! byte_seq {
         )
     };
 }
+
+extern crate quickcheck;
+use quickcheck::*;
+
+impl Arbitrary for PublicSeq<u8> {
+    fn arbitrary(g: &mut Gen) -> Self {
+        PublicSeq::<u8>::new(0)
+            
+        // let t : usize = Arbitrary::arbitrary(g);
+        // let mut seq = PublicSeq::<u8>::new(t);
+        // // for _ in 0..t {
+        // //     seq = seq.push_owned(Arbitrary::arbitrary(g));
+        // // }
+        // seq
+    }
+}

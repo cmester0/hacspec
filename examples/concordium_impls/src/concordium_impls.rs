@@ -934,7 +934,7 @@ impl HasPolicy for Policy<AttributesCursor> {
     fn next_item(&mut self, buf: &mut [u8; 31]) -> Option<(AttributeTag, u8)> {	  
 	let (ac, (at, v)) = has_policy_impl_for_policy_attributes_cursor_next_item(
 	    coerce_rust_to_hacspec_attributes_cursor(&mut self.items),
-	    coerce_rust_to_hacspec_public_byte_seq(buf),
+	    coerce_rust_to_hacspec_public_byte_seq(&mut buf[..]),
 	)?;
 	coerce_hacspec_to_rust_attributes_cursor(&mut self.items, ac);
 	Some ((AttributeTag(at),v))
@@ -1853,14 +1853,14 @@ pub trait DeserialCtx: Sized {
 /// serialize pair. The key idea is that the type to deserialize is inferred
 /// from the context, enabling one to write, for example,
 ///
-/// ```rust
-/// # fn deserial<R: concordium_contracts_common::Read>(source: &mut R) -> concordium_contracts_common::ParseResult<(u8, u8)> {
-/// #  use crate::concordium_contracts_common::Get;
-///    let x = source.get()?;
-///    let y = source.get()?;
-/// #   Ok((x,y))
-/// # }
-/// ```
+/// // ```rust
+/// // # fn deserial<R: concordium_contracts_common::Read>(source: &mut R) -> concordium_contracts_common::ParseResult<(u8, u8)> {
+/// // #  use crate::concordium_contracts_common::Get;
+/// //    let x = source.get()?;
+/// //    let y = source.get()?;
+/// // #   Ok((x,y))
+/// // # }
+/// // ```
 /// where `source` is any type that implements `Read`.
 #[cfg(not(feature = "hacspec"))]
 pub trait Get<T> {
@@ -2239,6 +2239,15 @@ impl DeserialCtx for String {
 
 
 
+#[cfg(test)]
+extern crate quickcheck;
+#[cfg(test)]
+#[macro_use(quickcheck)]
+extern crate quickcheck_macros;
+
+#[cfg(test)]
+use quickcheck::*;
+
 array!(UserAddress, 32, u8); // U8
 
 #[derive(Clone, PartialEq)]
@@ -2293,20 +2302,20 @@ fn seq_map_entry(m: SeqMap, sender_address: UserAddress) -> (u64, SeqMap) {
 
     let mut res = // MapEntry::Entry
 	(
-	0_u64,
-	SeqMap(
-	    m0.clone().concat(&sender_address),
-	    m1.clone().concat(&u64_to_be_bytes(0_u64)),
-	),
-    );
+	    0_u64,
+	    SeqMap(
+		m0.clone().concat(&sender_address),
+		m1.clone().concat(&u64_to_be_bytes(0_u64)),
+	    ),
+	);
 
     for x in 0..m0.clone().len() / 32 {
 	if UserAddress::from_seq(&m0.clone().slice(x * 32, 32)) == sender_address {
 	    res = // MapEntry::Entry
 		(
-		u64_from_be_bytes(u64Word::from_seq(&m1.clone().slice(x * 8, 8))),
-		SeqMap(m0.clone(), m1.clone()),
-	    );
+		    u64_from_be_bytes(u64Word::from_seq(&m1.clone().slice(x * 8, 8))),
+		    SeqMap(m0.clone(), m1.clone()),
+		);
 	}
     }
 
@@ -2352,7 +2361,7 @@ pub enum BidError {
     // raised if bid is lower than highest amount
     BidsOverWaitingForAuctionFinalization, // raised if bid is placed after auction expiry time
     AuctionIsFinalized,                    /* raised if bid is placed after auction has been
-					    * finalized */
+     * finalized */
 }
 
 // pub type UserAddressSet = Option<UserAddress>;
@@ -2393,7 +2402,7 @@ pub fn auction_bid(ctx: Context, amount: u64, state: State) -> AuctionBidResult 
 	seq_map_entry(st4.clone(), sender_address) // {
     //     MapEntry::Entry(bid_to_update, new_map) => (bid_to_update, new_map),
     // }
-    ;
+	;
 
     let (updated_bid, updated_map) =
 	match seq_map_update_entry(st4.clone(), sender_address, bid_to_update + amount) {
@@ -2499,23 +2508,8 @@ pub fn auction_finalize(ctx: FinalizeContext, state: State) -> AuctionFinalizeRe
     result
 }
 
-// #[cfg(test)]
-// extern crate quickcheck;
-// #[cfg(test)]
-// #[macro_use(quickcheck)]
-// extern crate quickcheck_macros;
-
-// #[cfg(test)]
-// use quickcheck::*;
-
+#[cfg(test)]
 // #[cfg(proof)]
-// #[cfg(test)]
-// pub fn auction_item(a : u64, b : u64, c : u64) -> PublicByteSeq {
-//     PublicByteSeq::new(0_usize)
-// }
-
-#[test]
-#[proof]
 #[quickcheck]
 #[ensures(result === true)]
 /// Test that the smart-contract initialization sets the state correctly
@@ -2531,8 +2525,8 @@ pub fn auction_test_init(item: PublicByteSeq, time : u64) -> bool {
 	)
 }
 
-#[test]
-#[proof]
+#[cfg(test)]
+// #[cfg(proof)]
 fn verify_bid(
     item: PublicByteSeq,
     state: State,
@@ -2569,8 +2563,8 @@ fn verify_bid(
     )
 }
 
-#[test]
-#[proof]
+#[cfg(test)]
+// #[cfg(proof)]
 fn useraddress_from_u8(i : u8) -> UserAddress {
     UserAddress([
 	i, i, i, i, i, i, i, i, i, i, i, i, i, i, i,
@@ -2579,16 +2573,16 @@ fn useraddress_from_u8(i : u8) -> UserAddress {
     ])
 }
 
-#[test]
-#[proof]
+#[cfg(test)]
+// #[cfg(proof)]
 fn new_account(time : u64, i : u8) -> (UserAddress, Context) {
     let addr = useraddress_from_u8(i);
     let ctx = (time, UserAddressSet::UserAddressSome(addr));
     (addr, ctx)
 }
 
-#[test]
-#[proof]
+#[cfg(test)]
+// #[cfg(proof)]
 // #[quickcheck]
 // #[test]
 /// Test a sequence of bids and finalizations:
@@ -2620,7 +2614,7 @@ fn test_auction_bid_and_finalize(item: PublicByteSeq, time : u64, input_amount :
 	item.clone(),
 	state,
 	alice,
-	alice_ctx,
+	alice_ctx.clone(),
 	amount,
 	bid_map,
 	amount,
@@ -2648,7 +2642,7 @@ fn test_auction_bid_and_finalize(item: PublicByteSeq, time : u64, input_amount :
 	item.clone(),
 	state,
 	bob,
-	bob_ctx,
+	bob_ctx.clone(),
 	winning_amount,
 	bid_map,
 	winning_amount,
