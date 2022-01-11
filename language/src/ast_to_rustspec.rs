@@ -2,11 +2,11 @@ use im::{HashMap, HashSet};
 use rustc_ast::{
     ast::{
         self, AngleBracketedArg, Async, AttrVec, Attribute, BindingMode, BlockCheckMode,
-        BorrowKind, Const, Crate, Defaultness, Expr, ExprKind, Extern, FnKind, // FnKind // Fn as 
+        BorrowKind, Const, Crate, Defaultness, Expr, ExprKind, Extern, Fn as FnKind, // FnKind // Fn as 
         FnRetTy,
         GenericArg, GenericArgs, IntTy, ItemKind, LitIntType, LitKind, LocalKind, MacArgs, MacCall,
         Mutability, Pat, PatKind, Path, PathSegment, RangeLimits, Stmt, StmtKind, StrStyle, Ty,
-        TyAliasKind, TyKind, UintTy, UnOp, Unsafe, UseTreeKind, VariantData,
+        TyAlias as TyAliasKind, TyKind, UintTy, UnOp, Unsafe, UseTreeKind, VariantData,
     }, // TyAliasKind // TyAlias as 
     node_id::NodeId,
     ptr::P,
@@ -3011,12 +3011,18 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
         ItemKind::Fn(fn_kind) => {
             // Foremost we check whether this function is a test, in which case
             // we ignore it
-            let FnKind (
+            // let FnKind (
+            //     defaultness,
+            //     ref sig,
+            //     ref generics,
+            //     ref body,
+            // ) = fn_kind.as_ref();
+            let FnKind {
                 defaultness,
                 ref sig,
                 ref generics,
                 ref body,
-            ) = fn_kind.as_ref();
+            } = fn_kind.as_ref();
             // First, checking that no fancy function qualifier is here
             match defaultness {
                 Defaultness::Default(span) => {
@@ -3279,12 +3285,18 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
             Err(())
         }
         ItemKind::TyAlias(ty_alias_kind) => {
-            let TyAliasKind (
+            // let TyAliasKind (
+            //     defaultness,
+            //     generics,
+            //     _,
+            //     ty,
+            // ) = ty_alias_kind.as_ref();
+            let TyAliasKind {
                 defaultness,
                 generics,
-                _,
                 ty,
-            ) = ty_alias_kind.as_ref();
+                ..
+            } = ty_alias_kind.as_ref();
             match defaultness {
                 Defaultness::Final => (),
                 Defaultness::Default(span) => {
