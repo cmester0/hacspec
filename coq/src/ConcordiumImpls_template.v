@@ -613,12 +613,6 @@ Definition fresh_state (itm_93 : itemtyp_t) (exp_94 : int64) : state_t :=
       SeqMap ((seq_new_ (default) (usize 0), seq_new_ (default) (usize 0)))
     )).
 
-Theorem ensures_fresh_state : forall result_1 (itm_93 : itemtyp_t) (
-  exp_94 : int64),
-@fresh_state itm_93 exp_94 = result_1 ->
-true.
-Proof. Admitted.
-
 Definition seq_map_entry
   (m_95 : seq_map_t)
   (sender_address_96 : user_address_t)
@@ -1179,89 +1173,106 @@ Definition test_auction_bid_and_finalize
   (item_167 : public_byte_seq)
   (time_168 : int64)
   (input_amount_169 : int64)
+  `{(@repr WORDSIZE64 18446744073709551615) >.? (time_168)}
+  `{(((@repr WORDSIZE64 18446744073709551615) ./ (@repr WORDSIZE64 5)) .- (
+      @repr WORDSIZE64 1)) >.? (input_amount_169)}
   : bool :=
-  let amount_170 : int64 :=
-    (input_amount_169) .+ (@repr WORDSIZE64 1) in 
-  let winning_amount_171 : int64 :=
-    (amount_170) .* (@repr WORDSIZE64 3) in 
-  let big_amount_172 : int64 :=
-    (amount_170) .* (@repr WORDSIZE64 5) in 
-  let bid_map_173 : seq_map_t :=
+  let time_170 : int64 :=
+    (if ((time_168) =.? (@repr WORDSIZE64 18446744073709551615)):bool then (
+        @repr WORDSIZE64 18446744073709551614) else (time_168)) in 
+  let input_amount_171 : int64 :=
+    (if ((input_amount_169) >.? (((@repr WORDSIZE64 18446744073709551615) ./ (
+              @repr WORDSIZE64 5)) .- (@repr WORDSIZE64 1))):bool then (
+        @repr WORDSIZE64 100) else (input_amount_169)) in 
+  let amount_172 : int64 :=
+    (input_amount_171) .+ (@repr WORDSIZE64 1) in 
+  let winning_amount_173 : int64 :=
+    (amount_172) .* (@repr WORDSIZE64 3) in 
+  let big_amount_174 : int64 :=
+    (amount_172) .* (@repr WORDSIZE64 5) in 
+  let bid_map_175 : seq_map_t :=
     SeqMap ((seq_new_ (default) (usize 0), seq_new_ (default) (usize 0))) in 
-  let state_174 : state_t :=
-    fresh_state ((item_167)) (time_168) in 
-  let '(alice_175, alice_ctx_176) :=
-    new_account (time_168) (@repr WORDSIZE8 0) in 
-  let '(state_177, bid_map_178, res_0_179, result_0_180) :=
-    verify_bid ((item_167)) (state_174) (alice_175) (alice_ctx_176) (
-      amount_170) (bid_map_173) (amount_170) (time_168) in 
-  let '(state_181, bid_map_182, res_1_183, result_1_184) :=
-    verify_bid ((item_167)) (state_177) (alice_175) (alice_ctx_176) (
-      amount_170) (bid_map_178) ((amount_170) .+ (amount_170)) (time_168) in 
-  let '(bob_185, bob_ctx_186) :=
-    new_account (time_168) (@repr WORDSIZE8 1) in 
-  let '(state_187, bid_map_188, res_2_189, result_2_190) :=
-    verify_bid ((item_167)) (state_181) (bob_185) (bob_ctx_186) (
-      winning_amount_171) (bid_map_182) (winning_amount_171) (time_168) in 
-  let owner_191 : user_address_t :=
+  let state_176 : state_t :=
+    fresh_state ((item_167)) (time_170) in 
+  let '(alice_177, alice_ctx_178) :=
+    new_account (time_170) (@repr WORDSIZE8 0) in 
+  let '(ac0_179, ac1_180) :=
+    alice_ctx_178 in 
+  let '(state_181, bid_map_182, res_0_183, result_0_184) :=
+    verify_bid ((item_167)) (state_176) (alice_177) ((ac0_179, ac1_180)) (
+      amount_172) (bid_map_175) (amount_172) (time_170) in 
+  let '(state_185, bid_map_186, res_1_187, result_1_188) :=
+    verify_bid ((item_167)) (state_181) (alice_177) (alice_ctx_178) (
+      amount_172) (bid_map_182) ((amount_172) .+ (amount_172)) (time_170) in 
+  let '(bob_189, bob_ctx_190) :=
+    new_account (time_170) (@repr WORDSIZE8 1) in 
+  let '(bc1_191, bc2_192) :=
+    bob_ctx_190 in 
+  let '(state_193, bid_map_194, res_2_195, result_2_196) :=
+    verify_bid ((item_167)) (state_185) (bob_189) ((bc1_191, bc2_192)) (
+      winning_amount_173) (bid_map_186) (winning_amount_173) (time_170) in 
+  let owner_197 : user_address_t :=
     useraddress_from_u8 (@repr WORDSIZE8 0) in 
-  let balance_192 : int64 :=
+  let balance_198 : int64 :=
     @repr WORDSIZE64 100 in 
-  let ctx4_193 : (int64 × user_address_t × int64) :=
-    (time_168, owner_191, balance_192) in 
-  let finres_194 : (result (state_t × finalize_action_t) finalize_error_t) :=
-    auction_finalize (ctx4_193) ((state_187)) in 
-  let '(state_195, result_3_196) :=
-    match finres_194 with
-    | Err err_197 => ((state_187), (err_197) =.? (AuctionStillActive))
-    | Ok (state_198, _) => (state_198, false)
+  let ctx4_199 : (int64 × user_address_t × int64) :=
+    (time_170, owner_197, balance_198) in 
+  let finres_200 : (result (state_t × finalize_action_t) finalize_error_t) :=
+    auction_finalize (ctx4_199) ((state_193)) in 
+  let '(state_201, result_3_202) :=
+    match finres_200 with
+    | Err err_203 => ((state_193), (err_203) =.? (AuctionStillActive))
+    | Ok (state_204, _) => (state_204, false)
     end in 
-  let '(carol_199, carol_ctx_200) :=
-    new_account (time_168) (@repr WORDSIZE8 2) in 
-  let ctx5_201 : (int64 × user_address_t × int64) :=
-    ((time_168) .+ (@repr WORDSIZE64 1), carol_199, winning_amount_171) in 
-  let finres2_202 : (result (state_t × finalize_action_t) finalize_error_t) :=
-    auction_finalize (ctx5_201) ((state_195)) in 
-  let '(state_203, result_4_204) :=
-    match finres2_202 with
-    | Err _ => ((state_195), false)
-    | Ok (state_205, action_206) => (
-      state_205,
-      (action_206) =.? (SimpleTransfer (seq_concat (seq_concat (seq_concat (
-                seq_concat (seq_new_ (default) (usize 0)) (carol_199)) (
-                u64_to_be_bytes (winning_amount_171))) (alice_175)) (
-            u64_to_be_bytes ((amount_170) .+ (amount_170)))))
+  let '(carol_205, carol_ctx_206) :=
+    new_account (time_170) (@repr WORDSIZE8 2) in 
+  let ctx5_207 : (int64 × user_address_t × int64) :=
+    ((time_170) .+ (@repr WORDSIZE64 1), carol_205, winning_amount_173) in 
+  let finres2_208 : (result (state_t × finalize_action_t) finalize_error_t) :=
+    auction_finalize (ctx5_207) ((state_201)) in 
+  let '(state_209, result_4_210) :=
+    match finres2_208 with
+    | Err _ => ((state_201), false)
+    | Ok (state_211, action_212) => (
+      state_211,
+      (action_212) =.? (SimpleTransfer (seq_concat (seq_concat (seq_concat (
+                seq_concat (seq_new_ (default) (usize 0)) (carol_205)) (
+                u64_to_be_bytes (winning_amount_173))) (alice_177)) (
+            u64_to_be_bytes ((amount_172) .+ (amount_172)))))
     )
     end in 
-  let result_5_207 : bool :=
-    ((state_203)) =.? (State ((
-          Sold (bob_185),
-          winning_amount_171,
+  let result_5_213 : bool :=
+    ((state_209)) =.? (State ((
+          Sold (bob_189),
+          winning_amount_173,
           (item_167),
-          time_168,
-          (bid_map_188)
+          time_170,
+          (bid_map_194)
         ))) in 
-  let finres3_208 : (result (state_t × finalize_action_t) finalize_error_t) :=
-    auction_finalize (ctx5_201) ((state_203)) in 
-  let '(state_209, result_6_210) :=
-    match finres3_208 with
-    | Err err_211 => (state_203, (err_211) =.? (AuctionFinalized))
-    | Ok (state_212, action_213) => (state_212, false)
+  let finres3_214 : (result (state_t × finalize_action_t) finalize_error_t) :=
+    auction_finalize (ctx5_207) ((state_209)) in 
+  let '(state_215, result_6_216) :=
+    match finres3_214 with
+    | Err err_217 => (state_209, (err_217) =.? (AuctionFinalized))
+    | Ok (state_218, action_219) => (state_218, false)
     end in 
-  let t_214 : (result state_t bid_error_t) :=
-    auction_bid (bob_ctx_186) (big_amount_172) ((state_209)) in 
-  let result_7_215 : bool :=
-    match t_214 with
-    | Err e_216 => (e_216) =.? (AuctionIsFinalized)
+  let t_220 : (result state_t bid_error_t) :=
+    auction_bid (bob_ctx_190) (big_amount_174) ((state_215)) in 
+  let result_7_221 : bool :=
+    match t_220 with
+    | Err e_222 => (e_222) =.? (AuctionIsFinalized)
     | Ok _ => false
     end in 
-  (((((((result_0_180) && (result_1_184)) && (result_2_190)) && (
-            result_3_196)) && (result_4_204)) && (result_5_207)) && (
-      result_6_210)) && (result_7_215).
+  (((((((result_0_184) && (result_1_188)) && (result_2_196)) && (
+            result_3_202)) && (result_4_210)) && (result_5_213)) && (
+      result_6_216)) && (result_7_221).
 
 Theorem ensures_test_auction_bid_and_finalize : forall result_1 (
   item_167 : public_byte_seq) (time_168 : int64) (input_amount_169 : int64),
-@test_auction_bid_and_finalize item_167 time_168 input_amount_169 = result_1 ->
+forall {H_0 : (@repr WORDSIZE64 18446744073709551615) >.? (time_168)},
+forall {H_1 : (((@repr WORDSIZE64 18446744073709551615) ./ (
+      @repr WORDSIZE64 5)) .- (@repr WORDSIZE64 1)) >.? (input_amount_169)},
+@test_auction_bid_and_finalize item_167 time_168 input_amount_169 H_0 H_1 = result_1 ->
 result_1 = true.
 Proof. Admitted.
 QuickChick (
