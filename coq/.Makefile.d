@@ -28,3 +28,9 @@ src/Sha256.vos src/Sha256.vok src/Sha256.required_vos: src/Sha256.v src/Lib.vos 
 src/Aes.vo src/Aes.glob src/Aes.v.beautified src/Aes.required_vo: src/Aes.v src/Lib.vo src/MachineIntegers.vo src/Lib.vo
 src/Aes.vio: src/Aes.v src/Lib.vio src/MachineIntegers.vio src/Lib.vio
 src/Aes.vos src/Aes.vok src/Aes.required_vos: src/Aes.v src/Lib.vos src/MachineIntegers.vos src/Lib.vos
+src/Concordium_Impls.vo src/Concordium_Impls.glob src/Concordium_Impls.v.beautified src/Concordium_Impls.required_vo: src/Concordium_Impls.v src/Lib.vo src/MachineIntegers.vo src/Lib.vo
+src/Concordium_Impls.vio: src/Concordium_Impls.v src/Lib.vio src/MachineIntegers.vio src/Lib.vio
+src/Concordium_Impls.vos src/Concordium_Impls.vok src/Concordium_Impls.required_vos: src/Concordium_Impls.v src/Lib.vos src/MachineIntegers.vos src/Lib.vos
+src/Auction.vo src/Auction.glob src/Auction.v.beautified src/Auction.required_vo: src/Auction.v src/Lib.vo src/MachineIntegers.vo src/QuickChickLib.vo src/Lib.vo
+src/Auction.vio: src/Auction.v src/Lib.vio src/MachineIntegers.vio src/QuickChickLib.vio src/Lib.vio
+src/Auction.vos src/Auction.vok src/Auction.required_vos: src/Auction.v src/Lib.vos src/MachineIntegers.vos src/QuickChickLib.vos src/Lib.vos

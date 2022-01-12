@@ -1,11 +1,11 @@
 [package]
-name = "concordium_impls"
+name = "hacspec-concordium-impls"
 version = "0.1.0"
 authors = [""]
 edition = "2018"
 
 [lib]
-path = "src/concordium_impls.rs"
+path = "src/concordium-impls.rs"
 
 [dependencies]
 hacspec-lib = { path = "../../lib" }
