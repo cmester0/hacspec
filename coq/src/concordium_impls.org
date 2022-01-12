@@ -9,15 +9,15 @@
 
 * Concordium "Impls" specification
 ** Config
-#+BEGIN_SRC toml :tangle ../../examples/concordium_impls/Cargo.toml :eval never
+#+BEGIN_SRC toml :tangle ../../examples/concordium-impls/Cargo.toml :eval never
   [package]
-  name = "concordium_impls"
+  name = "hacspec-concordium-impls"
   version = "0.1.0"
   authors = [""]
   edition = "2018"
 
   [lib]
-  path = "src/concordium_impls.rs"
+  path = "src/concordium-impls.rs"
 
   [dependencies]
   hacspec-lib = { path = "../../lib" }
@@ -39,8 +39,8 @@
 #+END_SRC
 
 ** Imports
-#+BEGIN_SRC rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
-  #[cfg(not(feature = "hacspec"))]
+#+BEGIN_SRC rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
+  #[cfg(not(feature = "hacspec"))] // 
   extern crate hacspec_lib;
 
   use hacspec_lib::*;
@@ -64,7 +64,7 @@
 
   #[cfg(not(feature = "hacspec"))]
   // use ::std::collections::{BTreeMap, BTreeSet};
-  use std::{ // ::std::
+  use ::std::{ // ::std::
       collections::{BTreeMap, BTreeSet, HashSet, HashMap},
       convert::{self, TryFrom, TryInto},
       hash::Hash,
@@ -98,45 +98,10 @@
 
 ** Rust code
 *** Reject
-The ~Rust~ definition for Reject is
-#+begin_src rust :tangle no :eval never
-  /// An error message, signalling rejection of a smart contract invocation.
-  /// The client will see the error code as a reject reason; if a schema is
-  /// provided, the error message corresponding to the error code will be
-  /// displayed. The valid range for an error code is from i32::MIN to  -1.
-  #[derive(Eq, PartialEq, Debug)]
-  #[repr(transparent)]
-  pub struct Reject {
-      pub error_code: crate::num::NonZeroI32,
-  }
-
-  /// Default error is i32::MIN.
-  impl Default for Reject {
-      #[inline(always)]
-      fn default() -> Self {
-	  Self {
-	      error_code: unsafe { crate::num::NonZeroI32::new_unchecked(i32::MIN) },
-	  }
-      }
-  }
-
-  impl Reject {
-      /// This returns `None` for all values >= 0 and `Some` otherwise.
-      pub fn new(x: i32) -> Option<Self> {
-	  if x < 0 {
-	      let error_code = unsafe { crate::num::NonZeroI32::new_unchecked(x) };
-	      Some(Reject { error_code })
-	  } else {
-	      None
-	  }
-      }
-  }
-#+end_src
-# NonZeroI32 is located in rust/library/core/src/num/nonzero.rs
 We modle reject as the underlying data, that is the src_rust[:eval never]{i32} error code. The default constructor is i32 min.
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
-  #[derive(Eq, PartialEq, Debug)]
+  #[derive(Eq, PartialEq)] // TODO: Creusot issue readd "Debug" attribute 
   #[repr(transparent)]
   pub struct Reject {
       pub error_code: crate::num::NonZeroI32,
@@ -150,7 +115,7 @@ We modle reject as the underlying data, that is the src_rust[:eval never]{i32} e
 
 #+end_src
 We then implement the new operations for Reject.
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   pub fn new_reject_impl(x: i32) -> Option<RejectHacspec> {
       if x < 0i32 {
 	  Option::<i32>::Some(x)
@@ -161,7 +126,7 @@ We then implement the new operations for Reject.
 
 #+end_src
 We define the coercion function for Reject, and implement the traits
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   pub fn coerce_hacspec_to_rust_reject(hacspec_reject: RejectHacspec) -> Reject {
       Reject {
@@ -216,7 +181,7 @@ We define the coercion function for Reject, and implement the traits
 #+end_src
 
 We modle the unsafe block with unchecked non zero as a precondition using requires giving us the hacspec equivalent
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[ensures(!(result === 0i32))] // !=
   pub fn reject_impl_convert_from_unit() -> RejectHacspec {
       i32::MIN + 1i32
@@ -228,7 +193,7 @@ We modle the unsafe block with unchecked non zero as a precondition using requir
   }
 #+end_src
 We then implement the traits
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   impl convert::From<()> for Reject {
       #[inline(always)]
@@ -236,7 +201,7 @@ We then implement the traits
 	  coerce_hacspec_to_rust_reject(reject_impl_convert_from_unit())
       }
   }
-  
+
   #[cfg(not(feature = "hacspec"))]
   impl convert::From<ParseError> for Reject {
       #[inline(always)]
@@ -244,9 +209,61 @@ We then implement the traits
 	  coerce_hacspec_to_rust_reject(reject_impl_convert_from_parse_error())
       }
   }
+
+  /// The expected return type of the receive method of a smart contract.
+  ///
+  /// Optionally, to define a custom type for error instead of using
+  /// Reject, allowing to track the reason for rejection, *but only in unit
+  /// tests*.
+  ///
+  /// See also the documentation for [bail!](macro.bail.html) for how to use
+  /// custom error types.
+  ///
+  /// # Example
+  /// Defining a custom error type
+  /// ```rust
+  /// enum MyCustomError {
+  ///     SomeError
+  /// }
+  ///
+  /// #[receive(contract = "mycontract", name = "receive")]
+  /// fn contract_receive<R: HasReceiveContext, L: HasLogger, A: HasActions>(
+  ///     ctx: &R,
+  ///     receive_amount: Amount,
+  ///     logger: &mut L,
+  ///     state: &mut State,
+  /// ) -> Result<A, MyCustomError> { ... }
+  /// ```
+  pub type ReceiveResult<A> = Result<A, Reject>;
+
+  /// The expected return type of the init method of the smart contract,
+  /// parametrized by the state type of the smart contract.
+  ///
+  /// Optionally, to define a custom type for error instead of using Reject,
+  /// allowing the track the reason for rejection, *but only in unit tests*.
+  ///
+  /// See also the documentation for [bail!](macro.bail.html) for how to use
+  /// custom error types.
+  ///
+  /// # Example
+  /// Defining a custom error type
+  /// ```rust
+  /// enum MyCustomError {
+  ///     SomeError
+  /// }
+  ///
+  /// #[init(contract = "mycontract")]
+  /// fn contract_init<R: HasReceiveContext, L: HasLogger, A: HasActions>(
+  ///     ctx: &R,
+  ///     receive_amount: Amount,
+  ///     logger: &mut L,
+  /// ) -> Result<State, MyCustomError> { ... }
+  /// ```
+  pub type InitResult<S> = Result<S, Reject>;
+  
 #+end_src
 We define a log error type and function converting from it to the reject type
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   /// Errors that can occur during logging.
   #[derive(Copy, Clone)] // , Debug, Eq, PartialEq
   #[repr(u8)]
@@ -267,7 +284,7 @@ We define a log error type and function converting from it to the reject type
 
 #+end_src
 We then implement the traits
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   /// Full is mapped to i32::MIN+3, Malformed is mapped to i32::MIN+4.
   impl From<LogError> for Reject {
@@ -279,7 +296,7 @@ We then implement the traits
 
 #+end_src
 We define a type for new contract name errors and conversion from it to reject
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[derive(Clone)] // , Debug, PartialEq, Eq
   pub enum NewContractNameError {
       NewContractNameErrorMissingInitPrefix,
@@ -300,7 +317,7 @@ We define a type for new contract name errors and conversion from it to reject
 
 #+end_src
 We then implement the traits
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   /// MissingInitPrefix is mapped to i32::MIN + 5,
   /// TooLong to i32::MIN + 6,
@@ -314,7 +331,7 @@ We then implement the traits
 
 #+end_src
 We define a type for new receive name errors and conversion from it to reject
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[derive(Clone)] // , Debug, PartialEq, Eq
   pub enum NewReceiveNameError {
       NewReceiveNameErrorMissingDotSeparator,
@@ -333,7 +350,7 @@ We define a type for new receive name errors and conversion from it to reject
 
 #+end_src
 We then implement the traits
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   /// MissingDotSeparator is mapped to i32::MIN + 7,
   /// TooLong to i32::MIN + 8, and
@@ -348,7 +365,7 @@ We then implement the traits
 
 *** Contract state
 We define contract state as its inner state namely the current position of the src_rust[:eval never]{u32} type.
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   /// A type representing the constract state bytes.
   #[derive(Default)]
@@ -360,7 +377,7 @@ We define contract state as its inner state namely the current position of the s
   
 #+end_src
 **** Contract State -- Seek
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[derive(Copy, Clone)] // , Debug, PartialEq, Eq
   pub enum SeekFrom {
       /// Sets the offset to the provided number of bytes.
@@ -424,7 +441,7 @@ We define contract state as its inner state namely the current position of the s
   }
 #+end_src
 We then implement the traits
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   pub fn coerce_rust_to_hacspec_contract_state(
       rust_contract_state: &mut ContractState,
@@ -478,23 +495,26 @@ We then implement the traits
 #+end_src
 
 **** Contract State -- Load
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   pub fn coerce_rust_to_hacspec_public_byte_seq(buf: &[u8]) -> PublicByteSeq {
       PublicByteSeq::from_native_slice(buf)
   }
 
+  // TODO: Make creusot friendly version
   #[cfg(not(feature = "hacspec"))]
   pub fn coerce_hacspec_to_rust_public_byte_seq(buf: PublicByteSeq) -> Vec<u8> {
+      // buf.native_slice().iter().collect();
       let mut temp_vec: Vec<u8> = Vec::new();
       for i in 0..buf.len() {
 	  temp_vec.push(buf.index(i).clone())
       }
       temp_vec
   }
+
 #+end_src
 
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   extern "C" {
       pub(crate) fn load_state(start: *mut u8, length: u32, offset: u32) -> u32;
@@ -524,7 +544,7 @@ We then implement the traits
 #+end_src
 
 **** Contract State -- Read
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   pub fn contract_state_impl_read_read(
       current_position: ContractStateHacspec,
       buf : PublicByteSeq,
@@ -567,7 +587,7 @@ We then implement the traits
 
 #+end_src
 We then implement the traits
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   impl Read for ContractState {
       fn read(&mut self, buf: &mut [u8]) -> ParseResult<usize> {
@@ -625,7 +645,7 @@ We then implement the traits
 #+end_src
 
 **** Contract State -- Write
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   extern "C" {
       pub(crate) fn write_state(start: *mut u8, length: u32, offset: u32) -> u32;
@@ -665,7 +685,7 @@ We then implement the traits
 
 #+end_src
 We then implement the traits
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   impl Write for ContractState {
       type Err = ();
@@ -683,7 +703,7 @@ We then implement the traits
 
 **** Contract State -- Misc.
 State size extern
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   extern "C" {
       pub(crate) fn state_size() -> u32;
@@ -707,7 +727,7 @@ State size extern
   
 #+end_src
 Resize state extern
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   extern "C" {
       // Resize state to the new value (truncate if new size is smaller). Return 0 if
@@ -733,7 +753,7 @@ Resize state extern
   }
 #+end_src
 
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   pub fn has_contract_state_impl_for_contract_state_open() -> ContractStateHacspec {
       0_u32
   }
@@ -775,7 +795,7 @@ Resize state extern
   }
 #+end_src
 We then implement the traits
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   impl HasContractState<()> for ContractState {
       type ContractStateData = ();
@@ -816,7 +836,7 @@ We then implement the traits
 
 *** Parameter
 Extern for parameter section
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   extern "C" {
       // Write a section of the parameter to the given location. Return the number
@@ -848,7 +868,7 @@ Extern for parameter section
 
 #+end_src
 We define parameter
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   #[derive(Default)]
   /// A type representing the parameter to init and receive methods.
@@ -868,7 +888,7 @@ We define parameter
 
 #+end_src
 We then implement the traits
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   pub fn coerce_rust_to_hacspec_parameter(
       rust_parameter: &mut Parameter,
@@ -900,7 +920,7 @@ We then implement the traits
 
 #+end_src
 Extern for parameter size and ~HasParameter~ trait.
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   extern "C" {
       // Get the size of the parameter to the method (either init or receive).
@@ -934,7 +954,7 @@ Extern for parameter size and ~HasParameter~ trait.
 #+end_src
 *** ChainMetaExtern
 Get slot time extern
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   extern "C" {
     // Getters for the chain meta data
@@ -959,7 +979,7 @@ Get slot time extern
   }
 #+end_src
 We define and implement traits for ~ChainMetaExtern~.
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   // TODO: Get functionlity into hacspec
   #[cfg(not(feature = "hacspec"))]
   #[doc(hidden)]
@@ -977,7 +997,7 @@ We define and implement traits for ~ChainMetaExtern~.
 
 *** AttributesCursor
 Get policy section extern
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   extern "C" {
     // Write a section of the policy to the given location. Return the number
@@ -1009,8 +1029,8 @@ Get policy section extern
 
 #+end_src
 
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
-  #[cfg(not(feature = "hacspec"))]
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
+  #[cfg(not(feature = "hacspec"))] // 
   /// A type representing the attributes, lazily acquired from the host.
   #[derive(Default)]
   pub struct AttributesCursor {
@@ -1069,12 +1089,15 @@ Get policy section extern
 
 #+end_src
 We then define traits
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   pub fn coerce_rust_to_hacspec_attributes_cursor(
       rust_attributes_cursor: &mut AttributesCursor,
   ) -> AttributesCursorHacspec {
-      (rust_attributes_cursor.current_position.clone(), rust_attributes_cursor.remaining_items.clone())
+      (
+	  rust_attributes_cursor.current_position.clone(),
+	  rust_attributes_cursor.remaining_items.clone(),
+      )
   }
 
   #[cfg(not(feature = "hacspec"))]
@@ -1099,7 +1122,7 @@ We then define traits
   /// vector of such. This flexibility is needed so that attributes can be
   /// accessed efficiently, as well as constructed conveniently for testing.
   #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
-  #[derive(Debug, Clone)]
+  #[derive(Clone)] // TODO: Creusot issue readd "Debug" attribute
   pub struct Policy<Attributes> {
       /// Identity of the identity provider who signed the identity object that
       /// this policy is derived from.
@@ -1117,6 +1140,7 @@ We then define traits
       pub items: Attributes,
   }
 
+  // TODO: Creusot issues?
   #[cfg(not(feature = "hacspec"))]
   impl HasPolicy for Policy<AttributesCursor> {
       fn identity_provider(&self) -> IdentityProvider {
@@ -1131,19 +1155,19 @@ We then define traits
 	  self.valid_to
       }
 
-      fn next_item(&mut self, buf: &mut [u8; 31]) -> Option<(AttributeTag, u8)> {	  
+      fn next_item(&mut self, buf: &mut [u8; 31]) -> Option<(AttributeTag, u8)> {
 	  let (ac, (at, v)) = has_policy_impl_for_policy_attributes_cursor_next_item(
 	      coerce_rust_to_hacspec_attributes_cursor(&mut self.items),
 	      coerce_rust_to_hacspec_public_byte_seq(&mut buf[..]),
 	  )?;
 	  coerce_hacspec_to_rust_attributes_cursor(&mut self.items, ac);
-	  Some ((AttributeTag(at),v))
+	  Some((AttributeTag(at), v))
       }
   }
 #+end_src
 
 *** Policy iterator
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   /// An iterator over policies using host functions to supply the data.
   /// The main interface to using this type is via the methods of the [Iterator](https://doc.rust-lang.org/std/iter/trait.Iterator.html)
@@ -1160,7 +1184,10 @@ We then define traits
   // TODO: use PolicyAttributesCursorHacspec for implementation above instead of just AttributesCursorHacspec
   pub type PolicyAttributesCursorHacspec = (u32, u64, u64, AttributesCursorHacspec); // IdentityProvider, Timestamp, Timestamp, AttributesCursor
 
-  fn iterator_impl_for_policies_iterator_next(policies_iterator : PoliciesIteratorHacspec) -> Option<(PoliciesIteratorHacspec, PolicyAttributesCursorHacspec)> {
+  // TODO: Fix creusot issues?
+  fn iterator_impl_for_policies_iterator_next(
+      policies_iterator: PoliciesIteratorHacspec,
+  ) -> Option<(PoliciesIteratorHacspec, PolicyAttributesCursorHacspec)> {
       let (mut pos, remaining_items) = policies_iterator;
       if remaining_items == 0u16 {
 	  Option::<(PoliciesIteratorHacspec, PolicyAttributesCursorHacspec)>::None?;
@@ -1182,24 +1209,25 @@ We then define traits
       let attributes_start = pos + 2u32 + 4u32 + 8u32 + 8u32 + 2u32;
       pos = pos + (u16_from_le_bytes(u16Word::from_seq(&skip_part)) as u32) + 2u32;
       remaining_items = remaining_items - 1u16;
-      Option::<(PoliciesIteratorHacspec, PolicyAttributesCursorHacspec)>::Some(((pos, remaining_items),
-	    (
-	  identity_provider,
-	  created_at,
-	  valid_to,
+      Option::<(PoliciesIteratorHacspec, PolicyAttributesCursorHacspec)>::Some((
+	  (pos, remaining_items),
 	  (
-	      attributes_start,
-	      remaining_items,
+	      identity_provider,
+	      created_at,
+	      valid_to,
+	      (attributes_start, remaining_items),
 	  ),
-      )))
+      ))
   }
 
+  // TODO: Fix creusot issues?
   #[cfg(not(feature = "hacspec"))]
   impl Iterator for PoliciesIterator {
       type Item = Policy<AttributesCursor>;
 
       fn next(&mut self) -> Option<Self::Item> {
-	  let ((pos, remaining_items), (identity_provider, created_at, valid_to, (cp,ri))) = iterator_impl_for_policies_iterator_next((self.pos, self.remaining_items))?;
+	  let ((pos, remaining_items), (identity_provider, created_at, valid_to, (cp, ri))) =
+	      iterator_impl_for_policies_iterator_next((self.pos, self.remaining_items))?;
 
 	  // TODO: make into coerce function
 	  self.pos = pos;
@@ -1226,15 +1254,14 @@ We then define traits
   impl ExactSizeIterator for PoliciesIterator {
       #[inline(always)]
       fn len(&self) -> usize {
-	  self.remaining_items as usize
+	  self.remaining_items.into() // as usize
       }
   }
-
 #+end_src
 
 *** External context
 Get init origin extern
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   extern "C" {
     // Getter for the init context.
@@ -1262,7 +1289,7 @@ Get init origin extern
 
 #+end_src
 Get receive invoker extern
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   extern "C" {
     /// Invoker of the top-level transaction, AccountAddress.
@@ -1289,7 +1316,7 @@ Get receive invoker extern
 
 #+end_src
 Get receive self address extern
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   extern "C" {
     /// Address of the contract itself, ContractAddress.
@@ -1316,7 +1343,7 @@ Get receive self address extern
 
 #+end_src
 Get receive self balance extern
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   extern "C" {
     /// Self-balance of the contract, returns the amount
@@ -1341,7 +1368,7 @@ Get receive self balance extern
 
 #+end_src
 Get receive sender extern
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   extern "C" {
     /// Immediate sender of the message (either contract or account).
@@ -1368,7 +1395,7 @@ Get receive sender extern
 
 #+end_src
 Get receive owner extern
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   extern "C" {
     /// Owner of the contract, AccountAddress.
@@ -1395,7 +1422,7 @@ Get receive owner extern
 
 #+end_src
 
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   /// Context backed by host functions.
   #[derive(Default)]
@@ -1431,6 +1458,7 @@ Get receive owner extern
       type PolicyIteratorType = PoliciesIterator;
       type PolicyType = Policy<AttributesCursor>;
 
+      // TODO: fix creusot issue
       #[inline(always)]
       fn metadata(&self) -> &Self::MetadataType {
 	  &ChainMetaExtern {}
@@ -1464,12 +1492,17 @@ Get receive owner extern
 
       #[inline(always)]
       fn init_origin(&self) -> AccountAddress {
-	  let mut address: [u8; ACCOUNT_ADDRESS_SIZE] = Default::default();
-	  address.clone_from_slice(
-	      &mut coerce_hacspec_to_rust_public_byte_seq(get_init_origin_hacspec(
-		  PublicByteSeq::new(ACCOUNT_ADDRESS_SIZE),
-	      ))[..],
-	  );
+	  // let mut address : [u8; ACCOUNT_ADDRESS_SIZE] = Default::default(); // : [u8; ACCOUNT_ADDRESS_SIZE]
+	  let temp = coerce_hacspec_to_rust_public_byte_seq(get_init_origin_hacspec(
+	      PublicByteSeq::new(ACCOUNT_ADDRESS_SIZE),
+	  ));
+
+	  let address: [u8; ACCOUNT_ADDRESS_SIZE] = temp.try_into().unwrap(); //  {
+	  //     Ok(ba) => ba,
+	  //     Err(_) => panic!(),
+	  // }
+
+	  // address.clone_from_slice(temp_vec.as_slice());
 	  AccountAddress(address)
       }
   }
@@ -1484,6 +1517,7 @@ Get receive owner extern
 	  ExternContext::default()
       }
 
+      // TODO: Make usable by creusot
       #[inline(always)]
       fn invoker(&self) -> AccountAddress {
 	  let mut address: [u8; ACCOUNT_ADDRESS_SIZE] = Default::default();
@@ -1495,6 +1529,7 @@ Get receive owner extern
 	  AccountAddress(address)
       }
 
+      // TODO: Make usable by creusot
       #[inline(always)]
       fn self_address(&self) -> ContractAddress {
 	  let mut address: [u8; ACCOUNT_ADDRESS_SIZE] = Default::default();
@@ -1514,6 +1549,7 @@ Get receive owner extern
 	  Amount::from_micro_gtu(get_receive_self_balance_hacspec())
       }
 
+      // TODO: Make usable by creusot
       // TODO: Remove/replace unsafe code !
       #[inline(always)]
       fn sender(&self) -> Address {
@@ -1539,6 +1575,7 @@ Get receive owner extern
 	  }
       }
 
+      // TODO: Make usable by creusot
       #[inline(always)]
       fn owner(&self) -> AccountAddress {
 	  let mut address: [u8; ACCOUNT_ADDRESS_SIZE] = Default::default();
@@ -1554,7 +1591,7 @@ Get receive owner extern
 
 *** Logger
 Log event extern
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   extern "C" {
       // Add a log item. Return values are
@@ -1584,7 +1621,7 @@ Log event extern
 
 #+end_src
 
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   /// A type representing the logger.
   #[derive(Default)]
@@ -1638,7 +1675,7 @@ Log event extern
 #+end_src
 *** Action
 Extern accept
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never  
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never  
   #[cfg(not(feature = "hacspec"))]
   extern "C" {
       pub(crate) fn accept() -> u32;
@@ -1662,7 +1699,7 @@ Extern accept
   
 #+end_src
 Extern simple transfer
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never  
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never  
   #[cfg(not(feature = "hacspec"))]
   extern "C" {
     // Basic action to send tokens to an account.
@@ -1688,7 +1725,7 @@ Extern simple transfer
 
 #+end_src
 Extern send
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never  
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never  
   #[cfg(not(feature = "hacspec"))]
   extern "C" {
     // Send a message to a smart contract.
@@ -1743,7 +1780,7 @@ Extern send
 
 #+end_src
 Extern combine and
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never  
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never  
   #[cfg(not(feature = "hacspec"))]
   extern "C" {
     // Combine two actions using normal sequencing. This is using the stack of
@@ -1769,7 +1806,7 @@ Extern combine and
 
 #+end_src
 Extern combine or
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never  
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never  
   #[cfg(not(feature = "hacspec"))]
   extern "C" {
     // Combine two actions using normal sequencing. This is using the stack of
@@ -1795,7 +1832,7 @@ Extern combine or
 
 #+end_src
 
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   /// Actions that can be produced at the end of a contract execution. This
   /// type is deliberately not cloneable so that we can enforce that
@@ -1868,7 +1905,7 @@ Extern combine or
 
 *** Remaining todo
 # TODO: Get functionlity of everything into hacspec
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   // TODO: Define functionality in hacspec instead!
   #[cfg(not(feature = "hacspec"))]
   /// Allocates a Vec of bytes prepended with its length as a `u32` into memory,
@@ -1889,7 +1926,7 @@ Extern combine or
 
 #+end_src
 
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   // TODO: Name collision
   // #[cfg(not(feature = "hacspec"))]
   // /// Wrapper for
@@ -1909,7 +1946,7 @@ Extern combine or
   // }
 #+end_src
 
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   /// Add optimized unwrap behaviour that aborts the process instead of
   /// panicking.
@@ -1940,7 +1977,7 @@ Extern combine or
   
 #+end_src
 
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   /// Analogue of the `expect` methods on types such as [Option](https://doc.rust-lang.org/std/option/enum.Option.html),
   /// but useful in a Wasm setting.
@@ -1973,7 +2010,7 @@ Extern combine or
 
 #+end_src
 
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]  
   /// Analogue of the `expect_err` methods on [Result](https://doc.rust-lang.org/std/result/enum.Result.html),
   /// but useful in a Wasm setting.
@@ -1998,7 +2035,7 @@ Extern combine or
 
 #+end_src
 
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   impl<A> UnwrapAbort for Option<A> {
       type Unwrap = A;
@@ -2011,7 +2048,7 @@ Extern combine or
 
 #+end_src
 
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   impl<A> ExpectReport for Option<A> {
       type Unwrap = A;
@@ -2026,7 +2063,7 @@ Extern combine or
   
 #+end_src
 
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   /// Analogue of the `expect_none` methods on [Option](https://doc.rust-lang.org/std/option/enum.Option.html),
   /// but useful in a Wasm setting.
@@ -2047,7 +2084,7 @@ Extern combine or
   
 #+end_src
 
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   // #[cfg(not(feature = "hacspec"))]
   // /// The `Serial` trait provides a means of writing structures into byte-sinks
   // /// (`Write`).
@@ -2110,7 +2147,7 @@ Extern combine or
 
 #+end_src
 
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   /// The `DeserialCtx` trait provides a means of reading structures from
   /// byte-sources (`Read`) using contextual information.
@@ -2217,7 +2254,7 @@ Extern combine or
   }
 #+end_src
 
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   /// Write a Map as a list of key-value pairs ordered by the key, without the
   /// length information.
@@ -2247,7 +2284,7 @@ Extern combine or
   
 #+end_src
 
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   /// Read a [BTreeMap](https://doc.rust-lang.org/std/collections/struct.BTreeMap.html) as a list of key-value pairs given some length.
   /// NB: This ensures there are no duplicates, hence the specialized type.
@@ -2317,7 +2354,7 @@ Extern combine or
   
 #+end_src
 
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   /// Write a [HashSet](https://doc.rust-lang.org/std/collections/struct.HashSet.html) as a list of keys in no particular order, without the length information.
   pub fn serial_hashset_no_length<W: Write, K: Serial>(
@@ -2347,7 +2384,7 @@ Extern combine or
 
 #+end_src
 
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   /// Read a [HashSet](https://doc.rust-lang.org/std/collections/struct.HashSet.html) as a list of keys, given some length.
   /// NB: This ensures there are no duplicates.
@@ -2382,7 +2419,7 @@ Extern combine or
 
 #+end_src
 
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]  
   /// Write a HashMap as a list of key-value pairs in to particular order, without
   /// the length information.
@@ -2413,7 +2450,7 @@ Extern combine or
   
 #+end_src
 
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   /// Read a [HashMap](https://doc.rust-lang.org/std/collections/struct.HashMap.html) as a list of key-value pairs given some length.
   pub fn deserial_hashmap_no_length<R: Read, K: Deserial + Eq + Hash, V: Deserial>(
@@ -2448,7 +2485,7 @@ Extern combine or
   }
 #+end_src
 
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   /// Write a slice of elements, without including length information.
   /// This is intended to be used either when the length is statically known,
@@ -2475,7 +2512,7 @@ Extern combine or
   
 #+end_src
 
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   pub(crate) static MAX_PREALLOCATED_CAPACITY: usize = 4096;
 
@@ -2505,7 +2542,7 @@ Extern combine or
   }
 #+end_src
 
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   impl SerialCtx for &str {
       fn serial_ctx<W: Write>(
@@ -2519,7 +2556,7 @@ Extern combine or
   }
 #+end_src
 
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]
   impl SerialCtx for String {
       fn serial_ctx<W: Write>(
@@ -2532,7 +2569,7 @@ Extern combine or
   }
 #+end_src
 
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
   #[cfg(not(feature = "hacspec"))]  
   impl DeserialCtx for String {
       fn deserial_ctx<R: Read>(
@@ -2549,512 +2586,8 @@ Extern combine or
 #+end_src
 
 ** Rust Tests
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
+#+begin_src rust :tangle ../../examples/concordium-impls/src/concordium-impls.rs :eval never
 
-#+end_src
-
-** Auction code
-#+begin_src rust :tangle ../../examples/concordium_impls/src/concordium_impls.rs :eval never
-  // #[cfg(not(feature = "hacspec"))]
-  // extern crate hacspec_lib;
-
-  // use hacspec_lib::*;
-
-  // #[cfg(feature = "hacspec_attributes")]
-  #[cfg(not(feature = "hacspec"))]
-  use hacspec_attributes::proof;
-  #[cfg(feature = "hacspec")]
-  use hacspec_attributes::*;
-
-  // #[cfg(not(feature = "hacspec"))]
-  // extern crate creusot_contracts;
-  // #[cfg(not(feature = "hacspec"))]
-  // use creusot_contracts::{ensures, requires};
-
-  array!(UserAddress, 32, u8); // U8
-
-  #[derive(Clone, PartialEq)]
-  pub enum AuctionState {
-      /// The auction is either
-      /// - still accepting bids or
-      /// - not accepting bids because it's past the auction end, but nobody has
-      ///   finalized the auction yet.
-      NotSoldYet,
-      /// The auction is over and the item has been sold to the indicated address.
-      Sold(UserAddress), // winning account's address
-  }
-
-  #[derive(Clone, PartialEq)]
-  pub struct SeqMap(pub PublicByteSeq, pub PublicByteSeq);
-
-  pub type AmountHacspec = u64;
-  pub type TimestampHacspec = u64;
-  pub type Itemtyp = PublicByteSeq; // Seq<u8>;
-
-  #[derive(Clone, PartialEq)]
-  pub struct State(
-      pub AuctionState,
-      pub AmountHacspec,
-      pub Itemtyp,
-      pub TimestampHacspec,
-      pub SeqMap,
-  );
-
-  pub fn fresh_state(itm: Itemtyp, exp: u64) -> State {
-      State(
-	  AuctionState::NotSoldYet,
-	  0_u64,
-	  itm,
-	  exp,
-	  SeqMap(PublicByteSeq::new(0_usize), PublicByteSeq::new(0_usize)),
-      )
-  }
-
-  fn seq_map_entry(m: SeqMap, sender_address: UserAddress) -> (u64, SeqMap) {
-      let SeqMap(m0, m1) = m;
-
-      let mut res = // MapEntry::Entry
-	  (
-	  0_u64,
-	  SeqMap(
-	      m0.clone().concat(&sender_address),
-	      m1.clone().concat(&u64_to_be_bytes(0_u64)),
-	  ),
-      );
-
-      for x in 0..m0.clone().len() / 32 {
-	  if UserAddress::from_seq(&m0.clone().slice(x * 32, 32)) == sender_address {
-	      res = // MapEntry::Entry
-		  (
-		  u64_from_be_bytes(u64Word::from_seq(&m1.clone().slice(x * 8, 8))),
-		  SeqMap(m0.clone(), m1.clone()),
-	      );
-	  }
-      }
-
-      res
-  }
-
-  #[derive(Clone, PartialEq)]
-  pub enum MapUpdate {
-      Update(u64, SeqMap),
-  }
-
-  fn seq_map_update_entry(m: SeqMap, sender_address: UserAddress, amount: u64) -> MapUpdate {
-      let SeqMap(m0, m1) = m;
-
-      let mut res = MapUpdate::Update(
-	  amount,
-	  SeqMap(
-	      m0.clone().concat(&sender_address),
-	      m1.clone().concat(&u64_to_be_bytes(amount)),
-	  ),
-      );
-
-      // !! Issue in for loop !! (update, updates the reference!)
-      for x in 0..m0.clone().len() / 32 {
-	  if UserAddress::from_seq(&m0.clone().slice(x * 32, 32)) == sender_address {
-	      res = MapUpdate::Update(
-		  amount,
-		  SeqMap(
-		      m0.clone().update(x * 32, &sender_address),
-		      m1.clone().update(x * 8, &u64_to_be_bytes(amount)),
-		  ),
-	      );
-	  }
-      }
-
-      res
-  }
-
-  #[derive(Clone, PartialEq)]
-  pub enum BidError {
-      ContractSender, // raised if a contract, as opposed to account, tries to bid
-      BidTooLow,      /* { bid: Amount, highest_bid: Amount } */
-      // raised if bid is lower than highest amount
-      BidsOverWaitingForAuctionFinalization, // raised if bid is placed after auction expiry time
-      AuctionIsFinalized,                    /* raised if bid is placed after auction has been
-					      ,* finalized */
-  }
-
-  // pub type UserAddressSet = Option<UserAddress>;
-  #[derive(Clone, PartialEq)]
-  pub enum UserAddressSet {
-      UserAddressSome(UserAddress),
-      UserAddressNone,
-  }
-  pub type Context = (u64, UserAddressSet);
-  pub type AuctionBidResult = Result<State, BidError>;
-
-  pub fn auction_bid(ctx: Context, amount: u64, state: State) -> AuctionBidResult {
-      let State(auction_state, highest_bid, st2, expiry, st4) = state.clone();
-
-      if !(auction_state == AuctionState::NotSoldYet) {
-	  AuctionBidResult::Err(BidError::AuctionIsFinalized)?;
-      }
-
-      let (slot_time, sender) = ctx;
-      if !(slot_time <= expiry) {
-	  AuctionBidResult::Err(BidError::BidsOverWaitingForAuctionFinalization)?;
-      }
-
-      if sender == UserAddressSet::UserAddressNone {
-	  AuctionBidResult::Err(BidError::ContractSender)?;
-      }
-
-      let sender_address = match sender {
-	  UserAddressSet::UserAddressNone => UserAddress([
-	      5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8,
-	      5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8,
-	      5_u8, 5_u8, 5_u8, 5_u8,
-	  ]), // should never happen
-	  UserAddressSet::UserAddressSome(account_address) => account_address,
-      };
-
-      let (bid_to_update, new_map) = // match
-	  seq_map_entry(st4.clone(), sender_address) // {
-      //     MapEntry::Entry(bid_to_update, new_map) => (bid_to_update, new_map),
-      // }
-      ;
-
-      let (updated_bid, updated_map) =
-	  match seq_map_update_entry(st4.clone(), sender_address, bid_to_update + amount) {
-	      MapUpdate::Update(updated_bid, updated_map) => (updated_bid, updated_map),
-	  };
-
-      if !(updated_bid > highest_bid) {
-	  AuctionBidResult::Err(BidError::BidTooLow)?;
-      }
-
-      AuctionBidResult::Ok(State(auction_state, updated_bid, st2, expiry, updated_map))
-  }
-
-  pub type FinalizeContext = (u64, UserAddress, u64);
-
-  /// For errors in which the `finalize` function can result
-  #[derive(Clone, PartialEq)]
-  pub enum FinalizeError {
-      BidMapError,
-      AuctionStillActive,
-      AuctionFinalized,
-  }
-
-  #[derive(Clone, PartialEq)]
-  pub enum FinalizeAction {
-      Accept,
-      SimpleTransfer(PublicByteSeq),
-  }
-
-  #[derive(Clone, PartialEq)]
-  pub enum BidRemain {
-      BidNone,
-      BidSome(u64),
-  }
-
-  pub type AuctionFinalizeResult = Result<(State, FinalizeAction), FinalizeError>;
-  // pub type BidRemain = Option<(UserAddress, u64)>;
-
-  pub fn auction_finalize(ctx: FinalizeContext, state: State) -> AuctionFinalizeResult {
-      let State(mut auction_state, highest_bid, st2, expiry, SeqMap(m0, m1)) = state.clone();
-
-      let mut result = AuctionFinalizeResult::Ok((state.clone(), FinalizeAction::Accept));
-
-      if !(auction_state == AuctionState::NotSoldYet) {
-	  AuctionFinalizeResult::Err(FinalizeError::AuctionFinalized)?;
-      }
-
-      let (slot_time, owner, balance) = ctx;
-
-      if !(slot_time > expiry) {
-	  AuctionFinalizeResult::Err(FinalizeError::AuctionStillActive)?;
-      }
-
-      if balance != 0_u64 {
-	  let mut return_action = FinalizeAction::SimpleTransfer(
-	      PublicByteSeq::new(0_usize)
-		  .concat(&owner)
-		  .concat(&u64_to_be_bytes(highest_bid)),
-	  );
-	  let mut remaining_bid = BidRemain::BidNone;
-	  // Return bids that are smaller than highest
-	  // let x = 0;
-	  for x in 0..m0.clone().len() / 32 {
-	      let addr = UserAddress::from_seq(&m0.clone().slice(x * 32, 32));
-	      let amnt = u64_from_be_bytes(u64Word::from_seq(&m1.clone().slice(x * 8, 8)));
-	      if amnt < highest_bid {
-		  return_action = match return_action {
-		      FinalizeAction::Accept => FinalizeAction::Accept, // TODO: What error (should never happen)..
-		      FinalizeAction::SimpleTransfer(m) => FinalizeAction::SimpleTransfer(
-			  m.concat(&addr).concat(&u64_to_be_bytes(amnt)),
-		      ),
-		  };
-	      } else {
-		  // ensure!(remaining_bid.is_none(), FinalizeError::BidMapError);
-		  if !(remaining_bid == BidRemain::BidNone) {
-		      AuctionFinalizeResult::Err(FinalizeError::BidMapError)?;
-		  }
-		  auction_state = AuctionState::Sold(addr);
-		  remaining_bid = BidRemain::BidSome(amnt);
-	      }
-	  }
-
-	  // ensure that the only bidder left in the map is the one with the highest bid
-	  result = match remaining_bid {
-	      BidRemain::BidSome(amount) =>
-	      // ensure!(amount == state.highest_bid, FinalizeError::BidMapError);
-	      {
-		  if !(amount == highest_bid) {
-		      AuctionFinalizeResult::Err(FinalizeError::BidMapError)
-		  } else {
-		      AuctionFinalizeResult::Ok((
-			  State(
-			      auction_state,
-			      highest_bid,
-			      st2,
-			      expiry,
-			      SeqMap(m0.clone(), m1.clone()),
-			  ),
-			  return_action,
-		      ))
-		  }
-	      }
-	      BidRemain::BidNone => AuctionFinalizeResult::Err(FinalizeError::BidMapError),
-	  };
-
-	  result.clone()?;
-      }
-
-      result
-  }
-
-  #[cfg(test)]
-  extern crate quickcheck;
-  #[cfg(test)]
-  #[macro_use(quickcheck)]
-  extern crate quickcheck_macros;
-
-  #[cfg(test)]
-  use quickcheck::*;
-
-  #[cfg(test)]
-  #[proof]
-  #[quickcheck]
-  #[ensures(result === true)]
-  /// Test that the smart-contract initialization sets the state correctly
-  /// (no bids, active state, indicated auction-end time and item name).
-  pub fn auction_test_init(item: PublicByteSeq, time: u64) -> bool {
-      fresh_state(item.clone(), time)
-	  == State(
-	      AuctionState::NotSoldYet,
-	      0_u64,
-	      item.clone(),
-	      time,
-	      SeqMap(PublicByteSeq::new(0_usize), PublicByteSeq::new(0_usize)),
-	  )
-  }
-
-  #[cfg(test)]
-  #[proof]
-  fn verify_bid(
-      item: PublicByteSeq,
-      state: State,
-      account: UserAddress,
-      ctx: Context,
-      amount: u64,
-      bid_map: SeqMap,
-      highest_bid: u64,
-      time: u64,
-  ) -> (State, SeqMap, bool, bool) {
-      let t = auction_bid(ctx, amount, state.clone());
-
-      let (state, res) = match t {
-	  AuctionBidResult::Err(e) => (state, false),
-	  AuctionBidResult::Ok(s) => (s, true),
-      };
-
-      let bid_map = match seq_map_update_entry(bid_map.clone(), account, highest_bid) {
-	  MapUpdate::Update(_, updated_map) => updated_map,
-      };
-
-      (
-	  state.clone(),
-	  bid_map.clone(),
-	  res,
-	  state.clone()
-	      == State(
-		  AuctionState::NotSoldYet,
-		  highest_bid,
-		  item.clone(),
-		  time,
-		  bid_map.clone(),
-	      ),
-      )
-  }
-
-  #[cfg(test)]
-  #[proof]
-  fn useraddress_from_u8(i: u8) -> UserAddress {
-      UserAddress([
-	  i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i, i,
-	  i, i,
-      ])
-  }
-
-  #[cfg(test)]
-  #[proof]
-  fn new_account(time: u64, i: u8) -> (UserAddress, Context) {
-      let addr = useraddress_from_u8(i);
-      let ctx = (time, UserAddressSet::UserAddressSome(addr));
-      (addr, ctx)
-  }
-
-  #[cfg(test)]
-  #[proof]
-  // #[quickcheck]
-  // #[test]
-  /// Test a sequence of bids and finalizations:
-  /// 0. Auction is initialized.
-  /// 1. Alice successfully bids 0.1 GTU.
-  /// 2. Alice successfully bids another 0.1 GTU, highest bid becomes 0.2 GTU
-  /// (the sum of her two bids). 3. Bob successfully bids 0.3 GTU, highest
-  /// bid becomes 0.3 GTU. 4. Someone tries to finalize the auction before
-  /// its end time. Attempt fails. 5. Dave successfully finalizes the
-  /// auction after its end time.    Alice gets her money back, while
-  /// Carol (the owner of the contract) collects the highest bid amount.
-  /// 6. Attempts to subsequently bid or finalize fail.
-  #[requires(18446744073709551615u64 > time)]
-  #[requires(18446744073709551615u64 / 5u64 - 1u64 > input_amount)]
-  #[ensures(result === true)]
-  #[quickcheck]
-  fn test_auction_bid_and_finalize(item: PublicByteSeq, time: u64, input_amount: u64) -> bool {
-      let time = if time == 18446744073709551615u64 {
-	  18446744073709551614u64
-      } else {
-	  time
-      }; // Can overflow !
-      let input_amount: u64 = if input_amount > 18446744073709551615u64 / 5u64 - 1u64 {
-	  100u64
-      } else {
-	  input_amount
-      };
-
-      let amount = input_amount + 1_u64;
-      let winning_amount = amount * 3_u64; // 300_u64;
-      let big_amount = amount * 5_u64; // 500_u64;
-
-      let bid_map = SeqMap(PublicByteSeq::new(0_usize), PublicByteSeq::new(0_usize));
-
-      // initializing auction
-      let state = fresh_state(item.clone(), time); // mut
-
-      // 1st bid: account1 bids amount1
-      let (alice, alice_ctx) = new_account(time, 0_u8);
-
-      let (ac0, ac1) = alice_ctx;
-
-      let (state, bid_map, res_0, result_0) = verify_bid(
-	  item.clone(),
-	  state,
-	  alice,
-	  (ac0.clone(), ac1.clone()),
-	  amount,
-	  bid_map,
-	  amount,
-	  time,
-      );
-
-      // // 2nd bid: account1 bids `amount` again
-      // // should work even though it's the same amount because account1 simply
-      // // increases their bid
-      let (state, bid_map, res_1, result_1) = verify_bid(
-	  item.clone(),
-	  state,
-	  alice,
-	  (ac0.clone(), ac1.clone()),
-	  amount,
-	  bid_map,
-	  amount + amount,
-	  time,
-      );
-
-      // // 3rd bid: second account
-      let (bob, bob_ctx) = new_account(time, 1_u8); // first argument is slot time
-      let (bc1, bc2) = bob_ctx;
-
-      let (state, bid_map, res_2, result_2) = verify_bid(
-	  item.clone(),
-	  state,
-	  bob,
-	  (bc1.clone(), bc2.clone()),
-	  winning_amount,
-	  bid_map,
-	  winning_amount,
-	  time,
-      );
-
-      let owner = useraddress_from_u8(0_u8);
-
-      // let sender = owner;
-      let balance = 100_u64;
-      let ctx4 = (time, owner, balance);
-
-      let finres = auction_finalize(ctx4, state.clone());
-      let (state, result_3) = match finres {
-	  AuctionFinalizeResult::Err(err) => {
-	      (state.clone(), err == FinalizeError::AuctionStillActive)
-	  }
-	  AuctionFinalizeResult::Ok((state, _)) => (state, false),
-      };
-
-      // // finalizing auction
-      // let carol = new_account();
-      let (carol, carol_ctx) = new_account(time, 2_u8);
-
-      let ctx5 = (time + 1_u64, carol, winning_amount);
-      let finres2 = auction_finalize(ctx5, state.clone());
-
-      let (state, result_4) = match finres2 {
-	  AuctionFinalizeResult::Err(_) => (state.clone(), false),
-	  AuctionFinalizeResult::Ok((state, action)) => (
-	      state,
-	      action
-		  == FinalizeAction::SimpleTransfer(
-		      PublicByteSeq::new(0_usize)
-			  .concat(&carol)
-			  .concat(&u64_to_be_bytes(winning_amount))
-			  .concat(&alice)
-			  .concat(&u64_to_be_bytes(amount + amount)),
-		  ),
-	  ),
-      };
-
-      let result_5 = state.clone()
-	  == State(
-	      AuctionState::Sold(bob),
-	      winning_amount,
-	      item.clone(),
-	      time,
-	      bid_map.clone(),
-	  );
-
-      // attempting to finalize auction again should fail
-      let finres3 = auction_finalize(ctx5, state.clone());
-
-      let (state, result_6) = match finres3 {
-	  AuctionFinalizeResult::Err(err) => (state, err == FinalizeError::AuctionFinalized),
-	  AuctionFinalizeResult::Ok((state, action)) => (state, false),
-      };
-
-      let t = auction_bid((bc1.clone(), bc2.clone()), big_amount, state.clone());
-
-      // let result_7 = t == AuctionBidResult::Err (BidError::AuctionIsFinalized);
-      let result_7 = match t {
-	  AuctionBidResult::Err(e) => e == BidError::AuctionIsFinalized,
-	  AuctionBidResult::Ok(_) => false,
-      };
-
-      result_0 && result_1 && result_2 && result_3 && result_4 && result_5 && result_6 && result_7
-  }
 #+end_src
 
 ** Resulting output
@@ -3071,17 +2604,17 @@ Extern combine or
 #+end_src
 
 #+begin_src sh :eval never :results output silent
-  cargo hacspec -o ConcordiumImpls.v concordium_impls --init
+  cargo hacspec -o Concordium_Impls.v concordium-impls --init
 #+end_src
 
 #+begin_src sh :results output silent
-  cargo hacspec -o ConcordiumImpls.v concordium_impls --update
+  cargo hacspec -o Concordium_Impls.v concordium-impls --update
 #+end_src
 
 ** Generation of backend output
 
 #+name: split-file
-#+begin_src python :wrap "src coq :tangle ConcordiumImpls.v :results output silent" :exports none :results code :var ARG="0 -1" :var FILENAME="ConcordiumImpls.v" :eval never
+#+begin_src python :wrap "src coq :tangle Concordium_Impls.v :results output silent" :exports none :results code :var ARG="0 -1" :var FILENAME="Concordium_Impls.v" :eval never
   import functools
 
   lower, upper = map(int, ARG.split())
@@ -3186,7 +2719,7 @@ Add Rec LoadPath "src/" as Hacspec.
 #+NAME: seg0
 #+CALL: split-file(ARG=linum0) :eval
 #+RESULTS: seg0
-#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+#+begin_src coq :tangle Concordium_Impls.v :results output silent
 (** This file was automatically generated using Hacspec **)
 Require Import Lib MachineIntegers.
 From Coq Require Import ZArith.
@@ -3204,7 +2737,7 @@ Require Import Hacspec.Lib.
 #+NAME: seg1
 #+CALL: split-file(ARG=linum1) :eval
 #+RESULTS: seg1
-#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+#+begin_src coq :tangle Concordium_Impls.v :results output silent
 Notation "'reject_hacspec_t'" := (int32) : hacspec_scope.
 
 #+end_src
@@ -3214,7 +2747,7 @@ Notation "'reject_hacspec_t'" := (int32) : hacspec_scope.
 #+NAME: seg2
 #+CALL: split-file(ARG=linum2) :eval
 #+RESULTS: seg2
-#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+#+begin_src coq :tangle Concordium_Impls.v :results output silent
 Definition reject_impl_deafult  : reject_hacspec_t :=
   min_v.
 
@@ -3227,7 +2760,7 @@ Definition reject_impl_deafult  : reject_hacspec_t :=
 #+NAME: seg4
 #+CALL: split-file(ARG=linum4) :eval
 #+RESULTS: seg4
-#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+#+begin_src coq :tangle Concordium_Impls.v :results output silent
 Definition new_reject_impl (x_0 : int32) : (option reject_hacspec_t) :=
   (if ((x_0) <.? (@repr WORDSIZE32 0)):bool then (@Some int32 (x_0)) else (
       @None int32)).
@@ -3240,7 +2773,7 @@ Definition new_reject_impl (x_0 : int32) : (option reject_hacspec_t) :=
 #+NAME: seg5
 #+CALL: split-file(ARG=linum5) :eval
 #+RESULTS: seg5
-#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+#+begin_src coq :tangle Concordium_Impls.v :results output silent
 Definition reject_impl_convert_from_unit  : reject_hacspec_t :=
   (min_v) .+ (@repr WORDSIZE32 1).
 
@@ -3259,7 +2792,7 @@ Qed.
 #+NAME: seg6
 #+CALL: split-file(ARG=linum6) :eval
 #+RESULTS: seg6
-#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+#+begin_src coq :tangle Concordium_Impls.v :results output silent
 Definition reject_impl_convert_from_parse_error  : reject_hacspec_t :=
   (min_v) .+ (@repr WORDSIZE32 2).
 
@@ -3278,7 +2811,7 @@ Qed.
 #+NAME: seg7
 #+CALL: split-file(ARG=linum7) :eval
 #+RESULTS: seg7
-#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+#+begin_src coq :tangle Concordium_Impls.v :results output silent
 Inductive log_error_t :=
 | Full : log_error_t
 | Malformed : log_error_t.
@@ -3305,7 +2838,7 @@ Qed.
 #+NAME: seg8
 #+CALL: split-file(ARG=linum8) :eval
 #+RESULTS: seg8
-#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+#+begin_src coq :tangle Concordium_Impls.v :results output silent
 Inductive new_contract_name_error_t :=
 | NewContractNameErrorMissingInitPrefix : new_contract_name_error_t
 | NewContractNameErrorTooLong : new_contract_name_error_t
@@ -3338,7 +2871,7 @@ Qed.
 #+NAME: seg9
 #+CALL: split-file(ARG=linum9) :eval
 #+RESULTS: seg9
-#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+#+begin_src coq :tangle Concordium_Impls.v :results output silent
 Inductive new_receive_name_error_t :=
 | NewReceiveNameErrorMissingDotSeparator : new_receive_name_error_t
 | NewReceiveNameErrorTooLong : new_receive_name_error_t
@@ -3370,7 +2903,7 @@ Qed.
 #+NAME: seg10
 #+CALL: split-file(ARG=linum10) :eval
 #+RESULTS: seg10
-#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+#+begin_src coq :tangle Concordium_Impls.v :results output silent
 Notation "'contract_state_hacspec_t'" := (int32) : hacspec_scope.
 
 #+end_src
@@ -3380,7 +2913,7 @@ Notation "'contract_state_hacspec_t'" := (int32) : hacspec_scope.
 #+NAME: seg11
 #+CALL: split-file(ARG=linum11) :eval
 #+RESULTS: seg11
-#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+#+begin_src coq :tangle Concordium_Impls.v :results output silent
 Inductive seek_from_t :=
 | Start : int64 -> seek_from_t
 | End : int64 -> seek_from_t
@@ -3393,7 +2926,7 @@ Inductive seek_from_t :=
 #+NAME: seg12
 #+CALL: split-file(ARG=linum12) :eval
 #+RESULTS: seg12
-#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+#+begin_src coq :tangle Concordium_Impls.v :results output silent
 Notation "'uint32_option_t'" := ((option int32)) : hacspec_scope.
 
 Notation "'iint64_option_t'" := ((option int64)) : hacspec_scope.
@@ -3405,7 +2938,7 @@ Notation "'iint64_option_t'" := ((option int64)) : hacspec_scope.
 #+NAME: seg13
 #+CALL: split-file(ARG=linum13) :eval
 #+RESULTS: seg13
-#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+#+begin_src coq :tangle Concordium_Impls.v :results output silent
 Definition contract_state_impl_seek
   (current_position_5 : contract_state_hacspec_t)
   (pos_6 : seek_from_t)
@@ -3459,7 +2992,7 @@ Definition contract_state_impl_seek
 #+NAME: seg14
 #+CALL: split-file(ARG=linum14) :eval
 #+RESULTS: seg14
-#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+#+begin_src coq :tangle Concordium_Impls.v :results output silent
 Definition load_state_hacspec
   (buf_15 : public_byte_seq)
   (offset_16 : int32)
@@ -3473,7 +3006,7 @@ Definition load_state_hacspec
 #+NAME: seg15
 #+CALL: split-file(ARG=linum15) :eval
 #+RESULTS: seg15
-#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+#+begin_src coq :tangle Concordium_Impls.v :results output silent
 Definition contract_state_impl_read_read
   (current_position_17 : contract_state_hacspec_t)
   (buf_18 : public_byte_seq)
@@ -3523,7 +3056,7 @@ Definition contract_state_impl_read_read_u8
 #+NAME: seg16
 #+CALL: split-file(ARG=linum16) :eval
 #+RESULTS: seg16
-#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+#+begin_src coq :tangle Concordium_Impls.v :results output silent
 Definition write_state_hacspec
   (buf_33 : public_byte_seq)
   (offset_34 : int32)
@@ -3537,7 +3070,7 @@ Definition write_state_hacspec
 #+NAME: seg16half
 #+CALL: split-file(ARG=linum16half) :eval
 #+RESULTS: seg16half
-#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+#+begin_src coq :tangle Concordium_Impls.v :results output silent
 Definition contract_state_impl_write
   (current_position_35 : contract_state_hacspec_t)
   (buf_36 : public_byte_seq)
@@ -3569,7 +3102,7 @@ Definition resize_state_hacspec (new_size_39 : int32) : int32 :=
 #+NAME: seg17
 #+CALL: split-file(ARG=linum17) :eval
 #+RESULTS: seg17
-#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+#+begin_src coq :tangle Concordium_Impls.v :results output silent
 Definition has_contract_state_impl_for_contract_state_open
   
   : contract_state_hacspec_t :=
@@ -3610,7 +3143,7 @@ Definition get_parameter_section_hacspec
 #+NAME: seg18
 #+CALL: split-file(ARG=linum18) :eval
 #+RESULTS: seg18
-#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+#+begin_src coq :tangle Concordium_Impls.v :results output silent
 Notation "'parameter_hacspec_t'" := (int32) : hacspec_scope.
 
 Definition read_impl_for_parameter_read
@@ -3641,7 +3174,7 @@ Definition get_policy_section_hacspec
 #+NAME: seg19
 #+CALL: split-file(ARG=linum19) :eval
 #+RESULTS: seg19
-#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+#+begin_src coq :tangle Concordium_Impls.v :results output silent
 Notation "'attributes_cursor_hacspec_t'" := ((int32 × int16)) : hacspec_scope.
 
 Definition has_policy_impl_for_policy_attributes_cursor_next_item
@@ -3685,7 +3218,7 @@ Definition has_policy_impl_for_policy_attributes_cursor_next_item
 #+NAME: seg20
 #+CALL: split-file(ARG=linum20) :eval
 #+RESULTS: seg20
-#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+#+begin_src coq :tangle Concordium_Impls.v :results output silent
 Notation "'policies_iterator_hacspec_t'" := ((int32 × int16)) : hacspec_scope.
 
 Notation "'policy_attributes_cursor_hacspec_t'" := ((
@@ -3764,7 +3297,7 @@ Definition iterator_impl_for_policies_iterator_next
 #+NAME: seg21
 #+CALL: split-file(ARG=linum21) :eval
 #+RESULTS: seg21
-#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+#+begin_src coq :tangle Concordium_Impls.v :results output silent
 Definition get_init_origin_hacspec
   (start_76 : public_byte_seq)
   : public_byte_seq :=
@@ -3801,7 +3334,7 @@ Definition get_receive_owner_hacspec
 #+NAME: seg22
 #+CALL: split-file(ARG=linum22) :eval
 #+RESULTS: seg22
-#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+#+begin_src coq :tangle Concordium_Impls.v :results output silent
 Definition log_event_hacspec
   (start_81 : public_byte_seq)
   : (public_byte_seq × int32) :=
@@ -3815,7 +3348,7 @@ Definition log_event_hacspec
 #+NAME: seg23
 #+CALL: split-file(ARG=linum23) :eval
 #+RESULTS: seg23
-#+begin_src coq :tangle ConcordiumImpls.v :results output silent
+#+begin_src coq :tangle Concordium_Impls.v :results output silent
 Definition accept_hacspec  : int32 :=
   @repr WORDSIZE32 1.
 
