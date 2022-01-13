@@ -5,7 +5,12 @@ authors = [""]
 edition = "2018"
 
 [lib]
-path = "src/concordium_impls.rs"
+path = "src/lib.rs"
+
+[dependencies.concordium-contracts-common]
+path = "../../../../concordium-rust-smart-contracts/concordium-contracts-common"
+version = "=0.4"
+default-features = false
 
 [dependencies]
 hacspec-lib = { path = "../../lib" }
@@ -13,6 +18,10 @@ hacspec-attributes = { path = "../../utils/attributes", version = "0.1.0-beta.1"
 # pearlite-syn = { path = "../../../../creusot/pearlite-syn" }
 creusot-contracts = { path = "../../../../creusot/creusot-contracts" }
 # hacspec-concordium-types = { path = "../concordium-types" }
+
+
+# Reduce code size, at the cost of performance in allocation heavy-code.
+wee_alloc="0.4.5"
 
 [features]
 use_attributes = ["hacspec-attributes/print_attributes", "hacspec-attributes/hacspec_unsafe"]
