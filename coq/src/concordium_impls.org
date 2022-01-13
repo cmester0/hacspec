@@ -93,7 +93,12 @@
   edition = "2018"
 
   [lib]
-  path = "src/concordium_impls.rs"
+  path = "src/lib.rs"
+
+  [dependencies.concordium-contracts-common]
+  path = "../../../../concordium-rust-smart-contracts/concordium-contracts-common"
+  version = "=0.4"
+  default-features = false
 
   [dependencies]
   hacspec-lib = { path = "../../lib" }
@@ -101,6 +106,10 @@
   # pearlite-syn = { path = "../../../../creusot/pearlite-syn" }
   creusot-contracts = { path = "../../../../creusot/creusot-contracts" }
   # hacspec-concordium-types = { path = "../concordium-types" }
+
+
+  # Reduce code size, at the cost of performance in allocation heavy-code.
+  wee_alloc="0.4.5"
 
   [features]
   use_attributes = ["hacspec-attributes/print_attributes", "hacspec-attributes/hacspec_unsafe"]
@@ -113,7 +122,7 @@
   quickcheck_macros = "1"
 #+END_SRC
 *** Imports
-#+BEGIN_SRC rust :tangle ../../examples/concordium/src/hacspec_concordium_impls.rs :eval never
+#+BEGIN_SRC rust :tangle ../../examples/concordium/src/lib.rs :eval never
   #![cfg_attr(not(feature = "std"), no_std, feature(alloc_error_handler, core_intrinsics))]
 
   #[cfg(not(feature = "hacspec"))]
@@ -205,73 +214,28 @@
   static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
   // pub mod test_infrastructure;
+  mod hacspec_concordium_types;
+  mod hacspec_concordium_traits;
+  mod hacspec_concordium_impls;
 
-
-
-  #[cfg(not(feature = "hacspec"))]
-  extern crate hacspec_lib;
-
-  use hacspec_lib::*;
-
-  // #[cfg(feature = "hacspec_attributes")]
-  #[cfg(feature = "hacspec")]
-  use hacspec_attributes::*;
-
-  // // Rust-hacspec Interface
-  // #[cfg(not(feature = "hacspec"))]
-  // extern crate concordium_std;
-  // #[cfg(not(feature = "hacspec"))]
-  // use concordium_std::{
-  //     AccountAddress, Address, Amount, AttributeTag, ContractAddress, HasActions, HasChainMetadata,
-  //     HasCommonData, HasContractState, HasInitContext, HasParameter, HasPolicy, HasReceiveContext,
-  //     IdentityProvider, ParseError, ParseResult, Read, ReceiveName, Seek, SlotTime, Timestamp, Write,
-  //     ACCOUNT_ADDRESS_SIZE,
-  //     Serial,
-  //     Deserial,
-  // };
-
-  #[cfg(not(feature = "hacspec"))]
-  // use ::std::collections::{BTreeMap, BTreeSet};
-  // use std::{ // ::std::
-  use crate::collections::{BTreeMap, BTreeSet, HashSet, HashMap};
-  //     convert::{self, TryFrom, TryInto},
-  #[cfg(not(feature = "hacspec"))]
-  use crate::hash::Hash;
-  //     mem,
-  //     num, // prims,
-  //     // prims::*,
-  //     // traits::*,
-  //     // types::*,
-  //     vec::Vec,
-  //     // String,
-  // };
-
-  #[cfg(not(feature = "hacspec"))]
-  extern crate concordium_contracts_common;
-  #[cfg(not(feature = "hacspec"))]
-  use concordium_contracts_common::*; // {Serial}
-
-  #[cfg(not(feature = "hacspec"))]
-  use mem::MaybeUninit;
-
-  // Creusot
-  #[cfg(not(feature = "hacspec"))]
-  extern crate creusot_contracts;
-  #[cfg(not(feature = "hacspec"))]
-  use creusot_contracts::{
-      ensures,
-      requires,
-      trusted	  
-      };
+  use hacspec_concordium_types::*;
+  use hacspec_concordium_traits::*;
+  use hacspec_concordium_impls::*;
 #+END_SRC
 
 * Concordium "Types" specification
 ** Rust code
 :PROPERTIES:
-:header-args:  :tangle ../../examples/concordium/src/hacspec_concordium_impls.rs
+:header-args:  :tangle ../../examples/concordium/src/hacspec_concordium_types.rs
 :END:
 
 # :tangle ../../examples/concordium/src/concordium-types.rs
+
+*** Imports
+#+BEGIN_SRC rust :tangle ../../examples/concordium/src/hacspec_concordium_types.rs :eval never
+  #[cfg(not(feature = "hacspec"))]
+  use crate::num::NonZeroI32;
+#+END_SRC
 
 *** Types code
 #+BEGIN_SRC rust :eval never
@@ -345,7 +309,7 @@
   #[derive(Eq, PartialEq)] // TODO: Creusot issue re-add "Debug" attribute 
   #[repr(transparent)]
   pub struct Reject {
-      pub error_code: num::NonZeroI32,
+      pub error_code: NonZeroI32,
   }
 
   #[cfg(not(feature = "hacspec"))]
@@ -354,7 +318,7 @@
       #[inline(always)]
       fn default() -> Self {
 	  Self {
-	      error_code: unsafe { num::NonZeroI32::new_unchecked(i32::MIN) },
+	      error_code: unsafe { NonZeroI32::new_unchecked(i32::MIN) },
 	  }
       }
   }
@@ -364,7 +328,7 @@
       /// This returns `None` for all values >= 0 and `Some` otherwise.
       pub fn new(x: i32) -> Option<Self> {
 	  if x < 0 {
-	      let error_code = unsafe { num::NonZeroI32::new_unchecked(x) };
+	      let error_code = unsafe { NonZeroI32::new_unchecked(x) };
 	      Some(Reject {
 		  error_code,
 	      })
@@ -544,7 +508,7 @@
   #[derive(Default)]
   #[doc(hidden)]
   pub struct ExternContext<T: sealed::ContextType> {
-      marker: marker::PhantomData<T>, // TODO: remove concordium_std ??
+      marker: crate::marker::PhantomData<T>, // TODO: remove concordium_std ?? // marker:: ??
   }
 
   #[cfg(not(feature = "hacspec"))]
@@ -575,10 +539,38 @@
 * Concordium "Traits" specification
 ** Rust code
 :PROPERTIES:
-:header-args:  :tangle ../../examples/concordium/src/hacspec_concordium_impls.rs
+:header-args:  :tangle ../../examples/concordium/src/hacspec_concordium_traits.rs
 :END:
+*** Imports
+#+BEGIN_SRC rust :eval never
 
-# :tangle ../../examples/concordium/src/concordium-types.rs
+  #[cfg(not(feature = "hacspec"))]
+  use crate::collections::{BTreeMap, BTreeSet, HashSet, HashMap};
+
+  #[cfg(not(feature = "hacspec"))]
+  use crate::hash::Hash;
+  
+  #[cfg(not(feature = "hacspec"))]
+  extern crate concordium_contracts_common;
+  #[cfg(not(feature = "hacspec"))]
+  use concordium_contracts_common::*; // {Serial}
+
+  // Creusot
+  #[cfg(not(feature = "hacspec"))]
+  extern crate creusot_contracts;
+  #[cfg(not(feature = "hacspec"))]
+  use creusot_contracts::{
+      ensures,
+      requires,
+      trusted	  
+      };
+#+END_SRC
+
+#+BEGIN_SRC rust :eval never
+  use crate::hacspec_concordium_types::*;
+  use crate::vec::Vec;
+  use crate::trap;
+#+END_SRC
 
 *** Traits code
 #+BEGIN_SRC rust :eval never
@@ -758,7 +750,7 @@
   pub trait HasActions {
       /// Default accept action.
       fn accept() -> Self;
-
+  
       /// Send a given amount to an account.
       fn simple_transfer(acc: &AccountAddress, amount: Amount) -> Self;
 
@@ -1453,6 +1445,49 @@ Extern combine or
 :header-args:  :tangle ../../examples/concordium/src/hacspec_concordium_impls.rs
 :END:
 
+*** Imports
+#+BEGIN_SRC rust :eval never
+  #[cfg(not(feature = "hacspec"))]
+  use crate::{
+    collections::{BTreeMap, BTreeSet},
+    convert::{self, TryFrom, TryInto},
+    hash::Hash,
+    num::NonZeroI32,
+    vec::Vec,
+    String,
+    trap,
+  };
+  
+  #[cfg(not(feature = "hacspec"))]
+  use concordium_contracts_common::*;
+#+END_SRC
+
+#+BEGIN_SRC rust :eval never
+  use crate::hacspec_concordium_traits::*;
+  use crate::hacspec_concordium_types::*;
+#+END_SRC
+
+#+BEGIN_SRC rust :eval never
+  #[cfg(not(feature = "hacspec"))]
+  extern crate hacspec_lib;
+
+  use hacspec_lib::*;
+
+  // #[cfg(feature = "hacspec_attributes")]
+  #[cfg(feature = "hacspec")]
+  use hacspec_attributes::*;
+
+  // Creusot
+  #[cfg(not(feature = "hacspec"))]
+  extern crate creusot_contracts;
+  #[cfg(not(feature = "hacspec"))]
+  use creusot_contracts::{
+      ensures,
+      requires,
+      trusted	  
+      };
+#+END_SRC
+
 *** Reject
 We modle reject as the underlying data, that is the src_rust[:eval never]{i32} error code. The default constructor is i32 min.
 #+begin_src rust :eval never
@@ -1479,7 +1514,7 @@ We define the coercion function for Reject, and implement the traits
   #[cfg(not(feature = "hacspec"))]
   pub fn coerce_hacspec_to_rust_reject(hacspec_reject: RejectHacspec) -> Reject {
       Reject {
-	  error_code: unsafe { num::NonZeroI32::new_unchecked(hacspec_reject) },
+	  error_code: unsafe { NonZeroI32::new_unchecked(hacspec_reject) },
       }
   }
 #+end_src
@@ -1490,7 +1525,7 @@ We define the coercion function for Reject, and implement the traits
       #[inline(always)]
       fn from(_: ()) -> Self {
 	  Reject {
-	      error_code: unsafe { num::NonZeroI32::new_unchecked(i32::MIN + 1) },
+	      error_code: unsafe { NonZeroI32::new_unchecked(i32::MIN + 1) },
 	  }
       }
   }
@@ -1499,7 +1534,7 @@ We define the coercion function for Reject, and implement the traits
       #[inline(always)]
       fn from(_: ParseError) -> Self {
 	  Reject {
-	      error_code: unsafe { num::NonZeroI32::new_unchecked(i32::MIN + 2) },
+	      error_code: unsafe { NonZeroI32::new_unchecked(i32::MIN + 2) },
 	  }
       }
   }
