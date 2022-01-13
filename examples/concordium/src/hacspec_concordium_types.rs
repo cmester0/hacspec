@@ -266,6 +266,60 @@ impl Reject {
 // }
 
 #[cfg(not(feature = "hacspec"))]
+/// The expected return type of the receive method of a smart contract.
+///
+/// Optionally, to define a custom type for error instead of using
+/// Reject, allowing to track the reason for rejection, *but only in unit
+/// tests*.
+///
+/// See also the documentation for [bail!](macro.bail.html) for how to use
+/// custom error types.
+///
+/// # Example
+/// Defining a custom error type
+/// ```rust
+/// enum MyCustomError {
+///     SomeError
+/// }
+///
+/// #[receive(contract = "mycontract", name = "receive")]
+/// fn contract_receive<R: HasReceiveContext, L: HasLogger, A: HasActions>(
+///     ctx: &R,
+///     receive_amount: Amount,
+///     logger: &mut L,
+///     state: &mut State,
+/// ) -> Result<A, MyCustomError> { ... }
+/// ```
+pub type ReceiveResult<A> = Result<A, Reject>;
+
+#[cfg(not(feature = "hacspec"))]
+/// The expected return type of the init method of the smart contract,
+/// parametrized by the state type of the smart contract.
+///
+/// Optionally, to define a custom type for error instead of using Reject,
+/// allowing the track the reason for rejection, *but only in unit tests*.
+///
+/// See also the documentation for [bail!](macro.bail.html) for how to use
+/// custom error types.
+///
+/// # Example
+/// Defining a custom error type
+/// ```rust
+/// enum MyCustomError {
+///     SomeError
+/// }
+///
+/// #[init(contract = "mycontract")]
+/// fn contract_init<R: HasReceiveContext, L: HasLogger, A: HasActions>(
+///     ctx: &R,
+///     receive_amount: Amount,
+///     logger: &mut L,
+/// ) -> Result<State, MyCustomError> { ... }
+/// ```
+pub type InitResult<S> = Result<S, Reject>;
+
+
+#[cfg(not(feature = "hacspec"))]
 /// Context backed by host functions.
 #[derive(Default)]
 #[doc(hidden)]

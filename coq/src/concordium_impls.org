@@ -95,18 +95,11 @@
   [lib]
   path = "src/lib.rs"
 
-  [dependencies.concordium-contracts-common]
-  path = "../../../../concordium-rust-smart-contracts/concordium-contracts-common"
-  version = "=0.4"
-  default-features = false
-
   [dependencies]
   hacspec-lib = { path = "../../lib" }
   hacspec-attributes = { path = "../../utils/attributes", version = "0.1.0-beta.1" , features = ["print_attributes", "hacspec_unsafe"] } # , features = ["hacspec_unsafe"] , , optional = true
-  # pearlite-syn = { path = "../../../../creusot/pearlite-syn" }
   creusot-contracts = { path = "../../../../creusot/creusot-contracts" }
-  # hacspec-concordium-types = { path = "../concordium-types" }
-
+  concordium-contracts-common = { path = "../../../../concordium-rust-smart-contracts/concordium-contracts-common" ,  version = "=0.4" , default-features = false }
 
   # Reduce code size, at the cost of performance in allocation heavy-code.
   wee_alloc="0.4.5"
@@ -214,9 +207,9 @@
   static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
   // pub mod test_infrastructure;
-  mod hacspec_concordium_types;
-  mod hacspec_concordium_traits;
-  mod hacspec_concordium_impls;
+  pub mod hacspec_concordium_types;
+  pub mod hacspec_concordium_traits;
+  pub mod hacspec_concordium_impls;
 
   use hacspec_concordium_types::*;
   use hacspec_concordium_traits::*;
@@ -504,6 +497,60 @@
   // }
 
   #[cfg(not(feature = "hacspec"))]
+  /// The expected return type of the receive method of a smart contract.
+  ///
+  /// Optionally, to define a custom type for error instead of using
+  /// Reject, allowing to track the reason for rejection, *but only in unit
+  /// tests*.
+  ///
+  /// See also the documentation for [bail!](macro.bail.html) for how to use
+  /// custom error types.
+  ///
+  /// # Example
+  /// Defining a custom error type
+  /// ```rust
+  /// enum MyCustomError {
+  ///     SomeError
+  /// }
+  ///
+  /// #[receive(contract = "mycontract", name = "receive")]
+  /// fn contract_receive<R: HasReceiveContext, L: HasLogger, A: HasActions>(
+  ///     ctx: &R,
+  ///     receive_amount: Amount,
+  ///     logger: &mut L,
+  ///     state: &mut State,
+  /// ) -> Result<A, MyCustomError> { ... }
+  /// ```
+  pub type ReceiveResult<A> = Result<A, Reject>;
+
+  #[cfg(not(feature = "hacspec"))]
+  /// The expected return type of the init method of the smart contract,
+  /// parametrized by the state type of the smart contract.
+  ///
+  /// Optionally, to define a custom type for error instead of using Reject,
+  /// allowing the track the reason for rejection, *but only in unit tests*.
+  ///
+  /// See also the documentation for [bail!](macro.bail.html) for how to use
+  /// custom error types.
+  ///
+  /// # Example
+  /// Defining a custom error type
+  /// ```rust
+  /// enum MyCustomError {
+  ///     SomeError
+  /// }
+  ///
+  /// #[init(contract = "mycontract")]
+  /// fn contract_init<R: HasReceiveContext, L: HasLogger, A: HasActions>(
+  ///     ctx: &R,
+  ///     receive_amount: Amount,
+  ///     logger: &mut L,
+  /// ) -> Result<State, MyCustomError> { ... }
+  /// ```
+  pub type InitResult<S> = Result<S, Reject>;
+
+
+  #[cfg(not(feature = "hacspec"))]
   /// Context backed by host functions.
   #[derive(Default)]
   #[doc(hidden)]
@@ -553,7 +600,7 @@
   #[cfg(not(feature = "hacspec"))]
   extern crate concordium_contracts_common;
   #[cfg(not(feature = "hacspec"))]
-  use concordium_contracts_common::*; // {Serial}
+  use concordium_contracts_common::*;
 
   // Creusot
   #[cfg(not(feature = "hacspec"))]
@@ -1449,15 +1496,15 @@ Extern combine or
 #+BEGIN_SRC rust :eval never
   #[cfg(not(feature = "hacspec"))]
   use crate::{
-    collections::{BTreeMap, BTreeSet},
-    convert::{self, TryFrom, TryInto},
-    hash::Hash,
-    num::NonZeroI32,
-    vec::Vec,
-    String,
-    trap,
+      collections::{BTreeMap, BTreeSet},
+      convert::{self, TryFrom, TryInto},
+      hash::Hash,
+      num::NonZeroI32,
+      vec::Vec,
+      String,
+      trap,
   };
-  
+
   #[cfg(not(feature = "hacspec"))]
   use concordium_contracts_common::*;
 #+END_SRC
@@ -1568,61 +1615,7 @@ We then implement the traits
       fn from(_: ParseError) -> Self {
 	  coerce_hacspec_to_rust_reject(reject_impl_convert_from_parse_error())
       }
-  }
-
-  #[cfg(not(feature = "hacspec"))]
-  /// The expected return type of the receive method of a smart contract.
-  ///
-  /// Optionally, to define a custom type for error instead of using
-  /// Reject, allowing to track the reason for rejection, *but only in unit
-  /// tests*.
-  ///
-  /// See also the documentation for [bail!](macro.bail.html) for how to use
-  /// custom error types.
-  ///
-  /// # Example
-  /// Defining a custom error type
-  /// ```rust
-  /// enum MyCustomError {
-  ///     SomeError
-  /// }
-  ///
-  /// #[receive(contract = "mycontract", name = "receive")]
-  /// fn contract_receive<R: HasReceiveContext, L: HasLogger, A: HasActions>(
-  ///     ctx: &R,
-  ///     receive_amount: Amount,
-  ///     logger: &mut L,
-  ///     state: &mut State,
-  /// ) -> Result<A, MyCustomError> { ... }
-  /// ```
-  pub type ReceiveResult<A> = Result<A, Reject>;
-
-  #[cfg(not(feature = "hacspec"))]
-  /// The expected return type of the init method of the smart contract,
-  /// parametrized by the state type of the smart contract.
-  ///
-  /// Optionally, to define a custom type for error instead of using Reject,
-  /// allowing the track the reason for rejection, *but only in unit tests*.
-  ///
-  /// See also the documentation for [bail!](macro.bail.html) for how to use
-  /// custom error types.
-  ///
-  /// # Example
-  /// Defining a custom error type
-  /// ```rust
-  /// enum MyCustomError {
-  ///     SomeError
-  /// }
-  ///
-  /// #[init(contract = "mycontract")]
-  /// fn contract_init<R: HasReceiveContext, L: HasLogger, A: HasActions>(
-  ///     ctx: &R,
-  ///     receive_amount: Amount,
-  ///     logger: &mut L,
-  /// ) -> Result<State, MyCustomError> { ... }
-  /// ```
-  pub type InitResult<S> = Result<S, Reject>;
-  
+  }  
 #+end_src
 We define a log error type and function converting from it to the reject type
 #+begin_src rust :eval never
