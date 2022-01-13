@@ -14,7 +14,7 @@ hacspec-attributes = { path = "../../utils/attributes", version = "0.1.0-beta.1"
 creusot-contracts = { path = "../../../../creusot/creusot-contracts" }
 # hacspec = {optional = true}
 concordium-std = { path = "../../../../concordium-rust-smart-contracts/concordium-std" }
-hacspec-concordium-impls = { path = "../concordium-impls" }
+# hacspec-concordium-impls = { path = "../concordium-impls" }
 
 [features]
 hacspec = []
