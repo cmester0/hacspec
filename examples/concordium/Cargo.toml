@@ -1,19 +1,18 @@
 [package]
-name = "hacspec-concordium-impls"
+name = "hacspec-concordium"
 version = "0.1.0"
 authors = [""]
 edition = "2018"
 
 [lib]
-path = "src/concordium-impls.rs"
+path = "src/concordium_impls.rs"
 
 [dependencies]
 hacspec-lib = { path = "../../lib" }
 hacspec-attributes = { path = "../../utils/attributes", version = "0.1.0-beta.1" , features = ["print_attributes", "hacspec_unsafe"] } # , features = ["hacspec_unsafe"] , , optional = true
 # pearlite-syn = { path = "../../../../creusot/pearlite-syn" }
 creusot-contracts = { path = "../../../../creusot/creusot-contracts" }
-# concordium-contracts-common = { path = "../../../../concordium-rust-smart-contracts/concordium-contracts-common" }
-concordium-std = { path = "../../../../concordium-rust-smart-contracts/concordium-std" }
+# hacspec-concordium-types = { path = "../concordium-types" }
 
 [features]
 use_attributes = ["hacspec-attributes/print_attributes", "hacspec-attributes/hacspec_unsafe"]

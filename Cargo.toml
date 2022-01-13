@@ -34,7 +34,7 @@ members = [
     "examples/bls12-381-hash",
     "examples/ed25519",
     "examples/auction",
-    "examples/concordium-impls",
+    "examples/concordium",
 ]
 default-members = [
     "lib",
@@ -69,6 +69,6 @@ default-members = [
     "examples/ed25519",
     "examples/sha512",
     "examples/auction",
-    "examples/concordium-impls",
+    "examples/concordium",
 ]
 exclude = [ "language" ]
