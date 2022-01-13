@@ -14,24 +14,18 @@ extern crate creusot_contracts;
 #[cfg(not(feature = "hacspec"))]
 use creusot_contracts::{ensures, requires};
 
-use hacspec_concordium_impls::*;
-// Rust-hacspec Interface
-#[cfg(not(feature = "hacspec"))]
-extern crate concordium_std;
-#[cfg(not(feature = "hacspec"))]
-use concordium_std::{
-    AccountAddress, Address, Amount, AttributeTag, ContractAddress, HasActions, HasChainMetadata,
-    HasCommonData, HasContractState, HasInitContext, HasParameter, HasPolicy, HasReceiveContext,
-    IdentityProvider, ParseError, ParseResult, Read, ReceiveName, Seek, SlotTime, Timestamp, Write,
-    ACCOUNT_ADDRESS_SIZE,
-    collections::BTreeMap,
-    Serialize,
-    SchemaType,
-    contract_state,
-    Deserial,
-    Serial,
-    // receive, // TODO implement in concordium_impls
-};
+
+// // Rust-hacspec Interface
+// #[cfg(not(feature = "hacspec"))]
+// extern crate concordium_contracts_common;
+// #[cfg(not(feature = "hacspec"))]
+// use concordium_contracts_common::*;
+use concordium_contracts_common::*;
+
+use hacspec_concordium::hacspec_concordium_types::*;
+use hacspec_concordium::hacspec_concordium_impls::*;
+use hacspec_concordium::hacspec_concordium_traits::*;
+use hacspec_concordium::{collections::BTreeMap, *};
 
 array!(UserAddress, 32, u8); // U8
 
@@ -51,7 +45,7 @@ pub fn coerce_rust_to_hacspec_account_address(aa: &AccountAddress) -> UserAddres
 
 #[cfg(not(feature = "hacspec"))]
 /// The state in which an auction can be.
-#[derive(Debug, Serial, SchemaType, Eq, PartialEq, PartialOrd)]
+#[derive(Eq, PartialEq, PartialOrd)] // TODO: Debug, Serial, SchemaType, 
 pub enum AuctionState {
     /// The auction is either
     /// - still accepting bids or
@@ -127,8 +121,8 @@ pub fn coerce_rust_to_hacspec_b_tree_map(m: &BTreeMap<AccountAddress, Amount>) -
 /// The state of the smart contract.
 /// This is the state that will be shown when the contract is queried using
 /// `concordium-client contract show`.
-#[contract_state(contract = "auction")]
-#[derive(Debug, Serial, SchemaType, Eq, PartialEq)]
+// #[contract_state(contract = "auction")] // TODO
+#[derive(Eq, PartialEq)] // TODO: Debug, Serial, SchemaType, 
 pub struct State {
     /// Has the item been sold?
     auction_state: AuctionState,
@@ -142,7 +136,7 @@ pub struct State {
     /// displayed to the auction participants)
     expiry:        Timestamp,
     /// Keeping track of which account bid how much money
-    #[concordium(size_length = 2)]
+    // #[concordium(size_length = 2)] // TODO
     bids:          BTreeMap<AccountAddress, Amount>,
 }
 
@@ -211,7 +205,8 @@ fn fresh_state(itm: Vec<u8>, exp: Timestamp) -> State {
 
 #[cfg(not(feature = "hacspec"))]
 /// Type of the parameter to the `init` function.
-#[derive(Serialize, SchemaType)]
+// TODO:
+// #[derive(Serialize, SchemaType)]
 struct InitParameter {
     /// The item to be sold, as a sequence of ASCII codes.
     item: Vec<u8>,
@@ -219,14 +214,15 @@ struct InitParameter {
     expiry: Timestamp,
 }
 
-#[cfg(not(feature = "hacspec"))]
-/// Init function that creates a new auction
-// TODO: uncoment init!
-// #[init(contract = "auction", parameter = "InitParameter")]
-fn auction_init(ctx: &impl HasInitContext) -> InitResult<State> {
-    let parameter: InitParameter = ctx.parameter_cursor().get()?;
-    Ok(fresh_state(parameter.item, parameter.expiry))
-}
+// TODO:
+// #[cfg(not(feature = "hacspec"))]
+// /// Init function that creates a new auction
+// // TODO: uncoment init!
+// // #[init(contract = "auction", parameter = "InitParameter")]
+// fn auction_init(ctx: &impl HasInitContext) -> InitResult<State> {
+//     let parameter: InitParameter = ctx.parameter_cursor().get()?;
+//     Ok(fresh_state(parameter.item, parameter.expiry))
+// }
 
 fn seq_map_entry(m: SeqMap, sender_address: UserAddress) -> (u64, SeqMap) {
     let SeqMap(m0, m1) = m;
