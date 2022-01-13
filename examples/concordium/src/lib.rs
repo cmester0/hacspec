@@ -89,9 +89,9 @@ extern crate wee_alloc;
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 // pub mod test_infrastructure;
-mod hacspec_concordium_types;
-mod hacspec_concordium_traits;
-mod hacspec_concordium_impls;
+pub mod hacspec_concordium_types;
+pub mod hacspec_concordium_traits;
+pub mod hacspec_concordium_impls;
 
 use hacspec_concordium_types::*;
 use hacspec_concordium_traits::*;

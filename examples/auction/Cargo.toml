@@ -13,8 +13,8 @@ hacspec-attributes = { path = "../../utils/attributes", version = "0.1.0-beta.1"
 # pearlite-syn = { path = "../../../../creusot/pearlite-syn" }
 creusot-contracts = { path = "../../../../creusot/creusot-contracts" }
 # hacspec = {optional = true}
-concordium-std = { path = "../../../../concordium-rust-smart-contracts/concordium-std" }
-# hacspec-concordium-impls = { path = "../concordium-impls" }
+concordium-contracts-common = { path = "../../../../concordium-rust-smart-contracts/concordium-contracts-common" }
+hacspec-concordium = { path = "../concordium" }
 
 [features]
 hacspec = []

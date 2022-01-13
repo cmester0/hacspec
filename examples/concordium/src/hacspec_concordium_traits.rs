@@ -7,7 +7,7 @@ use crate::hash::Hash;
 #[cfg(not(feature = "hacspec"))]
 extern crate concordium_contracts_common;
 #[cfg(not(feature = "hacspec"))]
-use concordium_contracts_common::*; // {Serial}
+use concordium_contracts_common::*;
 
 // Creusot
 #[cfg(not(feature = "hacspec"))]

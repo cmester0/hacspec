@@ -519,14 +519,14 @@ fn combine_or_hacspec(l: u32, r: u32) -> u32 {
 }
 
 #[cfg(not(feature = "hacspec"))]
-use crate::{
-  collections::{BTreeMap, BTreeSet},
-  convert::{self, TryFrom, TryInto},
-  hash::Hash,
-  num::NonZeroI32,
-  vec::Vec,
-  String,
-  trap,
+use crate::{ // crate::
+    collections::{BTreeMap, BTreeSet},
+    convert::{self, TryFrom, TryInto},
+    hash::Hash,
+    num::NonZeroI32,
+    trap,
+    vec::Vec,
+    String,
 };
 
 #[cfg(not(feature = "hacspec"))]
@@ -600,59 +600,6 @@ impl convert::From<ParseError> for Reject {
 	coerce_hacspec_to_rust_reject(reject_impl_convert_from_parse_error())
     }
 }
-
-#[cfg(not(feature = "hacspec"))]
-/// The expected return type of the receive method of a smart contract.
-///
-/// Optionally, to define a custom type for error instead of using
-/// Reject, allowing to track the reason for rejection, *but only in unit
-/// tests*.
-///
-/// See also the documentation for [bail!](macro.bail.html) for how to use
-/// custom error types.
-///
-/// # Example
-/// Defining a custom error type
-/// ```rust
-/// enum MyCustomError {
-///     SomeError
-/// }
-///
-/// #[receive(contract = "mycontract", name = "receive")]
-/// fn contract_receive<R: HasReceiveContext, L: HasLogger, A: HasActions>(
-///     ctx: &R,
-///     receive_amount: Amount,
-///     logger: &mut L,
-///     state: &mut State,
-/// ) -> Result<A, MyCustomError> { ... }
-/// ```
-pub type ReceiveResult<A> = Result<A, Reject>;
-
-#[cfg(not(feature = "hacspec"))]
-/// The expected return type of the init method of the smart contract,
-/// parametrized by the state type of the smart contract.
-///
-/// Optionally, to define a custom type for error instead of using Reject,
-/// allowing the track the reason for rejection, *but only in unit tests*.
-///
-/// See also the documentation for [bail!](macro.bail.html) for how to use
-/// custom error types.
-///
-/// # Example
-/// Defining a custom error type
-/// ```rust
-/// enum MyCustomError {
-///     SomeError
-/// }
-///
-/// #[init(contract = "mycontract")]
-/// fn contract_init<R: HasReceiveContext, L: HasLogger, A: HasActions>(
-///     ctx: &R,
-///     receive_amount: Amount,
-///     logger: &mut L,
-/// ) -> Result<State, MyCustomError> { ... }
-/// ```
-pub type InitResult<S> = Result<S, Reject>;
 
 #[ensures(!(result === 0i32))] // !=
 pub fn reject_impl_from_log_error(le: LogError) -> RejectHacspec {
