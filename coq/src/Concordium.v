@@ -452,9 +452,3 @@ Definition iterator_impl_for_policies_iterator_next
       )
     ))).
 
-Require Import Hacspec.Concordium_Types.
-
-Require Import Hacspec.Concordium_Traits.
-
-Require Import Hacspec.Concordium_Impls.
-

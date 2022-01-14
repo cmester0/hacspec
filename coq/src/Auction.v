@@ -9,7 +9,7 @@ From QuickChick Require Import QuickChick.
 Require Import QuickChickLib.
 Require Import Hacspec.Lib.
 
-Require Import Hacspec.Concordium_Impls.
+Require Import Hacspec.Concordium.
 
 Definition user_address_t := nseq (int8) (usize 32).
 
@@ -38,6 +38,7 @@ Global Instance show_auction_state_hacspec_t : Show (auction_state_hacspec_t) :=
 Definition g_auction_state_hacspec_t : G (auction_state_hacspec_t) := oneOf_ (returnGen NotSoldYet) [returnGen NotSoldYet;bindGen arbitrary (fun a => returnGen (Sold a))].
 Global Instance gen_auction_state_hacspec_t : Gen (auction_state_hacspec_t) := Build_Gen auction_state_hacspec_t g_auction_state_hacspec_t.
 
+
 Inductive seq_map_t :=
 | SeqMap : (public_byte_seq × public_byte_seq) -> seq_map_t.
 
@@ -59,7 +60,6 @@ Global Instance show_seq_map_t : Show (seq_map_t) :=
  end).
 Definition g_seq_map_t : G (seq_map_t) := oneOf_ (bindGen arbitrary (fun a => returnGen (SeqMap a))) [bindGen arbitrary (fun a => returnGen (SeqMap a))].
 Global Instance gen_seq_map_t : Gen (seq_map_t) := Build_Gen seq_map_t g_seq_map_t.
-
 
 
 Inductive state_hacspec_t :=
@@ -89,6 +89,7 @@ Global Instance show_state_hacspec_t : Show (state_hacspec_t) :=
  end).
 Definition g_state_hacspec_t : G (state_hacspec_t) := oneOf_ (bindGen arbitrary (fun a => returnGen (StateHacspec a))) [bindGen arbitrary (fun a => returnGen (StateHacspec a))].
 Global Instance gen_state_hacspec_t : Gen (state_hacspec_t) := Build_Gen state_hacspec_t g_state_hacspec_t.
+
 
 Definition fresh_state_hacspec
   (itm_0 : public_byte_seq)
@@ -152,6 +153,7 @@ Global Instance show_map_update_t : Show (map_update_t) :=
  end).
 Definition g_map_update_t : G (map_update_t) := oneOf_ (bindGen arbitrary (fun a => returnGen (Update a))) [bindGen arbitrary (fun a => returnGen (Update a))].
 Global Instance gen_map_update_t : Gen (map_update_t) := Build_Gen map_update_t g_map_update_t.
+
 
 Definition seq_map_update_entry
   (m_8 : seq_map_t)
@@ -227,6 +229,7 @@ Global Instance show_bid_error_hacspec_t : Show (bid_error_hacspec_t) :=
 Definition g_bid_error_hacspec_t : G (bid_error_hacspec_t) := oneOf_ (returnGen ContractSender) [returnGen ContractSender;returnGen BidTooLow;returnGen BidsOverWaitingForAuctionFinalization;returnGen AuctionIsFinalized].
 Global Instance gen_bid_error_hacspec_t : Gen (bid_error_hacspec_t) := Build_Gen bid_error_hacspec_t g_bid_error_hacspec_t.
 
+
 Inductive user_address_set_t :=
 | UserAddressSome : user_address_t -> user_address_set_t
 | UserAddressNone : user_address_set_t.
@@ -256,6 +259,7 @@ Global Instance show_user_address_set_t : Show (user_address_set_t) :=
 Definition g_user_address_set_t : G (user_address_set_t) := oneOf_ (bindGen arbitrary (fun a => returnGen (UserAddressSome a))) [bindGen arbitrary (fun a => returnGen (UserAddressSome a));returnGen UserAddressNone].
 Global Instance gen_user_address_set_t : Gen (user_address_set_t) := Build_Gen user_address_set_t g_user_address_set_t.
 
+
 Notation "'context_t'" := ((int64 × user_address_set_t)) : hacspec_scope.
 Instance show_context_t : Show (context_t) :=
 Build_Show context_t (fun x =>
@@ -266,6 +270,7 @@ bindGen arbitrary (fun x0 : int64 =>
   bindGen arbitrary (fun x1 : user_address_set_t =>
   returnGen (x0,x1))).
 Instance gen_context_t : Gen (context_t) := Build_Gen context_t g_context_t.
+
 
 Notation "'auction_bid_result_t'" := ((
   result state_hacspec_t bid_error_hacspec_t)) : hacspec_scope.
@@ -388,6 +393,7 @@ Global Instance show_finalize_error_hacspec_t : Show (finalize_error_hacspec_t) 
 Definition g_finalize_error_hacspec_t : G (finalize_error_hacspec_t) := oneOf_ (returnGen BidMapError) [returnGen BidMapError;returnGen AuctionStillActive;returnGen AuctionFinalized].
 Global Instance gen_finalize_error_hacspec_t : Gen (finalize_error_hacspec_t) := Build_Gen finalize_error_hacspec_t g_finalize_error_hacspec_t.
 
+
 Notation "'finalize_context_t'" := ((int64 × user_address_t × int64
 )) : hacspec_scope.
 Instance show_finalize_context_t : Show (finalize_context_t) :=
@@ -434,7 +440,6 @@ Definition g_finalize_action_t : G (finalize_action_t) := oneOf_ (returnGen Acce
 Global Instance gen_finalize_action_t : Gen (finalize_action_t) := Build_Gen finalize_action_t g_finalize_action_t.
 
 
-
 Inductive bid_remain_t :=
 | BidNone : bid_remain_t
 | BidSome : int64 -> bid_remain_t.
@@ -459,6 +464,7 @@ Global Instance show_bid_remain_t : Show (bid_remain_t) :=
  end).
 Definition g_bid_remain_t : G (bid_remain_t) := oneOf_ (returnGen BidNone) [returnGen BidNone;bindGen arbitrary (fun a => returnGen (BidSome a))].
 Global Instance gen_bid_remain_t : Gen (bid_remain_t) := Build_Gen bid_remain_t g_bid_remain_t.
+
 
 Notation "'auction_finalize_result_t'" := ((result (
     state_hacspec_t ×
@@ -578,9 +584,9 @@ Theorem ensures_auction_test_init : forall result_54 (
 @auction_test_init item_52 time_53 = result_54 ->
 result_54 = true.
 Proof. Admitted.
-
 QuickChick (
   forAll g_public_byte_seq (fun item_52 : public_byte_seq =>forAll g_int64 (fun time_53 : int64 =>auction_test_init item_52 time_53))).
+
 
 Definition verify_bid
   (item_55 : public_byte_seq)
@@ -773,6 +779,7 @@ forall {H_1 : (((@repr WORDSIZE64 18446744073709551615) ./ (
 @test_auction_bid_and_finalize item_75 time_76 input_amount_77 H_0 H_1 = result_54 ->
 result_54 = true.
 Proof. Admitted.
-
 QuickChick (
   forAll g_public_byte_seq (fun item_75 : public_byte_seq =>forAll g_int64 (fun time_76 : int64 =>forAll g_int64 (fun input_amount_77 : int64 =>test_auction_bid_and_finalize item_75 time_76 input_amount_77)))).
+
+

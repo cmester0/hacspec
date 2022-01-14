@@ -9,7 +9,7 @@ From QuickChick Require Import QuickChick.
 Require Import QuickChickLib.
 Require Import Hacspec.Lib.
 
-Require Import Hacspec.Concordium_Impls.
+Require Import Hacspec.Concordium.
 
 Definition user_address_t := nseq (int8) (usize 32).
 

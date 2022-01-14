@@ -93,6 +93,9 @@ pub mod hacspec_concordium_types;
 pub mod hacspec_concordium_traits;
 pub mod hacspec_concordium_impls;
 
+#[cfg(not(feature = "hacspec"))]
 use hacspec_concordium_types::*;
+#[cfg(not(feature = "hacspec"))]
 use hacspec_concordium_traits::*;
+#[cfg(not(feature = "hacspec"))]
 use hacspec_concordium_impls::*;
