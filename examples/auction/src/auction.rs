@@ -14,17 +14,22 @@ extern crate creusot_contracts;
 #[cfg(not(feature = "hacspec"))]
 use creusot_contracts::{ensures, requires};
 
-
 // // Rust-hacspec Interface
 // #[cfg(not(feature = "hacspec"))]
 // extern crate concordium_contracts_common;
 // #[cfg(not(feature = "hacspec"))]
 // use concordium_contracts_common::*;
+#[cfg(not(feature = "hacspec"))]
 use concordium_contracts_common::*;
 
-use hacspec_concordium::hacspec_concordium_types::*;
-use hacspec_concordium::hacspec_concordium_impls::*;
-use hacspec_concordium::hacspec_concordium_traits::*;
+use hacspec_concordium::*;
+#[cfg(not(feature = "hacspec"))]
+use hacspec_concordium_types::*;
+#[cfg(not(feature = "hacspec"))]
+use hacspec_concordium_impls::*;
+#[cfg(not(feature = "hacspec"))]
+use hacspec_concordium_traits::*;
+#[cfg(not(feature = "hacspec"))]
 use hacspec_concordium::{collections::BTreeMap, *};
 
 array!(UserAddress, 32, u8); // U8

@@ -37,8 +37,14 @@
   quickcheck_macros = "1"
 #+end_src
 
-** Imports
-#+begin_src rust :tangle ../../examples/auction/src/auction.rs :eval never
+
+** Rust code
+:PROPERTIES:
+:header-args: :tangle ../../examples/auction/src/auction.rs
+:END:
+
+*** Imports
+#+begin_src rust :eval never
   #[cfg(not(feature = "hacspec"))]
   extern crate hacspec_lib;
 
@@ -55,23 +61,30 @@
   #[cfg(not(feature = "hacspec"))]
   use creusot_contracts::{ensures, requires};
 
+#+end_src
 
+#+begin_src rust :eval never
   // // Rust-hacspec Interface
   // #[cfg(not(feature = "hacspec"))]
   // extern crate concordium_contracts_common;
   // #[cfg(not(feature = "hacspec"))]
   // use concordium_contracts_common::*;
+  #[cfg(not(feature = "hacspec"))]
   use concordium_contracts_common::*;
 
-  use hacspec_concordium::hacspec_concordium_types::*;
-  use hacspec_concordium::hacspec_concordium_impls::*;
-  use hacspec_concordium::hacspec_concordium_traits::*;
+  use hacspec_concordium::*;
+  #[cfg(not(feature = "hacspec"))]
+  use hacspec_concordium_types::*;
+  #[cfg(not(feature = "hacspec"))]
+  use hacspec_concordium_impls::*;
+  #[cfg(not(feature = "hacspec"))]
+  use hacspec_concordium_traits::*;
+  #[cfg(not(feature = "hacspec"))]
   use hacspec_concordium::{collections::BTreeMap, *};
 #+end_src
 
-** Rust code
 *** Types
-#+begin_src rust :tangle ../../examples/auction/src/auction.rs :eval never
+#+begin_src rust :eval never
   array!(UserAddress, 32, u8); // U8
 
   #[cfg(not(feature = "hacspec"))]
@@ -89,7 +102,7 @@
   }
 #+end_src
 
-#+begin_src rust :tangle ../../examples/auction/src/auction.rs :eval never
+#+begin_src rust :eval never
   #[cfg(not(feature = "hacspec"))]
   /// The state in which an auction can be.
   #[derive(Eq, PartialEq, PartialOrd)] // TODO: Debug, Serial, SchemaType, 
@@ -133,7 +146,7 @@
 
 #+end_src
 
-#+begin_src rust :tangle ../../examples/auction/src/auction.rs :eval never
+#+begin_src rust :eval never
   #[derive(Clone, PartialEq)]
   pub struct SeqMap(pub PublicByteSeq, pub PublicByteSeq);
 
@@ -168,7 +181,7 @@
   }
 #+end_src
 
-#+begin_src rust :tangle ../../examples/auction/src/auction.rs :eval never
+#+begin_src rust :eval never
 
   #[cfg(not(feature = "hacspec"))]
   /// The state of the smart contract.
@@ -238,8 +251,9 @@
   }
 
 #+end_src
+
 *** Fresh state function
-#+begin_src rust :tangle ../../examples/auction/src/auction.rs :eval never
+#+begin_src rust :eval never
   pub fn fresh_state_hacspec(itm: PublicByteSeq, exp: u64) -> StateHacspec {
       StateHacspec(
 	  AuctionStateHacspec::NotSoldYet,
@@ -260,7 +274,7 @@
   }
 #+end_src
 
-#+begin_src rust :tangle ../../examples/auction/src/auction.rs :eval never
+#+begin_src rust :eval never
   #[cfg(not(feature = "hacspec"))]
   /// Type of the parameter to the `init` function.
   // TODO:
@@ -274,7 +288,7 @@
 
 #+end_src
 
-#+begin_src rust :tangle ../../examples/auction/src/auction.rs :eval never
+#+begin_src rust :eval never
   // TODO:
   // #[cfg(not(feature = "hacspec"))]
   // /// Init function that creates a new auction
@@ -287,7 +301,7 @@
 #+end_src
 
 *** Seq map entry
-#+begin_src rust :tangle ../../examples/auction/src/auction.rs :eval never  
+#+begin_src rust :eval never  
   fn seq_map_entry(m: SeqMap, sender_address: UserAddress) -> (u64, SeqMap) {
       let SeqMap(m0, m1) = m;
 
@@ -315,7 +329,7 @@
   }
 #+end_src
 *** Map Update and result type
-#+begin_src rust :tangle ../../examples/auction/src/auction.rs :eval never
+#+begin_src rust :eval never
   #[derive(Clone, PartialEq)]
   pub enum MapUpdate {
       Update(u64, SeqMap),
@@ -350,7 +364,7 @@
   }
 #+end_src
 *** Auction bid and intermediate types
-#+begin_src rust :tangle ../../examples/auction/src/auction.rs :eval never
+#+begin_src rust :eval never
   #[cfg(not(feature = "hacspec"))]
   /// For errors in which the `bid` function can result
   #[derive(Debug, PartialEq, Eq, Clone)] // TODO: Reject , located in concordium-std-derive
@@ -398,7 +412,7 @@
   }
 #+end_src
 
-#+begin_src rust :tangle ../../examples/auction/src/auction.rs :eval never
+#+begin_src rust :eval never
   // pub type UserAddressSet = Option<UserAddress>;
   #[derive(Clone, PartialEq)]
   pub enum UserAddressSet {
@@ -494,8 +508,9 @@
       Ok (A::accept())
   }
 #+end_src
+
 *** Finalize function and types
-#+begin_src rust :tangle ../../examples/auction/src/auction.rs :eval never
+#+begin_src rust :eval never
   #[cfg(not(feature = "hacspec"))]
   /// For errors in which the `finalize` function can result
   #[derive(Debug, PartialEq, Eq, Clone)] // TODO: Reject , located in concordium-std-derive
@@ -534,7 +549,7 @@
 
 #+end_src
 
-#+begin_src rust :tangle ../../examples/auction/src/auction.rs :eval never
+#+begin_src rust :eval never
   pub type FinalizeContext = (u64, UserAddress, u64);
 
   #[cfg(not(feature = "hacspec"))]
@@ -547,7 +562,7 @@
   }
 #+end_src
 
-#+begin_src rust :tangle ../../examples/auction/src/auction.rs :eval never
+#+begin_src rust :eval never
   #[derive(Clone, PartialEq)]
   pub enum FinalizeAction {
       Accept,
@@ -675,8 +690,8 @@
       }
   }
 #+end_src
-** Rust Tests
-#+begin_src rust :tangle ../../examples/auction/src/auction.rs :eval never
+*** Rust Tests
+#+begin_src rust :eval never
   #[cfg(test)]
   extern crate quickcheck;
   #[cfg(test)]
