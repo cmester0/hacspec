@@ -19,9 +19,12 @@ use creusot_contracts::{
     trusted	  
     };
 
-use crate::hacspec_concordium_types::*;
-use crate::vec::Vec;
-use crate::trap;
+#[cfg(not(feature = "hacspec"))]
+use crate::*;
+#[cfg(not(feature = "hacspec"))]
+use hacspec_concordium_types::*; // crate::
+// use vec::Vec;
+// use trap;
 
 // //! This module implements traits for the contract interface.
 // //! This allows setting-up mock objects for testing individual

@@ -47,6 +47,7 @@ struct HacspecCallbacks {
     output_directory: Option<String>,
     output_type: String,
     target_directory: String,
+    crate_root_directory: String,
 }
 
 const ERROR_OUTPUT_CONFIG: ErrorOutputType =
@@ -604,6 +605,15 @@ fn read_crate(
     // This only works with debug builds.
     let deps = manifest.target_directory + "/debug/deps";
     callbacks.target_directory = deps;
+    callbacks.crate_root_directory = Path::new(&target.src_path.clone())
+        .as_os_str()
+        .to_str()
+        .unwrap()
+        .to_string(); //.parent().and_then(|x| x.as_os_str().to_str()).unwrap().to_string();
+
+    // println!("target_src_path {:?}", callbacks.crate_root_directory);
+    // println!("target_src_path {:?}", target.src_path.clone());
+    // println!("target_src_path {:?}", target.src_path.clone());
 
     // Add the dependencies as --extern for the hacpsec typechecker.
     for dependency in package.dependencies.iter() {
@@ -677,6 +687,7 @@ fn main() -> Result<(), usize> {
         // This defaults to the default target directory.
         target_directory: env::current_dir().unwrap().to_str().unwrap().to_owned()
             + "/../target/debug/deps",
+        crate_root_directory: "".to_string(),
     };
 
     match input_file {

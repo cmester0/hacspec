@@ -211,8 +211,11 @@
   pub mod hacspec_concordium_traits;
   pub mod hacspec_concordium_impls;
 
+  #[cfg(not(feature = "hacspec"))]
   use hacspec_concordium_types::*;
+  #[cfg(not(feature = "hacspec"))]
   use hacspec_concordium_traits::*;
+  #[cfg(not(feature = "hacspec"))]
   use hacspec_concordium_impls::*;
 #+END_SRC
 
@@ -614,9 +617,12 @@
 #+END_SRC
 
 #+BEGIN_SRC rust :eval never
-  use crate::hacspec_concordium_types::*;
-  use crate::vec::Vec;
-  use crate::trap;
+  #[cfg(not(feature = "hacspec"))]
+  use crate::*;
+  #[cfg(not(feature = "hacspec"))]
+  use hacspec_concordium_types::*; // crate::
+  // use vec::Vec;
+  // use trap;
 #+END_SRC
 
 *** Traits code
@@ -1510,8 +1516,12 @@ Extern combine or
 #+END_SRC
 
 #+BEGIN_SRC rust :eval never
-  use crate::hacspec_concordium_traits::*;
-  use crate::hacspec_concordium_types::*;
+  #[cfg(not(feature = "hacspec"))]
+  use crate::*;
+  #[cfg(not(feature = "hacspec"))]
+  use hacspec_concordium_traits::*;
+  #[cfg(not(feature = "hacspec"))]
+  use hacspec_concordium_types::*;
 #+END_SRC
 
 #+BEGIN_SRC rust :eval never
@@ -1547,7 +1557,8 @@ We modle reject as the underlying data, that is the src_rust[:eval never]{i32} e
 #+end_src
 We then implement the new operations for Reject.
 #+begin_src rust :eval never
-  pub fn new_reject_impl(x: i32) -> Option<RejectHacspec> {
+  pub fn new_reject_impl(x: i32) -> Option::<i32> { // Option<RejectHacspec>
+      // TODO: fix 'identifier is not a constant' error (Seems to be fixed by some import?)
       if x < 0i32 {
 	  Option::<i32>::Some(x)
       } else {
@@ -2157,6 +2168,7 @@ We define and implement traits for ~ChainMetaExtern~.
 
       let (mut current_position, mut remaining_items) = policy_attribute_items;
 
+      // TODO: fix 'identifier is not a constant' error
       if remaining_items == 0u16 {
 	  Option::<(AttributesCursorHacspec, (u8, u8))>::None?;
       }
@@ -2164,6 +2176,7 @@ We define and implement traits for ~ChainMetaExtern~.
       let (tag_value_len, num_read) = get_policy_section_hacspec(PublicByteSeq::new(2), current_position);
       current_position = current_position + num_read;
 
+      // TODO: fix 'identifier is not a constant' error
       if tag_value_len[1] > 31u8 {
 	  // Should not happen because all attributes fit into 31 bytes.
 	  Option::<(AttributesCursorHacspec, (u8, u8))>::None?;
@@ -2277,6 +2290,7 @@ We then define traits
       policies_iterator: PoliciesIteratorHacspec,
   ) -> Option<(PoliciesIteratorHacspec, PolicyAttributesCursorHacspec)> {
       let (mut pos, remaining_items) = policies_iterator;
+      // TODO: fix 'identifier is not a constant' error
       if remaining_items == 0u16 {
 	  Option::<(PoliciesIteratorHacspec, PolicyAttributesCursorHacspec)>::None?;
       }
