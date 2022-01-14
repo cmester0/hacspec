@@ -3816,7 +3816,9 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
             sess.span_rustspec_err(i.span.clone(), "static items not allowed in Hacspec");
             Err(())
         }
-        ItemKind::Mod(_, _) => {
+        ItemKind::Mod(a, b) => {
+            println!("mod '{:?}' '{:?}' '{:?}'", i, a , b);
+            
             sess.span_rustspec_err(i.span.clone(), "sub-modules not allowed in Hacspec");
             Err(())
         }

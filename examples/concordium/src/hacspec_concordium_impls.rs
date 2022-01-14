@@ -519,21 +519,25 @@ fn combine_or_hacspec(l: u32, r: u32) -> u32 {
 }
 
 #[cfg(not(feature = "hacspec"))]
-use crate::{ // crate::
+use crate::{
     collections::{BTreeMap, BTreeSet},
     convert::{self, TryFrom, TryInto},
     hash::Hash,
     num::NonZeroI32,
-    trap,
     vec::Vec,
     String,
+    trap,
 };
 
 #[cfg(not(feature = "hacspec"))]
 use concordium_contracts_common::*;
 
-use crate::hacspec_concordium_traits::*;
-use crate::hacspec_concordium_types::*;
+#[cfg(not(feature = "hacspec"))]
+use crate::*;
+#[cfg(not(feature = "hacspec"))]
+use hacspec_concordium_traits::*;
+#[cfg(not(feature = "hacspec"))]
+use hacspec_concordium_types::*;
 
 #[cfg(not(feature = "hacspec"))]
 extern crate hacspec_lib;
@@ -560,7 +564,8 @@ pub fn reject_impl_deafult() -> RejectHacspec {
     i32::MIN
 }
 
-pub fn new_reject_impl(x: i32) -> Option<RejectHacspec> {
+pub fn new_reject_impl(x: i32) -> Option::<i32> { // Option<RejectHacspec>
+    // TODO: fix 'identifier is not a constant' error (Seems to be fixed by some import?)
     if x < 0i32 {
 	Option::<i32>::Some(x)
     } else {
@@ -1075,6 +1080,7 @@ pub fn has_policy_impl_for_policy_attributes_cursor_next_item(
 
     let (mut current_position, mut remaining_items) = policy_attribute_items;
 
+    // TODO: fix 'identifier is not a constant' error
     if remaining_items == 0u16 {
 	Option::<(AttributesCursorHacspec, (u8, u8))>::None?;
     }
@@ -1082,6 +1088,7 @@ pub fn has_policy_impl_for_policy_attributes_cursor_next_item(
     let (tag_value_len, num_read) = get_policy_section_hacspec(PublicByteSeq::new(2), current_position);
     current_position = current_position + num_read;
 
+    // TODO: fix 'identifier is not a constant' error
     if tag_value_len[1] > 31u8 {
 	// Should not happen because all attributes fit into 31 bytes.
 	Option::<(AttributesCursorHacspec, (u8, u8))>::None?;
@@ -1189,6 +1196,7 @@ fn iterator_impl_for_policies_iterator_next(
     policies_iterator: PoliciesIteratorHacspec,
 ) -> Option<(PoliciesIteratorHacspec, PolicyAttributesCursorHacspec)> {
     let (mut pos, remaining_items) = policies_iterator;
+    // TODO: fix 'identifier is not a constant' error
     if remaining_items == 0u16 {
 	Option::<(PoliciesIteratorHacspec, PolicyAttributesCursorHacspec)>::None?;
     }
