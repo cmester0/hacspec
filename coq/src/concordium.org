@@ -160,9 +160,7 @@ extern crate wee_alloc;
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
-#[cfg(not(feature = "hacspec"))]
 pub mod test_infrastructure;
-
 mod hacspec_concordium_types;
 mod hacspec_concordium_traits;
 mod hacspec_concordium_prims;
@@ -563,10 +561,8 @@ pub use hacspec_concordium_impls::*;
 #+END_SRC
 
 #+BEGIN_SRC rust :eval never
-  #[cfg(not(feature = "hacspec"))]
-  use crate::*;
-  // #[cfg(not(feature = "hacspec"))]
-  // use hacspec_concordium_types::*;
+#[cfg(not(feature = "hacspec"))]
+use crate::*;
 #+END_SRC
 
 *** Traits code
@@ -868,8 +864,8 @@ pub use hacspec_concordium_impls::*;
 #+END_SRC
 
 #+BEGIN_SRC rust :eval never
-  #[cfg(not(feature = "hacspec"))]
-  use crate::*;
+#[cfg(not(feature = "hacspec"))]
+use crate::*;
 #+END_SRC
 
 *** Externs
@@ -1475,14 +1471,8 @@ Extern combine or
 #+END_SRC
 
 #+BEGIN_SRC rust :eval never
-  #[cfg(not(feature = "hacspec"))]
-  use crate::*;
-  // #[cfg(not(feature = "hacspec"))]
-  // use hacspec_concordium_traits::*;
-  // #[cfg(not(feature = "hacspec"))]
-  // use hacspec_concordium_types::*;
-  // #[cfg(not(feature = "hacspec"))]
-  // use hacspec_concordium_prims::*;
+#[cfg(not(feature = "hacspec"))]
+use crate::*;
 #+END_SRC
 
 #+BEGIN_SRC rust :eval never
@@ -3126,10 +3116,6 @@ Open Scope hacspec_scope.
 #+end_src
 
 #+begin_src coq
-Require Import Crate.
-#+end_src
-
-#+begin_src coq
 Definition max_contract_state_size_v : int32 :=
   @repr WORDSIZE32 16384.
 #+end_src
@@ -3633,6 +3619,69 @@ Notation "'policy_attributes_cursor_hacspec_t'" := ((
   int64 ×
   attributes_cursor_hacspec_t
 )) : hacspec_scope.
+#+end_src
+
+#+begin_src coq
+Definition iterator_impl_for_policies_iterator_next
+  (policies_iterator_79 : policies_iterator_hacspec_t)
+  : (option (policies_iterator_hacspec_t × policy_attributes_cursor_hacspec_t
+    )) :=
+  let '(pos_80, remaining_items_81) :=
+    policies_iterator_79 in 
+  ifbnd (remaining_items_81) =.? (@repr WORDSIZE16 0) : bool
+  thenbnd (bind (@None (
+	policies_iterator_hacspec_t ×
+	policy_attributes_cursor_hacspec_t
+      )) (fun _ =>  Some (tt)))
+  else (tt) >> (fun 'tt =>
+  let '(buf_82, _) :=
+    get_policy_section_hacspec (seq_new_ (default) (((((usize 2) + (
+		usize 4)) + (usize 8)) + (usize 8)) + (usize 2))) (pos_80) in 
+  let skip_part_83 : public_byte_seq :=
+    seq_slice_range (buf_82) ((usize 0, usize 2)) in 
+  let ip_part_84 : public_byte_seq :=
+    seq_slice_range (buf_82) ((usize 2, (usize 2) + (usize 4))) in 
+  let created_at_part_85 : public_byte_seq :=
+    seq_slice_range (buf_82) ((
+	(usize 2) + (usize 4),
+	((usize 2) + (usize 4)) + (usize 8)
+      )) in 
+  let valid_to_part_86 : public_byte_seq :=
+    seq_slice_range (buf_82) ((
+	((usize 2) + (usize 4)) + (usize 8),
+	(((usize 2) + (usize 4)) + (usize 8)) + (usize 8)
+      )) in 
+  let len_part_87 : public_byte_seq :=
+    seq_slice_range (buf_82) ((
+	(((usize 2) + (usize 4)) + (usize 8)) + (usize 8),
+	((((usize 2) + (usize 4)) + (usize 8)) + (usize 8)) + (usize 2)
+      )) in 
+  let identity_provider_88 : int32 :=
+    u32_from_le_bytes (array_from_seq (4) (ip_part_84)) in 
+  let created_at_89 : int64 :=
+    u64_from_le_bytes (array_from_seq (8) (created_at_part_85)) in 
+  let valid_to_90 : int64 :=
+    u64_from_le_bytes (array_from_seq (8) (valid_to_part_86)) in 
+  let remaining_items_91 : int16 :=
+    u16_from_le_bytes (array_from_seq (2) (len_part_87)) in 
+  let attributes_start_92 : int32 :=
+    (((((pos_80) .+ (@repr WORDSIZE32 2)) .+ (@repr WORDSIZE32 4)) .+ (
+	  @repr WORDSIZE32 8)) .+ (@repr WORDSIZE32 8)) .+ (
+      @repr WORDSIZE32 2) in 
+  let pos_80 :=
+    ((pos_80) .+ (@cast _ uint32 _ (u16_from_le_bytes (array_from_seq (2) (
+	      skip_part_83))))) .+ (@repr WORDSIZE32 2) in 
+  let remaining_items_91 :=
+    (remaining_items_91) .- (@repr WORDSIZE16 1) in 
+  @Some (policies_iterator_hacspec_t × policy_attributes_cursor_hacspec_t) ((
+      (pos_80, remaining_items_91),
+      (
+	identity_provider_88,
+	created_at_89,
+	valid_to_90,
+	(attributes_start_92, remaining_items_91)
+      )
+    ))).
 #+end_src
 
 #+begin_src coq
