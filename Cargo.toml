@@ -42,6 +42,7 @@ members = [
     "examples/rsa-fdh-vrf",
     "examples/auction",
     "examples/concordium",
+    "examples/concordium-derive",
 ]
 default-members = [
     "lib",
@@ -82,5 +83,6 @@ default-members = [
     "examples/rsa-fdh-vrf",
     "examples/auction",
     "examples/concordium",
+    "examples/concordium-derive",
 ]
 exclude = [ "language" ]

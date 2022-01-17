@@ -5,6 +5,7 @@
 pub extern crate alloc;
 
 // TODO:
+// #[cfg(not(feature = "hacspec"))]
 // #[cfg(not(feature = "std"))]
 // #[alloc_error_handler]
 // fn on_oom(_layout: alloc::alloc::Layout) -> ! {
@@ -33,6 +34,7 @@ pub fn trap() -> ! { unsafe { core::arch::wasm32::unreachable() } }
 pub fn trap() -> ! { core::intrinsics::abort() }
 
 // TODO:
+// #[cfg(not(feature = "hacspec"))]
 // #[cfg(not(feature = "std"))]
 // #[panic_handler]
 // fn abort_panic(_info: &core::panic::PanicInfo) -> ! {
@@ -78,8 +80,7 @@ pub mod collections {
 /// Chain constants that impose limits on various aspects of smart contract
 /// execution.
 pub use concordium_contracts_common::*;
-// TODO: implement concordium_std_derive
-// pub use concordium_std_derive::*;
+pub use hacspec_concordium_derive::*;
 
 #[cfg(not(feature = "hacspec"))]
 extern crate wee_alloc;
@@ -88,14 +89,19 @@ extern crate wee_alloc;
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
-// pub mod test_infrastructure;
-pub mod hacspec_concordium_types;
-pub mod hacspec_concordium_traits;
-pub mod hacspec_concordium_impls;
+#[cfg(not(feature = "hacspec"))]
+pub mod test_infrastructure;
+
+mod hacspec_concordium_types;
+mod hacspec_concordium_traits;
+mod hacspec_concordium_prims;
+mod hacspec_concordium_impls;
 
 #[cfg(not(feature = "hacspec"))]
-use hacspec_concordium_types::*;
+pub use hacspec_concordium_types::*;
 #[cfg(not(feature = "hacspec"))]
-use hacspec_concordium_traits::*;
+pub use hacspec_concordium_traits::*;
 #[cfg(not(feature = "hacspec"))]
-use hacspec_concordium_impls::*;
+pub use hacspec_concordium_prims::*;
+#[cfg(not(feature = "hacspec"))]
+pub use hacspec_concordium_impls::*;

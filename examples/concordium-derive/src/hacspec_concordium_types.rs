@@ -68,7 +68,7 @@ impl Action {
 /// The client will see the error code as a reject reason; if a schema is
 /// provided, the error message corresponding to the error code will be
 /// displayed. The valid range for an error code is from i32::MIN to  -1.
-#[derive(Debug, Eq, PartialEq)] // TODO: Creusot issue re-add "Debug" attribute 
+#[derive(Eq, PartialEq)] // TODO: Creusot issue re-add "Debug" attribute 
 #[repr(transparent)]
 pub struct Reject {
     pub error_code: NonZeroI32,

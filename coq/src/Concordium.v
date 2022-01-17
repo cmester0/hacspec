@@ -22,6 +22,8 @@ Instance eq_dec_log_error_t : EqDec (log_error_t) :=
 Build_EqDec (log_error_t) (eqb_log_error_t) (eqb_leibniz_log_error_t).
 
 
+Require Import Hacspec.Lib.
+
 Definition load_state_hacspec
   (buf_0 : public_byte_seq)
   (offset_1 : int32)
@@ -451,4 +453,15 @@ Definition iterator_impl_for_policies_iterator_next
         (attributes_start_92, remaining_items_91)
       )
     ))).
+
+Require Import Crate.
+
+Definition max_contract_state_size_v : int32 :=
+  @repr WORDSIZE32 16384.
+
+Definition max_log_size_v : uint_size :=
+  usize 512.
+
+Definition max_num_logs_v : uint_size :=
+  usize 64.
 
