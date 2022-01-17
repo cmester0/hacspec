@@ -14,12 +14,6 @@ use concordium_contracts_common::*;
 
 #[cfg(not(feature = "hacspec"))]
 use crate::*;
-// #[cfg(not(feature = "hacspec"))]
-// use hacspec_concordium_traits::*;
-// #[cfg(not(feature = "hacspec"))]
-// use hacspec_concordium_types::*;
-// #[cfg(not(feature = "hacspec"))]
-// use hacspec_concordium_prims::*;
 
 #[cfg(not(feature = "hacspec"))]
 extern crate hacspec_lib;

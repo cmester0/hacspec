@@ -11,8 +11,6 @@ use concordium_contracts_common::*;
 
 #[cfg(not(feature = "hacspec"))]
 use crate::*;
-// #[cfg(not(feature = "hacspec"))]
-// use hacspec_concordium_types::*;
 
 // //! This module implements traits for the contract interface.
 // //! This allows setting-up mock objects for testing individual

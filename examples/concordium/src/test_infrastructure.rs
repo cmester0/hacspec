@@ -49,8 +49,8 @@
 //!     }
 //! }
 //! ```
-// use crate::{constants::MAX_CONTRACT_STATE_SIZE, *};
 
+#[cfg(not(feature = "hacspec"))]
 use crate::*;
 
 /// Maximum size of the contract state in bytes.
