@@ -35,6 +35,7 @@ members = [
     "examples/ed25519",
     "examples/auction",
     "examples/concordium",
+    "examples/concordium-derive",
 ]
 default-members = [
     "lib",
@@ -70,5 +71,6 @@ default-members = [
     "examples/sha512",
     "examples/auction",
     "examples/concordium",
+    "examples/concordium-derive",
 ]
 exclude = [ "language" ]

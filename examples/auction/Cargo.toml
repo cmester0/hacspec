@@ -15,6 +15,7 @@ creusot-contracts = { path = "../../../../creusot/creusot-contracts" }
 # hacspec = {optional = true}
 concordium-contracts-common = { path = "../../../../concordium-rust-smart-contracts/concordium-contracts-common" }
 hacspec-concordium = { path = "../concordium" }
+hacspec-concordium-derive = { path = "../concordium-derive" }
 
 [features]
 hacspec = []

@@ -1,18 +1,22 @@
 [package]
-name = "hacspec-concordium"
+name = "hacspec-concordium-derive"
 version = "0.1.0"
 authors = [""]
 edition = "2018"
 
 [lib]
 path = "src/lib.rs"
+proc-macro = true
 
 [dependencies]
 hacspec-lib = { path = "../../lib" }
 hacspec-attributes = { path = "../../utils/attributes", version = "0.1.0-beta.1" , features = ["print_attributes", "hacspec_unsafe"] } # , features = ["hacspec_unsafe"] , , optional = true
 creusot-contracts = { path = "../../../../creusot/creusot-contracts" }
 concordium-contracts-common = { path = "../../../../concordium-rust-smart-contracts/concordium-contracts-common" ,  version = "=0.4" , default-features = false }
-hacspec-concordium-derive = { path = "../concordium-derive" }
+# hacspec-concordium = { path = "../concordium" }
+syn = { version = "1.0.63", features = [ "full", "extra-traits" ] }
+quote = "=1.0.0"
+proc-macro2 = "1.0"
 
 # Reduce code size, at the cost of performance in allocation heavy-code.
 wee_alloc="0.4.5"
