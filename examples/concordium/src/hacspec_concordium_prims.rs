@@ -11,7 +11,7 @@ use hacspec_attributes::*;
 extern crate creusot_contracts;
 #[cfg(not(feature = "hacspec"))]
 use creusot_contracts::{
-    trusted	  
+    trusted          
     };
 
 #[cfg(not(feature = "hacspec"))]
@@ -38,8 +38,8 @@ pub(crate) fn load_state_hacspec(buf: PublicByteSeq, offset: u32) -> (PublicByte
     let temp = &mut coerce_hacspec_to_rust_public_byte_seq(buf.clone())[..];
     let result = load_state_creusot(temp.as_mut_ptr(), buf.len() as u32, offset);
     (
-	coerce_rust_to_hacspec_public_byte_seq(&temp),
-	result,
+        coerce_rust_to_hacspec_public_byte_seq(&temp),
+        result,
     )
 }
 
@@ -64,8 +64,8 @@ pub(crate) fn write_state_hacspec(buf: PublicByteSeq, offset: u32) -> (PublicByt
     let temp = &mut coerce_hacspec_to_rust_public_byte_seq(buf.clone())[..];
     let result = write_state_creusot(temp.as_mut_ptr(), buf.len() as u32, offset);
     (
-	coerce_rust_to_hacspec_public_byte_seq(&temp),
-	result,
+        coerce_rust_to_hacspec_public_byte_seq(&temp),
+        result,
     )
 }
 
@@ -95,7 +95,7 @@ extern "C" {
     // Resize state to the new value (truncate if new size is smaller). Return 0 if
     // this was unsuccesful (new state too big), or 1 if successful.
     pub(crate) fn resize_state(new_size: u32) -> u32; // returns 0 or 1.
-						      // get current state size in bytes.
+                                                      // get current state size in bytes.
 }
 
 #[cfg(not(feature = "hacspec"))]
@@ -138,8 +138,8 @@ pub(crate) fn get_parameter_section_hacspec(buf: PublicByteSeq, offset: u32) -> 
     let temp = &mut coerce_hacspec_to_rust_public_byte_seq(buf.clone())[..];
     let result = get_parameter_section_creusot(temp.as_mut_ptr(), buf.len() as u32, offset);
     (
-	coerce_rust_to_hacspec_public_byte_seq(&temp),
-	result,
+        coerce_rust_to_hacspec_public_byte_seq(&temp),
+        result,
     )
 }
 
@@ -169,7 +169,7 @@ pub(crate) fn get_parameter_size_hacspec() -> u32 {
 impl HasParameter for Parameter {
     #[inline(always)]
     fn size(&self) -> u32 {
-	get_parameter_size_hacspec()
+        get_parameter_size_hacspec()
     }
 }
 
@@ -220,8 +220,8 @@ pub(crate) fn get_policy_section_hacspec(policy_bytes: PublicByteSeq, offset: u3
     let temp = &mut coerce_hacspec_to_rust_public_byte_seq(policy_bytes.clone())[..];
     let result = get_policy_section_creusot(temp.as_mut_ptr(), policy_bytes.len() as u32, offset);
     (
-	coerce_rust_to_hacspec_public_byte_seq(&temp),
-	result,
+        coerce_rust_to_hacspec_public_byte_seq(&temp),
+        result,
     )
 }
 
