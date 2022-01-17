@@ -1,46 +1,133 @@
 #+TITLE: Auction Smartcontract
 #+AUTHOR: Lasse Letager Hansen
 
+# Use org-tanglesync !
+# lentic
+
 #+HTML_HEAD: <style>pre.src {background-color: #303030; color: #e5e5e5;}</style>
 #+PROPERTY: header-args:coq  :session *Coq*
 
+# C-c C-v t   -  export this files
+# C-c C-v b   -  create results / run this file
+# C-c C-v s   -  create results / run subtree
+
+#+name: split-file
+#+begin_src python :wrap "src coq :eval never" :exports none :results code :var ARG="0 -1" :var FILENAME="Auction.v" :eval never
+import functools
+
+lower, upper = map(int, ARG.split())
+if upper != -1:
+  upper = lower + upper
+
+def boundery(start, end, lines, i):
+  test = lines[i][:len(start)] == start
+  res_str = ""
+
+  in_end = lambda i: (i < len(lines) and len(list(filter(lambda x: x in lines[i], end))) > 0)
+
+  if test:
+    # if end in lines[i]:
+    if in_end(i):
+      res_str = lines[i]
+    else:
+      while i < len(lines) and not in_end(i): # end not in lines[i]:
+        res_str += lines[i]
+        i += 1
+      res_str += lines[i]
+  return (test, res_str, i)
+
+lines = []
+with open(FILENAME) as f:
+  lines = f.readlines()
+
+result = []
+i  = 0
+
+while i < len(lines) and (upper == -1 or upper > len(result)):
+  a,b,c = functools.reduce(lambda b, a: b if b[0] else boundery(a[0], a[1], lines, b[2]),
+                           [["(**", set({"**)"})],
+                            ["(*", set({"*)"})],
+                            ["From",set({".\n"})],
+                            ["Require",set({".\n"})],
+                            ["Import",set({".\n"})],
+                            ["Open Scope",set({".\n"})],
+                            ["Inductive",set({".\n"})],
+                            ["Definition",set({".\n"})],
+                            ["Instance",set({".\n"})],
+                            ["Notation",set({".\n"})],
+                            ["Theorem",set({".\n"})],
+                            ["Global Instance",set({".\n"})],
+                            ["Proof",set({"Admitted", "Qed"})],
+                            ["QuickChick",set({".\n"})],
+                            ],
+                           (False, "", i))
+  
+  if a:
+    result.append(b)
+    i = c
+  elif lines[i].isspace():
+    space = ""
+    while i < len(lines) and lines[i].isspace():
+      space += lines[i]
+      i += 1
+    i -= 1
+    result.append(space)
+  else:
+    result.append("ERR:" + lines[i])
+  i += 1
+  # return a,b,c,i  
+  
+result_str = ""
+for s in (result[lower:] if upper == -1 else result[lower:upper]):
+  result_str += s
+
+return result_str
+#+end_src
+
+#+NAME: next
+#+begin_src python :var ARG="0 0" :var linum="0 0" :results output silent :exports none
+a,b = map(int, linum.split())
+c,d = map(int, ARG.split())
+print (a+b+c,d)
+#+end_src
+
 * Auction smart contract specification
 ** Config
-#+begin_src toml :tangle ../../examples/auction/Cargo.toml
-  [package]
-  name = "auction"
-  version = "0.1.0"
-  authors = [""]
-  edition = "2018"
+#+begin_src toml :tangle ../../examples/auction/Cargo.toml :eval never
+[package]
+name = "hacspec-auction"
+version = "0.1.0"
+authors = [""]
+edition = "2018"
 
-  [lib]
-  path = "src/auction.rs"
+[lib]
+path = "src/auction.rs"
 
-  [dependencies]
-  hacspec-lib = { path = "../../lib" }
-  hacspec-attributes = { path = "../../utils/attributes", version = "0.1.0-beta.1" , features = ["print_attributes"] } # , features = ["hacspec_unsafe"] , , optional = true
-  # pearlite-syn = { path = "../../../../creusot/pearlite-syn" }
-  creusot-contracts = { path = "../../../../creusot/creusot-contracts" }
-  # hacspec = {optional = true}
-  concordium-contracts-common = { path = "../../../../concordium-rust-smart-contracts/concordium-contracts-common" }
-  hacspec-concordium = { path = "../concordium" }
-  hacspec-concordium-derive = { path = "../concordium-derive" }
-			   
-  [features]
-  hacspec = []
-  # use_attributes = ["hacspec-attributes", "hacspec-attributes/print_attributes"]
+[dependencies]
+hacspec-lib = { path = "../../lib" }
+hacspec-attributes = { path = "../../utils/attributes", version = "0.1.0-beta.1" , features = ["print_attributes"] } # , features = ["hacspec_unsafe"] , , optional = true
+# pearlite-syn = { path = "../../../../creusot/pearlite-syn" }
+creusot-contracts = { path = "../../../../creusot/creusot-contracts" }
+# hacspec = {optional = true}
+concordium-contracts-common = { path = "../../../../concordium-rust-smart-contracts/concordium-contracts-common" }
+hacspec-concordium = { path = "../concordium" }
+hacspec-concordium-derive = { path = "../concordium-derive" }
 
-  [dev-dependencies]
-  hacspec-dev = { path = "../../utils/dev" }
-  criterion = "0.3"
-  rand = "0.8"
-  quickcheck = "1"
-  quickcheck_macros = "1"
+[features]
+hacspec = []
+# use_attributes = ["hacspec-attributes", "hacspec-attributes/print_attributes"]
+
+[dev-dependencies]
+hacspec-dev = { path = "../../utils/dev" }
+criterion = "0.3"
+rand = "0.8"
+quickcheck = "1"
+quickcheck_macros = "1"
 #+end_src
 
 ** Rust code
 :PROPERTIES:
-:header-args: :tangle ../../examples/auction/src/auction.rs
+:header-args: :tangle ../../examples/auction/src/auction.rs 
 :END:
 
 *** Imports
@@ -65,22 +152,8 @@
 
 #+begin_src rust :eval never
   // // Rust-hacspec Interface
-  // #[cfg(not(feature = "hacspec"))]
-  // extern crate concordium_contracts_common;
-  // #[cfg(not(feature = "hacspec"))]
-  // use concordium_contracts_common::*;
   #[cfg(not(feature = "hacspec"))]
-  use concordium_contracts_common::*; // init, 
-
-  #[cfg(not(feature = "hacspec"))]
-  use hacspec_concordium::{collections::BTreeMap, init, num::NonZeroI32, *};
-
-  // #[cfg(not(feature = "hacspec"))]
-  // use hacspec_concordium_types::*;
-  // #[cfg(not(feature = "hacspec"))]
-  // use hacspec_concordium_impls::*;
-  // #[cfg(not(feature = "hacspec"))]
-  // use hacspec_concordium_traits::*;
+  use hacspec_concordium::{collections::BTreeMap, *};
 #+end_src
 
 *** Types
@@ -552,9 +625,6 @@
 
   #[cfg(not(feature = "hacspec"))]
   pub fn coerce_rust_to_hacspec_finalize_context(ctx: &impl HasReceiveContext) -> FinalizeContext {
-      println!("OWNER");
-      let temp = ctx.owner();
-      println!("NOT OWNER");
     (
 	ctx.metadata().slot_time().timestamp_millis(),
 	coerce_rust_to_hacspec_account_address(&ctx.owner()),
@@ -689,14 +759,8 @@
   ) -> Result<A, FinalizeError> {
       let hacspec_state = coerce_rust_to_hacspec_state(state);
 
-      println!("Coerce");
-
-      let temp_coerce = coerce_rust_to_hacspec_finalize_context(ctx);
-
-      println!("AFTER");
-
       let (new_state, fa) =
-	  match auction_finalize_hacspec(temp_coerce, hacspec_state)
+	  match auction_finalize_hacspec(coerce_rust_to_hacspec_finalize_context(ctx), hacspec_state)
       {
 	  Ok(a) => a,
 	  Err(e) => return Err(coerce_hacspec_to_rust_finalize_error(e)),
@@ -1086,8 +1150,6 @@
 	      winning_amount,
 	  );
 
-	  println!("ctx4");
-
 	  // trying to finalize auction that is still active
 	  // (specifically, the bid is submitted at the last moment, at the AUCTION_END
 	  // time)
@@ -1102,8 +1164,6 @@
 	      "Finalizing auction should fail when it's before auction-end time",
 	  );
 
-	  println!("ctx5");
-
 	  // finalizing auction
 	  let carol = new_account();
 	  let dave = new_account();
@@ -1116,7 +1176,7 @@
 	      ActionsTree::simple_transfer(&carol, winning_amount)
 		  .and_then(ActionsTree::simple_transfer(&alice, amount + amount))
 	  );
-	  println!("Sold?");
+
 	  assert_eq!(
 	      state,
 	      State {
@@ -1128,7 +1188,6 @@
 	      }
 	  );
 
-	  println!("finres3");
 
 	  // attempting to finalize auction again should fail
 	  let finres3: Result<ActionsTree, _> = auction_finalize(&ctx5, &mut state);
@@ -1137,8 +1196,6 @@
 	      FinalizeError::AuctionFinalized,
 	      "Finalizing auction a second time should fail",
 	  );
-
-	  println!("res4");
 
 	  // attempting to bid again should fail
 	  let res4: Result<ActionsTree, _> = auction_bid(&bob_ctx, big_amount, &mut state);
@@ -1212,141 +1269,50 @@
 #+end_src
 
 ** Generation of backend output
-
-#+name: split-file
-#+begin_src python :wrap "src coq :tangle Auction.v :results output silent" :exports none :results code :var ARG="0 -1" :var FILENAME="Auction.v"
-  import functools
-
-  lower, upper = map(int, ARG.split())
-  if upper != -1:
-    upper = lower + upper
-
-  def boundery(start, end, lines, i):
-    test = lines[i][:len(start)] == start
-    res_str = ""
-
-    in_end = lambda i: (i < len(lines) and len(list(filter(lambda x: x in lines[i], end))) > 0)
-
-    if test:
-      # if end in lines[i]:
-      if in_end(i):
-	res_str = lines[i]
-      else:
-	while i < len(lines) and not in_end(i): # end not in lines[i]:
-	  res_str += lines[i]
-	  i += 1
-	res_str += lines[i]
-    return (test, res_str, i)
-
-  lines = []
-  with open(FILENAME) as f:
-    lines = f.readlines()
-
-  result = []
-  i  = 0
-  while i < len(lines) and (upper == -1 or upper > len(result)):
-    a,b,c = functools.reduce(lambda b, a: b if b[0] else boundery(a[0], a[1], lines, b[2]),
-			     [["(**", set({"**)"})],
-			      ["From",set({".\n"})],
-			      ["Require",set({".\n"})],
-			      ["Import",set({".\n"})],
-			      ["Open Scope",set({".\n"})],
-			      ["Inductive",set({".\n"})],
-			      ["Definition",set({".\n"})],
-			      ["Instance",set({".\n"})],
-			      ["Notation",set({".\n"})],
-			      ["Theorem",set({".\n"})],
-			      ["Global Instance",set({".\n"})],
-			      ["Proof",set({"Admitted", "Qed"})],
-			      ["QuickChick",set({".\n"})],
-			      ],
-			     (False, "", i))
-    if a:
-      result.append(b)
-      i = c
-    elif lines[i].isspace():
-      space = ""
-      while i < len(lines) and lines[i].isspace():
-	space += lines[i]
-	i += 1
-      i -= 1
-      result.append(space)
-    else:
-      result.append("ERR:" + lines[i])
-    i += 1
-
-  result_str = ""
-  for s in (result[lower:] if upper == -1 else result[lower:upper]):
-    result_str += s
-
-  return result_str
-#+end_src
-
-#+NAME: next
-#+begin_src python :var ARG="0 0" :var linum="0 0" :results output silent :exports none
-  a,b = map(int, linum.split())
-  c,d = map(int, ARG.split())
-  print (a+b+c,d)
-#+end_src
-
-#+NAME: seginit
-#+begin_src python :wrap "src coq :results output silent" :result code :exports none :var loc=(file-name-directory buffer-file-name)
-  with open("../_CoqProject") as f:
-      result = ""
-      for l in f:
-	  if l[:2] == "-R":
-	      pre, post = l[3:].split()
-	      result += "Add Rec LoadPath \"" + pre + "\" as " + post + ".\n"
-	  # elif l[:4] == "src/":
-	  #     result += "Load " + l[4:-2] + "\n"
-      return "Reset Initial.\nCd \""+loc+"../\".\n" + result
-#+end_src
-#+RESULTS: seginit
-#+begin_src coq :results output silent
-Reset Initial.
-Cd "/home/au538501/Documents/LocalHacspec/hacspec/coq/src/../".
-Add Rec LoadPath "src/" as Hacspec.
-#+end_src
+:PROPERTIES:
+:header-args: :tangle Auction.v  :comments link
+:header-args: coq :eval never :results output silent
+:END:
 
 *** The includes
 #+NAME: linum0
-#+CALL: next(ARG="0 13", linum="0 0")  :exports none
+#+CALL: next(ARG="0 9", linum="0 1")  :exports none
 #+NAME: seg0
-#+CALL: split-file(ARG=linum0) :cache yes
-#+RESULTS[aa30823c35ac82a0494a44c88bc2297c63bdf633]: seg0
-#+begin_src coq :tangle Auction.v :results output silent
+#+CALL: split-file(ARG=linum0) :eval
+#+RESULTS: seg0
+#+begin_src coq :eval never
 (** This file was automatically generated using Hacspec **)
-Require Import Lib MachineIntegers.
+Require Import Lib MachineIntegers   .
 From Coq Require Import ZArith.
 Import List.ListNotations.
 Open Scope Z_scope.
 Open Scope bool_scope.
 Open Scope hacspec_scope.
 From QuickChick Require Import QuickChick.
-Require Import QuickChickLib.
-Require Import Hacspec.Lib.
 
-Require Import Hacspec.Concordium_Impls.
+
 
 #+end_src
 
 *** Types
 #+NAME: linum1
-#+CALL: next(ARG="0 2", linum=linum0) :exports none
+#+CALL: next(ARG="0 0", linum=linum0) :exports none
 #+NAME: seg1
-#+CALL: split-file(ARG=linum1) :cache yes
-#+RESULTS[4fcc01c001d560274ec34f7471dcca386749f8f5]: seg1
-#+begin_src coq :tangle Auction.v :results output silent
-Definition user_address_t := nseq (int8) (usize 32).
-
+#+CALL: split-file(ARG=linum1)  :eval
+#+RESULTS: seg1
+#+begin_src coq :eval never
 #+end_src
 
 #+NAME: linum2
 #+CALL: next(ARG="0 13", linum=linum1) :exports none
 #+NAME: seg2
-#+CALL: split-file(ARG=linum2) :cache yes
-#+RESULTS[f072f190679a4bbc0f378fa3afdf79ca2dfd49d9]: seg2
-#+begin_src coq :tangle Auction.v :results output silent
+#+CALL: split-file(ARG=linum2) :eval
+#+RESULTS: seg2
+#+begin_src coq :eval never
+Require Import Hacspec.Lib.
+
+Definition user_address_t := nseq (int8) (usize 32).
+
 Inductive auction_state_hacspec_t :=
 | NotSoldYet : auction_state_hacspec_t
 | Sold : user_address_t -> auction_state_hacspec_t.
@@ -1363,6 +1329,14 @@ Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz
 Instance eq_dec_auction_state_hacspec_t : EqDec (auction_state_hacspec_t) :=
 Build_EqDec (auction_state_hacspec_t) (eqb_auction_state_hacspec_t) (eqb_leibniz_auction_state_hacspec_t).
 
+#+end_src
+
+#+NAME: linum4
+#+CALL: next(ARG="0 13", linum=linum2) :exports none
+#+NAME: seg4
+#+CALL: split-file(ARG=linum4) :eval
+#+RESULTS: seg4
+#+begin_src coq :eval never
 Global Instance show_auction_state_hacspec_t : Show (auction_state_hacspec_t) :=
  @Build_Show (auction_state_hacspec_t) (fun x =>
  match x with
@@ -1373,14 +1347,6 @@ Definition g_auction_state_hacspec_t : G (auction_state_hacspec_t) := oneOf_ (re
 Global Instance gen_auction_state_hacspec_t : Gen (auction_state_hacspec_t) := Build_Gen auction_state_hacspec_t g_auction_state_hacspec_t.
 
 
-#+end_src
-
-#+NAME: linum4
-#+CALL: next(ARG="0 13", linum=linum2) :exports none
-#+NAME: seg4
-#+CALL: split-file(ARG=linum4) :cache yes
-#+RESULTS[772a3796d837f2ca56c42c778f3d1734ff684840]: seg4
-#+begin_src coq :tangle Auction.v :results output silent
 Inductive seq_map_t :=
 | SeqMap : (public_byte_seq × public_byte_seq) -> seq_map_t.
 
@@ -1395,6 +1361,14 @@ Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz
 Instance eq_dec_seq_map_t : EqDec (seq_map_t) :=
 Build_EqDec (seq_map_t) (eqb_seq_map_t) (eqb_leibniz_seq_map_t).
 
+#+end_src
+
+#+NAME: linum5
+#+CALL: next(ARG="0 4", linum=linum4) :exports none
+#+NAME: seg5
+#+CALL: split-file(ARG=linum5) :eval
+#+RESULTS: seg5
+#+begin_src coq :eval never
 Global Instance show_seq_map_t : Show (seq_map_t) :=
  @Build_Show (seq_map_t) (fun x =>
  match x with
@@ -1406,20 +1380,12 @@ Global Instance gen_seq_map_t : Gen (seq_map_t) := Build_Gen seq_map_t g_seq_map
 
 #+end_src
 
-#+NAME: linum5
-#+CALL: next(ARG="0 0", linum=linum4) :exports none
-#+NAME: seg5
-#+CALL: split-file(ARG=linum5) :cache yes
-#+RESULTS[843220a7cfc97cf03d511ae1c5cce0487e55cfd0]: seg5
-#+begin_src coq :tangle Auction.v :results output silent
-#+end_src
-
 #+NAME: linum6
 #+CALL: next(ARG="0 13", linum=linum5) :exports none
 #+NAME: seg6
-#+CALL: split-file(ARG=linum6) :cache yes
-#+RESULTS[9f44e3f9f90e9fe4bbd72a4ebbd740af19d709ff]: seg6
-#+begin_src coq :tangle Auction.v :results output silent
+#+CALL: split-file(ARG=linum6) :eval
+#+RESULTS: seg6
+#+begin_src coq :eval never
 Inductive state_hacspec_t :=
 | StateHacspec : (
   auction_state_hacspec_t ×
@@ -1455,9 +1421,9 @@ Global Instance gen_state_hacspec_t : Gen (state_hacspec_t) := Build_Gen state_h
 #+NAME: linum7
 #+CALL: next(ARG="0 2", linum=linum6) :exports none
 #+NAME: seg7
-#+CALL: split-file(ARG=linum7) :cache yes
-#+RESULTS[b7495351f7307f20709e44258d40d54cf9521bc0]: seg7
-#+begin_src coq :tangle Auction.v :results output silent
+#+CALL: split-file(ARG=linum7) :eval
+#+RESULTS: seg7
+#+begin_src coq :eval never
 Definition fresh_state_hacspec
   (itm_0 : public_byte_seq)
   (exp_1 : int64)
@@ -1476,9 +1442,9 @@ Definition fresh_state_hacspec
 #+NAME: linum8
 #+CALL: next(ARG="0 2", linum=linum7) :exports none
 #+NAME: seg8
-#+CALL: split-file(ARG=linum8) :cache yes
-#+RESULTS[172dd7cb3e74e02fb119bf6a1c2e492103908d07]: seg8
-#+begin_src coq :tangle Auction.v :results output silent
+#+CALL: split-file(ARG=linum8) :eval
+#+RESULTS: seg8
+#+begin_src coq :eval never
 Definition seq_map_entry
   (m_2 : seq_map_t)
   (sender_address_3 : user_address_t)
@@ -1514,9 +1480,9 @@ Definition seq_map_entry
 #+NAME: linum9
 #+CALL: next(ARG="0 13", linum=linum8) :exports none
 #+NAME: seg9
-#+CALL: split-file(ARG=linum9) :cache yes
-#+RESULTS[fed8daed188c1e4390fd2c2d9d86525a57ab1fff]: seg9
-#+begin_src coq :tangle Auction.v :results output silent
+#+CALL: split-file(ARG=linum9) :eval
+#+RESULTS: seg9
+#+begin_src coq :eval never
 Inductive map_update_t :=
 | Update : (int64 × seq_map_t) -> map_update_t.
 
@@ -1546,9 +1512,9 @@ Global Instance gen_map_update_t : Gen (map_update_t) := Build_Gen map_update_t 
 #+NAME: linum10
 #+CALL: next(ARG="0 2", linum=linum9) :exports none
 #+NAME: seg10
-#+CALL: split-file(ARG=linum10) :cache yes
-#+RESULTS[c909301f308ecd5a16da38c9fbdc0d89c8546418]: seg10
-#+begin_src coq :tangle Auction.v :results output silent
+#+CALL: split-file(ARG=linum10) :eval
+#+RESULTS: seg10
+#+begin_src coq :eval never
 Definition seq_map_update_entry
   (m_8 : seq_map_t)
   (sender_address_9 : user_address_t)
@@ -1589,9 +1555,9 @@ Definition seq_map_update_entry
 #+NAME: linum11
 #+CALL: next(ARG="0 13", linum=linum10) :exports none
 #+NAME: seg11
-#+CALL: split-file(ARG=linum11) :cache yes
-#+RESULTS[cf92714d6d1a145d71db2891809abe55b0cdee9c]: seg11
-#+begin_src coq :tangle Auction.v :results output silent
+#+CALL: split-file(ARG=linum11) :eval
+#+RESULTS: seg11
+#+begin_src coq :eval never
 Inductive bid_error_hacspec_t :=
 | ContractSender : bid_error_hacspec_t
 | BidTooLow : bid_error_hacspec_t
@@ -1639,9 +1605,9 @@ Global Instance gen_bid_error_hacspec_t : Gen (bid_error_hacspec_t) := Build_Gen
 #+NAME: linum12
 #+CALL: next(ARG="0 13", linum=linum11) :exports none
 #+NAME: seg12
-#+CALL: split-file(ARG=linum12) :cache yes
-#+RESULTS[cdc1e1eba4e7c80a949c0c650397373d565d97c7]: seg12
-#+begin_src coq :tangle Auction.v :results output silent
+#+CALL: split-file(ARG=linum12) :eval
+#+RESULTS: seg12
+#+begin_src coq :eval never
 Inductive user_address_set_t :=
 | UserAddressSome : user_address_t -> user_address_set_t
 | UserAddressNone : user_address_set_t.
@@ -1677,9 +1643,9 @@ Global Instance gen_user_address_set_t : Gen (user_address_set_t) := Build_Gen u
 #+NAME: linum13
 #+CALL: next(ARG="0 5", linum=linum12) :exports none
 #+NAME: seg13
-#+CALL: split-file(ARG=linum13) :cache yes
-#+RESULTS[db8b97591f89e154907990d296dde67627047837]: seg13
-#+begin_src coq :tangle Auction.v :results output silent
+#+CALL: split-file(ARG=linum13) :eval
+#+RESULTS: seg13
+#+begin_src coq :eval never
 Notation "'context_t'" := ((int64 × user_address_set_t)) : hacspec_scope.
 Instance show_context_t : Show (context_t) :=
 Build_Show context_t (fun x =>
@@ -1697,9 +1663,9 @@ Instance gen_context_t : Gen (context_t) := Build_Gen context_t g_context_t.
 #+NAME: linum14
 #+CALL: next(ARG="0 2", linum=linum13) :exports none
 #+NAME: seg14
-#+CALL: split-file(ARG=linum14) :cache yes
-#+RESULTS[89ca8eb051dba8ccd2ffed7df267b919e58489ae]: seg14
-#+begin_src coq :tangle Auction.v :results output silent
+#+CALL: split-file(ARG=linum14) :eval
+#+RESULTS: seg14
+#+begin_src coq :eval never
 Notation "'auction_bid_result_t'" := ((
   result state_hacspec_t bid_error_hacspec_t)) : hacspec_scope.
 
@@ -1709,9 +1675,9 @@ Notation "'auction_bid_result_t'" := ((
 #+NAME: linum15
 #+CALL: next(ARG="0 2", linum=linum14) :exports none
 #+NAME: seg15
-#+CALL: split-file(ARG=linum15) :cache yes
-#+RESULTS[7e7d2f5ddf4330987e6806cfbfe094b8e2b1d536]: seg15
-#+begin_src coq :tangle Auction.v :results output silent
+#+CALL: split-file(ARG=linum15) :eval
+#+RESULTS: seg15
+#+begin_src coq :eval never
 Definition auction_bid_hacspec
   (ctx_15 : context_t)
   (amount_16 : int64)
@@ -1804,9 +1770,9 @@ Definition auction_bid_hacspec
 #+NAME: linum16
 #+CALL: next(ARG="0 13", linum=linum15) :exports none
 #+NAME: seg16
-#+CALL: split-file(ARG=linum16) :cache yes
-#+RESULTS[3033638b56bd6bda10377e09f7e0af999228a339]: seg16
-#+begin_src coq :tangle Auction.v :results output silent
+#+CALL: split-file(ARG=linum16) :eval
+#+RESULTS: seg16
+#+begin_src coq :eval never
 Inductive finalize_error_hacspec_t :=
 | BidMapError : finalize_error_hacspec_t
 | AuctionStillActive : finalize_error_hacspec_t
@@ -1845,9 +1811,9 @@ Global Instance gen_finalize_error_hacspec_t : Gen (finalize_error_hacspec_t) :=
 #+NAME: linum17
 #+CALL: next(ARG="0 18", linum=linum16) :exports none
 #+NAME: seg17
-#+CALL: split-file(ARG=linum17) :cache yes
-#+RESULTS[714179fd55351a1f0ed576f7ef43ddd15dc18adf]: seg17
-#+begin_src coq :tangle Auction.v :results output silent
+#+CALL: split-file(ARG=linum17) :eval
+#+RESULTS: seg17
+#+begin_src coq :eval never
 Notation "'finalize_context_t'" := ((int64 × user_address_t × int64
 )) : hacspec_scope.
 Instance show_finalize_context_t : Show (finalize_context_t) :=
@@ -1899,17 +1865,17 @@ Global Instance gen_finalize_action_t : Gen (finalize_action_t) := Build_Gen fin
 #+NAME: linum18
 #+CALL: next(ARG="0 0", linum=linum17) :exports none
 #+NAME: seg18
-#+CALL: split-file(ARG=linum18) :cache yes
-#+RESULTS[fa4bf221fd62bd9fa1060575bcfa99a8af46cce0]: seg18
-#+begin_src coq :tangle Auction.v :results output silent
+#+CALL: split-file(ARG=linum18) :eval
+#+RESULTS: seg18
+#+begin_src coq :eval never
 #+end_src
 
 #+NAME: linum19
 #+CALL: next(ARG="0 13", linum=linum18) :exports none
 #+NAME: seg19
-#+CALL: split-file(ARG=linum19) :cache yes
-#+RESULTS[2b77a9dae59dd304fc4846f9bdeb1a6afed79e19]: seg19
-#+begin_src coq :tangle Auction.v :results output silent
+#+CALL: split-file(ARG=linum19) :eval
+#+RESULTS: seg19
+#+begin_src coq :eval never
 Inductive bid_remain_t :=
 | BidNone : bid_remain_t
 | BidSome : int64 -> bid_remain_t.
@@ -1941,9 +1907,9 @@ Global Instance gen_bid_remain_t : Gen (bid_remain_t) := Build_Gen bid_remain_t 
 #+NAME: linum20
 #+CALL: next(ARG="0 2", linum=linum19) :exports none
 #+NAME: seg20
-#+CALL: split-file(ARG=linum20) :cache yes
-#+RESULTS[cd8919c7afa6febc4088a0ac3d5476f6507966e2]: seg20
-#+begin_src coq :tangle Auction.v :results output silent
+#+CALL: split-file(ARG=linum20) :eval
+#+RESULTS: seg20
+#+begin_src coq :eval never
 Notation "'auction_finalize_result_t'" := ((result (
     state_hacspec_t ×
     finalize_action_t
@@ -1955,9 +1921,9 @@ Notation "'auction_finalize_result_t'" := ((result (
 #+NAME: linum21
 #+CALL: next(ARG="0 2", linum=linum20) :exports none
 #+NAME: seg21
-#+CALL: split-file(ARG=linum21) :cache yes
-#+RESULTS[ab853986f57cca2f0e09a1e389dc30f6a2db8a1a]: seg21
-#+begin_src coq :tangle Auction.v :results output silent
+#+CALL: split-file(ARG=linum21) :eval
+#+RESULTS: seg21
+#+begin_src coq :eval never
 Definition auction_finalize_hacspec
   (ctx_33 : finalize_context_t)
   (state_34 : state_hacspec_t)
@@ -2060,9 +2026,9 @@ Definition auction_finalize_hacspec
 #+NAME: linum22
 #+CALL: next(ARG="0 2", linum=linum21) :exports none
 #+NAME: seg22
-#+CALL: split-file(ARG=linum22) :cache yes
-#+RESULTS[6ca22a5ace14a7583832106ac541f060aff9e7b9]: seg22
-#+begin_src coq :tangle Auction.v :results output silent
+#+CALL: split-file(ARG=linum22) :eval
+#+RESULTS: seg22
+#+begin_src coq :eval never
 Definition auction_test_init
   (item_52 : public_byte_seq)
   (time_53 : int64)
@@ -2080,9 +2046,9 @@ Definition auction_test_init
 #+NAME: linum23
 #+CALL: next(ARG="0 2", linum=linum22) :exports none
 #+NAME: seg23
-#+CALL: split-file(ARG=linum23) :cache yes
-#+RESULTS[4ca0a5a7339db0e420ceed2a88eb5285fd3bf74c]: seg23
-#+begin_src coq :tangle Auction.v :results output silent
+#+CALL: split-file(ARG=linum23) :eval
+#+RESULTS: seg23
+#+begin_src coq :eval never
 Theorem ensures_auction_test_init : forall result_54 (
   item_52 : public_byte_seq) (time_53 : int64),
 @auction_test_init item_52 time_53 = result_54 ->
@@ -2093,9 +2059,9 @@ Proof. Admitted.
 #+NAME: linum24
 #+CALL: next(ARG="0 2", linum=linum23) :exports none
 #+NAME: seg24
-#+CALL: split-file(ARG=linum24) :cache yes
-#+RESULTS[feef9f2f4b0c6ba0a66320717092876b80285b1b]: seg24
-#+begin_src coq :tangle Auction.v :results output silent
+#+CALL: split-file(ARG=linum24) :eval
+#+RESULTS: seg24
+#+begin_src coq :eval never
 QuickChick (
   forAll g_public_byte_seq (fun item_52 : public_byte_seq =>forAll g_int64 (fun time_53 : int64 =>auction_test_init item_52 time_53))).
 
@@ -2106,9 +2072,9 @@ QuickChick (
 #+NAME: linum25
 #+CALL: next(ARG="0 2", linum=linum24) :exports none
 #+NAME: seg25
-#+CALL: split-file(ARG=linum25) :cache yes
-#+RESULTS[7c980730f597fa6dd148153cd79b4466ca027cac]: seg25
-#+begin_src coq :tangle Auction.v :results output silent
+#+CALL: split-file(ARG=linum25) :eval
+#+RESULTS: seg25
+#+begin_src coq :eval never
 Definition verify_bid
   (item_55 : public_byte_seq)
   (state_56 : state_hacspec_t)
@@ -2148,9 +2114,9 @@ Definition verify_bid
 #+NAME: linum26
 #+CALL: next(ARG="0 2", linum=linum25) :exports none
 #+NAME: seg26
-#+CALL: split-file(ARG=linum26) :cache yes
-#+RESULTS[18fca23145bba489ab16d147c2fc087f82225005]: seg26
-#+begin_src coq :tangle Auction.v :results output silent
+#+CALL: split-file(ARG=linum26) :eval
+#+RESULTS: seg26
+#+begin_src coq :eval never
 Definition useraddress_from_u8 (i_70 : int8) : user_address_t :=
   array_from_list int8 (let l :=
       [
@@ -2193,9 +2159,9 @@ Definition useraddress_from_u8 (i_70 : int8) : user_address_t :=
 #+NAME: linum27
 #+CALL: next(ARG="0 2", linum=linum26) :exports none
 #+NAME: seg27
-#+CALL: split-file(ARG=linum27) :cache yes
-#+RESULTS[c6e54c8d351c0235cb6e2962e2e8587d9f387f95]: seg27
-#+begin_src coq :tangle Auction.v :results output silent
+#+CALL: split-file(ARG=linum27) :eval
+#+RESULTS: seg27
+#+begin_src coq :eval never
 Definition new_account
   (time_71 : int64)
   (i_72 : int8)
@@ -2211,9 +2177,9 @@ Definition new_account
 #+NAME: linum28
 #+CALL: next(ARG="0 2", linum=linum27) :exports none
 #+NAME: seg28
-#+CALL: split-file(ARG=linum28) :cache yes
-#+RESULTS[168cd2bbf4c266c0ada8c43da1e213502af1dc70]: seg28
-#+begin_src coq :tangle Auction.v :results output silent
+#+CALL: split-file(ARG=linum28) :eval
+#+RESULTS: seg28
+#+begin_src coq :eval never
 Definition test_auction_bid_and_finalize
   (item_75 : public_byte_seq)
   (time_76 : int64)
@@ -2321,9 +2287,9 @@ Definition test_auction_bid_and_finalize
 #+NAME: linum29
 #+CALL: next(ARG="0 2", linum=linum28) :exports none
 #+NAME: seg29
-#+CALL: split-file(ARG=linum29) :cache yes
-#+RESULTS[4069f9c4d30d168f5cebc0bdd6532affced36d1e]: seg29
-#+begin_src coq :tangle Auction.v :results output silent
+#+CALL: split-file(ARG=linum29) :eval
+#+RESULTS: seg29
+#+begin_src coq :eval never
 Theorem ensures_test_auction_bid_and_finalize : forall result_54 (
   item_75 : public_byte_seq) (time_76 : int64) (input_amount_77 : int64),
 forall {H_0 : (@repr WORDSIZE64 18446744073709551615) >.? (time_76)},
@@ -2337,30 +2303,9 @@ Proof. Admitted.
 #+NAME: linum30
 #+CALL: next(ARG="0 1", linum=linum29) :exports none
 #+NAME: seg30
-#+CALL: split-file(ARG=linum30) :cache yes
-#+RESULTS[e012ab14ba32488f02f65fc55d8a8263a8eb1bd1]: seg30
-#+begin_src coq :tangle Auction.v :results output silent
+#+CALL: split-file(ARG=linum30) :eval
+#+RESULTS: seg30
+#+begin_src coq :eval never
 QuickChick (
   forAll g_public_byte_seq (fun item_75 : public_byte_seq =>forAll g_int64 (fun time_76 : int64 =>forAll g_int64 (fun input_amount_77 : int64 =>test_auction_bid_and_finalize item_75 time_76 input_amount_77)))).
-#+end_src
-
-** Resulting output
-#+begin_src sh :eval no-export-query :results output silent
-  cargo clean
-#+end_src
-
-#+begin_src sh :eval no-export-query :results output silent
-  cd ../.. && cargo install --path language
-#+end_src
-
-#+begin_src sh :eval no-export-query :results output silent
-  cd ../.. && cargo build
-#+end_src
-
-#+begin_src sh :eval no-export-query :results output silent
-  cargo hacspec -o Auction.v auction --init
-#+end_src
-
-#+begin_src sh :results none
-  cargo hacspec -o Auction.v auction --update
 #+end_src

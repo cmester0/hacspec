@@ -163,11 +163,11 @@ pub trait HasLogger {
     #[inline(always)]
     /// Log a serializable event by serializing it with a supplied serializer.
     fn log<S: Serial>(&mut self, event: &S) -> Result<(), LogError> {
-	let mut out = Vec::new();
-	if event.serial(&mut out).is_err() {
-	    trap(); // should not happen
-	}
-	self.log_raw(&out)
+        let mut out = Vec::new();
+        if event.serial(&mut out).is_err() {
+            trap(); // should not happen
+        }
+        self.log_raw(&out)
     }
 }
 
@@ -186,10 +186,10 @@ pub trait HasActions {
 
     /// Send a message to a contract.
     fn send_raw(
-	ca: &ContractAddress,
-	receive_name: ReceiveName,
-	amount: Amount,
-	parameter: &[u8],
+        ca: &ContractAddress,
+        receive_name: ReceiveName,
+        amount: Amount,
+        parameter: &[u8],
     ) -> Self;
 
     /// If the execution of the first action succeeds, run the second action
@@ -259,9 +259,9 @@ pub trait SerialCtx {
     /// NB: We use Result instead of Option for better composability with other
     /// constructs.
     fn serial_ctx<W: Write>(
-	&self,
-	size_length: schema::SizeLength,
-	out: &mut W,
+        &self,
+        size_length: schema::SizeLength,
+        out: &mut W,
     ) -> Result<(), W::Err>;
 }
 
@@ -278,8 +278,8 @@ pub trait DeserialCtx: Sized {
     /// Attempt to read a structure from a given source and context, failing if
     /// an error occurs during deserialization or reading.
     fn deserial_ctx<R: Read>(
-	size_length: schema::SizeLength,
-	ensure_ordered: bool,
-	source: &mut R,
+        size_length: schema::SizeLength,
+        ensure_ordered: bool,
+        source: &mut R,
     ) -> ParseResult<Self>;
 }

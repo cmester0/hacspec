@@ -15,22 +15,8 @@ extern crate creusot_contracts;
 use creusot_contracts::{ensures, requires};
 
 // // Rust-hacspec Interface
-// #[cfg(not(feature = "hacspec"))]
-// extern crate concordium_contracts_common;
-// #[cfg(not(feature = "hacspec"))]
-// use concordium_contracts_common::*;
 #[cfg(not(feature = "hacspec"))]
-use concordium_contracts_common::*; // init, 
-
-#[cfg(not(feature = "hacspec"))]
-use hacspec_concordium::{collections::BTreeMap, init, num::NonZeroI32, *};
-
-// #[cfg(not(feature = "hacspec"))]
-// use hacspec_concordium_types::*;
-// #[cfg(not(feature = "hacspec"))]
-// use hacspec_concordium_impls::*;
-// #[cfg(not(feature = "hacspec"))]
-// use hacspec_concordium_traits::*;
+use hacspec_concordium::{collections::BTreeMap, *};
 
 array!(UserAddress, 32, u8); // U8
 
@@ -467,9 +453,6 @@ pub type FinalizeContext = (u64, UserAddress, u64);
 
 #[cfg(not(feature = "hacspec"))]
 pub fn coerce_rust_to_hacspec_finalize_context(ctx: &impl HasReceiveContext) -> FinalizeContext {
-    println!("OWNER");
-    let temp = ctx.owner();
-    println!("NOT OWNER");
   (
       ctx.metadata().slot_time().timestamp_millis(),
       coerce_rust_to_hacspec_account_address(&ctx.owner()),
@@ -601,14 +584,8 @@ fn auction_finalize<A: HasActions>(
 ) -> Result<A, FinalizeError> {
     let hacspec_state = coerce_rust_to_hacspec_state(state);
 
-    println!("Coerce");
-
-    let temp_coerce = coerce_rust_to_hacspec_finalize_context(ctx);
-
-    println!("AFTER");
-
     let (new_state, fa) =
-	match auction_finalize_hacspec(temp_coerce, hacspec_state)
+	match auction_finalize_hacspec(coerce_rust_to_hacspec_finalize_context(ctx), hacspec_state)
     {
 	Ok(a) => a,
 	Err(e) => return Err(coerce_hacspec_to_rust_finalize_error(e)),
@@ -994,8 +971,6 @@ mod tests {
 	    winning_amount,
 	);
 
-	println!("ctx4");
-
 	// trying to finalize auction that is still active
 	// (specifically, the bid is submitted at the last moment, at the AUCTION_END
 	// time)
@@ -1010,8 +985,6 @@ mod tests {
 	    "Finalizing auction should fail when it's before auction-end time",
 	);
 
-	println!("ctx5");
-
 	// finalizing auction
 	let carol = new_account();
 	let dave = new_account();
@@ -1024,7 +997,7 @@ mod tests {
 	    ActionsTree::simple_transfer(&carol, winning_amount)
 		.and_then(ActionsTree::simple_transfer(&alice, amount + amount))
 	);
-	println!("Sold?");
+
 	assert_eq!(
 	    state,
 	    State {
@@ -1036,7 +1009,6 @@ mod tests {
 	    }
 	);
 
-	println!("finres3");
 
 	// attempting to finalize auction again should fail
 	let finres3: Result<ActionsTree, _> = auction_finalize(&ctx5, &mut state);
@@ -1045,8 +1017,6 @@ mod tests {
 	    FinalizeError::AuctionFinalized,
 	    "Finalizing auction a second time should fail",
 	);
-
-	println!("res4");
 
 	// attempting to bid again should fail
 	let res4: Result<ActionsTree, _> = auction_bid(&bob_ctx, big_amount, &mut state);
