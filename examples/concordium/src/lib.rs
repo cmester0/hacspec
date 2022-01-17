@@ -91,9 +91,7 @@ extern crate wee_alloc;
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
-#[cfg(not(feature = "hacspec"))]
 pub mod test_infrastructure;
-
 mod hacspec_concordium_types;
 mod hacspec_concordium_traits;
 mod hacspec_concordium_prims;
