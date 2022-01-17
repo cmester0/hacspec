@@ -49,6 +49,7 @@ struct HacspecCallbacks {
     org_file: Option<String>,
     target_directory: String,
     crate_root_directory: String,
+    org_file: Option<String>,
 }
 
 const ERROR_OUTPUT_CONFIG: ErrorOutputType =
@@ -720,6 +721,7 @@ fn main() -> Result<(), usize> {
         target_directory: env::current_dir().unwrap().to_str().unwrap().to_owned()
             + "/../target/debug/deps",
         crate_root_directory: "".to_string(),
+        org_file,
     };
 
     match input_file {

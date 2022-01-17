@@ -1488,24 +1488,36 @@ fn translate_item<'a>(
                         .append(RcDoc::hardline())
                         .append(RcDoc::as_string("Theorem ensures_"))
                         .append(translate_ident(Ident::TopLevel(f.clone())))
-                        .append(RcDoc::as_string(" : forall"))
+                        .append(RcDoc::space())
+                        .append(RcDoc::intersperse(
+                            sig.args
+                                .iter()
+                                .map(|((x, _), _)| translate_ident(x.clone())),
+                            RcDoc::space(),
+                        ))
+                        .append(RcDoc::space())
+                        .append(RcDoc::intersperse(
+                            (0..requires.iter().len()).map(|i| {
+                                RcDoc::as_string("H_")
+                                    .append(RcDoc::as_string(i.to_string()))
+                                    .append(RcDoc::space())
+                            }),
+                            RcDoc::nil(),
+                        ))
+                        .append(RcDoc::as_string("="))
                         .append(RcDoc::space())
                         .append(translate_ident(Ident::Local(LocalIdent {
                             id: NodeId::MAX.as_usize(),
                             name: "result".to_string(),
                         })))
                         .append(RcDoc::space())
+                        .append(RcDoc::as_string("->"))
+                        .append(RcDoc::line())
                         .append(RcDoc::intersperse(
-                            sig.args.iter().map(|((x, _), (tau, _))| {
-                                make_paren(
-                                    translate_ident(x.clone())
-                                        .append(RcDoc::space())
-                                        .append(RcDoc::as_string(":"))
-                                        .append(RcDoc::space())
-                                        .append(translate_typ(tau.clone()))
-                                )
-                            }),
-                            RcDoc::space()
+                            ensures
+                                .iter()
+                                .map(|e| translate_quantified_expression(e.clone(), top_ctx)),
+                            RcDoc::as_string("/\\"),
                         ))
                         .append(RcDoc::as_string(","))
                         .append(

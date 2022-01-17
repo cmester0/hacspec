@@ -100,15 +100,11 @@ pub use std::process::abort as trap;
 #[cfg(not(feature = "hacspec"))]
 #[cfg(all(not(feature = "std"), target_arch = "wasm32"))]
 #[inline(always)]
-pub fn trap() -> ! {
-    unsafe { core::arch::wasm32::unreachable() }
-}
+pub fn trap() -> ! { unsafe { core::arch::wasm32::unreachable() } }
 #[cfg(not(feature = "hacspec"))]
 #[cfg(all(not(feature = "std"), not(target_arch = "wasm32")))]
 #[inline(always)]
-pub fn trap() -> ! {
-    core::intrinsics::abort()
-}
+pub fn trap() -> ! { core::intrinsics::abort() }
 
 // TODO:
 // #[cfg(not(feature = "hacspec"))]
