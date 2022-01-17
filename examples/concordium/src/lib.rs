@@ -11,7 +11,7 @@ pub extern crate alloc;
 // fn on_oom(_layout: alloc::alloc::Layout) -> ! {
 //     #[cfg(target_arch = "wasm32")]
 //     unsafe {
-// 	core::arch::wasm32::unreachable()
+//         core::arch::wasm32::unreachable()
 //     }
 //     #[cfg(not(target_arch = "wasm32"))]
 //     loop {}
@@ -40,7 +40,7 @@ pub fn trap() -> ! { core::intrinsics::abort() }
 // fn abort_panic(_info: &core::panic::PanicInfo) -> ! {
 //     #[cfg(target_arch = "wasm32")]
 //     unsafe {
-// 	core::arch::wasm32::unreachable()
+//         core::arch::wasm32::unreachable()
 //     }
 //     #[cfg(not(target_arch = "wasm32"))]
 //     loop {}

@@ -1,15 +1,20 @@
+(* [[file:auction.org::*The includes][The includes:1]] *)
 (** This file was automatically generated using Hacspec **)
-Require Import Lib MachineIntegers.
+Require Import Lib MachineIntegers   .
 From Coq Require Import ZArith.
 Import List.ListNotations.
 Open Scope Z_scope.
 Open Scope bool_scope.
 Open Scope hacspec_scope.
 From QuickChick Require Import QuickChick.
-Require Import QuickChickLib.
-Require Import Hacspec.Lib.
+(* The includes:1 ends here *)
 
-Require Import Hacspec.Concordium_Impls.
+(* [[file:auction.org::*Types][Types:1]] *)
+
+(* Types:1 ends here *)
+
+(* [[file:auction.org::*Types][Types:2]] *)
+Require Import Hacspec.Lib.
 
 Definition user_address_t := nseq (int8) (usize 32).
 
@@ -28,7 +33,9 @@ Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz
 
 Instance eq_dec_auction_state_hacspec_t : EqDec (auction_state_hacspec_t) :=
 Build_EqDec (auction_state_hacspec_t) (eqb_auction_state_hacspec_t) (eqb_leibniz_auction_state_hacspec_t).
+(* Types:2 ends here *)
 
+(* [[file:auction.org::*Types][Types:3]] *)
 Global Instance show_auction_state_hacspec_t : Show (auction_state_hacspec_t) :=
  @Build_Show (auction_state_hacspec_t) (fun x =>
  match x with
@@ -37,6 +44,7 @@ Global Instance show_auction_state_hacspec_t : Show (auction_state_hacspec_t) :=
  end).
 Definition g_auction_state_hacspec_t : G (auction_state_hacspec_t) := oneOf_ (returnGen NotSoldYet) [returnGen NotSoldYet;bindGen arbitrary (fun a => returnGen (Sold a))].
 Global Instance gen_auction_state_hacspec_t : Gen (auction_state_hacspec_t) := Build_Gen auction_state_hacspec_t g_auction_state_hacspec_t.
+
 
 Inductive seq_map_t :=
 | SeqMap : (public_byte_seq × public_byte_seq) -> seq_map_t.
@@ -51,7 +59,9 @@ Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz
 
 Instance eq_dec_seq_map_t : EqDec (seq_map_t) :=
 Build_EqDec (seq_map_t) (eqb_seq_map_t) (eqb_leibniz_seq_map_t).
+(* Types:3 ends here *)
 
+(* [[file:auction.org::*Types][Types:4]] *)
 Global Instance show_seq_map_t : Show (seq_map_t) :=
  @Build_Show (seq_map_t) (fun x =>
  match x with
@@ -59,9 +69,9 @@ Global Instance show_seq_map_t : Show (seq_map_t) :=
  end).
 Definition g_seq_map_t : G (seq_map_t) := oneOf_ (bindGen arbitrary (fun a => returnGen (SeqMap a))) [bindGen arbitrary (fun a => returnGen (SeqMap a))].
 Global Instance gen_seq_map_t : Gen (seq_map_t) := Build_Gen seq_map_t g_seq_map_t.
+(* Types:4 ends here *)
 
-
-
+(* [[file:auction.org::*Types][Types:5]] *)
 Inductive state_hacspec_t :=
 | StateHacspec : (
   auction_state_hacspec_t ×
@@ -89,7 +99,9 @@ Global Instance show_state_hacspec_t : Show (state_hacspec_t) :=
  end).
 Definition g_state_hacspec_t : G (state_hacspec_t) := oneOf_ (bindGen arbitrary (fun a => returnGen (StateHacspec a))) [bindGen arbitrary (fun a => returnGen (StateHacspec a))].
 Global Instance gen_state_hacspec_t : Gen (state_hacspec_t) := Build_Gen state_hacspec_t g_state_hacspec_t.
+(* Types:5 ends here *)
 
+(* [[file:auction.org::*Fresh state function][Fresh state function:1]] *)
 Definition fresh_state_hacspec
   (itm_0 : public_byte_seq)
   (exp_1 : int64)
@@ -101,7 +113,9 @@ Definition fresh_state_hacspec
       exp_1,
       SeqMap ((seq_new_ (default) (usize 0), seq_new_ (default) (usize 0)))
     )).
+(* Fresh state function:1 ends here *)
 
+(* [[file:auction.org::*Fresh map entry][Fresh map entry:1]] *)
 Definition seq_map_entry
   (m_2 : seq_map_t)
   (sender_address_3 : user_address_t)
@@ -130,7 +144,9 @@ Definition seq_map_entry
       (res_6))
     res_6 in 
   res_6.
+(* Fresh map entry:1 ends here *)
 
+(* [[file:auction.org::*Map update type][Map update type:1]] *)
 Inductive map_update_t :=
 | Update : (int64 × seq_map_t) -> map_update_t.
 
@@ -152,7 +168,9 @@ Global Instance show_map_update_t : Show (map_update_t) :=
  end).
 Definition g_map_update_t : G (map_update_t) := oneOf_ (bindGen arbitrary (fun a => returnGen (Update a))) [bindGen arbitrary (fun a => returnGen (Update a))].
 Global Instance gen_map_update_t : Gen (map_update_t) := Build_Gen map_update_t g_map_update_t.
+(* Map update type:1 ends here *)
 
+(* [[file:auction.org::*Seq map update entry][Seq map update entry:1]] *)
 Definition seq_map_update_entry
   (m_8 : seq_map_t)
   (sender_address_9 : user_address_t)
@@ -186,7 +204,9 @@ Definition seq_map_update_entry
       (res_13))
     res_13 in 
   res_13.
+(* Seq map update entry:1 ends here *)
 
+(* [[file:auction.org::*Bid errror][Bid errror:1]] *)
 Inductive bid_error_hacspec_t :=
 | ContractSender : bid_error_hacspec_t
 | BidTooLow : bid_error_hacspec_t
@@ -226,7 +246,9 @@ Global Instance show_bid_error_hacspec_t : Show (bid_error_hacspec_t) :=
  end).
 Definition g_bid_error_hacspec_t : G (bid_error_hacspec_t) := oneOf_ (returnGen ContractSender) [returnGen ContractSender;returnGen BidTooLow;returnGen BidsOverWaitingForAuctionFinalization;returnGen AuctionIsFinalized].
 Global Instance gen_bid_error_hacspec_t : Gen (bid_error_hacspec_t) := Build_Gen bid_error_hacspec_t g_bid_error_hacspec_t.
+(* Bid errror:1 ends here *)
 
+(* [[file:auction.org::*Auction bid types][Auction bid types:1]] *)
 Inductive user_address_set_t :=
 | UserAddressSome : user_address_t -> user_address_set_t
 | UserAddressNone : user_address_set_t.
@@ -255,7 +277,9 @@ Global Instance show_user_address_set_t : Show (user_address_set_t) :=
  end).
 Definition g_user_address_set_t : G (user_address_set_t) := oneOf_ (bindGen arbitrary (fun a => returnGen (UserAddressSome a))) [bindGen arbitrary (fun a => returnGen (UserAddressSome a));returnGen UserAddressNone].
 Global Instance gen_user_address_set_t : Gen (user_address_set_t) := Build_Gen user_address_set_t g_user_address_set_t.
+(* Auction bid types:1 ends here *)
 
+(* [[file:auction.org::*Auction bid types][Auction bid types:2]] *)
 Notation "'context_t'" := ((int64 × user_address_set_t)) : hacspec_scope.
 Instance show_context_t : Show (context_t) :=
 Build_Show context_t (fun x =>
@@ -266,10 +290,14 @@ bindGen arbitrary (fun x0 : int64 =>
   bindGen arbitrary (fun x1 : user_address_set_t =>
   returnGen (x0,x1))).
 Instance gen_context_t : Gen (context_t) := Build_Gen context_t g_context_t.
+(* Auction bid types:2 ends here *)
 
+(* [[file:auction.org::*Auction bid types][Auction bid types:3]] *)
 Notation "'auction_bid_result_t'" := ((
   result state_hacspec_t bid_error_hacspec_t)) : hacspec_scope.
+(* Auction bid types:3 ends here *)
 
+(* [[file:auction.org::*Auction bid][Auction bid:1]] *)
 Definition auction_bid_hacspec
   (ctx_15 : context_t)
   (amount_16 : int64)
@@ -355,7 +383,9 @@ Definition auction_bid_hacspec
         expiry_21,
         updated_map_30
       ))))))).
+(* Auction bid:1 ends here *)
 
+(* [[file:auction.org::*Auction finalize types][Auction finalize types:1]] *)
 Inductive finalize_error_hacspec_t :=
 | BidMapError : finalize_error_hacspec_t
 | AuctionStillActive : finalize_error_hacspec_t
@@ -387,7 +417,9 @@ Global Instance show_finalize_error_hacspec_t : Show (finalize_error_hacspec_t) 
  end).
 Definition g_finalize_error_hacspec_t : G (finalize_error_hacspec_t) := oneOf_ (returnGen BidMapError) [returnGen BidMapError;returnGen AuctionStillActive;returnGen AuctionFinalized].
 Global Instance gen_finalize_error_hacspec_t : Gen (finalize_error_hacspec_t) := Build_Gen finalize_error_hacspec_t g_finalize_error_hacspec_t.
+(* Auction finalize types:1 ends here *)
 
+(* [[file:auction.org::*Auction finalize types][Auction finalize types:2]] *)
 Notation "'finalize_context_t'" := ((int64 × user_address_t × int64
 )) : hacspec_scope.
 Instance show_finalize_context_t : Show (finalize_context_t) :=
@@ -432,9 +464,13 @@ Global Instance show_finalize_action_t : Show (finalize_action_t) :=
  end).
 Definition g_finalize_action_t : G (finalize_action_t) := oneOf_ (returnGen Accept) [returnGen Accept;bindGen arbitrary (fun a => returnGen (SimpleTransfer a))].
 Global Instance gen_finalize_action_t : Gen (finalize_action_t) := Build_Gen finalize_action_t g_finalize_action_t.
+(* Auction finalize types:2 ends here *)
 
+(* [[file:auction.org::*Auction finalize types][Auction finalize types:3]] *)
 
+(* Auction finalize types:3 ends here *)
 
+(* [[file:auction.org::*Auction finalize types][Auction finalize types:4]] *)
 Inductive bid_remain_t :=
 | BidNone : bid_remain_t
 | BidSome : int64 -> bid_remain_t.
@@ -459,12 +495,16 @@ Global Instance show_bid_remain_t : Show (bid_remain_t) :=
  end).
 Definition g_bid_remain_t : G (bid_remain_t) := oneOf_ (returnGen BidNone) [returnGen BidNone;bindGen arbitrary (fun a => returnGen (BidSome a))].
 Global Instance gen_bid_remain_t : Gen (bid_remain_t) := Build_Gen bid_remain_t g_bid_remain_t.
+(* Auction finalize types:4 ends here *)
 
+(* [[file:auction.org::*Auction finalize types][Auction finalize types:5]] *)
 Notation "'auction_finalize_result_t'" := ((result (
     state_hacspec_t ×
     finalize_action_t
   ) finalize_error_hacspec_t)) : hacspec_scope.
+(* Auction finalize types:5 ends here *)
 
+(* [[file:auction.org::*Auction finalize][Auction finalize:1]] *)
 Definition auction_finalize_hacspec
   (ctx_33 : finalize_context_t)
   (state_34 : state_hacspec_t)
@@ -560,7 +600,9 @@ Definition auction_finalize_hacspec
       bind ((result_41)) (fun _ => Ok ((auction_state_35, result_41)))))
   else ((auction_state_35, result_41)) >> (fun '(auction_state_35, result_41) =>
   result_41))).
+(* Auction finalize:1 ends here *)
 
+(* [[file:auction.org::*Tests][Tests:1]] *)
 Definition auction_test_init
   (item_52 : public_byte_seq)
   (time_53 : int64)
@@ -572,16 +614,22 @@ Definition auction_test_init
         time_53,
         SeqMap ((seq_new_ (default) (usize 0), seq_new_ (default) (usize 0)))
       ))).
+(* Tests:1 ends here *)
 
+(* [[file:auction.org::*Tests][Tests:2]] *)
 Theorem ensures_auction_test_init : forall result_54 (
   item_52 : public_byte_seq) (time_53 : int64),
 @auction_test_init item_52 time_53 = result_54 ->
 result_54 = true.
 Proof. Admitted.
+(* Tests:2 ends here *)
 
+(* [[file:auction.org::*Tests][Tests:3]] *)
 QuickChick (
   forAll g_public_byte_seq (fun item_52 : public_byte_seq =>forAll g_int64 (fun time_53 : int64 =>auction_test_init item_52 time_53))).
+(* Tests:3 ends here *)
 
+(* [[file:auction.org::*Verify bid][Verify bid:1]] *)
 Definition verify_bid
   (item_55 : public_byte_seq)
   (state_56 : state_hacspec_t)
@@ -615,7 +663,9 @@ Definition verify_bid
           (bid_map_68)
         )))
   ).
+(* Verify bid:1 ends here *)
 
+(* [[file:auction.org::*Verify bid][Verify bid:2]] *)
 Definition useraddress_from_u8 (i_70 : int8) : user_address_t :=
   array_from_list int8 (let l :=
       [
@@ -652,7 +702,9 @@ Definition useraddress_from_u8 (i_70 : int8) : user_address_t :=
         i_70;
         i_70
       ] in  l).
+(* Verify bid:2 ends here *)
 
+(* [[file:auction.org::*Verify bid][Verify bid:3]] *)
 Definition new_account
   (time_71 : int64)
   (i_72 : int8)
@@ -662,7 +714,9 @@ Definition new_account
   let ctx_74 : (int64 × user_address_set_t) :=
     (time_71, UserAddressSome (addr_73)) in 
   (addr_73, ctx_74).
+(* Verify bid:3 ends here *)
 
+(* [[file:auction.org::*Verify bid][Verify bid:4]] *)
 Definition test_auction_bid_and_finalize
   (item_75 : public_byte_seq)
   (time_76 : int64)
@@ -764,7 +818,9 @@ Definition test_auction_bid_and_finalize
   (((((((result_0_92) && (result_1_96)) && (result_2_104)) && (
             result_3_110)) && (result_4_118)) && (result_5_121)) && (
       result_6_124)) && (result_7_129).
+(* Verify bid:4 ends here *)
 
+(* [[file:auction.org::*Verify bid][Verify bid:5]] *)
 Theorem ensures_test_auction_bid_and_finalize : forall result_54 (
   item_75 : public_byte_seq) (time_76 : int64) (input_amount_77 : int64),
 forall {H_0 : (@repr WORDSIZE64 18446744073709551615) >.? (time_76)},
@@ -773,6 +829,9 @@ forall {H_1 : (((@repr WORDSIZE64 18446744073709551615) ./ (
 @test_auction_bid_and_finalize item_75 time_76 input_amount_77 H_0 H_1 = result_54 ->
 result_54 = true.
 Proof. Admitted.
+(* Verify bid:5 ends here *)
 
+(* [[file:auction.org::*Verify bid][Verify bid:6]] *)
 QuickChick (
   forAll g_public_byte_seq (fun item_75 : public_byte_seq =>forAll g_int64 (fun time_76 : int64 =>forAll g_int64 (fun input_amount_77 : int64 =>test_auction_bid_and_finalize item_75 time_76 input_amount_77)))).
+(* Verify bid:6 ends here *)

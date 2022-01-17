@@ -79,9 +79,9 @@ pub struct Reject {
 impl Default for Reject {
     #[inline(always)]
     fn default() -> Self {
-	Self {
-	    error_code: unsafe { NonZeroI32::new_unchecked(i32::MIN) },
-	}
+        Self {
+            error_code: unsafe { NonZeroI32::new_unchecked(i32::MIN) },
+        }
     }
 }
 
@@ -89,14 +89,14 @@ impl Default for Reject {
 impl Reject {
     /// This returns `None` for all values >= 0 and `Some` otherwise.
     pub fn new(x: i32) -> Option<Self> {
-	if x < 0 {
-	    let error_code = unsafe { NonZeroI32::new_unchecked(x) };
-	    Some(Reject {
-		error_code,
-	    })
-	} else {
-	    None
-	}
+        if x < 0 {
+            let error_code = unsafe { NonZeroI32::new_unchecked(x) };
+            Some(Reject {
+                error_code,
+            })
+        } else {
+            None
+        }
     }
 }
 
@@ -111,12 +111,12 @@ impl Reject {
 #[macro_export]
 macro_rules! bail {
     () => {{
-	return Err(Default::default());
+        return Err(Default::default());
     }};
     ($arg:expr) => {{
-	// format_err!-like formatting
-	// logs are only retained in case of rejection when testing.
-	return Err($arg);
+        // format_err!-like formatting
+        // logs are only retained in case of rejection when testing.
+        return Err($arg);
     }};
 }
 
@@ -127,14 +127,14 @@ macro_rules! bail {
 #[macro_export]
 macro_rules! ensure {
     ($p:expr) => {
-	if !$p {
-	    $crate::bail!();
-	}
+        if !$p {
+            $crate::bail!();
+        }
     };
     ($p:expr, $arg:expr) => {{
-	if !$p {
-	    $crate::bail!($arg);
-	}
+        if !$p {
+            $crate::bail!($arg);
+        }
     }};
 }
 
@@ -144,10 +144,10 @@ macro_rules! ensure {
 #[macro_export]
 macro_rules! ensure_eq {
     ($l:expr, $r:expr) => {
-	$crate::ensure!($l == $r)
+        $crate::ensure!($l == $r)
     };
     ($l:expr, $r:expr, $arg:expr) => {
-	$crate::ensure!($l == $r, $arg)
+        $crate::ensure!($l == $r, $arg)
     };
 }
 
@@ -156,10 +156,10 @@ macro_rules! ensure_eq {
 /// Ensure the first two arguments are __not__ equal, using `bail` otherwise.
 macro_rules! ensure_ne {
     ($l:expr, $r:expr) => {
-	$crate::ensure!($l != $r)
+        $crate::ensure!($l != $r)
     };
     ($l:expr, $r:expr, $arg:expr) => {
-	$crate::ensure!($l != $r, $arg)
+        $crate::ensure!($l != $r, $arg)
     };
 }
 
@@ -173,17 +173,17 @@ macro_rules! ensure_ne {
 #[macro_export]
 macro_rules! fail {
     () => {
-	{
-	    $crate::test_infrastructure::report_error("", file!(), line!(), column!());
-	    panic!()
-	}
+        {
+            $crate::test_infrastructure::report_error("", file!(), line!(), column!());
+            panic!()
+        }
     };
     ($($arg:tt),+) => {
-	{
-	    let msg = format!($($arg),+);
-	    $crate::test_infrastructure::report_error(&msg, file!(), line!(), column!());
-	    panic!("{}", msg)
-	}
+        {
+            let msg = format!($($arg),+);
+            $crate::test_infrastructure::report_error(&msg, file!(), line!(), column!());
+            panic!("{}", msg)
+        }
     };
 }
 
@@ -195,17 +195,17 @@ macro_rules! fail {
 #[macro_export]
 macro_rules! fail {
     () => {
-	{
-	    $crate::test_infrastructure::report_error("", file!(), line!(), column!());
-	    panic!()
-	}
+        {
+            $crate::test_infrastructure::report_error("", file!(), line!(), column!());
+            panic!()
+        }
     };
     ($($arg:tt),+) => {
-	{
-	    let msg = &$crate::alloc::format!($($arg),+);
-	    $crate::test_infrastructure::report_error(&msg, file!(), line!(), column!());
-	    panic!("{}", msg)
-	}
+        {
+            let msg = &$crate::alloc::format!($($arg),+);
+            $crate::test_infrastructure::report_error(&msg, file!(), line!(), column!());
+            panic!("{}", msg)
+        }
     };
 }
 
@@ -216,19 +216,19 @@ macro_rules! fail {
 #[macro_export]
 macro_rules! claim {
     ($cond:expr) => {
-	if !$cond {
-	    $crate::fail!()
-	}
+        if !$cond {
+            $crate::fail!()
+        }
     };
     ($cond:expr,) => {
-	if !$cond {
-	    $crate::fail!()
-	}
+        if !$cond {
+            $crate::fail!()
+        }
     };
     ($cond:expr, $($arg:tt),+) => {
-	if !$cond {
-	    $crate::fail!($($arg),+)
-	}
+        if !$cond {
+            $crate::fail!($($arg),+)
+        }
     };
 }
 
@@ -238,13 +238,13 @@ macro_rules! claim {
 #[macro_export]
 macro_rules! claim_eq {
     ($left:expr, $right:expr) => {
-	$crate::claim!($left == $right, "left and right are not equal\nleft: {:?}\nright: {:?}", $left, $right)
+        $crate::claim!($left == $right, "left and right are not equal\nleft: {:?}\nright: {:?}", $left, $right)
     };
     ($left:expr, $right:expr,) => {
-	$crate::claim_eq!($left, $right)
+        $crate::claim_eq!($left, $right)
     };
     ($left:expr, $right:expr, $($arg:tt),+) => {
-	$crate::claim!($left == $right, $($arg),+)
+        $crate::claim!($left == $right, $($arg),+)
     };
 }
 
@@ -255,13 +255,13 @@ macro_rules! claim_eq {
 #[macro_export]
 macro_rules! claim_ne {
     ($left:expr, $right:expr) => {
-	$crate::claim!($left != $right)
+        $crate::claim!($left != $right)
     };
     ($left:expr, $right:expr,) => {
-	$crate::claim!($left != $right)
+        $crate::claim!($left != $right)
     };
     ($left:expr, $right:expr, $($arg:tt),+) => {
-	$crate::claim!($left != $right, $($arg),+)
+        $crate::claim!($left != $right, $($arg),+)
     };
 }
 
