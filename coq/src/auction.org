@@ -24,6 +24,7 @@
   # hacspec = {optional = true}
   concordium-contracts-common = { path = "../../../../concordium-rust-smart-contracts/concordium-contracts-common" }
   hacspec-concordium = { path = "../concordium" }
+  hacspec-concordium-derive = { path = "../concordium-derive" }
 			   
   [features]
   hacspec = []
@@ -36,7 +37,6 @@
   quickcheck = "1"
   quickcheck_macros = "1"
 #+end_src
-
 
 ** Rust code
 :PROPERTIES:
@@ -70,17 +70,17 @@
   // #[cfg(not(feature = "hacspec"))]
   // use concordium_contracts_common::*;
   #[cfg(not(feature = "hacspec"))]
-  use concordium_contracts_common::*;
+  use concordium_contracts_common::*; // init, 
 
-  use hacspec_concordium::*;
   #[cfg(not(feature = "hacspec"))]
-  use hacspec_concordium_types::*;
-  #[cfg(not(feature = "hacspec"))]
-  use hacspec_concordium_impls::*;
-  #[cfg(not(feature = "hacspec"))]
-  use hacspec_concordium_traits::*;
-  #[cfg(not(feature = "hacspec"))]
-  use hacspec_concordium::{collections::BTreeMap, *};
+  use hacspec_concordium::{collections::BTreeMap, init, num::NonZeroI32, *};
+
+  // #[cfg(not(feature = "hacspec"))]
+  // use hacspec_concordium_types::*;
+  // #[cfg(not(feature = "hacspec"))]
+  // use hacspec_concordium_impls::*;
+  // #[cfg(not(feature = "hacspec"))]
+  // use hacspec_concordium_traits::*;
 #+end_src
 
 *** Types
@@ -105,7 +105,7 @@
 #+begin_src rust :eval never
   #[cfg(not(feature = "hacspec"))]
   /// The state in which an auction can be.
-  #[derive(Eq, PartialEq, PartialOrd)] // TODO: Debug, Serial, SchemaType, 
+  #[derive(Eq, PartialEq, PartialOrd, Serialize, SchemaType, Debug)] // TODO: Debug with creusot, Serialize, 
   pub enum AuctionState {
       /// The auction is either
       /// - still accepting bids or
@@ -187,8 +187,8 @@
   /// The state of the smart contract.
   /// This is the state that will be shown when the contract is queried using
   /// `concordium-client contract show`.
-  // #[contract_state(contract = "auction")] // TODO
-  #[derive(Eq, PartialEq)] // TODO: Debug, Serial, SchemaType, 
+  #[contract_state(contract = "auction")]
+  #[derive(Debug, Eq, PartialEq, Serialize, SchemaType)] // TODO: Debug, 
   pub struct State {
       /// Has the item been sold?
       auction_state: AuctionState,
@@ -277,8 +277,7 @@
 #+begin_src rust :eval never
   #[cfg(not(feature = "hacspec"))]
   /// Type of the parameter to the `init` function.
-  // TODO:
-  // #[derive(Serialize, SchemaType)]
+  #[derive(Serialize, SchemaType)]
   struct InitParameter {
       /// The item to be sold, as a sequence of ASCII codes.
       item: Vec<u8>,
@@ -289,15 +288,14 @@
 #+end_src
 
 #+begin_src rust :eval never
-  // TODO:
-  // #[cfg(not(feature = "hacspec"))]
-  // /// Init function that creates a new auction
-  // // TODO: uncoment init!
-  // // #[init(contract = "auction", parameter = "InitParameter")]
-  // fn auction_init(ctx: &impl HasInitContext) -> InitResult<State> {
-  //     let parameter: InitParameter = ctx.parameter_cursor().get()?;
-  //     Ok(fresh_state(parameter.item, parameter.expiry))
-  // }
+  #[cfg(not(feature = "hacspec"))]
+  /// Init function that creates a new auction
+  // TODO: uncoment init!
+  #[init(contract = "auction", parameter = "InitParameter")]
+  fn auction_init(ctx: &impl HasInitContext) -> InitResult<State> {
+      let parameter: InitParameter = ctx.parameter_cursor().get()?;
+      Ok(fresh_state(parameter.item, parameter.expiry))
+  }
 #+end_src
 
 *** Seq map entry
@@ -367,7 +365,7 @@
 #+begin_src rust :eval never
   #[cfg(not(feature = "hacspec"))]
   /// For errors in which the `bid` function can result
-  #[derive(Debug, PartialEq, Eq, Clone)] // TODO: Reject , located in concordium-std-derive
+  #[derive(Debug, PartialEq, Eq, Clone)] // TODO: Reject, located in concordium-std-derive
   enum BidError {
       ContractSender, // raised if a contract, as opposed to account, tries to bid
       BidTooLow,      /* { bid: Amount, highest_bid: Amount } */
@@ -554,12 +552,23 @@
 
   #[cfg(not(feature = "hacspec"))]
   pub fn coerce_rust_to_hacspec_finalize_context(ctx: &impl HasReceiveContext) -> FinalizeContext {
+      println!("OWNER");
+      let temp = ctx.owner();
+      println!("NOT OWNER");
     (
 	ctx.metadata().slot_time().timestamp_millis(),
 	coerce_rust_to_hacspec_account_address(&ctx.owner()),
 	ctx.self_balance().micro_gtu,
     )
   }
+
+    // let slot_time = ctx.metadata().slot_time();
+    // ensure!(slot_time > state.expiry, FinalizeError::AuctionStillActive);
+
+    // let owner = ctx.owner();
+
+    // let balance = ctx.self_balance();
+
 #+end_src
 
 #+begin_src rust :eval never
@@ -655,6 +664,22 @@
   }
 
   #[cfg(not(feature = "hacspec"))]
+  fn map_index_to_A<A: HasActions> (x : usize, s : PublicByteSeq) -> A {
+      A::simple_transfer(
+	  &coerce_hacspec_to_rust_account_address(UserAddress::from_seq(
+	      &s.slice(x * (32 + 8), 32), // TODO: use chunks instead of doing the math yourself
+	  )),
+	  Amount {
+	      micro_gtu: u64_from_be_bytes(u64Word::from_seq(
+		  &s.slice(x * (32 + 8) + 32, 8),
+	      )),
+	  },
+      )
+  }
+
+
+
+  #[cfg(not(feature = "hacspec"))]
   /// Receive function used to finalize the auction, returning all bids to their
   /// senders, except for the winning bid
   // #[receive(contract = "auction", name = "finalize")] // TODO: receive!
@@ -664,28 +689,25 @@
   ) -> Result<A, FinalizeError> {
       let hacspec_state = coerce_rust_to_hacspec_state(state);
 
+      println!("Coerce");
+
+      let temp_coerce = coerce_rust_to_hacspec_finalize_context(ctx);
+
+      println!("AFTER");
+
       let (new_state, fa) =
-	  match auction_finalize_hacspec(coerce_rust_to_hacspec_finalize_context(ctx), hacspec_state)
-	  {
-	      Ok(a) => a,
-	      Err(e) => return Err(coerce_hacspec_to_rust_finalize_error(e)),
-	  };
+	  match auction_finalize_hacspec(temp_coerce, hacspec_state)
+      {
+	  Ok(a) => a,
+	  Err(e) => return Err(coerce_hacspec_to_rust_finalize_error(e)),
+      };
+
+      *state = coerce_hacspec_to_rust_state(new_state);
 
       match fa {
 	  FinalizeAction::Accept => Ok(A::accept()),
 	  FinalizeAction::SimpleTransfer(s) => {
-	      Ok((0..s.len() / (32 + 8)).map(|x| {
-		  A::simple_transfer(
-		      &coerce_hacspec_to_rust_account_address(UserAddress::from_seq(
-			  &s.slice(x * (32 + 8), 32), // TODO: use chunks instead of doing the math yourself
-		      )),
-		      Amount {
-			  micro_gtu: u64_from_be_bytes(u64Word::from_seq(
-			      &s.slice(x * (32 + 8) + 32, 8),
-			  )),
-		      },
-		  )
-	      }).fold(A::accept(), |t,x| t.and_then(x))) // TODO: fix different behavior?
+	      Ok((1..s.len() / (32 + 8)).fold(map_index_to_A(0,s.clone()),|t,x| t.and_then(map_index_to_A(x,s.clone()))))
 	  }
       }
   }
@@ -916,6 +938,276 @@
       };
 
       result_0 && result_1 && result_2 && result_3 && result_4 && result_5 && result_6 && result_7
+  }
+#+end_src
+
+#+begin_src rust :eval never
+  #[cfg(not(feature = "hacspec"))]
+  #[cfg(test)]
+  mod tests {
+      use super::*;
+      use std::sync::atomic::{AtomicU8, Ordering};
+      use test_infrastructure::*;
+
+      // A counter for generating new account addresses
+      static ADDRESS_COUNTER: AtomicU8 = AtomicU8::new(0);
+      const AUCTION_END: u64 = 1;
+      const ITEM: &str = "Starry night by Van Gogh";
+
+      fn dummy_fresh_state() -> State {
+	  dummy_active_state(Amount::zero(), BTreeMap::new())
+      }
+
+      fn dummy_active_state(highest: Amount, bids: BTreeMap<AccountAddress, Amount>) -> State {
+	  State {
+	      auction_state: AuctionState::NotSoldYet,
+	      highest_bid: highest,
+	      item: ITEM.as_bytes().to_vec(),
+	      expiry: Timestamp::from_timestamp_millis(AUCTION_END),
+	      bids,
+	  }
+      }
+
+      fn expect_error<E, T>(expr: Result<T, E>, err: E, msg: &str)
+      where
+	  E: Eq + Debug,
+	  T: Debug,
+      {
+	  let actual = expr.expect_err(msg);
+	  assert_eq!(actual, err);
+      }
+
+      fn item_expiry_parameter() -> InitParameter {
+	  InitParameter {
+	      item: ITEM.as_bytes().to_vec(),
+	      expiry: Timestamp::from_timestamp_millis(AUCTION_END),
+	  }
+      }
+
+      fn create_parameter_bytes(parameter: &InitParameter) -> Vec<u8> {
+	  to_bytes(parameter)
+      }
+
+      fn parametrized_init_ctx<'a>(parameter_bytes: &'a Vec<u8>) -> InitContextTest<'a> {
+	  let mut ctx = InitContextTest::empty();
+	  ctx.set_parameter(parameter_bytes);
+	  ctx
+      }
+
+      fn new_account() -> AccountAddress {
+	  let account = AccountAddress([ADDRESS_COUNTER.load(Ordering::SeqCst); 32]);
+	  ADDRESS_COUNTER.fetch_add(1, Ordering::SeqCst);
+	  account
+      }
+
+      fn new_account_ctx<'a>() -> (AccountAddress, ReceiveContextTest<'a>) {
+	  let account = new_account();
+	  let ctx = new_ctx(account, account, AUCTION_END);
+	  (account, ctx)
+      }
+
+      fn new_ctx<'a>(
+	  owner: AccountAddress,
+	  sender: AccountAddress,
+	  slot_time: u64,
+      ) -> ReceiveContextTest<'a> {
+	  let mut ctx = ReceiveContextTest::empty();
+	  ctx.set_sender(Address::Account(sender));
+	  ctx.set_owner(owner);
+	  ctx.set_metadata_slot_time(Timestamp::from_timestamp_millis(slot_time));
+	  ctx
+      }
+
+      #[test]
+      /// Test that the smart-contract initialization sets the state correctly
+      /// (no bids, active state, indicated auction-end time and item name).
+      fn test_init() {
+	  let parameter_bytes = create_parameter_bytes(&item_expiry_parameter());
+	  let ctx = parametrized_init_ctx(&parameter_bytes);
+
+	  let state_result = auction_init(&ctx);
+	  let state = state_result.expect("Contract initialization results in error");
+	  assert_eq!(
+	      state,
+	      dummy_fresh_state(),
+	      "Auction state should be new after initialization"
+	  );
+      }
+
+      #[test]
+      /// Test a sequence of bids and finalizations:
+      /// 0. Auction is initialized.
+      /// 1. Alice successfully bids 0.1 GTU.
+      /// 2. Alice successfully bids another 0.1 GTU, highest bid becomes 0.2 GTU
+      /// (the sum of her two bids). 3. Bob successfully bids 0.3 GTU, highest
+      /// bid becomes 0.3 GTU. 4. Someone tries to finalize the auction before
+      /// its end time. Attempt fails. 5. Dave successfully finalizes the
+      /// auction after its end time.    Alice gets her money back, while
+      /// Carol (the owner of the contract) collects the highest bid amount.
+      /// 6. Attempts to subsequently bid or finalize fail.
+      fn test_auction_bid_and_finalize() {
+	  let parameter_bytes = create_parameter_bytes(&item_expiry_parameter());
+	  let ctx0 = parametrized_init_ctx(&parameter_bytes);
+
+	  let amount = Amount::from_micro_gtu(100);
+	  let winning_amount = Amount::from_micro_gtu(300);
+	  let big_amount = Amount::from_micro_gtu(500);
+
+	  let mut bid_map = BTreeMap::new();
+
+	  // initializing auction
+	  let mut state = auction_init(&ctx0).expect("Initialization should pass");
+
+	  // 1st bid: account1 bids amount1
+	  let (alice, alice_ctx) = new_account_ctx();
+	  verify_bid(&mut state, alice, &alice_ctx, amount, &mut bid_map, amount);
+
+	  // 2nd bid: account1 bids `amount` again
+	  // should work even though it's the same amount because account1 simply
+	  // increases their bid
+	  verify_bid(
+	      &mut state,
+	      alice,
+	      &alice_ctx,
+	      amount,
+	      &mut bid_map,
+	      amount + amount,
+	  );
+
+
+	  // 3rd bid: second account
+	  let (bob, bob_ctx) = new_account_ctx();
+	  verify_bid(
+	      &mut state,
+	      bob,
+	      &bob_ctx,
+	      winning_amount,
+	      &mut bid_map,
+	      winning_amount,
+	  );
+
+	  println!("ctx4");
+
+	  // trying to finalize auction that is still active
+	  // (specifically, the bid is submitted at the last moment, at the AUCTION_END
+	  // time)
+	  let mut ctx4 = ReceiveContextTest::empty();
+	  ctx4.set_metadata_slot_time(Timestamp::from_timestamp_millis(AUCTION_END));
+	  ctx4.set_owner(bob); // TODO: If not set fails in coercion value never used because it fails early. Is this a bug in the implementation or a feature that needs to be mimiced in hacspec.
+	  ctx4.set_self_balance(winning_amount); // TODO: If not set fails in coercion value never used because it fails early. Is this a bug in the implementation or a feature that needs to be mimiced in hacspec.
+	  let finres: Result<ActionsTree, _> = auction_finalize(&ctx4, &mut state);
+	  expect_error(
+	      finres,
+	      FinalizeError::AuctionStillActive,
+	      "Finalizing auction should fail when it's before auction-end time",
+	  );
+
+	  println!("ctx5");
+
+	  // finalizing auction
+	  let carol = new_account();
+	  let dave = new_account();
+	  let mut ctx5 = new_ctx(carol, dave, AUCTION_END + 1);
+	  ctx5.set_self_balance(winning_amount);
+	  let finres2: Result<ActionsTree, _> = auction_finalize(&ctx5, &mut state);
+	  let actions = finres2.expect("Finalizing auction should work");
+	  assert_eq!(
+	      actions,
+	      ActionsTree::simple_transfer(&carol, winning_amount)
+		  .and_then(ActionsTree::simple_transfer(&alice, amount + amount))
+	  );
+	  println!("Sold?");
+	  assert_eq!(
+	      state,
+	      State {
+		  auction_state: AuctionState::Sold(bob),
+		  highest_bid: winning_amount,
+		  item: ITEM.as_bytes().to_vec(),
+		  expiry: Timestamp::from_timestamp_millis(AUCTION_END),
+		  bids: bid_map,
+	      }
+	  );
+
+	  println!("finres3");
+
+	  // attempting to finalize auction again should fail
+	  let finres3: Result<ActionsTree, _> = auction_finalize(&ctx5, &mut state);
+	  expect_error(
+	      finres3,
+	      FinalizeError::AuctionFinalized,
+	      "Finalizing auction a second time should fail",
+	  );
+
+	  println!("res4");
+
+	  // attempting to bid again should fail
+	  let res4: Result<ActionsTree, _> = auction_bid(&bob_ctx, big_amount, &mut state);
+	  expect_error(
+	      res4,
+	      BidError::AuctionFinalized,
+	      "Bidding should fail because the auction is finalized",
+	  );
+      }
+
+      fn verify_bid(
+	  mut state: &mut State,
+	  account: AccountAddress,
+	  ctx: &ContextTest<ReceiveOnlyDataTest>,
+	  amount: Amount,
+	  bid_map: &mut BTreeMap<AccountAddress, Amount>,
+	  highest_bid: Amount,
+      ) {
+	  let res: Result<ActionsTree, _> = auction_bid(ctx, amount, &mut state);
+	  res.expect("Bidding should pass");
+	  bid_map.insert(account, highest_bid);
+	  assert_eq!(*state, dummy_active_state(highest_bid, bid_map.clone()));
+      }
+
+      #[test]
+      /// Bids for amounts lower or equal to the highest bid should be rejected.
+      fn test_auction_bid_repeated_bid() {
+	  let (account1, ctx1) = new_account_ctx();
+	  let ctx2 = new_account_ctx().1;
+
+	  let parameter_bytes = create_parameter_bytes(&item_expiry_parameter());
+	  let ctx0 = parametrized_init_ctx(&parameter_bytes);
+
+	  let amount = Amount::from_micro_gtu(100);
+
+	  let mut bid_map = BTreeMap::new();
+
+	  // initializing auction
+	  let mut state = auction_init(&ctx0).expect("Init results in error");
+
+	  // 1st bid: account1 bids amount1
+	  verify_bid(&mut state, account1, &ctx1, amount, &mut bid_map, amount);
+
+	  // 2nd bid: account2 bids amount1
+	  // should fail because amount is equal to highest bid
+	  let res2: Result<ActionsTree, _> = auction_bid(&ctx2, amount, &mut state);
+	  expect_error(
+	      res2,
+	      BidError::BidTooLow, /* { bid: amount, highest_bid: amount } */
+	      "Bidding 2 should fail because bid amount must be higher than highest bid",
+	  );
+      }
+
+      #[test]
+      /// Bids for 0 GTU should be rejected.
+      fn test_auction_bid_zero() {
+	  let ctx1 = new_account_ctx().1;
+	  let parameter_bytes = create_parameter_bytes(&item_expiry_parameter());
+	  let ctx = parametrized_init_ctx(&parameter_bytes);
+
+	  let mut state = auction_init(&ctx).expect("Init results in error");
+
+	  let res: Result<ActionsTree, _> = auction_bid(&ctx1, Amount::zero(), &mut state);
+	  expect_error(
+	      res,
+	      BidError::BidTooLow, /* { bid: Amount::zero(), highest_bid: Amount::zero()} */
+	      "Bidding zero should fail",
+	  );
+      }
   }
 #+end_src
 
