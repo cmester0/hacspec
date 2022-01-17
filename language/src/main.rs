@@ -48,6 +48,7 @@ struct HacspecCallbacks {
     output_type: String,
     target_directory: String,
     crate_root_directory: String,
+    org_file: Option<String>,
 }
 
 const ERROR_OUTPUT_CONFIG: ErrorOutputType =
@@ -288,6 +289,7 @@ fn handle_crate<'tcx>(
                     &compiler.session(),
                     &krate,
                     &file,
+                    &self.org_file,
                     &new_top_ctx,
                 ),
                 _ => {
@@ -651,6 +653,11 @@ fn main() -> Result<(), usize> {
             args.remove(i)
         }
         None => "".to_string(),
+
+    let org_file_index = args.iter().position(|a| a == "--org-file");
+    let org_file = match org_file_index {
+        Some(i) => {let temp = args.get(i + 1).cloned(); args.remove(i); args.remove(i); temp},
+        None => None,
     };
 
     // Optionally an input file can be passed in. This should be mostly used for
@@ -688,6 +695,7 @@ fn main() -> Result<(), usize> {
         target_directory: env::current_dir().unwrap().to_str().unwrap().to_owned()
             + "/../target/debug/deps",
         crate_root_directory: "".to_string(),
+        org_file,
     };
 
     match input_file {
