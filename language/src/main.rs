@@ -58,6 +58,7 @@ struct HacspecCallbacks {
     target_directory: String,
     version_control: VersionControlArg,
     crate_root_directory: String,
+    org_file: Option<String>,
 }
 
 const ERROR_OUTPUT_CONFIG: ErrorOutputType =
@@ -509,6 +510,7 @@ fn handle_crate<'tcx>(
                     &compiler.session(),
                     &krate,
                     &file,
+                    &callback.org_file,
                     &top_ctx_map[&krate_path],
                 ),
                 _ => {
@@ -1007,6 +1009,12 @@ fn main() -> Result<(), usize> {
         None => None,
     };
 
+    let org_file_index = args.iter().position(|a| a == "--org-file");
+    let org_file = match org_file_index {
+        Some(i) => {let temp = args.get(i + 1).cloned(); args.remove(i); args.remove(i); temp},
+        None => None,
+    };
+
     // Optionally an input file can be passed in. This should be mostly used for
     // testing.
     let input_file = match args.iter().position(|a| a == "-f") {
@@ -1061,6 +1069,7 @@ fn main() -> Result<(), usize> {
             output_directory
         },
         output_type,
+        org_file,
         // This defaults to the default target directory.
         target_directory: env::current_dir().unwrap().to_str().unwrap().to_owned()
             + "/../target/debug/deps",

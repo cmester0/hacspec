@@ -80,6 +80,8 @@ pub mod collections {
 /// Chain constants that impose limits on various aspects of smart contract
 /// execution.
 pub use concordium_contracts_common::*;
+
+#[cfg(not(feature = "hacspec"))]
 pub use hacspec_concordium_derive::*;
 
 #[cfg(not(feature = "hacspec"))]
