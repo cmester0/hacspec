@@ -24,7 +24,7 @@ pub struct AttributesCursor {
     /// `created_at` and `valid_to` will require.
     pub(crate) current_position: u32,
     /// The number of remaining items in the policy.
-    pub(crate) remaining_items:  u16,
+    pub(crate) remaining_items: u16,
 }
 
 #[cfg(not(feature = "hacspec"))]
@@ -60,7 +60,9 @@ pub struct Action {
 
 #[cfg(not(feature = "hacspec"))]
 impl Action {
-    pub fn tag(&self) -> u32 { self._private }
+    pub fn tag(&self) -> u32 {
+        self._private
+    }
 }
 
 #[cfg(not(feature = "hacspec"))]
@@ -68,7 +70,7 @@ impl Action {
 /// The client will see the error code as a reject reason; if a schema is
 /// provided, the error message corresponding to the error code will be
 /// displayed. The valid range for an error code is from i32::MIN to  -1.
-#[derive(Debug, Eq, PartialEq)] // TODO: Creusot issue re-add "Debug" attribute 
+#[derive(Debug, Eq, PartialEq)] // TODO: Creusot issue re-add "Debug" attribute
 #[repr(transparent)]
 pub struct Reject {
     pub error_code: NonZeroI32,
@@ -91,9 +93,7 @@ impl Reject {
     pub fn new(x: i32) -> Option<Self> {
         if x < 0 {
             let error_code = unsafe { NonZeroI32::new_unchecked(x) };
-            Some(Reject {
-                error_code,
-            })
+            Some(Reject { error_code })
         } else {
             None
         }
@@ -317,7 +317,6 @@ pub type ReceiveResult<A> = Result<A, Reject>;
 /// ) -> Result<State, MyCustomError> { ... }
 /// ```
 pub type InitResult<S> = Result<S, Reject>;
-
 
 #[cfg(not(feature = "hacspec"))]
 /// Context backed by host functions.
