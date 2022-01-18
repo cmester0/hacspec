@@ -122,6 +122,7 @@ extern crate creusot_contracts;
 #[cfg(not(feature = "hacspec"))]
 use creusot_contracts::{ensures, trusted}; // requires, 
 
+pub mod constants;
 mod hacspec_concordium_impls;
 mod hacspec_concordium_prims;
 mod hacspec_concordium_traits;

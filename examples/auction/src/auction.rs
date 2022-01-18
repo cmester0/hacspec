@@ -6,13 +6,15 @@ use hacspec_lib::*;
 // #[cfg(feature = "hacspec_attributes")]
 #[cfg(feature = "hacspec")]
 use hacspec_attributes::*;
-// #[cfg(not(feature = "hacspec"))]  
-// use hacspec_attributes::proof;
+// #[cfg(not(feature = "hacspec"))]
+#[cfg(test)]
+use hacspec_attributes::proof;
 
 // #[cfg(not(feature = "hacspec"))]
 // extern crate creusot_contracts;
-// #[cfg(not(feature = "hacspec"))]
-// use creusot_contracts::{ensures, requires};
+#[cfg(test)]
+#[cfg(not(feature = "hacspec"))]
+use creusot_contracts::{ensures, requires};
 
 // // Rust-hacspec Interface
 #[cfg(not(feature = "hacspec"))]
@@ -641,7 +643,7 @@ fn verify_bid(
     let t = auction_bid_hacspec(ctx, amount, state.clone());
 
     let (state, res) = match t {
-	AuctionBidResult::Err(e) => (state, false),
+	AuctionBidResult::Err(_e) => (state, false),
 	AuctionBidResult::Ok(s) => (s, true),
     };
 
@@ -720,7 +722,7 @@ fn test_auction_bid_and_finalize(item: PublicByteSeq, time : u64, input_amount :
 
     let (ac0, ac1) = alice_ctx;
 
-    let (state, bid_map, res_0, result_0) = verify_bid(
+    let (state, bid_map, _res_0, result_0) = verify_bid(
 	item.clone(),
 	state,
 	alice,
@@ -734,7 +736,7 @@ fn test_auction_bid_and_finalize(item: PublicByteSeq, time : u64, input_amount :
     // // 2nd bid: account1 bids `amount` again
     // // should work even though it's the same amount because account1 simply
     // // increases their bid
-    let (state, bid_map, res_1, result_1) = verify_bid(
+    let (state, bid_map, _res_1, result_1) = verify_bid(
 	item.clone(),
 	state,
 	alice,
@@ -749,7 +751,7 @@ fn test_auction_bid_and_finalize(item: PublicByteSeq, time : u64, input_amount :
     let (bob, bob_ctx) = new_account(time, 1_u8); // first argument is slot time
     let (bc1, bc2) = bob_ctx;
 
-    let (state, bid_map, res_2, result_2) = verify_bid(
+    let (state, bid_map, _res_2, result_2) = verify_bid(
 	item.clone(),
 	state,
 	bob,
@@ -777,7 +779,7 @@ fn test_auction_bid_and_finalize(item: PublicByteSeq, time : u64, input_amount :
 
     // // finalizing auction
     // let carol = new_account();
-    let (carol, carol_ctx) = new_account(time, 2_u8);
+    let (carol, _carol_ctx) = new_account(time, 2_u8);
 
     let ctx5 = (time + 1_u64, carol, winning_amount);
     let finres2 = auction_finalize_hacspec(ctx5, state.clone());
@@ -811,7 +813,7 @@ fn test_auction_bid_and_finalize(item: PublicByteSeq, time : u64, input_amount :
 
     let (state, result_6) = match finres3 {
 	AuctionFinalizeResult::Err(err) => (state, err == FinalizeErrorHacspec::AuctionFinalized),
-	AuctionFinalizeResult::Ok((state, action)) => (state, false),
+	AuctionFinalizeResult::Ok((state, _action)) => (state, false),
     };
 
     let t = auction_bid_hacspec((bc1.clone(), bc2.clone()), big_amount, state.clone());
