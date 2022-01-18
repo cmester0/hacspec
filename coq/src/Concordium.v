@@ -169,7 +169,6 @@ Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz
 
 Instance eq_dec_log_error_t : EqDec (log_error_t) :=
 Build_EqDec (log_error_t) (eqb_log_error_t) (eqb_leibniz_log_error_t).
-
 (* Coq code:25 ends here *)
 
 (* [[file:concordium.org::*Coq code][Coq code:26]] *)
@@ -304,34 +303,34 @@ Definition contract_state_impl_seek
     ))
   | End delta_33 => (if ((delta_33) >=.? (@repr WORDSIZE64 0)):bool then (
       match pub_uint32_checked_add (current_position_30) (@cast _ uint32 _ (
-          delta_33)) with
+	  delta_33)) with
       | Some b_34 => @Ok (contract_state_hacspec_t × int64) unit ((
-          b_34,
-          @cast _ uint64 _ (delta_33)
-        ))
+	  b_34,
+	  @cast _ uint64 _ (delta_33)
+	))
       | None => @Err (contract_state_hacspec_t × int64) unit (tt)
       end) else (match pub_int64_checked_abs (delta_33) with
       | Some b_35 => @Ok (contract_state_hacspec_t × int64) unit ((
-          (@repr WORDSIZE32 4) .- (@cast _ uint32 _ (b_35)),
-          @cast _ uint64 _ ((@repr WORDSIZE32 4) .- (@cast _ uint32 _ (b_35)))
-        ))
+	  (@repr WORDSIZE32 4) .- (@cast _ uint32 _ (b_35)),
+	  @cast _ uint64 _ ((@repr WORDSIZE32 4) .- (@cast _ uint32 _ (b_35)))
+	))
       | None => @Err (contract_state_hacspec_t × int64) unit (tt)
       end))
   | Current delta_36 => (if ((delta_36) >=.? (@repr WORDSIZE64 0)):bool then (
       match pub_uint32_checked_add (current_position_30) (@cast _ uint32 _ (
-          delta_36)) with
+	  delta_36)) with
       | Some offset_37 => @Ok (contract_state_hacspec_t × int64) unit ((
-          offset_37,
-          @cast _ uint64 _ (offset_37)
-        ))
+	  offset_37,
+	  @cast _ uint64 _ (offset_37)
+	))
       | None => @Err (contract_state_hacspec_t × int64) unit (tt)
       end) else (match pub_int64_checked_abs (delta_36) with
       | Some b_38 => match pub_uint32_checked_sub (current_position_30) (
-        @cast _ uint32 _ (b_38)) with
+	@cast _ uint32 _ (b_38)) with
       | Some offset_39 => @Ok (contract_state_hacspec_t × int64) unit ((
-          offset_39,
-          @cast _ uint64 _ (offset_39)
-        ))
+	  offset_39,
+	  @cast _ uint64 _ (offset_39)
+	))
       | None => @Err (contract_state_hacspec_t × int64) unit (tt)
       end
       | None => @Err (contract_state_hacspec_t × int64) unit (tt)
@@ -394,7 +393,7 @@ Definition contract_state_impl_write
   (buf_57 : public_byte_seq)
   : (result (contract_state_hacspec_t × uint_size) unit) :=
   ifbnd option_is_none (pub_uint32_checked_add (current_position_56) (pub_u32 (
-        seq_len (buf_57)))) : bool
+	seq_len (buf_57)))) : bool
   thenbnd (bind (@Err (contract_state_hacspec_t × uint_size) unit (tt)) (
       fun _ =>  Ok (tt)))
   else (tt) >> (fun 'tt =>
@@ -408,7 +407,7 @@ Definition contract_state_impl_write
 
 (* [[file:concordium.org::*Coq code][Coq code:46]] *)
 Definition has_contract_state_impl_for_contract_state_open
-  
+
   : contract_state_hacspec_t :=
   @repr WORDSIZE32 0.
 (* Coq code:46 ends here *)
@@ -420,7 +419,7 @@ Definition has_contract_state_impl_for_contract_state_reserve
   let cur_size_61 : int32 :=
     state_size_hacspec  in 
   (if ((cur_size_61) <.? (len_60)):bool then ((resize_state_hacspec (
-          len_60)) =.? (@repr WORDSIZE32 1)) else (true)).
+	  len_60)) =.? (@repr WORDSIZE32 1)) else (true)).
 (* Coq code:47 ends here *)
 
 (* [[file:concordium.org::*Coq code][Coq code:48]] *)
@@ -431,7 +430,7 @@ Definition has_contract_state_impl_for_contract_state_truncate
   : contract_state_hacspec_t :=
   let 'tt :=
     if (cur_size_63) >.? (new_size_64):bool then (let _ : int32 :=
-        resize_state_hacspec (new_size_64) in 
+	resize_state_hacspec (new_size_64) in 
       tt) else (tt) in 
   (if ((new_size_64) <.? (current_position_62)):bool then (new_size_64) else (
       current_position_62)).
@@ -484,8 +483,8 @@ Definition has_policy_impl_for_policy_attributes_cursor_next_item
   @Some (attributes_cursor_hacspec_t × (int8 × int8)) ((
       (current_position_71, remaining_items_72),
       (
-        seq_index (tag_value_len_73) (usize 0),
-        seq_index (tag_value_len_73) (usize 1)
+	seq_index (tag_value_len_73) (usize 0),
+	seq_index (tag_value_len_73) (usize 1)
       )
     )))).
 (* Coq code:52 ends here *)
@@ -512,31 +511,31 @@ Definition iterator_impl_for_policies_iterator_next
     policies_iterator_77 in 
   ifbnd (remaining_items_79) =.? (@repr WORDSIZE16 0) : bool
   thenbnd (bind (@None (
-        policies_iterator_hacspec_t ×
-        policy_attributes_cursor_hacspec_t
+	policies_iterator_hacspec_t ×
+	policy_attributes_cursor_hacspec_t
       )) (fun _ =>  Some (tt)))
   else (tt) >> (fun 'tt =>
   let '(buf_80, _) :=
     get_policy_section_hacspec (seq_new_ (default) (((((usize 2) + (
-                usize 4)) + (usize 8)) + (usize 8)) + (usize 2))) (pos_78) in 
+		usize 4)) + (usize 8)) + (usize 8)) + (usize 2))) (pos_78) in 
   let skip_part_81 : public_byte_seq :=
     seq_slice_range (buf_80) ((usize 0, usize 2)) in 
   let ip_part_82 : public_byte_seq :=
     seq_slice_range (buf_80) ((usize 2, (usize 2) + (usize 4))) in 
   let created_at_part_83 : public_byte_seq :=
     seq_slice_range (buf_80) ((
-        (usize 2) + (usize 4),
-        ((usize 2) + (usize 4)) + (usize 8)
+	(usize 2) + (usize 4),
+	((usize 2) + (usize 4)) + (usize 8)
       )) in 
   let valid_to_part_84 : public_byte_seq :=
     seq_slice_range (buf_80) ((
-        ((usize 2) + (usize 4)) + (usize 8),
-        (((usize 2) + (usize 4)) + (usize 8)) + (usize 8)
+	((usize 2) + (usize 4)) + (usize 8),
+	(((usize 2) + (usize 4)) + (usize 8)) + (usize 8)
       )) in 
   let len_part_85 : public_byte_seq :=
     seq_slice_range (buf_80) ((
-        (((usize 2) + (usize 4)) + (usize 8)) + (usize 8),
-        ((((usize 2) + (usize 4)) + (usize 8)) + (usize 8)) + (usize 2)
+	(((usize 2) + (usize 4)) + (usize 8)) + (usize 8),
+	((((usize 2) + (usize 4)) + (usize 8)) + (usize 8)) + (usize 2)
       )) in 
   let identity_provider_86 : int32 :=
     u32_from_le_bytes (array_from_seq (4) (ip_part_82)) in 
@@ -548,21 +547,92 @@ Definition iterator_impl_for_policies_iterator_next
     u16_from_le_bytes (array_from_seq (2) (len_part_85)) in 
   let attributes_start_90 : int32 :=
     (((((pos_78) .+ (@repr WORDSIZE32 2)) .+ (@repr WORDSIZE32 4)) .+ (
-          @repr WORDSIZE32 8)) .+ (@repr WORDSIZE32 8)) .+ (
+	  @repr WORDSIZE32 8)) .+ (@repr WORDSIZE32 8)) .+ (
       @repr WORDSIZE32 2) in 
   let pos_78 :=
     ((pos_78) .+ (@cast _ uint32 _ (u16_from_le_bytes (array_from_seq (2) (
-              skip_part_81))))) .+ (@repr WORDSIZE32 2) in 
+	      skip_part_81))))) .+ (@repr WORDSIZE32 2) in 
   let remaining_items_89 :=
     (remaining_items_89) .- (@repr WORDSIZE16 1) in 
   @Some (policies_iterator_hacspec_t × policy_attributes_cursor_hacspec_t) ((
       (pos_78, remaining_items_89),
       (
-        identity_provider_86,
-        created_at_87,
-        valid_to_88,
-        (attributes_start_90, remaining_items_89)
+	identity_provider_86,
+	created_at_87,
+	valid_to_88,
+	(attributes_start_90, remaining_items_89)
       )
     ))).
 (* Coq code:55 ends here *)
 
+(* [[file:concordium.org::*Coq code][Coq code:56]] *)
+Notation "'policy_attributes_cursor_hacspec_t'" := ((
+  int32 ×
+  int64 ×
+  int64 ×
+  attributes_cursor_hacspec_t
+)) : hacspec_scope.
+(* Coq code:56 ends here *)
+
+(* [[file:concordium.org::*Coq code][Coq code:57]] *)
+Definition iterator_impl_for_policies_iterator_next
+  (policies_iterator_79 : policies_iterator_hacspec_t)
+  : (option (policies_iterator_hacspec_t × policy_attributes_cursor_hacspec_t
+    )) :=
+  let '(pos_80, remaining_items_81) :=
+    policies_iterator_79 in 
+  ifbnd (remaining_items_81) =.? (@repr WORDSIZE16 0) : bool
+  thenbnd (bind (@None (
+	policies_iterator_hacspec_t ×
+	policy_attributes_cursor_hacspec_t
+      )) (fun _ =>  Some (tt)))
+  else (tt) >> (fun 'tt =>
+  let '(buf_82, _) :=
+    get_policy_section_hacspec (seq_new_ (default) (((((usize 2) + (
+		usize 4)) + (usize 8)) + (usize 8)) + (usize 2))) (pos_80) in 
+  let skip_part_83 : public_byte_seq :=
+    seq_slice_range (buf_82) ((usize 0, usize 2)) in 
+  let ip_part_84 : public_byte_seq :=
+    seq_slice_range (buf_82) ((usize 2, (usize 2) + (usize 4))) in 
+  let created_at_part_85 : public_byte_seq :=
+    seq_slice_range (buf_82) ((
+	(usize 2) + (usize 4),
+	((usize 2) + (usize 4)) + (usize 8)
+      )) in 
+  let valid_to_part_86 : public_byte_seq :=
+    seq_slice_range (buf_82) ((
+	((usize 2) + (usize 4)) + (usize 8),
+	(((usize 2) + (usize 4)) + (usize 8)) + (usize 8)
+      )) in 
+  let len_part_87 : public_byte_seq :=
+    seq_slice_range (buf_82) ((
+	(((usize 2) + (usize 4)) + (usize 8)) + (usize 8),
+	((((usize 2) + (usize 4)) + (usize 8)) + (usize 8)) + (usize 2)
+      )) in 
+  let identity_provider_88 : int32 :=
+    u32_from_le_bytes (array_from_seq (4) (ip_part_84)) in 
+  let created_at_89 : int64 :=
+    u64_from_le_bytes (array_from_seq (8) (created_at_part_85)) in 
+  let valid_to_90 : int64 :=
+    u64_from_le_bytes (array_from_seq (8) (valid_to_part_86)) in 
+  let remaining_items_91 : int16 :=
+    u16_from_le_bytes (array_from_seq (2) (len_part_87)) in 
+  let attributes_start_92 : int32 :=
+    (((((pos_80) .+ (@repr WORDSIZE32 2)) .+ (@repr WORDSIZE32 4)) .+ (
+	  @repr WORDSIZE32 8)) .+ (@repr WORDSIZE32 8)) .+ (
+      @repr WORDSIZE32 2) in 
+  let pos_80 :=
+    ((pos_80) .+ (@cast _ uint32 _ (u16_from_le_bytes (array_from_seq (2) (
+	      skip_part_83))))) .+ (@repr WORDSIZE32 2) in 
+  let remaining_items_91 :=
+    (remaining_items_91) .- (@repr WORDSIZE16 1) in 
+  @Some (policies_iterator_hacspec_t × policy_attributes_cursor_hacspec_t) ((
+      (pos_80, remaining_items_91),
+      (
+	identity_provider_88,
+	created_at_89,
+	valid_to_90,
+	(attributes_start_92, remaining_items_91)
+      )
+    ))).
+(* Coq code:57 ends here *)
