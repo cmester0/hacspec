@@ -865,14 +865,6 @@ use crate::*;
 *** Imports
 #+BEGIN_SRC rust
 #[cfg(not(feature = "hacspec"))]
-extern crate hacspec_lib;
-
-use self::hacspec_lib::*;
-
-#+END_SRC
-
-#+BEGIN_SRC rust
-#[cfg(not(feature = "hacspec"))]
 use crate::*;
 #+END_SRC
 
