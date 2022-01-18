@@ -123,17 +123,17 @@ extern crate creusot_contracts;
 use creusot_contracts::{ensures, trusted}; // requires, 
 
 pub mod constants;
-mod hacspec_concordium_impls;
 mod hacspec_concordium_prims;
-mod hacspec_concordium_traits;
 mod hacspec_concordium_types;
+mod hacspec_concordium_traits;
+mod hacspec_concordium_impls;
 pub mod test_infrastructure;
 
 #[cfg(not(feature = "hacspec"))]
-pub use hacspec_concordium_impls::*;
-#[cfg(not(feature = "hacspec"))]
 use hacspec_concordium_prims::*; // TODO: Does not re-export anything, nothing is public enough (removed pub)
+#[cfg(not(feature = "hacspec"))]
+pub use hacspec_concordium_types::*;
 #[cfg(not(feature = "hacspec"))]
 pub use hacspec_concordium_traits::*;
 #[cfg(not(feature = "hacspec"))]
-pub use hacspec_concordium_types::*;
+pub use hacspec_concordium_impls::*;
