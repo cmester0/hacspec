@@ -277,19 +277,19 @@ macro_rules! claim_ne {
 ///
 /// # Example
 /// Defining a custom error type
-/// ```rust
-/// enum MyCustomError {
-///     SomeError
-/// }
-///
-/// #[receive(contract = "mycontract", name = "receive")]
-/// fn contract_receive<R: HasReceiveContext, L: HasLogger, A: HasActions>(
-///     ctx: &R,
-///     receive_amount: Amount,
-///     logger: &mut L,
-///     state: &mut State,
-/// ) -> Result<A, MyCustomError> { ... }
-/// ```
+/// // ```rust
+/// // enum MyCustomError {
+/// //     SomeError
+/// // }
+/// // 
+/// // #[receive(contract = "mycontract", name = "receive")]
+/// // fn contract_receive<R: HasReceiveContext, L: HasLogger, A: HasActions>(
+/// //     ctx: &R,
+/// //     receive_amount: Amount,
+/// //     logger: &mut L,
+/// //     state: &mut State,
+/// // ) -> Result<A, MyCustomError> { ... }
+/// // ```
 pub type ReceiveResult<A> = Result<A, Reject>;
 
 #[cfg(not(feature = "hacspec"))]
@@ -304,18 +304,18 @@ pub type ReceiveResult<A> = Result<A, Reject>;
 ///
 /// # Example
 /// Defining a custom error type
-/// ```rust
-/// enum MyCustomError {
-///     SomeError
-/// }
-///
-/// #[init(contract = "mycontract")]
-/// fn contract_init<R: HasReceiveContext, L: HasLogger, A: HasActions>(
-///     ctx: &R,
-///     receive_amount: Amount,
-///     logger: &mut L,
-/// ) -> Result<State, MyCustomError> { ... }
-/// ```
+/// // ```rust
+/// // enum MyCustomError {
+/// //     SomeError
+/// // }
+/// // 
+/// // #[init(contract = "mycontract")]
+/// // fn contract_init<R: HasReceiveContext, L: HasLogger, A: HasActions>(
+/// //     ctx: &R,
+/// //     receive_amount: Amount,
+/// //     logger: &mut L,
+/// // ) -> Result<State, MyCustomError> { ... }
+/// // ```
 pub type InitResult<S> = Result<S, Reject>;
 
 #[cfg(not(feature = "hacspec"))]

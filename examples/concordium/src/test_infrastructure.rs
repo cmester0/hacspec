@@ -8,59 +8,50 @@
 //!
 //! # Example
 //!
-//! ```rust
-//! // Some contract
-//! #[init(contract = "noop")]
-//! fn contract_init<I: HasInitContext, L: HasLogger>(
-//!     ctx: &I,
-//! ) -> InitResult<State> { ... }
-//!
-//! #[receive(contract = "noop", name = "receive", payable, enable_logger)]
-//! fn contract_receive<R: HasReceiveContext, L: HasLogger, A: HasActions>(
-//!     ctx: &R,
-//!     amount: Amount,
-//!     logger: &mut L,
-//!     state: &mut State,
-//! ) -> ReceiveResult<A> { ... }
-//!
-//! #[cfg(test)]
-//! mod tests {
-//!     use super::*;
-//!     use concordium_sc_base::test_infrastructure::*;
-//!     #[test]
-//!     fn test_init() {
-//!         let mut ctx = InitContextTest::empty();
-//!         ctx.set_init_origin(AccountAddress([0u8; 32]));
-//!         ...
-//!         let result = contract_init(&ctx);
-//!         claim!(...)
-//!         ...
-//!     }
-//!
-//!     #[test]
-//!     fn test_receive() {
-//!         let mut ctx = ReceiveContextTest::empty();
-//!         ctx.set_owner(AccountAddress([0u8; 32]));
-//!         ...
-//!         let mut logger = LogRecorder::init();
-//!         let result: ReceiveResult<ActionsTree> = contract_receive(&ctx, 0, &mut logger, state);
-//!         claim!(...)
-//!         ...
-//!     }
-//! }
-//! ```
+//! // ```rust
+//! // // Some contract
+//! // #[init(contract = "noop")]
+//! // fn contract_init<I: HasInitContext, L: HasLogger>(
+//! //     ctx: &I,
+//! // ) -> InitResult<State> { ... }
+//! // 
+//! // #[receive(contract = "noop", name = "receive", payable, enable_logger)]
+//! // fn contract_receive<R: HasReceiveContext, L: HasLogger, A: HasActions>(
+//! //     ctx: &R,
+//! //     amount: Amount,
+//! //     logger: &mut L,
+//! //     state: &mut State,
+//! // ) -> ReceiveResult<A> { ... }
+//! // 
+//! // #[cfg(test)]
+//! // mod tests {
+//! //     use super::*;
+//! //     use concordium_sc_base::test_infrastructure::*;
+//! //     #[test]
+//! //     fn test_init() {
+//! //         let mut ctx = InitContextTest::empty();
+//! //         ctx.set_init_origin(AccountAddress([0u8; 32]));
+//! //         ...
+//! //         let result = contract_init(&ctx);
+//! //         claim!(...)
+//! //         ...
+//! //     }
+//! // 
+//! //     #[test]
+//! //     fn test_receive() {
+//! //         let mut ctx = ReceiveContextTest::empty();
+//! //         ctx.set_owner(AccountAddress([0u8; 32]));
+//! //         ...
+//! //         let mut logger = LogRecorder::init();
+//! //         let result: ReceiveResult<ActionsTree> = contract_receive(&ctx, 0, &mut logger, state);
+//! //         claim!(...)
+//! //         ...
+//! //     }
+//! // }
+//! // ```
 
 #[cfg(not(feature = "hacspec"))]
 use crate::*;
-
-/// Maximum size of the contract state in bytes.
-pub const MAX_CONTRACT_STATE_SIZE: u32 = 16384u32;
-
-/// Maximum log size.
-pub const MAX_LOG_SIZE: usize = 512usize;
-
-/// Maximum number of log items.
-pub const MAX_NUM_LOGS: usize = 64usize;
 
 #[cfg(not(feature = "hacspec"))]
 #[cfg(not(feature = "std"))]
@@ -148,55 +139,55 @@ pub struct ContextTest<'a, C> {
 
 /// ### Example
 /// Creating an empty context and setting the `init_origin`.
-/// ```
-/// let mut ctx = InitContextTest::empty();
-/// ctx.set_init_origin(AccountAddress([0u8; 32]));
-/// ```
+/// // ```
+/// // let mut ctx = InitContextTest::empty();
+/// // ctx.set_init_origin(AccountAddress([0u8; 32]));
+/// // ```
 /// ## Set chain meta data
 /// Chain meta data is set using setters on the context or by setters on a
 /// mutable reference of [`ChainMetaTest`](struct.ChainMetaTest.html).
 ///
 /// ### Example
 /// Creating an empty context and setting the `slot_time` metadata.
-/// ```
-/// let mut ctx = InitContextTest::empty();
-/// ctx.set_metadata_slot_time(1609459200);
-/// ```
+/// // ```
+/// // let mut ctx = InitContextTest::empty();
+/// // ctx.set_metadata_slot_time(1609459200);
+/// // ```
 /// or
-/// ```
-/// let mut ctx = InitContextTest::empty();
-/// ctx.metadata_mut().set_slot_time(1609459200);
-/// ```
+/// // ```
+/// // let mut ctx = InitContextTest::empty();
+/// // ctx.metadata_mut().set_slot_time(1609459200);
+/// // ```
 ///
 /// # Use case example
 ///
-/// ```rust
-/// #[init(contract = "noop")]
-/// fn contract_init<I: HasInitContext, L: HasLogger>(
-///     ctx: &I,
-///     _amount: Amount,
-///     _logger: &mut L,
-/// ) -> InitResult<()> {
-///     let init_origin = ctx.init_origin();
-///     let parameter: SomeParameterType = ctx.parameter_cursor().get()?;
-///     Ok(())
-/// }
-///
-/// #[cfg(test)]
-/// mod tests {
-///     use super::*;
-///     use concordium_sc_base::test_infrastructure::*;
-///     #[test]
-///     fn test() {
-///         let mut ctx = InitContextTest::empty();
-///         ctx.set_init_origin(AccountAddress([0u8; 32]));
-///         ...
-///         let result = contract_init(&ctx, 0, &mut logger);
-///         // Reads the init_origin without any problems.
-///         // But then fails because the parameter is not set.
-///     }
-/// }
-/// ```
+/// // ```rust
+/// // #[init(contract = "noop")]
+/// // fn contract_init<I: HasInitContext, L: HasLogger>(
+/// //     ctx: &I,
+/// //     _amount: Amount,
+/// //     _logger: &mut L,
+/// // ) -> InitResult<()> {
+/// //     let init_origin = ctx.init_origin();
+/// //     let parameter: SomeParameterType = ctx.parameter_cursor().get()?;
+/// //     Ok(())
+/// // }
+/// // 
+/// // #[cfg(test)]
+/// // mod tests {
+/// //     use super::*;
+/// //     use concordium_sc_base::test_infrastructure::*;
+/// //     #[test]
+/// //     fn test() {
+/// //         let mut ctx = InitContextTest::empty();
+/// //         ctx.set_init_origin(AccountAddress([0u8; 32]));
+/// //         ...
+/// //         let result = contract_init(&ctx, 0, &mut logger);
+/// //         // Reads the init_origin without any problems.
+/// //         // But then fails because the parameter is not set.
+/// //     }
+/// // }
+/// // ```
 #[cfg(not(feature = "hacspec"))]
 pub type InitContextTest<'a> = ContextTest<'a, InitOnlyDataTest>;
 
@@ -216,57 +207,57 @@ pub struct InitOnlyDataTest {
 ///
 /// ### Example
 /// Creating an empty context and setting the `init_origin`.
-/// ```
-/// let owner = AccountAddress([0u8; 32]);
-/// let mut ctx = ReceiveContextTest::empty();
-/// ctx.set_owner(owner);
-/// ctx.set_sender(Address::Account(owner));
-/// ```
+/// // ```
+/// // let owner = AccountAddress([0u8; 32]);
+/// // let mut ctx = ReceiveContextTest::empty();
+/// // ctx.set_owner(owner);
+/// // ctx.set_sender(Address::Account(owner));
+/// // ```
 /// ## Set chain meta data
 /// Chain meta data is set using setters on the context or by setters on a
 /// mutable reference of [`ChainMetaTest`](struct.ChainMetaTest.html).
 ///
 /// ### Example
 /// Creating an empty context and setting the `slot_time` metadata.
-/// ```
-/// let mut ctx = ReceiveContextTest::empty();
-/// ctx.set_metadata_slot_time(1609459200);
-/// ```
+/// // ```
+/// // let mut ctx = ReceiveContextTest::empty();
+/// // ctx.set_metadata_slot_time(1609459200);
+/// // ```
 /// or
-/// ```
-/// let mut ctx = ReceiveContextTest::empty();
-/// ctx.metadata_mut().set_slot_time(1609459200);
-/// ```
+/// // ```
+/// // let mut ctx = ReceiveContextTest::empty();
+/// // ctx.metadata_mut().set_slot_time(1609459200);
+/// // ```
 ///
 /// # Use case example
 /// Creating a context for running unit tests
-/// ```rust
-/// #[receive(contract = "mycontract", name = "receive")]
-/// fn contract_receive<R: HasReceiveContext, L: HasLogger, A: HasActions>(
-///     ctx: &R,
-///     amount: Amount,
-///     logger: &mut L,
-///     state: &mut State,
-/// ) -> ReceiveResult<A> {
-///     ensure!(ctx.sender().matches_account(&ctx.owner()), "Only the owner can increment.");
-///     Ok(A::accept())
-/// }
-///
-/// #[cfg(test)]
-/// mod tests {
-///     use super::*;
-///     use concordium_sc_base::test_infrastructure::*;
-///     #[test]
-///     fn test() {
-///         let owner = AccountAddress([0u8; 32]);
-///         let mut ctx = ReceiveContextTest::empty();
-///         ctx.set_owner(owner);
-///         ctx.set_sender(Address::Account(owner));
-///         ...
-///         let result: ReceiveResult<ActionsTree> = contract_receive(&ctx, 0, &mut logger, state);
-///     }
-/// }
-/// ```
+/// // ```rust
+/// // #[receive(contract = "mycontract", name = "receive")]
+/// // fn contract_receive<R: HasReceiveContext, L: HasLogger, A: HasActions>(
+/// //     ctx: &R,
+/// //     amount: Amount,
+/// //     logger: &mut L,
+/// //     state: &mut State,
+/// // ) -> ReceiveResult<A> {
+/// //     ensure!(ctx.sender().matches_account(&ctx.owner()), "Only the owner can increment.");
+/// //     Ok(A::accept())
+/// // }
+/// // 
+/// // #[cfg(test)]
+/// // mod tests {
+/// //     use super::*;
+/// //     use concordium_sc_base::test_infrastructure::*;
+/// //     #[test]
+/// //     fn test() {
+/// //         let owner = AccountAddress([0u8; 32]);
+/// //         let mut ctx = ReceiveContextTest::empty();
+/// //         ctx.set_owner(owner);
+/// //         ctx.set_sender(Address::Account(owner));
+/// //         ...
+/// //         let result: ReceiveResult<ActionsTree> = contract_receive(&ctx, 0, &mut logger, state);
+/// //     }
+/// // }
+/// // ```
 #[cfg(not(feature = "hacspec"))]
 pub type ReceiveContextTest<'a> = ContextTest<'a, ReceiveOnlyDataTest>;
 
@@ -486,12 +477,10 @@ impl HasLogger for LogRecorder {
     }
 
     fn log_raw(&mut self, event: &[u8]) -> Result<(), LogError> {
-        if event.len() > // constants::
-        MAX_LOG_SIZE {
+        if event.len() > constants::MAX_LOG_SIZE {
             return Err(LogError::Malformed);
         }
-        if self.logs.len() >= // constants::
-        MAX_NUM_LOGS {
+        if self.logs.len() >= constants::MAX_NUM_LOGS {
             return Err(LogError::Full);
         }
         self.logs.push(event.to_vec());
@@ -633,7 +622,7 @@ impl<T: convert::AsMut<Vec<u8>>> Write for ContractStateTest<T> {
 
     fn write(&mut self, buf: &[u8]) -> Result<usize, Self::Err> {
         // The chain automatically resizes the state up until MAX_CONTRACT_STATE_SIZE.
-        let end = cmp::min(MAX_CONTRACT_STATE_SIZE as usize, self.cursor.offset + buf.len());
+        let end = cmp::min(constants::MAX_CONTRACT_STATE_SIZE as usize, self.cursor.offset + buf.len());
         if self.cursor.data.as_mut().len() < end {
             self.cursor.data.as_mut().resize(end as usize, 0u8);
         }
@@ -671,8 +660,7 @@ impl<T: AsMut<Vec<u8>> + AsMut<[u8]> + AsRef<[u8]>> HasContractState<ContractSta
     }
 
     fn reserve(&mut self, len: u32) -> bool {
-        if len <= // constants::
-        MAX_CONTRACT_STATE_SIZE {
+        if len <= constants::MAX_CONTRACT_STATE_SIZE {
             if self.size() < len {
                 let data: &mut Vec<u8> = self.cursor.data.as_mut();
                 data.resize(len as usize, 0u8);
@@ -755,14 +743,14 @@ mod test {
     use concordium_contracts_common::{Read, Seek, SeekFrom, Write};
 
     use super::ContractStateTest;
-    use crate::{constants, traits::HasContractState};
+    use crate::{constants, hacspec_concordium_traits::HasContractState};
 
     #[test]
     // Perform a number of operations from Seek, Read, Write and HasContractState
     // classes on the ContractStateTest structure and check that they behave as
     // specified.
     fn test_contract_state() {
-        let data = vec![1; 100];
+        let data = crate::vec![1; 100];
         let mut state = ContractStateTest::open(data);
         assert_eq!(state.seek(SeekFrom::Start(100)), Ok(100), "Seeking to the end failed.");
         assert_eq!(
@@ -807,20 +795,17 @@ mod test {
         );
         assert!(state.reserve(222), "Could not increase state to 222.");
         assert!(
-            !state.reserve(// constants::
-                           MAX_CONTRACT_STATE_SIZE + 1),
+            !state.reserve(constants::MAX_CONTRACT_STATE_SIZE + 1),
             "State should not be resizable beyond max limit."
         );
         assert_eq!(state.write(&[2; 100]), Ok(100), "Should have written 100 bytes.");
         assert_eq!(state.cursor.offset, 222, "After writing the offset should be 200.");
         state.truncate(50);
         assert_eq!(state.cursor.offset, 50, "After truncation the state should be 50.");
-        assert!(state.reserve(// constants::
-                              MAX_CONTRACT_STATE_SIZE), "Could not increase state MAX.");
+        assert!(state.reserve(constants::MAX_CONTRACT_STATE_SIZE), "Could not increase state MAX.");
         assert_eq!(
             state.seek(SeekFrom::End(0)),
-            Ok(u64::from(// constants::
-                         MAX_CONTRACT_STATE_SIZE)),
+            Ok(u64::from(constants::MAX_CONTRACT_STATE_SIZE)),
             "State should be full now."
         );
         assert_eq!(
@@ -830,15 +815,14 @@ mod test {
         );
         assert_eq!(
             state.cursor.data.len(),
-            // constants::
-            MAX_CONTRACT_STATE_SIZE as usize,
+            constants::MAX_CONTRACT_STATE_SIZE as usize,
             "State size should not increase beyond max."
         )
     }
 
     #[test]
     fn test_contract_state_write() {
-        let data = vec![0u8; 10];
+        let data = crate::vec![0u8; 10];
         let mut state = ContractStateTest::open(data);
         assert_eq!(state.write(&1u64.to_le_bytes()), Ok(8), "Incorrect number of bytes written.");
         assert_eq!(
@@ -849,7 +833,7 @@ mod test {
         assert_eq!(state.cursor.offset, 16, "Pos should be at the end.");
         assert_eq!(
             state.cursor.data,
-            vec![1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0],
+            crate::vec![1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0],
             "Correct data was written."
         );
     }
