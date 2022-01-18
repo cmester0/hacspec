@@ -80,6 +80,7 @@ pub use alloc::collections;
 #[cfg(feature = "std")]
 pub use std::collections;
 
+// TODO: Package into module
 // #[cfg(not(feature = "hacspec"))]
 // pub mod collections {
 //     #[cfg(not(feature = "std"))]
@@ -99,17 +100,19 @@ extern crate concordium_contracts_common;
 /// execution.
 pub use concordium_contracts_common::*;
 
+// TODO: Need derive
 #[cfg(not(feature = "hacspec"))]
 extern crate hacspec_concordium_derive;
 #[cfg(not(feature = "hacspec"))]
 pub use hacspec_concordium_derive::*;
 
-// #[cfg(not(feature = "hacspec"))]
-// extern crate wee_alloc;
-// // Use `wee_alloc` as the global allocator to reduce code size.
-// #[cfg(not(feature = "hacspec"))]
-// #[global_allocator]
-// static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
+#[cfg(not(feature = "hacspec"))]
+extern crate wee_alloc;
+// Use `wee_alloc` as the global allocator to reduce code size.
+#[cfg(not(feature = "hacspec"))]
+#[global_allocator]
+static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
+
 #[cfg(not(feature = "hacspec"))]
 extern crate hacspec_lib;
 pub use hacspec_lib::*;
@@ -120,13 +123,14 @@ use hacspec_attributes::*;
 #[cfg(not(feature = "hacspec"))]
 extern crate creusot_contracts;
 #[cfg(not(feature = "hacspec"))]
-use creusot_contracts::{ensures, trusted}; // requires, 
+use creusot_contracts::*; // {ensures, trusted}; // requires, 
 
 pub mod constants;
 mod hacspec_concordium_prims;
 mod hacspec_concordium_types;
 mod hacspec_concordium_traits;
 mod hacspec_concordium_impls;
+
 pub mod test_infrastructure;
 
 #[cfg(not(feature = "hacspec"))]

@@ -1839,9 +1839,9 @@ Definition auction_test_init
 
 Theorem ensures_auction_test_init : forall result_54 (
   item_52 : public_byte_seq) (time_53 : int64),
-@auction_test_init item_52 time_53 = result_54 ->
-result_54 = true.
-Proof. Admitted.
+ @auction_test_init item_52 time_53 = result_54 ->
+ result_54 = true.
+ Proof. Admitted.
 QuickChick (
   forAll g_public_byte_seq (fun item_52 : public_byte_seq => forAll g_int64 (fun time_53 : int64 => auction_test_init item_52 time_53))).
 #+end_src
@@ -2038,12 +2038,12 @@ Definition test_auction_bid_and_finalize
 
 Theorem ensures_test_auction_bid_and_finalize : forall result_54 (
   item_75 : public_byte_seq) (time_76 : int64) (input_amount_77 : int64),
-forall {H_0 : (@repr WORDSIZE64 18446744073709551615) >.? (time_76)},
-forall {H_1 : (((@repr WORDSIZE64 18446744073709551615) ./ (
-      @repr WORDSIZE64 5)) .- (@repr WORDSIZE64 1)) >.? (input_amount_77)},
-@test_auction_bid_and_finalize item_75 time_76 input_amount_77 H_0 H_1 = result_54 ->
-result_54 = true.
-Proof. Admitted.
+ forall {H_0 : (@repr WORDSIZE64 18446744073709551615) >.? (time_76)},
+ forall {H_1 : (((@repr WORDSIZE64 18446744073709551615) ./ (
+       @repr WORDSIZE64 5)) .- (@repr WORDSIZE64 1)) >.? (input_amount_77)},
+ @test_auction_bid_and_finalize item_75 time_76 input_amount_77 H_0 H_1 = result_54 ->
+ result_54 = true.
+ Proof. Admitted.
 QuickChick (
   forAll g_public_byte_seq (fun item_75 : public_byte_seq => forAll g_int64 (fun time_76 : int64 => forAll g_int64 (fun input_amount_77 : int64 => test_auction_bid_and_finalize item_75 time_76 input_amount_77)))).
 #+end_src
