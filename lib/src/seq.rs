@@ -580,7 +580,7 @@ extern crate quickcheck;
 use quickcheck::*;
 
 impl Arbitrary for PublicSeq<u8> {
-    fn arbitrary(g: &mut Gen) -> Self {
+    fn arbitrary(_g: &mut Gen) -> Self {
         PublicSeq::<u8>::new(0)
             
         // let t : usize = Arbitrary::arbitrary(g);

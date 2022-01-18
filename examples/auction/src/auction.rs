@@ -6,13 +6,13 @@ use hacspec_lib::*;
 // #[cfg(feature = "hacspec_attributes")]
 #[cfg(feature = "hacspec")]
 use hacspec_attributes::*;
-#[cfg(not(feature = "hacspec"))]  
-use hacspec_attributes::proof;
+// #[cfg(not(feature = "hacspec"))]  
+// use hacspec_attributes::proof;
 
-#[cfg(not(feature = "hacspec"))]
-extern crate creusot_contracts;
-#[cfg(not(feature = "hacspec"))]
-use creusot_contracts::{ensures, requires};
+// #[cfg(not(feature = "hacspec"))]
+// extern crate creusot_contracts;
+// #[cfg(not(feature = "hacspec"))]
+// use creusot_contracts::{ensures, requires};
 
 // // Rust-hacspec Interface
 #[cfg(not(feature = "hacspec"))]
@@ -36,7 +36,7 @@ pub fn coerce_rust_to_hacspec_account_address(aa: &AccountAddress) -> UserAddres
 
 #[cfg(not(feature = "hacspec"))]
 /// The state in which an auction can be.
-#[derive(Eq, PartialEq, PartialOrd, Serialize, SchemaType, Debug)] // TODO: Debug with creusot, Serialize, 
+#[derive(Debug, Eq, PartialEq, PartialOrd, Serialize, SchemaType)] // TODO: Debug with creusot 
 pub enum AuctionState {
     /// The auction is either
     /// - still accepting bids or
@@ -206,7 +206,6 @@ struct InitParameter {
 
 #[cfg(not(feature = "hacspec"))]
 /// Init function that creates a new auction
-// TODO: uncoment init!
 #[init(contract = "auction", parameter = "InitParameter")]
 fn auction_init(ctx: &impl HasInitContext) -> InitResult<State> {
     let parameter: InitParameter = ctx.parameter_cursor().get()?;
@@ -274,7 +273,7 @@ fn seq_map_update_entry(m: SeqMap, sender_address: UserAddress, amount: u64) -> 
 
 #[cfg(not(feature = "hacspec"))]
 /// For errors in which the `bid` function can result
-#[derive(Debug, PartialEq, Eq, Clone)] // TODO: Reject, located in concordium-std-derive
+#[derive(Debug, PartialEq, Eq, Clone, Reject)]
 enum BidError {
     ContractSender, // raised if a contract, as opposed to account, tries to bid
     BidTooLow,      /* { bid: Amount, highest_bid: Amount } */
@@ -294,17 +293,18 @@ pub enum BidErrorHacspec {
 					    * finalized */
 }
 
-#[cfg(not(feature = "hacspec"))]
-fn coerce_rust_to_hacspec_bid_error(b: BidError) -> BidErrorHacspec {
-    match b {
-	BidError::ContractSender => BidErrorHacspec::ContractSender,
-	BidError::BidTooLow => BidErrorHacspec::BidTooLow,
-	BidError::BidsOverWaitingForAuctionFinalization => {
-	    BidErrorHacspec::BidsOverWaitingForAuctionFinalization
-	}
-	BidError::AuctionFinalized => BidErrorHacspec::AuctionIsFinalized,
-    }
-}
+// TODO: Never used?
+// #[cfg(not(feature = "hacspec"))]
+// fn coerce_rust_to_hacspec_bid_error(b: BidError) -> BidErrorHacspec {
+//     match b {
+// 	BidError::ContractSender => BidErrorHacspec::ContractSender,
+// 	BidError::BidTooLow => BidErrorHacspec::BidTooLow,
+// 	BidError::BidsOverWaitingForAuctionFinalization => {
+// 	    BidErrorHacspec::BidsOverWaitingForAuctionFinalization
+// 	}
+// 	BidError::AuctionFinalized => BidErrorHacspec::AuctionIsFinalized,
+//     }
+// }
 
 #[cfg(not(feature = "hacspec"))]
 fn coerce_hacspec_to_rust_bid_error(b: BidErrorHacspec) -> BidError {
@@ -352,7 +352,7 @@ pub fn auction_bid_hacspec(ctx: Context, amount: u64, state: StateHacspec) -> Au
 	UserAddressSet::UserAddressSome(account_address) => account_address,
     };
 
-    let (bid_to_update, new_map) = // match
+    let (bid_to_update, _new_map) = // match
 	  seq_map_entry(st4.clone(), sender_address) // {
       //     MapEntry::Entry(bid_to_update, new_map) => (bid_to_update, new_map),
       // }
@@ -391,7 +391,7 @@ pub fn coerce_rust_to_hacspec_context(ctx: &impl HasReceiveContext) -> Context {
 
 #[cfg(not(feature = "hacspec"))]
 /// Receive function in which accounts can bid before the auction end time
-// #[receive(contract = "auction", name = "bid", payable)] // TODO: Implement and uncomment!
+#[receive(contract = "auction", name = "bid", payable)]
 fn auction_bid<A: HasActions>(
     ctx: &impl HasReceiveContext,
     amount: Amount,
@@ -415,7 +415,7 @@ fn auction_bid<A: HasActions>(
 
 #[cfg(not(feature = "hacspec"))]
 /// For errors in which the `finalize` function can result
-#[derive(Debug, PartialEq, Eq, Clone)] // TODO: Reject , located in concordium-std-derive
+#[derive(Debug, PartialEq, Eq, Clone, Reject)]
 enum FinalizeError {
     BidMapError,        /* raised if there is a mistake in the bid map that keeps track of all
 			 * accounts' bids */
@@ -431,14 +431,15 @@ pub enum FinalizeErrorHacspec {
     AuctionFinalized,
 }
 
-#[cfg(not(feature = "hacspec"))]
-fn coerce_rust_to_hacspec_finalize_error(fe: FinalizeError) -> FinalizeErrorHacspec {
-    match fe {
-	FinalizeError::BidMapError => FinalizeErrorHacspec::BidMapError,
-	FinalizeError::AuctionStillActive => FinalizeErrorHacspec::AuctionStillActive,
-	FinalizeError::AuctionFinalized => FinalizeErrorHacspec::AuctionFinalized,
-    }
-}
+// TODO: never used
+// #[cfg(not(feature = "hacspec"))]
+// fn coerce_rust_to_hacspec_finalize_error(fe: FinalizeError) -> FinalizeErrorHacspec {
+//     match fe {
+// 	FinalizeError::BidMapError => FinalizeErrorHacspec::BidMapError,
+// 	FinalizeError::AuctionStillActive => FinalizeErrorHacspec::AuctionStillActive,
+// 	FinalizeError::AuctionFinalized => FinalizeErrorHacspec::AuctionFinalized,
+//     }
+// }
 
 #[cfg(not(feature = "hacspec"))]
 fn coerce_hacspec_to_rust_finalize_error(fe: FinalizeErrorHacspec) -> FinalizeError {
@@ -491,93 +492,89 @@ pub fn auction_finalize_hacspec(
     let mut result = AuctionFinalizeResult::Ok((state.clone(), FinalizeAction::Accept));
 
     if !(auction_state == AuctionStateHacspec::NotSoldYet) {
-	AuctionFinalizeResult::Err(FinalizeErrorHacspec::AuctionFinalized)?;
+        AuctionFinalizeResult::Err(FinalizeErrorHacspec::AuctionFinalized)?;
     }
 
     let (slot_time, owner, balance) = ctx;
 
     if !(slot_time > expiry) {
-	AuctionFinalizeResult::Err(FinalizeErrorHacspec::AuctionStillActive)?;
+        AuctionFinalizeResult::Err(FinalizeErrorHacspec::AuctionStillActive)?;
     }
 
     if balance != 0_u64 {
-	let mut return_action = FinalizeAction::SimpleTransfer(
-	    PublicByteSeq::new(0_usize)
-		.concat(&owner)
-		.concat(&u64_to_be_bytes(highest_bid)),
-	);
-	let mut remaining_bid = BidRemain::BidNone;
-	// Return bids that are smaller than highest
-	// let x = 0;
-	for x in 0..m0.clone().len() / 32 {
-	    let addr = UserAddress::from_seq(&m0.clone().slice(x * 32, 32));
-	    let amnt = u64_from_be_bytes(u64Word::from_seq(&m1.clone().slice(x * 8, 8)));
-	    if amnt < highest_bid {
-		return_action = match return_action {
-		    FinalizeAction::Accept => FinalizeAction::Accept, // TODO: What error (should never happen)..
-		    FinalizeAction::SimpleTransfer(m) => FinalizeAction::SimpleTransfer(
-			m.concat(&addr).concat(&u64_to_be_bytes(amnt)),
-		    ),
-		};
-	    } else {
-		// ensure!(remaining_bid.is_none(), FinalizeErrorHacspec::BidMapError);
-		if !(remaining_bid == BidRemain::BidNone) {
-		    AuctionFinalizeResult::Err(FinalizeErrorHacspec::BidMapError)?;
-		}
-		auction_state = AuctionStateHacspec::Sold(addr);
-		remaining_bid = BidRemain::BidSome(amnt);
-	    }
-	}
+        let mut return_action = FinalizeAction::SimpleTransfer(
+            PublicByteSeq::new(0_usize)
+                .concat(&owner)
+                .concat(&u64_to_be_bytes(highest_bid)),
+        );
+        let mut remaining_bid = BidRemain::BidNone;
+        // Return bids that are smaller than highest
+        // let x = 0;
+        for x in 0..m0.clone().len() / 32 {
+            let addr = UserAddress::from_seq(&m0.clone().slice(x * 32, 32));
+            let amnt = u64_from_be_bytes(u64Word::from_seq(&m1.clone().slice(x * 8, 8)));
+            if amnt < highest_bid {
+                return_action = match return_action {
+                    FinalizeAction::Accept => FinalizeAction::Accept, // TODO: What error (should never happen)..
+                    FinalizeAction::SimpleTransfer(m) => FinalizeAction::SimpleTransfer(
+                        m.concat(&addr).concat(&u64_to_be_bytes(amnt)),
+                    ),
+                };
+            } else {
+                // ensure!(remaining_bid.is_none(), FinalizeErrorHacspec::BidMapError);
+                if !(remaining_bid == BidRemain::BidNone) {
+                    AuctionFinalizeResult::Err(FinalizeErrorHacspec::BidMapError)?;
+                }
+                auction_state = AuctionStateHacspec::Sold(addr);
+                remaining_bid = BidRemain::BidSome(amnt);
+            }
+        }
 
-	// ensure that the only bidder left in the map is the one with the highest bid
-	result = match remaining_bid {
-	    BidRemain::BidSome(amount) =>
-	    // ensure!(amount == state.highest_bid, FinalizeErrorHacspec::BidMapError);
-	    {
-		if !(amount == highest_bid) {
-		    AuctionFinalizeResult::Err(FinalizeErrorHacspec::BidMapError)
-		} else {
-		    AuctionFinalizeResult::Ok((
-			StateHacspec(
-			    auction_state,
-			    highest_bid,
-			    st2,
-			    expiry,
-			    SeqMap(m0.clone(), m1.clone()),
-			),
-			return_action,
-		    ))
-		}
-	    }
-	    BidRemain::BidNone => AuctionFinalizeResult::Err(FinalizeErrorHacspec::BidMapError),
-	};
+        // ensure that the only bidder left in the map is the one with the highest bid
+        result = match remaining_bid {
+            BidRemain::BidSome(amount) =>
+            // ensure!(amount == state.highest_bid, FinalizeErrorHacspec::BidMapError);
+            {
+                if !(amount == highest_bid) {
+                    AuctionFinalizeResult::Err(FinalizeErrorHacspec::BidMapError)
+                } else {
+                    AuctionFinalizeResult::Ok((
+                        StateHacspec(
+                            auction_state,
+                            highest_bid,
+                            st2,
+                            expiry,
+                            SeqMap(m0.clone(), m1.clone()),
+                        ),
+                        return_action,
+                    ))
+                }
+            }
+            BidRemain::BidNone => AuctionFinalizeResult::Err(FinalizeErrorHacspec::BidMapError),
+        };
 
-	result.clone()?;
+        result.clone()?;
     }
 
     result
 }
 
 #[cfg(not(feature = "hacspec"))]
-fn map_index_to_A<A: HasActions> (x : usize, s : PublicByteSeq) -> A {
+fn simple_transfer_from_index_and_seq<A: HasActions>(x: usize, s: PublicByteSeq) -> A {
     A::simple_transfer(
-	&coerce_hacspec_to_rust_account_address(UserAddress::from_seq(
-	    &s.slice(x * (32 + 8), 32), // TODO: use chunks instead of doing the math yourself
-	)),
-	Amount {
-	    micro_gtu: u64_from_be_bytes(u64Word::from_seq(
-		&s.slice(x * (32 + 8) + 32, 8),
-	    )),
-	},
+        &coerce_hacspec_to_rust_account_address(UserAddress::from_seq(
+            &s.slice(x * (32 + 8), 32), // TODO: use chunks instead of doing the math yourself
+        )),
+        Amount {
+            micro_gtu: u64_from_be_bytes(u64Word::from_seq(&s.slice(x * (32 + 8) + 32, 8))),
+        },
     )
 }
-
-
 
 #[cfg(not(feature = "hacspec"))]
 /// Receive function used to finalize the auction, returning all bids to their
 /// senders, except for the winning bid
-// #[receive(contract = "auction", name = "finalize")] // TODO: receive!
+#[receive(contract = "auction", name = "finalize")]
 fn auction_finalize<A: HasActions>(
     ctx: &impl HasReceiveContext,
     state: &mut State,
@@ -585,19 +582,20 @@ fn auction_finalize<A: HasActions>(
     let hacspec_state = coerce_rust_to_hacspec_state(state);
 
     let (new_state, fa) =
-	match auction_finalize_hacspec(coerce_rust_to_hacspec_finalize_context(ctx), hacspec_state)
-    {
-	Ok(a) => a,
-	Err(e) => return Err(coerce_hacspec_to_rust_finalize_error(e)),
-    };
+        match auction_finalize_hacspec(coerce_rust_to_hacspec_finalize_context(ctx), hacspec_state)
+        {
+            Ok(a) => a,
+            Err(e) => return Err(coerce_hacspec_to_rust_finalize_error(e)),
+        };
 
     *state = coerce_hacspec_to_rust_state(new_state);
 
     match fa {
-	FinalizeAction::Accept => Ok(A::accept()),
-	FinalizeAction::SimpleTransfer(s) => {
-	    Ok((1..s.len() / (32 + 8)).fold(map_index_to_A(0,s.clone()),|t,x| t.and_then(map_index_to_A(x,s.clone()))))
-	}
+        FinalizeAction::Accept => Ok(A::accept()),
+        FinalizeAction::SimpleTransfer(s) => Ok((1..s.len() / (32 + 8))
+            .fold(simple_transfer_from_index_and_seq(0, s.clone()), |t, x| {
+                t.and_then(simple_transfer_from_index_and_seq(x, s.clone()))
+            })),
     }
 }
 
@@ -610,10 +608,10 @@ extern crate quickcheck_macros;
 #[cfg(test)]
 use quickcheck::*;
 
+#[ensures(result === true)]
 #[cfg(test)]
 #[proof]
 #[quickcheck]
-#[ensures(result === true)]
 /// Test that the smart-contract initialization sets the state correctly
 /// (no bids, active state, indicated auction-end time and item name).
 pub fn auction_test_init(item: PublicByteSeq, time : u64) -> bool {

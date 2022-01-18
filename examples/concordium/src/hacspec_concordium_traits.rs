@@ -1,15 +1,4 @@
 #[cfg(not(feature = "hacspec"))]
-use crate::collections::{BTreeMap, BTreeSet, HashSet, HashMap};
-
-#[cfg(not(feature = "hacspec"))]
-use crate::hash::Hash;
-
-#[cfg(not(feature = "hacspec"))]
-extern crate concordium_contracts_common;
-#[cfg(not(feature = "hacspec"))]
-use concordium_contracts_common::*;
-
-#[cfg(not(feature = "hacspec"))]
 use crate::*;
 
 // //! This module implements traits for the contract interface.

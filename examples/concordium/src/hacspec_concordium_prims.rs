@@ -1,18 +1,7 @@
 #[cfg(not(feature = "hacspec"))]
 extern crate hacspec_lib;
 
-use hacspec_lib::*;
-
-#[cfg(feature = "hacspec")]
-use hacspec_attributes::*;
-
-// Creusot
-#[cfg(not(feature = "hacspec"))]
-extern crate creusot_contracts;
-#[cfg(not(feature = "hacspec"))]
-use creusot_contracts::{
-    trusted          
-    };
+use self::hacspec_lib::*;
 
 #[cfg(not(feature = "hacspec"))]
 use crate::*;
@@ -37,10 +26,7 @@ pub(crate) fn load_state_hacspec(buf: PublicByteSeq, offset: u32) -> (PublicByte
 pub(crate) fn load_state_hacspec(buf: PublicByteSeq, offset: u32) -> (PublicByteSeq, u32) {
     let temp = &mut coerce_hacspec_to_rust_public_byte_seq(buf.clone())[..];
     let result = load_state_creusot(temp.as_mut_ptr(), buf.len() as u32, offset);
-    (
-        coerce_rust_to_hacspec_public_byte_seq(&temp),
-        result,
-    )
+    (coerce_rust_to_hacspec_public_byte_seq(&temp), result)
 }
 
 #[cfg(not(feature = "hacspec"))]
@@ -63,10 +49,7 @@ pub(crate) fn write_state_hacspec(buf: PublicByteSeq, offset: u32) -> (PublicByt
 pub(crate) fn write_state_hacspec(buf: PublicByteSeq, offset: u32) -> (PublicByteSeq, u32) {
     let temp = &mut coerce_hacspec_to_rust_public_byte_seq(buf.clone())[..];
     let result = write_state_creusot(temp.as_mut_ptr(), buf.len() as u32, offset);
-    (
-        coerce_rust_to_hacspec_public_byte_seq(&temp),
-        result,
-    )
+    (coerce_rust_to_hacspec_public_byte_seq(&temp), result)
 }
 
 #[cfg(not(feature = "hacspec"))]
@@ -341,30 +324,6 @@ pub(crate) fn get_receive_sender_hacspec(start: PublicByteSeq) -> PublicByteSeq 
 pub(crate) fn get_receive_sender_hacspec(start: PublicByteSeq) -> PublicByteSeq {
     let temp = &mut coerce_hacspec_to_rust_public_byte_seq(start.clone())[..];
     get_receive_sender_creusot(temp.as_mut_ptr());
-    coerce_rust_to_hacspec_public_byte_seq(&temp)
-}
-
-#[cfg(not(feature = "hacspec"))]
-extern "C" {
-  /// Owner of the contract, AccountAddress.
-  pub(crate) fn get_receive_owner(start: *mut u8);
-}
-
-#[cfg(not(feature = "hacspec"))]
-#[trusted]
-pub(crate) fn get_receive_owner_creusot(start: *mut u8) {
-    unsafe { get_receive_owner(start) }
-}
-
-#[cfg(feature = "hacspec")]
-pub(crate) fn get_receive_owner_hacspec(start: PublicByteSeq) -> PublicByteSeq {
-    start
-}
-
-#[cfg(not(feature = "hacspec"))]
-pub(crate) fn get_receive_owner_hacspec(start: PublicByteSeq) -> PublicByteSeq {
-    let temp = &mut coerce_hacspec_to_rust_public_byte_seq(start.clone())[..];
-    get_receive_owner_creusot(temp.as_mut_ptr());
     coerce_rust_to_hacspec_public_byte_seq(&temp)
 }
 

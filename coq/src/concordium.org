@@ -36,38 +36,42 @@
 * Concordium specification
 ** Config
 #+BEGIN_SRC toml :tangle ../../examples/concordium/Cargo.toml :eval never
-  [package]
-  name = "hacspec-concordium"
-  version = "0.1.0"
-  authors = [""]
-  edition = "2018"
+[package]
+name = "hacspec-concordium"
+version = "0.1.0"
+authors = [""]
+edition = "2018"
 
-  [lib]
-  path = "src/lib.rs"
+[lib]
+path = "src/lib.rs"
 
-  [dependencies]
-  hacspec-lib = { path = "../../lib" }
-  hacspec-attributes = { path = "../../utils/attributes", version = "0.1.0-beta.1" , features = ["print_attributes", "hacspec_unsafe"] } # , features = ["hacspec_unsafe"] , , optional = true
-  creusot-contracts = { path = "../../../../creusot/creusot-contracts" }
-  concordium-contracts-common = { path = "../../../../concordium-rust-smart-contracts/concordium-contracts-common" ,  version = "=0.4" , default-features = false }
-  hacspec-concordium-derive = { path = "../concordium-derive" }
+[dependencies]
+hacspec-lib = { path = "../../lib" }
+hacspec-attributes = { path = "../../utils/attributes", version = "0.1.0-beta.1" , features = ["print_attributes", "hacspec_unsafe"] } # , features = ["hacspec_unsafe"] , , optional = true
+creusot-contracts = { path = "../../../../creusot/creusot-contracts" }
+concordium-contracts-common = { path = "../../../../concordium-rust-smart-contracts/concordium-contracts-common" ,  version = "=0.4" , default-features = false }
+hacspec-concordium-derive = { path = "../concordium-derive" }
 
-  # Reduce code size, at the cost of performance in allocation heavy-code.
-  wee_alloc="0.4.5"
+# # Reduce code size, at the cost of performance in allocation heavy-code.
+# wee_alloc="0.4.5"
 
-  [features]
-  use_attributes = ["hacspec-attributes/print_attributes", "hacspec-attributes/hacspec_unsafe"]
+[features]
+use_attributes = ["hacspec-attributes/print_attributes", "hacspec-attributes/hacspec_unsafe"]
 
-  [dev-dependencies]
-  hacspec-dev = { path = "../../utils/dev" }
-  criterion = "0.3"
-  rand = "0.8"
-  quickcheck = "1"
-  quickcheck_macros = "1"
+[dev-dependencies]
+hacspec-dev = { path = "../../utils/dev" }
+criterion = "0.3"
+rand = "0.8"
+quickcheck = "1"
+quickcheck_macros = "1"
 #+END_SRC
 *** Imports
 #+BEGIN_SRC rust :tangle ../../examples/concordium/src/lib.rs :eval never
-#![cfg_attr(not(feature = "std"), no_std, feature(alloc_error_handler, core_intrinsics))]
+#![cfg_attr(
+    not(feature = "std"),
+    no_std,
+    feature(alloc_error_handler, core_intrinsics)
+)]
 
 #[cfg(not(feature = "hacspec"))]
 #[cfg(not(feature = "std"))]
@@ -96,11 +100,15 @@ pub use std::process::abort as trap;
 #[cfg(not(feature = "hacspec"))]
 #[cfg(all(not(feature = "std"), target_arch = "wasm32"))]
 #[inline(always)]
-pub fn trap() -> ! { unsafe { core::arch::wasm32::unreachable() } }
+pub fn trap() -> ! {
+    unsafe { core::arch::wasm32::unreachable() }
+}
 #[cfg(not(feature = "hacspec"))]
 #[cfg(all(not(feature = "std"), not(target_arch = "wasm32")))]
 #[inline(always)]
-pub fn trap() -> ! { core::intrinsics::abort() }
+pub fn trap() -> ! {
+    core::intrinsics::abort()
+}
 
 // TODO:
 // #[cfg(not(feature = "hacspec"))]
@@ -135,438 +143,447 @@ pub(crate) use std::vec;
 pub use std::{convert, hash, marker, mem, num, string::String, vec::Vec};
 
 #[cfg(not(feature = "hacspec"))]
-pub mod collections {
-    #[cfg(not(feature = "std"))]
-    use alloc::collections;
-    #[cfg(feature = "std")]
-    use std::collections;
+#[cfg(not(feature = "std"))]
+pub use alloc::collections;
+#[cfg(not(feature = "hacspec"))]
+#[cfg(feature = "std")]
+pub use std::collections;
 
-    pub use collections::*;
-    pub use concordium_contracts_common::{HashMap, HashSet};
-}
+// #[cfg(not(feature = "hacspec"))]
+// pub mod collections {
+//     #[cfg(not(feature = "std"))]
+//     use alloc::collections;
+//     #[cfg(feature = "std")]
+//     use std::collections;
 
+//     pub use collections::*;
+//     pub use collections::{BTreeMap, BTreeSet};
+//     pub use concordium_contracts_common::{HashMap, HashSet};
+// }
+
+#[cfg(not(feature = "hacspec"))]
+extern crate concordium_contracts_common;
 #[cfg(not(feature = "hacspec"))]
 /// Chain constants that impose limits on various aspects of smart contract
 /// execution.
 pub use concordium_contracts_common::*;
 
 #[cfg(not(feature = "hacspec"))]
+extern crate hacspec_concordium_derive;
+#[cfg(not(feature = "hacspec"))]
 pub use hacspec_concordium_derive::*;
 
+// #[cfg(not(feature = "hacspec"))]
+// extern crate wee_alloc;
+// // Use `wee_alloc` as the global allocator to reduce code size.
+// #[cfg(not(feature = "hacspec"))]
+// #[global_allocator]
+// static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 #[cfg(not(feature = "hacspec"))]
-extern crate wee_alloc;
-// Use `wee_alloc` as the global allocator to reduce code size.
-#[cfg(not(feature = "hacspec"))]
-#[global_allocator]
-static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
+extern crate hacspec_lib;
+pub use hacspec_lib::*;
 
-pub mod test_infrastructure;
-mod hacspec_concordium_types;
-mod hacspec_concordium_traits;
-mod hacspec_concordium_prims;
+#[cfg(feature = "hacspec")]
+use hacspec_attributes::*;
+
+#[cfg(not(feature = "hacspec"))]
+extern crate creusot_contracts;
+#[cfg(not(feature = "hacspec"))]
+use creusot_contracts::{ensures, trusted}; // requires, 
+
 mod hacspec_concordium_impls;
+mod hacspec_concordium_prims;
+mod hacspec_concordium_traits;
+mod hacspec_concordium_types;
+pub mod test_infrastructure;
 
 #[cfg(not(feature = "hacspec"))]
-pub use hacspec_concordium_types::*;
+pub use hacspec_concordium_impls::*;
+#[cfg(not(feature = "hacspec"))]
+use hacspec_concordium_prims::*; // TODO: Does not re-export anything, nothing is public enough (removed pub)
 #[cfg(not(feature = "hacspec"))]
 pub use hacspec_concordium_traits::*;
 #[cfg(not(feature = "hacspec"))]
-pub use hacspec_concordium_prims::*;
-#[cfg(not(feature = "hacspec"))]
-pub use hacspec_concordium_impls::*;
+pub use hacspec_concordium_types::*;
 #+END_SRC
 
 * Concordium "Types" specification
 ** Rust code
 :PROPERTIES:
-:header-args:  :tangle ../../examples/concordium/src/hacspec_concordium_types.rs
+:header-args:  :tangle ../../examples/concordium/src/hacspec_concordium_types.rs :eval never
 :END:
 
 *** Imports
-#+BEGIN_SRC rust :eval never
-  #[cfg(not(feature = "hacspec"))]
-  use crate::num::NonZeroI32;
+#+BEGIN_SRC rust
+#[cfg(not(feature = "hacspec"))]
+use crate::num::NonZeroI32;
 #+END_SRC
 
 *** Types code
-#+BEGIN_SRC rust :eval never
-  #[cfg(not(feature = "hacspec"))]
-  /// A type representing the constract state bytes.
-  #[derive(Default)]
-  pub struct ContractState {
-      pub(crate) current_position: u32,
-  }
+#+BEGIN_SRC rust
+#[cfg(not(feature = "hacspec"))]
+/// A type representing the constract state bytes.
+#[derive(Default)]
+pub struct ContractState {
+    pub(crate) current_position: u32,
+}
 
-  #[cfg(not(feature = "hacspec"))]
-  #[derive(Default)]
-  /// A type representing the parameter to init and receive methods.
-  pub struct Parameter {
-      pub(crate) current_position: u32,
-  }
+#[cfg(not(feature = "hacspec"))]
+#[derive(Default)]
+/// A type representing the parameter to init and receive methods.
+pub struct Parameter {
+    pub(crate) current_position: u32,
+}
 
-  #[cfg(not(feature = "hacspec"))]
-  /// A type representing the attributes, lazily acquired from the host.
-  #[derive(Default)]
-  pub struct AttributesCursor {
-      /// Current position of the cursor, starting from 0.
-      /// Note that this is only for the variable attributes.
-      /// `created_at` and `valid_to` will require.
-      pub(crate) current_position: u32,
-      /// The number of remaining items in the policy.
-      pub(crate) remaining_items:  u16,
-  }
+#[cfg(not(feature = "hacspec"))]
+/// A type representing the attributes, lazily acquired from the host.
+#[derive(Default)]
+pub struct AttributesCursor {
+    /// Current position of the cursor, starting from 0.
+    /// Note that this is only for the variable attributes.
+    /// `created_at` and `valid_to` will require.
+    pub(crate) current_position: u32,
+    /// The number of remaining items in the policy.
+    pub(crate) remaining_items: u16,
+}
 
-  #[cfg(not(feature = "hacspec"))]
-  /// A type representing the logger.
-  #[derive(Default)]
-  pub struct Logger {
-      pub(crate) _private: (),
-  }
+#[cfg(not(feature = "hacspec"))]
+/// A type representing the logger.
+#[derive(Default)]
+pub struct Logger {
+    pub(crate) _private: (),
+}
 
-  // #[cfg(not(feature = "hacspec"))]
-  /// Errors that can occur during logging.
-  #[derive(Debug, Copy, Clone, Eq, PartialEq)]
-  #[repr(u8)]
-  pub enum LogError {
-      /// The log is full.
-      Full,
-      /// The message to log was malformed (e.g., too long)
-      Malformed,
-  }
+// #[cfg(not(feature = "hacspec"))]
+/// Errors that can occur during logging.
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[repr(u8)]
+pub enum LogError {
+    /// The log is full.
+    Full,
+    /// The message to log was malformed (e.g., too long)
+    Malformed,
+}
 
-  #[cfg(not(feature = "hacspec"))]
-  /// Actions that can be produced at the end of a contract execution. This
-  /// type is deliberately not cloneable so that we can enforce that
-  /// `and_then` and `or_else` can only be used when more than one event is
-  /// created.
-  ///
-  /// This type is marked as `must_use` since functions that produce
-  /// values of the type are effectful.
-  #[must_use]
-  pub struct Action {
-      pub(crate) _private: u32,
-  }
+#[cfg(not(feature = "hacspec"))]
+/// Actions that can be produced at the end of a contract execution. This
+/// type is deliberately not cloneable so that we can enforce that
+/// `and_then` and `or_else` can only be used when more than one event is
+/// created.
+///
+/// This type is marked as `must_use` since functions that produce
+/// values of the type are effectful.
+#[must_use]
+pub struct Action {
+    pub(crate) _private: u32,
+}
 
-  #[cfg(not(feature = "hacspec"))]
-  impl Action {
-      pub fn tag(&self) -> u32 { self._private }
-  }
+#[cfg(not(feature = "hacspec"))]
+impl Action {
+    pub fn tag(&self) -> u32 {
+        self._private
+    }
+}
 
-  #[cfg(not(feature = "hacspec"))]
-  /// An error message, signalling rejection of a smart contract invocation.
-  /// The client will see the error code as a reject reason; if a schema is
-  /// provided, the error message corresponding to the error code will be
-  /// displayed. The valid range for an error code is from i32::MIN to  -1.
-  #[derive(Debug, Eq, PartialEq)] // TODO: Creusot issue re-add "Debug" attribute 
-  #[repr(transparent)]
-  pub struct Reject {
-      pub error_code: NonZeroI32,
-  }
+#[cfg(not(feature = "hacspec"))]
+/// An error message, signalling rejection of a smart contract invocation.
+/// The client will see the error code as a reject reason; if a schema is
+/// provided, the error message corresponding to the error code will be
+/// displayed. The valid range for an error code is from i32::MIN to  -1.
+#[derive(Debug, Eq, PartialEq)] // TODO: Creusot issue re-add "Debug" attribute
+#[repr(transparent)]
+pub struct Reject {
+    pub error_code: NonZeroI32,
+}
 
-  #[cfg(not(feature = "hacspec"))]
-  /// Default error is i32::MIN.
-  impl Default for Reject {
-      #[inline(always)]
-      fn default() -> Self {
-          Self {
-              error_code: unsafe { NonZeroI32::new_unchecked(i32::MIN) },
-          }
-      }
-  }
+#[cfg(not(feature = "hacspec"))]
+/// Default error is i32::MIN.
+impl Default for Reject {
+    #[inline(always)]
+    fn default() -> Self {
+        Self {
+            error_code: unsafe { NonZeroI32::new_unchecked(i32::MIN) },
+        }
+    }
+}
 
-  #[cfg(not(feature = "hacspec"))]
-  impl Reject {
-      /// This returns `None` for all values >= 0 and `Some` otherwise.
-      pub fn new(x: i32) -> Option<Self> {
-          if x < 0 {
-              let error_code = unsafe { NonZeroI32::new_unchecked(x) };
-              Some(Reject {
-                  error_code,
-              })
-          } else {
-              None
-          }
-      }
-  }
+#[cfg(not(feature = "hacspec"))]
+impl Reject {
+    /// This returns `None` for all values >= 0 and `Some` otherwise.
+    pub fn new(x: i32) -> Option<Self> {
+        if x < 0 {
+            let error_code = unsafe { NonZeroI32::new_unchecked(x) };
+            Some(Reject { error_code })
+        } else {
+            None
+        }
+    }
+}
 
-  // Macros for failing a contract function
+// Macros for failing a contract function
 
-  #[cfg(not(feature = "hacspec"))]
-  /// The `bail` macro can be used for cleaner error handling. If the function has
-  /// result type `Result` invoking `bail` will terminate execution early with an
-  /// error.
-  /// If an argument is supplied, this will be used as the error, otherwise it
-  /// requires the type `E` in `Result<_, E>` to implement the `Default` trait.
-  #[macro_export]
-  macro_rules! bail {
-      () => {{
-          return Err(Default::default());
-      }};
-      ($arg:expr) => {{
-          // format_err!-like formatting
-          // logs are only retained in case of rejection when testing.
-          return Err($arg);
-      }};
-  }
+#[cfg(not(feature = "hacspec"))]
+/// The `bail` macro can be used for cleaner error handling. If the function has
+/// result type `Result` invoking `bail` will terminate execution early with an
+/// error.
+/// If an argument is supplied, this will be used as the error, otherwise it
+/// requires the type `E` in `Result<_, E>` to implement the `Default` trait.
+#[macro_export]
+macro_rules! bail {
+    () => {{
+        return Err(Default::default());
+    }};
+    ($arg:expr) => {{
+        // format_err!-like formatting
+        // logs are only retained in case of rejection when testing.
+        return Err($arg);
+    }};
+}
 
-  #[cfg(not(feature = "hacspec"))]
-  /// The `ensure` macro can be used for cleaner error handling. It is analogous
-  /// to `assert`, but instead of panicking it uses `bail` to terminate execution
-  /// of the function early.
-  #[macro_export]
-  macro_rules! ensure {
-      ($p:expr) => {
-          if !$p {
-              $crate::bail!();
-          }
-      };
-      ($p:expr, $arg:expr) => {{
-          if !$p {
-              $crate::bail!($arg);
-          }
-      }};
-  }
+#[cfg(not(feature = "hacspec"))]
+/// The `ensure` macro can be used for cleaner error handling. It is analogous
+/// to `assert`, but instead of panicking it uses `bail` to terminate execution
+/// of the function early.
+#[macro_export]
+macro_rules! ensure {
+    ($p:expr) => {
+        if !$p {
+            $crate::bail!();
+        }
+    };
+    ($p:expr, $arg:expr) => {{
+        if !$p {
+            $crate::bail!($arg);
+        }
+    }};
+}
 
-  #[cfg(not(feature = "hacspec"))]
-  /// ## Variants of `ensure` for ease of use in certain contexts.
-  /// Ensure the first two arguments are equal, using `bail` otherwise.
-  #[macro_export]
-  macro_rules! ensure_eq {
-      ($l:expr, $r:expr) => {
-          $crate::ensure!($l == $r)
-      };
-      ($l:expr, $r:expr, $arg:expr) => {
-          $crate::ensure!($l == $r, $arg)
-      };
-  }
+#[cfg(not(feature = "hacspec"))]
+/// ## Variants of `ensure` for ease of use in certain contexts.
+/// Ensure the first two arguments are equal, using `bail` otherwise.
+#[macro_export]
+macro_rules! ensure_eq {
+    ($l:expr, $r:expr) => {
+        $crate::ensure!($l == $r)
+    };
+    ($l:expr, $r:expr, $arg:expr) => {
+        $crate::ensure!($l == $r, $arg)
+    };
+}
 
-  #[cfg(not(feature = "hacspec"))]
-  #[macro_export]
-  /// Ensure the first two arguments are __not__ equal, using `bail` otherwise.
-  macro_rules! ensure_ne {
-      ($l:expr, $r:expr) => {
-          $crate::ensure!($l != $r)
-      };
-      ($l:expr, $r:expr, $arg:expr) => {
-          $crate::ensure!($l != $r, $arg)
-      };
-  }
+#[cfg(not(feature = "hacspec"))]
+#[macro_export]
+/// Ensure the first two arguments are __not__ equal, using `bail` otherwise.
+macro_rules! ensure_ne {
+    ($l:expr, $r:expr) => {
+        $crate::ensure!($l != $r)
+    };
+    ($l:expr, $r:expr, $arg:expr) => {
+        $crate::ensure!($l != $r, $arg)
+    };
+}
 
-  // Macros for failing a test
+// Macros for failing a test
 
-  #[cfg(not(feature = "hacspec"))]
-  /// The `fail` macro is used for testing as a substitute for the panic macro.
-  /// It reports back error information to the host.
-  /// Used only in testing.
-  #[cfg(feature = "std")]
-  #[macro_export]
-  macro_rules! fail {
-      () => {
-          {
-              $crate::test_infrastructure::report_error("", file!(), line!(), column!());
-              panic!()
-          }
-      };
-      ($($arg:tt),+) => {
-          {
-              let msg = format!($($arg),+);
-              $crate::test_infrastructure::report_error(&msg, file!(), line!(), column!());
-              panic!("{}", msg)
-          }
-      };
-  }
+#[cfg(not(feature = "hacspec"))]
+/// The `fail` macro is used for testing as a substitute for the panic macro.
+/// It reports back error information to the host.
+/// Used only in testing.
+#[cfg(feature = "std")]
+#[macro_export]
+macro_rules! fail {
+    () => {
+        {
+            $crate::test_infrastructure::report_error("", file!(), line!(), column!());
+            panic!()
+        }
+    };
+    ($($arg:tt),+) => {
+        {
+            let msg = format!($($arg),+);
+            $crate::test_infrastructure::report_error(&msg, file!(), line!(), column!());
+            panic!("{}", msg)
+        }
+    };
+}
 
-  #[cfg(not(feature = "hacspec"))]
-  /// The `fail` macro is used for testing as a substitute for the panic macro.
-  /// It reports back error information to the host.
-  /// Used only in testing.
-  #[cfg(not(feature = "std"))]
-  #[macro_export]
-  macro_rules! fail {
-      () => {
-          {
-              $crate::test_infrastructure::report_error("", file!(), line!(), column!());
-              panic!()
-          }
-      };
-      ($($arg:tt),+) => {
-          {
-              let msg = &$crate::alloc::format!($($arg),+);
-              $crate::test_infrastructure::report_error(&msg, file!(), line!(), column!());
-              panic!("{}", msg)
-          }
-      };
-  }
+#[cfg(not(feature = "hacspec"))]
+/// The `fail` macro is used for testing as a substitute for the panic macro.
+/// It reports back error information to the host.
+/// Used only in testing.
+#[cfg(not(feature = "std"))]
+#[macro_export]
+macro_rules! fail {
+    () => {
+        {
+            $crate::test_infrastructure::report_error("", file!(), line!(), column!());
+            panic!()
+        }
+    };
+    ($($arg:tt),+) => {
+        {
+            let msg = &$crate::alloc::format!($($arg),+);
+            $crate::test_infrastructure::report_error(&msg, file!(), line!(), column!());
+            panic!("{}", msg)
+        }
+    };
+}
 
-  #[cfg(not(feature = "hacspec"))]
-  /// The `claim` macro is used for testing as a substitute for the assert macro.
-  /// It checks the condition and if false it reports back an error.
-  /// Used only in testing.
-  #[macro_export]
-  macro_rules! claim {
-      ($cond:expr) => {
-          if !$cond {
-              $crate::fail!()
-          }
-      };
-      ($cond:expr,) => {
-          if !$cond {
-              $crate::fail!()
-          }
-      };
-      ($cond:expr, $($arg:tt),+) => {
-          if !$cond {
-              $crate::fail!($($arg),+)
-          }
-      };
-  }
+#[cfg(not(feature = "hacspec"))]
+/// The `claim` macro is used for testing as a substitute for the assert macro.
+/// It checks the condition and if false it reports back an error.
+/// Used only in testing.
+#[macro_export]
+macro_rules! claim {
+    ($cond:expr) => {
+        if !$cond {
+            $crate::fail!()
+        }
+    };
+    ($cond:expr,) => {
+        if !$cond {
+            $crate::fail!()
+        }
+    };
+    ($cond:expr, $($arg:tt),+) => {
+        if !$cond {
+            $crate::fail!($($arg),+)
+        }
+    };
+}
 
-  #[cfg(not(feature = "hacspec"))]
-  /// Ensure the first two arguments are equal, just like `assert_eq!`, otherwise
-  /// reports an error. Used only in testing.
-  #[macro_export]
-  macro_rules! claim_eq {
-      ($left:expr, $right:expr) => {
-          $crate::claim!($left == $right, "left and right are not equal\nleft: {:?}\nright: {:?}", $left, $right)
-      };
-      ($left:expr, $right:expr,) => {
-          $crate::claim_eq!($left, $right)
-      };
-      ($left:expr, $right:expr, $($arg:tt),+) => {
-          $crate::claim!($left == $right, $($arg),+)
-      };
-  }
+#[cfg(not(feature = "hacspec"))]
+/// Ensure the first two arguments are equal, just like `assert_eq!`, otherwise
+/// reports an error. Used only in testing.
+#[macro_export]
+macro_rules! claim_eq {
+    ($left:expr, $right:expr) => {
+        $crate::claim!($left == $right, "left and right are not equal\nleft: {:?}\nright: {:?}", $left, $right)
+    };
+    ($left:expr, $right:expr,) => {
+        $crate::claim_eq!($left, $right)
+    };
+    ($left:expr, $right:expr, $($arg:tt),+) => {
+        $crate::claim!($left == $right, $($arg),+)
+    };
+}
 
-  #[cfg(not(feature = "hacspec"))]
-  /// Ensure the first two arguments are *not* equal, just like `assert_ne!`,
-  /// otherwise reports an error.
-  /// Used only in testing.
-  #[macro_export]
-  macro_rules! claim_ne {
-      ($left:expr, $right:expr) => {
-          $crate::claim!($left != $right)
-      };
-      ($left:expr, $right:expr,) => {
-          $crate::claim!($left != $right)
-      };
-      ($left:expr, $right:expr, $($arg:tt),+) => {
-          $crate::claim!($left != $right, $($arg),+)
-      };
-  }
+#[cfg(not(feature = "hacspec"))]
+/// Ensure the first two arguments are *not* equal, just like `assert_ne!`,
+/// otherwise reports an error.
+/// Used only in testing.
+#[macro_export]
+macro_rules! claim_ne {
+    ($left:expr, $right:expr) => {
+        $crate::claim!($left != $right)
+    };
+    ($left:expr, $right:expr,) => {
+        $crate::claim!($left != $right)
+    };
+    ($left:expr, $right:expr, $($arg:tt),+) => {
+        $crate::claim!($left != $right, $($arg),+)
+    };
+}
 
-  #[cfg(not(feature = "hacspec"))]
-  /// The expected return type of the receive method of a smart contract.
-  ///
-  /// Optionally, to define a custom type for error instead of using
-  /// Reject, allowing to track the reason for rejection, *but only in unit
-  /// tests*.
-  ///
-  /// See also the documentation for [bail!](macro.bail.html) for how to use
-  /// custom error types.
-  ///
-  /// # Example
-  /// Defining a custom error type
-  /// ```rust
-  /// enum MyCustomError {
-  ///     SomeError
-  /// }
-  ///
-  /// #[receive(contract = "mycontract", name = "receive")]
-  /// fn contract_receive<R: HasReceiveContext, L: HasLogger, A: HasActions>(
-  ///     ctx: &R,
-  ///     receive_amount: Amount,
-  ///     logger: &mut L,
-  ///     state: &mut State,
-  /// ) -> Result<A, MyCustomError> { ... }
-  /// ```
-  pub type ReceiveResult<A> = Result<A, Reject>;
+#[cfg(not(feature = "hacspec"))]
+/// The expected return type of the receive method of a smart contract.
+///
+/// Optionally, to define a custom type for error instead of using
+/// Reject, allowing to track the reason for rejection, *but only in unit
+/// tests*.
+///
+/// See also the documentation for [bail!](macro.bail.html) for how to use
+/// custom error types.
+///
+/// # Example
+/// Defining a custom error type
+/// ```rust
+/// enum MyCustomError {
+///     SomeError
+/// }
+///
+/// #[receive(contract = "mycontract", name = "receive")]
+/// fn contract_receive<R: HasReceiveContext, L: HasLogger, A: HasActions>(
+///     ctx: &R,
+///     receive_amount: Amount,
+///     logger: &mut L,
+///     state: &mut State,
+/// ) -> Result<A, MyCustomError> { ... }
+/// ```
+pub type ReceiveResult<A> = Result<A, Reject>;
 
-  #[cfg(not(feature = "hacspec"))]
-  /// The expected return type of the init method of the smart contract,
-  /// parametrized by the state type of the smart contract.
-  ///
-  /// Optionally, to define a custom type for error instead of using Reject,
-  /// allowing the track the reason for rejection, *but only in unit tests*.
-  ///
-  /// See also the documentation for [bail!](macro.bail.html) for how to use
-  /// custom error types.
-  ///
-  /// # Example
-  /// Defining a custom error type
-  /// ```rust
-  /// enum MyCustomError {
-  ///     SomeError
-  /// }
-  ///
-  /// #[init(contract = "mycontract")]
-  /// fn contract_init<R: HasReceiveContext, L: HasLogger, A: HasActions>(
-  ///     ctx: &R,
-  ///     receive_amount: Amount,
-  ///     logger: &mut L,
-  /// ) -> Result<State, MyCustomError> { ... }
-  /// ```
-  pub type InitResult<S> = Result<S, Reject>;
+#[cfg(not(feature = "hacspec"))]
+/// The expected return type of the init method of the smart contract,
+/// parametrized by the state type of the smart contract.
+///
+/// Optionally, to define a custom type for error instead of using Reject,
+/// allowing the track the reason for rejection, *but only in unit tests*.
+///
+/// See also the documentation for [bail!](macro.bail.html) for how to use
+/// custom error types.
+///
+/// # Example
+/// Defining a custom error type
+/// ```rust
+/// enum MyCustomError {
+///     SomeError
+/// }
+///
+/// #[init(contract = "mycontract")]
+/// fn contract_init<R: HasReceiveContext, L: HasLogger, A: HasActions>(
+///     ctx: &R,
+///     receive_amount: Amount,
+///     logger: &mut L,
+/// ) -> Result<State, MyCustomError> { ... }
+/// ```
+pub type InitResult<S> = Result<S, Reject>;
 
+#[cfg(not(feature = "hacspec"))]
+/// Context backed by host functions.
+#[derive(Default)]
+#[doc(hidden)]
+pub struct ExternContext<T: sealed::ContextType> {
+    marker: crate::marker::PhantomData<T>,
+}
 
-  #[cfg(not(feature = "hacspec"))]
-  /// Context backed by host functions.
-  #[derive(Default)]
-  #[doc(hidden)]
-  pub struct ExternContext<T: sealed::ContextType> {
-      marker: crate::marker::PhantomData<T>,
-  }
+#[cfg(not(feature = "hacspec"))]
+#[doc(hidden)]
+pub struct ChainMetaExtern {}
 
-  #[cfg(not(feature = "hacspec"))]
-  #[doc(hidden)]
-  pub struct ChainMetaExtern {}
+#[cfg(not(feature = "hacspec"))]
+#[derive(Default)]
+#[doc(hidden)]
+pub struct InitContextExtern;
+#[cfg(not(feature = "hacspec"))]
+#[derive(Default)]
+#[doc(hidden)]
+pub struct ReceiveContextExtern;
 
-  #[cfg(not(feature = "hacspec"))]
-  #[derive(Default)]
-  #[doc(hidden)]
-  pub struct InitContextExtern;
-  #[cfg(not(feature = "hacspec"))]
-  #[derive(Default)]
-  #[doc(hidden)]
-  pub struct ReceiveContextExtern;
-
-  #[cfg(not(feature = "hacspec"))]
-  pub(crate) mod sealed {
-      use super::*;
-      /// Marker trait intended to indicate which context type we have.
-      /// This is deliberately a sealed trait, so that it is only implementable
-      /// by types in this crate.
-      pub trait ContextType {}
-      impl ContextType for InitContextExtern {}
-      impl ContextType for ReceiveContextExtern {}
-  }
+#[cfg(not(feature = "hacspec"))]
+pub(crate) mod sealed {
+    use super::*;
+    /// Marker trait intended to indicate which context type we have.
+    /// This is deliberately a sealed trait, so that it is only implementable
+    /// by types in this crate.
+    pub trait ContextType {}
+    impl ContextType for InitContextExtern {}
+    impl ContextType for ReceiveContextExtern {}
+}
 #+END_SRC
 
 * Concordium "Traits" specification
 ** Rust code
 :PROPERTIES:
-:header-args:  :tangle ../../examples/concordium/src/hacspec_concordium_traits.rs
+:header-args: rust :tangle ../../examples/concordium/src/hacspec_concordium_traits.rs :eval never
 :END:
 *** Imports
-#+BEGIN_SRC rust :eval never
-  #[cfg(not(feature = "hacspec"))]
-  use crate::collections::{BTreeMap, BTreeSet, HashSet, HashMap};
-
-  #[cfg(not(feature = "hacspec"))]
-  use crate::hash::Hash;
-  
-  #[cfg(not(feature = "hacspec"))]
-  extern crate concordium_contracts_common;
-  #[cfg(not(feature = "hacspec"))]
-  use concordium_contracts_common::*;
-#+END_SRC
-
-#+BEGIN_SRC rust :eval never
+#+BEGIN_SRC rust
 #[cfg(not(feature = "hacspec"))]
 use crate::*;
 #+END_SRC
 
 *** Traits code
-#+BEGIN_SRC rust :eval never
+#+BEGIN_SRC rust
   // //! This module implements traits for the contract interface.
   // //! This allows setting-up mock objects for testing individual
   // //! contract invocations.
@@ -841,117 +858,99 @@ use crate::*;
 * Concordium "Prims" specification
 ** Rust code
 :PROPERTIES:
-:header-args:  :tangle ../../examples/concordium/src/hacspec_concordium_prims.rs
+:header-args: rust :tangle ../../examples/concordium/src/hacspec_concordium_prims.rs :eval never
 :END:
 
 *** Imports
-#+BEGIN_SRC rust :eval never
-  #[cfg(not(feature = "hacspec"))]
-  extern crate hacspec_lib;
+#+BEGIN_SRC rust
+#[cfg(not(feature = "hacspec"))]
+extern crate hacspec_lib;
 
-  use hacspec_lib::*;
+use self::hacspec_lib::*;
 
-  #[cfg(feature = "hacspec")]
-  use hacspec_attributes::*;
-
-  // Creusot
-  #[cfg(not(feature = "hacspec"))]
-  extern crate creusot_contracts;
-  #[cfg(not(feature = "hacspec"))]
-  use creusot_contracts::{
-      trusted          
-      };
 #+END_SRC
 
-#+BEGIN_SRC rust :eval never
+#+BEGIN_SRC rust
 #[cfg(not(feature = "hacspec"))]
 use crate::*;
 #+END_SRC
 
 *** Externs
 Load state extern
-#+begin_src rust :eval never
-  #[cfg(not(feature = "hacspec"))]
-  extern "C" {
-      pub(crate) fn load_state(start: *mut u8, length: u32, offset: u32) -> u32;
-  }
+#+begin_src rust
+#[cfg(not(feature = "hacspec"))]
+extern "C" {
+    pub(crate) fn load_state(start: *mut u8, length: u32, offset: u32) -> u32;
+}
 
-  #[cfg(not(feature = "hacspec"))]
-  #[trusted]
-  pub(crate) fn load_state_creusot(start: *mut u8, length: u32, offset: u32) -> u32 {
-      unsafe { load_state(start, length, offset) }
-  }
+#[cfg(not(feature = "hacspec"))]
+#[trusted]
+pub(crate) fn load_state_creusot(start: *mut u8, length: u32, offset: u32) -> u32 {
+    unsafe { load_state(start, length, offset) }
+}
 
-  #[cfg(feature = "hacspec")]
-  pub(crate) fn load_state_hacspec(buf: PublicByteSeq, offset: u32) -> (PublicByteSeq, u32) {
-      (buf, 1u32)
-  }
+#[cfg(feature = "hacspec")]
+pub(crate) fn load_state_hacspec(buf: PublicByteSeq, offset: u32) -> (PublicByteSeq, u32) {
+    (buf, 1u32)
+}
 
-  #[cfg(not(feature = "hacspec"))]
-  pub(crate) fn load_state_hacspec(buf: PublicByteSeq, offset: u32) -> (PublicByteSeq, u32) {
-      let temp = &mut coerce_hacspec_to_rust_public_byte_seq(buf.clone())[..];
-      let result = load_state_creusot(temp.as_mut_ptr(), buf.len() as u32, offset);
-      (
-          coerce_rust_to_hacspec_public_byte_seq(&temp),
-          result,
-      )
-  }
-
+#[cfg(not(feature = "hacspec"))]
+pub(crate) fn load_state_hacspec(buf: PublicByteSeq, offset: u32) -> (PublicByteSeq, u32) {
+    let temp = &mut coerce_hacspec_to_rust_public_byte_seq(buf.clone())[..];
+    let result = load_state_creusot(temp.as_mut_ptr(), buf.len() as u32, offset);
+    (coerce_rust_to_hacspec_public_byte_seq(&temp), result)
+}
 #+end_src
 Write state extern
-#+begin_src rust :eval never
-  #[cfg(not(feature = "hacspec"))]
-  extern "C" {
-      pub(crate) fn write_state(start: *mut u8, length: u32, offset: u32) -> u32;
-  }
+#+begin_src rust
+#[cfg(not(feature = "hacspec"))]
+extern "C" {
+    pub(crate) fn write_state(start: *mut u8, length: u32, offset: u32) -> u32;
+}
 
-  #[cfg(not(feature = "hacspec"))]
-  #[trusted]
-  pub(crate) fn write_state_creusot(start: *mut u8, length: u32, offset: u32) -> u32 {
-      unsafe { write_state(start, length, offset) }
-  }
+#[cfg(not(feature = "hacspec"))]
+#[trusted]
+pub(crate) fn write_state_creusot(start: *mut u8, length: u32, offset: u32) -> u32 {
+    unsafe { write_state(start, length, offset) }
+}
 
-  #[cfg(feature = "hacspec")]
-  pub(crate) fn write_state_hacspec(buf: PublicByteSeq, offset: u32) -> (PublicByteSeq, u32) {
-      (buf, 1u32)
-  }
+#[cfg(feature = "hacspec")]
+pub(crate) fn write_state_hacspec(buf: PublicByteSeq, offset: u32) -> (PublicByteSeq, u32) {
+    (buf, 1u32)
+}
 
-  #[cfg(not(feature = "hacspec"))]
-  pub(crate) fn write_state_hacspec(buf: PublicByteSeq, offset: u32) -> (PublicByteSeq, u32) {
-      let temp = &mut coerce_hacspec_to_rust_public_byte_seq(buf.clone())[..];
-      let result = write_state_creusot(temp.as_mut_ptr(), buf.len() as u32, offset);
-      (
-          coerce_rust_to_hacspec_public_byte_seq(&temp),
-          result,
-      )
-  }
+#[cfg(not(feature = "hacspec"))]
+pub(crate) fn write_state_hacspec(buf: PublicByteSeq, offset: u32) -> (PublicByteSeq, u32) {
+    let temp = &mut coerce_hacspec_to_rust_public_byte_seq(buf.clone())[..];
+    let result = write_state_creusot(temp.as_mut_ptr(), buf.len() as u32, offset);
+    (coerce_rust_to_hacspec_public_byte_seq(&temp), result)
+}
 #+end_src
 State size extern
-#+begin_src rust :eval never
-  #[cfg(not(feature = "hacspec"))]
-  extern "C" {
-      pub(crate) fn state_size() -> u32;
-  }
+#+begin_src rust
+#[cfg(not(feature = "hacspec"))]
+extern "C" {
+    pub(crate) fn state_size() -> u32;
+}
 
-  #[cfg(not(feature = "hacspec"))]
-  #[trusted]
-  pub(crate) fn state_size_creusot() -> u32 {
-      unsafe { state_size() }
-  }
+#[cfg(not(feature = "hacspec"))]
+#[trusted]
+pub(crate) fn state_size_creusot() -> u32 {
+    unsafe { state_size() }
+}
 
-  #[cfg(feature = "hacspec")]
-  pub(crate) fn state_size_hacspec() -> u32 {
-      1u32
-  }
+#[cfg(feature = "hacspec")]
+pub(crate) fn state_size_hacspec() -> u32 {
+    1u32
+}
 
-  #[cfg(not(feature = "hacspec"))]
-  pub(crate) fn state_size_hacspec() -> u32 {
-      state_size_creusot()
-  }
-  
+#[cfg(not(feature = "hacspec"))]
+pub(crate) fn state_size_hacspec() -> u32 {
+    state_size_creusot()
+}
 #+end_src
 Resize state extern
-#+begin_src rust :eval never
+#+begin_src rust
   #[cfg(not(feature = "hacspec"))]
   extern "C" {
       // Resize state to the new value (truncate if new size is smaller). Return 0 if
@@ -977,7 +976,7 @@ Resize state extern
   }
 #+end_src
 Extern for parameter section
-#+begin_src rust :eval never
+#+begin_src rust
   #[cfg(not(feature = "hacspec"))]
   extern "C" {
       // Write a section of the parameter to the given location. Return the number
@@ -1009,7 +1008,7 @@ Extern for parameter section
 
 #+end_src
 Extern for parameter size and ~HasParameter~ trait.
-#+begin_src rust :eval never
+#+begin_src rust
   #[cfg(not(feature = "hacspec"))]
   extern "C" {
       // Get the size of the parameter to the method (either init or receive).
@@ -1042,7 +1041,7 @@ Extern for parameter size and ~HasParameter~ trait.
 
 #+end_src
 Get slot time extern
-#+begin_src rust :eval never
+#+begin_src rust
   #[cfg(not(feature = "hacspec"))]
   extern "C" {
     // Getters for the chain meta data
@@ -1067,7 +1066,7 @@ Get slot time extern
   }
 #+end_src
 Get policy section extern
-#+begin_src rust :eval never
+#+begin_src rust
   #[cfg(not(feature = "hacspec"))]
   extern "C" {
     // Write a section of the policy to the given location. Return the number
@@ -1099,7 +1098,7 @@ Get policy section extern
 
 #+end_src
 Get init origin extern
-#+begin_src rust :eval never
+#+begin_src rust
   #[cfg(not(feature = "hacspec"))]
   extern "C" {
     // Getter for the init context.
@@ -1127,7 +1126,7 @@ Get init origin extern
 
 #+end_src
 Get receive invoker extern
-#+begin_src rust :eval never
+#+begin_src rust
   #[cfg(not(feature = "hacspec"))]
   extern "C" {
     /// Invoker of the top-level transaction, AccountAddress.
@@ -1154,7 +1153,7 @@ Get receive invoker extern
 
 #+end_src
 Get receive self address extern
-#+begin_src rust :eval never
+#+begin_src rust
   #[cfg(not(feature = "hacspec"))]
   extern "C" {
     /// Address of the contract itself, ContractAddress.
@@ -1181,7 +1180,7 @@ Get receive self address extern
 
 #+end_src
 Get receive self balance extern
-#+begin_src rust :eval never
+#+begin_src rust
   #[cfg(not(feature = "hacspec"))]
   extern "C" {
     /// Self-balance of the contract, returns the amount
@@ -1206,7 +1205,7 @@ Get receive self balance extern
 
 #+end_src
 Get receive sender extern
-#+begin_src rust :eval never
+#+begin_src rust
   #[cfg(not(feature = "hacspec"))]
   extern "C" {
     /// Immediate sender of the message (either contract or account).
@@ -1232,35 +1231,35 @@ Get receive sender extern
   }
 
 #+end_src
-Get receive owner extern
-#+begin_src rust :eval never
-  #[cfg(not(feature = "hacspec"))]
-  extern "C" {
-    /// Owner of the contract, AccountAddress.
-    pub(crate) fn get_receive_owner(start: *mut u8);
-  }
+# TODO: Un-used
+# Get receive owner extern
+# #+begin_src rust
+# #[cfg(not(feature = "hacspec"))]
+# extern "C" {
+#     /// Owner of the contract, AccountAddress.
+#     pub(crate) fn get_receive_owner(start: *mut u8);
+# }
 
-  #[cfg(not(feature = "hacspec"))]
-  #[trusted]
-  pub(crate) fn get_receive_owner_creusot(start: *mut u8) {
-      unsafe { get_receive_owner(start) }
-  }
+# #[cfg(not(feature = "hacspec"))]
+# #[trusted]
+# pub(crate) fn get_receive_owner_creusot(start: *mut u8) {
+#     unsafe { get_receive_owner(start) }
+# }
 
-  #[cfg(feature = "hacspec")]
-  pub(crate) fn get_receive_owner_hacspec(start: PublicByteSeq) -> PublicByteSeq {
-      start
-  }
+# #[cfg(feature = "hacspec")]
+# pub(crate) fn get_receive_owner_hacspec(start: PublicByteSeq) -> PublicByteSeq {
+#     start
+# }
 
-  #[cfg(not(feature = "hacspec"))]
-  pub(crate) fn get_receive_owner_hacspec(start: PublicByteSeq) -> PublicByteSeq {
-      let temp = &mut coerce_hacspec_to_rust_public_byte_seq(start.clone())[..];
-      get_receive_owner_creusot(temp.as_mut_ptr());
-      coerce_rust_to_hacspec_public_byte_seq(&temp)
-  }
-
-#+end_src
+# #[cfg(not(feature = "hacspec"))]
+# pub(crate) fn get_receive_owner_hacspec(start: PublicByteSeq) -> PublicByteSeq {
+#     let temp = &mut coerce_hacspec_to_rust_public_byte_seq(start.clone())[..];
+#     get_receive_owner_creusot(temp.as_mut_ptr());
+#     coerce_rust_to_hacspec_public_byte_seq(&temp)
+# }
+# #+end_src
 Log event extern
-#+begin_src rust :eval never
+#+begin_src rust
   #[cfg(not(feature = "hacspec"))]
   extern "C" {
       // Add a log item. Return values are
@@ -1290,7 +1289,7 @@ Log event extern
 
 #+end_src
 Extern accept
-#+begin_src rust :eval never  
+#+begin_src rust  
   #[cfg(not(feature = "hacspec"))]
   extern "C" {
       pub(crate) fn accept() -> u32;
@@ -1314,7 +1313,7 @@ Extern accept
   
 #+end_src
 Extern simple transfer
-#+begin_src rust :eval never  
+#+begin_src rust  
   #[cfg(not(feature = "hacspec"))]
   extern "C" {
     // Basic action to send tokens to an account.
@@ -1340,7 +1339,7 @@ Extern simple transfer
 
 #+end_src
 Extern send
-#+begin_src rust :eval never  
+#+begin_src rust  
   #[cfg(not(feature = "hacspec"))]
   extern "C" {
     // Send a message to a smart contract.
@@ -1395,7 +1394,7 @@ Extern send
 
 #+end_src
 Extern combine and
-#+begin_src rust :eval never  
+#+begin_src rust  
   #[cfg(not(feature = "hacspec"))]
   extern "C" {
     // Combine two actions using normal sequencing. This is using the stack of
@@ -1421,7 +1420,7 @@ Extern combine and
 
 #+end_src
 Extern combine or
-#+begin_src rust :eval never  
+#+begin_src rust  
   #[cfg(not(feature = "hacspec"))]
   extern "C" {
     // Combine two actions using normal sequencing. This is using the stack of
@@ -1450,55 +1449,26 @@ Extern combine or
 * Concordium "Impls" specification
 ** Rust code
 :PROPERTIES:
-:header-args:  :tangle ../../examples/concordium/src/hacspec_concordium_impls.rs
+:header-args:  :tangle ../../examples/concordium/src/hacspec_concordium_impls.rs :eval never
 :END:
 
 *** Imports
-#+BEGIN_SRC rust :eval never
-  #[cfg(not(feature = "hacspec"))]
-  use crate::{
-      collections::{BTreeMap, BTreeSet},
-      convert::{self, TryFrom, TryInto},
-      hash::Hash,
-      num::NonZeroI32,
-      vec::Vec,
-      String,
-      trap,
-  };
-
-  #[cfg(not(feature = "hacspec"))]
-  use concordium_contracts_common::*;
-#+END_SRC
-
-#+BEGIN_SRC rust :eval never
+#+BEGIN_SRC rust
 #[cfg(not(feature = "hacspec"))]
-use crate::*;
-#+END_SRC
-
-#+BEGIN_SRC rust :eval never
-  #[cfg(not(feature = "hacspec"))]
-  extern crate hacspec_lib;
-
-  use hacspec_lib::*;
-
-  // #[cfg(feature = "hacspec_attributes")]
-  #[cfg(feature = "hacspec")]
-  use hacspec_attributes::*;
-
-  // Creusot
-  #[cfg(not(feature = "hacspec"))]
-  extern crate creusot_contracts;
-  #[cfg(not(feature = "hacspec"))]
-  use creusot_contracts::{
-      ensures,
-      requires,
-      trusted          
-      };
+use crate::{
+    collections::{BTreeMap, BTreeSet},
+    convert::{self}, // , TryFrom, TryInto
+    hash::Hash,
+    num::NonZeroI32,
+    trap,
+    vec::Vec,
+    String, *,
+};
 #+END_SRC
 
 *** Reject
 We modle reject as the underlying data, that is the src_rust[:eval never]{i32} error code. The default constructor is i32 min.
-#+begin_src rust :eval never
+#+begin_src rust
   pub type RejectHacspec = i32;
 
   pub fn reject_impl_deafult() -> RejectHacspec {
@@ -1507,7 +1477,7 @@ We modle reject as the underlying data, that is the src_rust[:eval never]{i32} e
 
 #+end_src
 We then implement the new operations for Reject.
-#+begin_src rust :eval never
+#+begin_src rust
   pub fn new_reject_impl(x: i32) -> Option::<i32> { // Option<RejectHacspec>
       // TODO: fix 'identifier is not a constant' error (Seems to be fixed by some import?)
       if x < 0i32 {
@@ -1519,7 +1489,7 @@ We then implement the new operations for Reject.
 
 #+end_src
 We define the coercion function for Reject, and implement the traits
-#+begin_src rust :eval never
+#+begin_src rust
   #[cfg(not(feature = "hacspec"))]
   pub fn coerce_hacspec_to_rust_reject(hacspec_reject: RejectHacspec) -> Reject {
       Reject {
@@ -1529,7 +1499,7 @@ We define the coercion function for Reject, and implement the traits
 #+end_src
 
 **** Reject - From trait
-#+begin_src rust :tangle no :eval never
+#+begin_src rust :tangle no
   impl convert::From<()> for Reject {
       #[inline(always)]
       fn from(_: ()) -> Self {
@@ -1550,7 +1520,7 @@ We define the coercion function for Reject, and implement the traits
 #+end_src
 
 We modle the unsafe block with unchecked non zero as a precondition using requires giving us the hacspec equivalent
-#+begin_src rust :eval never
+#+begin_src rust
   #[ensures(!(result === 0i32))] // !=
   pub fn reject_impl_convert_from_unit() -> RejectHacspec {
       i32::MIN + 1i32
@@ -1562,7 +1532,7 @@ We modle the unsafe block with unchecked non zero as a precondition using requir
   }
 #+end_src
 We then implement the traits
-#+begin_src rust :eval never
+#+begin_src rust
   #[cfg(not(feature = "hacspec"))]
   impl convert::From<()> for Reject {
       #[inline(always)]
@@ -1580,7 +1550,7 @@ We then implement the traits
   }  
 #+end_src
 We define a log error type and function converting from it to the reject type
-#+begin_src rust :eval never
+#+begin_src rust
   #[ensures(!(result === 0i32))] // !=
   pub fn reject_impl_from_log_error(le: LogError) -> RejectHacspec {
       match le {
@@ -1591,7 +1561,7 @@ We define a log error type and function converting from it to the reject type
 
 #+end_src
 We then implement the traits
-#+begin_src rust :eval never
+#+begin_src rust
   #[cfg(not(feature = "hacspec"))]
   /// Full is mapped to i32::MIN+3, Malformed is mapped to i32::MIN+4.
   impl From<LogError> for Reject {
@@ -1603,7 +1573,7 @@ We then implement the traits
 
 #+end_src
 We define a type for new contract name errors and conversion from it to reject
-#+begin_src rust :eval never
+#+begin_src rust
   #[derive(Clone)] // , Debug, PartialEq, Eq
   pub enum NewContractNameError {
       NewContractNameErrorMissingInitPrefix,
@@ -1624,7 +1594,7 @@ We define a type for new contract name errors and conversion from it to reject
 
 #+end_src
 We then implement the traits
-#+begin_src rust :eval never
+#+begin_src rust
   #[cfg(not(feature = "hacspec"))]
   /// MissingInitPrefix is mapped to i32::MIN + 5,
   /// TooLong to i32::MIN + 6,
@@ -1638,7 +1608,7 @@ We then implement the traits
 
 #+end_src
 We define a type for new receive name errors and conversion from it to reject
-#+begin_src rust :eval never
+#+begin_src rust
   #[derive(Clone)] // , Debug, PartialEq, Eq
   pub enum NewReceiveNameError {
       NewReceiveNameErrorMissingDotSeparator,
@@ -1657,7 +1627,7 @@ We define a type for new receive name errors and conversion from it to reject
 
 #+end_src
 We then implement the traits
-#+begin_src rust :eval never
+#+begin_src rust
   #[cfg(not(feature = "hacspec"))]
   /// MissingDotSeparator is mapped to i32::MIN + 7,
   /// TooLong to i32::MIN + 8, and
@@ -1672,12 +1642,12 @@ We then implement the traits
 
 *** Contract state
 We define contract state as its inner state namely the current position of the src_rust[:eval never]{u32} type.
-#+begin_src rust :eval never
+#+begin_src rust
   pub type ContractStateHacspec = u32;
   
 #+end_src
 **** Contract State -- Seek
-#+begin_src rust :eval never
+#+begin_src rust
   #[derive(Copy, Clone)] // , Debug, PartialEq, Eq
   pub enum SeekFromHacspec {
       /// Sets the offset to the provided number of bytes.
@@ -1741,7 +1711,7 @@ We define contract state as its inner state namely the current position of the s
   }
 #+end_src
 We then implement the traits
-#+begin_src rust :eval never
+#+begin_src rust
   #[cfg(not(feature = "hacspec"))]
   pub fn coerce_rust_to_hacspec_contract_state(
       rust_contract_state: &mut ContractState,
@@ -1795,7 +1765,7 @@ We then implement the traits
 #+end_src
 
 **** Contract State -- Load
-#+begin_src rust :eval never
+#+begin_src rust
   #[cfg(not(feature = "hacspec"))]
   pub fn coerce_rust_to_hacspec_public_byte_seq(buf: &[u8]) -> PublicByteSeq {
       PublicByteSeq::from_native_slice(buf)
@@ -1816,12 +1786,12 @@ We then implement the traits
 
 
 **** Contract State -- Read
-#+begin_src rust :eval never
+#+begin_src rust
   pub fn contract_state_impl_read_read(
       current_position: ContractStateHacspec,
       buf : PublicByteSeq,
   ) -> (ContractStateHacspec, usize) {
-      let (buf, num_read) = load_state_hacspec(buf, current_position);
+      let (_buf, num_read) = load_state_hacspec(buf, current_position);
       (current_position + num_read, num_read as usize)
   }
 
@@ -1859,7 +1829,7 @@ We then implement the traits
 
 #+end_src
 We then implement the traits
-#+begin_src rust :eval never
+#+begin_src rust
   #[cfg(not(feature = "hacspec"))]
   impl Read for ContractState {
       fn read(&mut self, buf: &mut [u8]) -> ParseResult<usize> {
@@ -1917,39 +1887,42 @@ We then implement the traits
 #+end_src
 
 **** Contract State -- Write
-#+begin_src rust :eval never
-  pub fn contract_state_impl_write(
-      current_position: ContractStateHacspec,
-      buf : PublicByteSeq
-  ) -> Result<(ContractStateHacspec, usize), ()> {
-      if current_position.checked_add(buf.len() as u32).is_none() {
-          Result::<(ContractStateHacspec, usize), ()>::Err(())?;
-      }
-      let (buf, num_bytes) = write_state_hacspec(buf, current_position);
-      Result::<(ContractStateHacspec, usize), ()>::Ok((current_position + num_bytes, num_bytes as usize))
-  }
+#+begin_src rust
+pub fn contract_state_impl_write(
+    current_position: ContractStateHacspec,
+    buf: PublicByteSeq,
+) -> Result<(ContractStateHacspec, usize), ()> {
+    if current_position.checked_add(buf.len() as u32).is_none() {
+        Result::<(ContractStateHacspec, usize), ()>::Err(())?;
+    }
+    let (_buf, num_bytes) = write_state_hacspec(buf, current_position);
+    Result::<(ContractStateHacspec, usize), ()>::Ok((
+        current_position + num_bytes,
+        num_bytes as usize,
+    ))
+}
 
 #+end_src
 We then implement the traits
-#+begin_src rust :eval never
-  #[cfg(not(feature = "hacspec"))]
-  impl Write for ContractState {
-      type Err = ();
+#+begin_src rust
+#[cfg(not(feature = "hacspec"))]
+impl Write for ContractState {
+    type Err = ();
 
-      fn write(&mut self, buf: &[u8]) -> Result<usize, Self::Err> {
-          let (cs, nr) = contract_state_impl_write(
-              coerce_rust_to_hacspec_contract_state(self),
-              coerce_rust_to_hacspec_public_byte_seq(buf),
-          )?;
-          coerce_hacspec_to_rust_contract_state(self, cs);
-          Ok(nr)
-      }
-  }
+    fn write(&mut self, buf: &[u8]) -> Result<usize, Self::Err> {
+        let (cs, nr) = contract_state_impl_write(
+            coerce_rust_to_hacspec_contract_state(self),
+            coerce_rust_to_hacspec_public_byte_seq(buf),
+        )?;
+        coerce_hacspec_to_rust_contract_state(self, cs);
+        Ok(nr)
+    }
+}
 #+end_src
 
 **** Contract State -- Misc.
 
-#+begin_src rust :eval never
+#+begin_src rust
   pub fn has_contract_state_impl_for_contract_state_open() -> ContractStateHacspec {
       0_u32
   }
@@ -1963,7 +1936,6 @@ We then implement the traits
   // }
 
   pub fn has_contract_state_impl_for_contract_state_reserve(
-      contract_state: ContractStateHacspec,
       len: u32,
   ) -> bool {
       let cur_size = state_size_hacspec();
@@ -1991,7 +1963,7 @@ We then implement the traits
   }
 #+end_src
 We then implement the traits
-#+begin_src rust :eval never
+#+begin_src rust
   #[cfg(not(feature = "hacspec"))]
   impl HasContractState<()> for ContractState {
       type ContractStateData = ();
@@ -2004,10 +1976,7 @@ We then implement the traits
       }
 
       fn reserve(&mut self, len: u32) -> bool {
-          has_contract_state_impl_for_contract_state_reserve(
-              coerce_rust_to_hacspec_contract_state(self),
-              len,
-          )
+          has_contract_state_impl_for_contract_state_reserve(len)
       }
 
       #[inline(always)]
@@ -2032,20 +2001,20 @@ We then implement the traits
 
 *** Parameter
 We define parameter
-#+begin_src rust :eval never
+#+begin_src rust
   pub type ParameterHacspec = u32;
 
   pub fn read_impl_for_parameter_read(
       current_position: ParameterHacspec,
       buf: PublicByteSeq,
   ) -> (ParameterHacspec, usize) {
-      let (buf, num_read) = get_parameter_section_hacspec(buf, current_position);
+      let (_buf, num_read) = get_parameter_section_hacspec(buf, current_position);
       (current_position + num_read, num_read as usize)
   }
 
 #+end_src
 We then implement the traits
-#+begin_src rust :eval never
+#+begin_src rust
   #[cfg(not(feature = "hacspec"))]
   pub fn coerce_rust_to_hacspec_parameter(
       rust_parameter: &mut Parameter,
@@ -2078,7 +2047,7 @@ We then implement the traits
 #+end_src
 *** ChainMetaExtern
 We define and implement traits for ~ChainMetaExtern~.
-#+begin_src rust :eval never
+#+begin_src rust
   #[cfg(not(feature = "hacspec"))]
   /// # Trait implementations for the chain metadata.
   impl HasChainMetadata for ChainMetaExtern {
@@ -2091,7 +2060,7 @@ We define and implement traits for ~ChainMetaExtern~.
 
 *** AttributesCursor
 
-#+begin_src rust :eval never
+#+begin_src rust
   // pub struct AttributeTag(pub u8);
   pub type AttributesCursorHacspec = (u32, u16);
 
@@ -2131,7 +2100,7 @@ We define and implement traits for ~ChainMetaExtern~.
           Option::<(AttributesCursorHacspec, (u8, u8))>::None?;
       }
 
-      let (buf, num_read) = get_policy_section_hacspec(buf, current_position);
+      let (_buf, num_read) = get_policy_section_hacspec(buf, current_position);
       current_position = current_position + num_read;
       remaining_items = remaining_items - 1u16;
       Option::<(AttributesCursorHacspec, (u8, u8))>::Some(((current_position, remaining_items), (tag_value_len[0], tag_value_len[1])))
@@ -2139,7 +2108,7 @@ We define and implement traits for ~ChainMetaExtern~.
 
 #+end_src
 We then define traits
-#+begin_src rust :eval never
+#+begin_src rust
   #[cfg(not(feature = "hacspec"))]
   pub fn coerce_rust_to_hacspec_attributes_cursor(
       rust_attributes_cursor: &mut AttributesCursor,
@@ -2217,7 +2186,7 @@ We then define traits
 #+end_src
 
 *** Policy iterator
-#+begin_src rust :eval never
+#+begin_src rust
   #[cfg(not(feature = "hacspec"))]
   /// An iterator over policies using host functions to supply the data.
   /// The main interface to using this type is via the methods of the [Iterator](https://doc.rust-lang.org/std/iter/trait.Iterator.html)
@@ -2310,7 +2279,7 @@ We then define traits
 #+end_src
 
 *** External context
-#+begin_src rust :eval never
+#+begin_src rust
 
   #[cfg(not(feature = "hacspec"))]
   impl<T: sealed::ContextType> HasCommonData for ExternContext<T> {
@@ -2446,7 +2415,7 @@ We then define traits
 
 *** Logger
 
-#+begin_src rust :eval never
+#+begin_src rust
   // #[cfg(not(feature = "hacspec"))]
   // /// A type representing the logger.
   // #[derive(Default)]
@@ -2473,7 +2442,7 @@ We then define traits
   }
 #+end_src
 *** Action
-#+begin_src rust :eval never
+#+begin_src rust
   #[cfg(not(feature = "hacspec"))]
   /// #Implementation of actions.
   /// These actions are implemented by direct calls to host functions.
@@ -2527,7 +2496,7 @@ We then define traits
 
 *** Remaining todo
 # TODO: Get functionlity of everything into hacspec
-#+begin_src rust :eval never
+#+begin_src rust
   // TODO: Define functionality in hacspec instead!
   #[cfg(not(feature = "hacspec"))]
   /// Allocates a Vec of bytes prepended with its length as a `u32` into memory,
@@ -2548,27 +2517,28 @@ We then define traits
 
 #+end_src
 
-#+begin_src rust :eval never
-  // TODO: Name collision
-  #[cfg(not(feature = "hacspec"))]
-  /// Wrapper for
-  /// [HasActions::send_raw](./trait.HasActions.html#tymethod.send_raw), which
-  /// automatically serializes the parameter. Note that if the parameter is
-  /// already a byte array or convertible to a byte array without allocations it
-  /// is preferrable to use [send_raw](./trait.HasActions.html#tymethod.send_raw).
-  /// It is more efficient and avoids memory allocations.
-  pub fn send<A: HasActions, P: Serial>(
-      ca: &ContractAddress,
-      receive_name: ReceiveName,
-      amount: Amount,
-      parameter: &P,
-  ) -> A {
-      let param_bytes = concordium_contracts_common::to_bytes(parameter);
-      A::send_raw(ca, receive_name, amount, &param_bytes)
-  }
+#+begin_src rust
+// TODO: never used
+#[allow(dead_code)]
+#[cfg(not(feature = "hacspec"))]
+/// Wrapper for
+/// [HasActions::send_raw](./trait.HasActions.html#tymethod.send_raw), which
+/// automatically serializes the parameter. Note that if the parameter is
+/// already a byte array or convertible to a byte array without allocations it
+/// is preferrable to use [send_raw](./trait.HasActions.html#tymethod.send_raw).
+/// It is more efficient and avoids memory allocations.
+pub fn send<A: HasActions, P: Serial>(
+    ca: &ContractAddress,
+    receive_name: ReceiveName,
+    amount: Amount,
+    parameter: &P,
+) -> A {
+    let param_bytes = concordium_contracts_common::to_bytes(parameter);
+    A::send_raw(ca, receive_name, amount, &param_bytes)
+}
 #+end_src
 
-#+begin_src rust :eval never
+#+begin_src rust
   #[cfg(not(feature = "hacspec"))]
   impl<A, E> UnwrapAbort for Result<A, E> {
       type Unwrap = A;
@@ -2584,31 +2554,31 @@ We then define traits
   
 #+end_src
 
-#+begin_src rust :eval never
-  // TODO:
-  // #[cfg(not(feature = "hacspec"))]
-  // #[cfg(not(feature = "std"))]
-  // use concordium_contracts_common::fmt; // core::fmt;
+#+begin_src rust
+// TODO:
+// #[cfg(not(feature = "hacspec"))]
+// #[cfg(not(feature = "std"))]
+// use crate::concordium_contracts_common::fmt; // core::fmt;
 
-  #[cfg(not(feature = "hacspec"))]
-  #[cfg(feature = "std")]
-  use std::fmt;
+#[cfg(not(feature = "hacspec"))]
+#[cfg(feature = "std")]
+use std::fmt;
 
-  #[cfg(not(feature = "hacspec"))]
-  impl<A, E: fmt::Debug> ExpectReport for Result<A, E> {
-      type Unwrap = A;
+#[cfg(not(feature = "hacspec"))]
+impl<A, E: fmt::Debug> ExpectReport for Result<A, E> {
+    type Unwrap = A;
 
-      fn expect_report(self, msg: &str) -> Self::Unwrap {
-          match self {
-              Ok(x) => x,
-              Err(e) => fail!("{}: {:?}", msg, e),
-          }
-      }
-  }
+    fn expect_report(self, msg: &str) -> Self::Unwrap {
+        match self {
+            Ok(x) => x,
+            Err(e) => fail!("{}: {:?}", msg, e),
+        }
+    }
+}
 
 #+end_src
 
-#+begin_src rust :eval never
+#+begin_src rust
   // TODO:
   #[cfg(not(feature = "hacspec"))]
   impl<A: fmt::Debug, E> ExpectErrReport for Result<A, E> {
@@ -2624,7 +2594,7 @@ We then define traits
 
 #+end_src
 
-#+begin_src rust :eval never
+#+begin_src rust
   #[cfg(not(feature = "hacspec"))]
   impl<A> UnwrapAbort for Option<A> {
       type Unwrap = A;
@@ -2637,7 +2607,7 @@ We then define traits
 
 #+end_src
 
-#+begin_src rust :eval never
+#+begin_src rust
   // TODO:
   #[cfg(not(feature = "hacspec"))]
   impl<A> ExpectReport for Option<A> {
@@ -2653,7 +2623,7 @@ We then define traits
 
 #+end_src
 
-#+begin_src rust :eval never
+#+begin_src rust
   // TODO:
   #[cfg(not(feature = "hacspec"))]
   impl<A: fmt::Debug> ExpectNoneReport for Option<A> {
@@ -2666,7 +2636,7 @@ We then define traits
 
 #+end_src
 
-#+begin_src rust :eval never
+#+begin_src rust
 
   #[cfg(not(feature = "hacspec"))]
   /// Write a [BTreeSet](https://doc.rust-lang.org/std/collections/struct.BTreeSet.html) as an ascending list of keys, without the length information.
@@ -2695,7 +2665,7 @@ We then define traits
 
 #+end_src
 
-#+begin_src rust :eval never
+#+begin_src rust
 
   #[cfg(not(feature = "hacspec"))]
   /// Read a [BTreeSet](https://doc.rust-lang.org/std/collections/struct.BTreeSet.html) as a list of keys, given some length.
@@ -2757,7 +2727,7 @@ We then define traits
   }
 #+end_src
 
-#+begin_src rust :eval never
+#+begin_src rust
   #[cfg(not(feature = "hacspec"))]
   /// Write a Map as a list of key-value pairs ordered by the key, without the
   /// length information.
@@ -2787,7 +2757,7 @@ We then define traits
   
 #+end_src
 
-#+begin_src rust :eval never
+#+begin_src rust
   #[cfg(not(feature = "hacspec"))]
   /// Read a [BTreeMap](https://doc.rust-lang.org/std/collections/struct.BTreeMap.html) as a list of key-value pairs given some length.
   /// NB: This ensures there are no duplicates, hence the specialized type.
@@ -2857,7 +2827,7 @@ We then define traits
   
 #+end_src
 
-#+begin_src rust :eval never
+#+begin_src rust
   #[cfg(not(feature = "hacspec"))]
   /// Write a [HashSet](https://doc.rust-lang.org/std/collections/struct.HashSet.html) as a list of keys in no particular order, without the length information.
   pub fn serial_hashset_no_length<W: Write, K: Serial>(
@@ -2887,7 +2857,7 @@ We then define traits
 
 #+end_src
 
-#+begin_src rust :eval never
+#+begin_src rust
   #[cfg(not(feature = "hacspec"))]
   /// Read a [HashSet](https://doc.rust-lang.org/std/collections/struct.HashSet.html) as a list of keys, given some length.
   /// NB: This ensures there are no duplicates.
@@ -2922,7 +2892,7 @@ We then define traits
 
 #+end_src
 
-#+begin_src rust :eval never
+#+begin_src rust
   #[cfg(not(feature = "hacspec"))]  
   /// Write a HashMap as a list of key-value pairs in to particular order, without
   /// the length information.
@@ -2953,7 +2923,7 @@ We then define traits
   
 #+end_src
 
-#+begin_src rust :eval never
+#+begin_src rust
   #[cfg(not(feature = "hacspec"))]
   /// Read a [HashMap](https://doc.rust-lang.org/std/collections/struct.HashMap.html) as a list of key-value pairs given some length.
   pub fn deserial_hashmap_no_length<R: Read, K: Deserial + Eq + Hash, V: Deserial>(
@@ -2988,7 +2958,7 @@ We then define traits
   }
 #+end_src
 
-#+begin_src rust :eval never
+#+begin_src rust
   #[cfg(not(feature = "hacspec"))]
   /// Write a slice of elements, without including length information.
   /// This is intended to be used either when the length is statically known,
@@ -3015,7 +2985,7 @@ We then define traits
   
 #+end_src
 
-#+begin_src rust :eval never
+#+begin_src rust
   #[cfg(not(feature = "hacspec"))]
   pub(crate) static MAX_PREALLOCATED_CAPACITY: usize = 4096;
 
@@ -3045,7 +3015,7 @@ We then define traits
   }
 #+end_src
 
-#+begin_src rust :eval never
+#+begin_src rust
   #[cfg(not(feature = "hacspec"))]
   impl SerialCtx for &str {
       fn serial_ctx<W: Write>(
@@ -3059,7 +3029,7 @@ We then define traits
   }
 #+end_src
 
-#+begin_src rust :eval never
+#+begin_src rust
   #[cfg(not(feature = "hacspec"))]
   impl SerialCtx for String {
       fn serial_ctx<W: Write>(
@@ -3072,7 +3042,7 @@ We then define traits
   }
 #+end_src
 
-#+begin_src rust :eval never
+#+begin_src rust
   #[cfg(not(feature = "hacspec"))]  
   impl DeserialCtx for String {
       fn deserial_ctx<R: Read>(
@@ -3089,7 +3059,7 @@ We then define traits
 #+end_src
 
 *** Rust Tests
-#+begin_src rust :eval never
+#+begin_src rust
 
 #+end_src
 

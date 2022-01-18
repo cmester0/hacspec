@@ -953,10 +953,6 @@ fn read_crate(
         .unwrap()
         .to_string(); //.parent().and_then(|x| x.as_os_str().to_str()).unwrap().to_string();
 
-    // println!("target_src_path {:?}", callbacks.crate_root_directory);
-    // println!("target_src_path {:?}", target.src_path.clone());
-    // println!("target_src_path {:?}", target.src_path.clone());
-
     // Add the dependencies as --extern for the hacpsec typechecker.
     for dependency in package.dependencies.iter() {
         args.push(format!("--extern={}", dependency.name.replace("-", "_")));
@@ -1011,7 +1007,12 @@ fn main() -> Result<(), usize> {
 
     let org_file_index = args.iter().position(|a| a == "--org-file");
     let org_file = match org_file_index {
-        Some(i) => {let temp = args.get(i + 1).cloned(); args.remove(i); args.remove(i); temp},
+        Some(i) => {
+            let temp = args.get(i + 1).cloned();
+            args.remove(i);
+            args.remove(i);
+            temp
+        }
         None => None,
     };
 

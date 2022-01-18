@@ -1,38 +1,13 @@
 #[cfg(not(feature = "hacspec"))]
 use crate::{
     collections::{BTreeMap, BTreeSet},
-    convert::{self, TryFrom, TryInto},
+    convert::{self}, // , TryFrom, TryInto
     hash::Hash,
     num::NonZeroI32,
-    vec::Vec,
-    String,
     trap,
+    vec::Vec,
+    String, *,
 };
-
-#[cfg(not(feature = "hacspec"))]
-use concordium_contracts_common::*;
-
-#[cfg(not(feature = "hacspec"))]
-use crate::*;
-
-#[cfg(not(feature = "hacspec"))]
-extern crate hacspec_lib;
-
-use hacspec_lib::*;
-
-// #[cfg(feature = "hacspec_attributes")]
-#[cfg(feature = "hacspec")]
-use hacspec_attributes::*;
-
-// Creusot
-#[cfg(not(feature = "hacspec"))]
-extern crate creusot_contracts;
-#[cfg(not(feature = "hacspec"))]
-use creusot_contracts::{
-    ensures,
-    requires,
-    trusted          
-    };
 
 pub type RejectHacspec = i32;
 
@@ -289,7 +264,7 @@ pub fn contract_state_impl_read_read(
     current_position: ContractStateHacspec,
     buf : PublicByteSeq,
 ) -> (ContractStateHacspec, usize) {
-    let (buf, num_read) = load_state_hacspec(buf, current_position);
+    let (_buf, num_read) = load_state_hacspec(buf, current_position);
     (current_position + num_read, num_read as usize)
 }
 
@@ -382,13 +357,16 @@ impl Read for ContractState {
 
 pub fn contract_state_impl_write(
     current_position: ContractStateHacspec,
-    buf : PublicByteSeq
+    buf: PublicByteSeq,
 ) -> Result<(ContractStateHacspec, usize), ()> {
     if current_position.checked_add(buf.len() as u32).is_none() {
         Result::<(ContractStateHacspec, usize), ()>::Err(())?;
     }
-    let (buf, num_bytes) = write_state_hacspec(buf, current_position);
-    Result::<(ContractStateHacspec, usize), ()>::Ok((current_position + num_bytes, num_bytes as usize))
+    let (_buf, num_bytes) = write_state_hacspec(buf, current_position);
+    Result::<(ContractStateHacspec, usize), ()>::Ok((
+        current_position + num_bytes,
+        num_bytes as usize,
+    ))
 }
 
 #[cfg(not(feature = "hacspec"))]
@@ -418,7 +396,6 @@ pub fn has_contract_state_impl_for_contract_state_open() -> ContractStateHacspec
 // }
 
 pub fn has_contract_state_impl_for_contract_state_reserve(
-    contract_state: ContractStateHacspec,
     len: u32,
 ) -> bool {
     let cur_size = state_size_hacspec();
@@ -457,10 +434,7 @@ impl HasContractState<()> for ContractState {
     }
 
     fn reserve(&mut self, len: u32) -> bool {
-        has_contract_state_impl_for_contract_state_reserve(
-            coerce_rust_to_hacspec_contract_state(self),
-            len,
-        )
+        has_contract_state_impl_for_contract_state_reserve(len)
     }
 
     #[inline(always)]
@@ -487,7 +461,7 @@ pub fn read_impl_for_parameter_read(
     current_position: ParameterHacspec,
     buf: PublicByteSeq,
 ) -> (ParameterHacspec, usize) {
-    let (buf, num_read) = get_parameter_section_hacspec(buf, current_position);
+    let (_buf, num_read) = get_parameter_section_hacspec(buf, current_position);
     (current_position + num_read, num_read as usize)
 }
 
@@ -568,7 +542,7 @@ pub fn has_policy_impl_for_policy_attributes_cursor_next_item(
         Option::<(AttributesCursorHacspec, (u8, u8))>::None?;
     }
 
-    let (buf, num_read) = get_policy_section_hacspec(buf, current_position);
+    let (_buf, num_read) = get_policy_section_hacspec(buf, current_position);
     current_position = current_position + num_read;
     remaining_items = remaining_items - 1u16;
     Option::<(AttributesCursorHacspec, (u8, u8))>::Some(((current_position, remaining_items), (tag_value_len[0], tag_value_len[1])))
@@ -962,7 +936,8 @@ pub fn put_in_memory(input: &[u8]) -> *mut u8 {
     ptr
 }
 
-// TODO: Name collision
+// TODO: never used
+#[allow(dead_code)]
 #[cfg(not(feature = "hacspec"))]
 /// Wrapper for
 /// [HasActions::send_raw](./trait.HasActions.html#tymethod.send_raw), which
@@ -996,7 +971,7 @@ impl<A, E> UnwrapAbort for Result<A, E> {
 // TODO:
 // #[cfg(not(feature = "hacspec"))]
 // #[cfg(not(feature = "std"))]
-// use concordium_contracts_common::fmt; // core::fmt;
+// use crate::concordium_contracts_common::fmt; // core::fmt;
 
 #[cfg(not(feature = "hacspec"))]
 #[cfg(feature = "std")]
