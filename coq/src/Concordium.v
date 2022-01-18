@@ -191,9 +191,9 @@ Definition reject_impl_convert_from_unit  : reject_hacspec_t :=
   (min_v) .+ (@repr WORDSIZE32 1).
 
 Theorem ensures_reject_impl_convert_from_unit : forall result_26 ,
-@reject_impl_convert_from_unit  = result_26 ->
-~ (result_26 = @repr WORDSIZE32 0).
-Proof. Admitted.
+ @reject_impl_convert_from_unit  = result_26 ->
+ ~ (result_26 = @repr WORDSIZE32 0).
+ Proof. Admitted.
 (* Coq code:29 ends here *)
 
 (* [[file:concordium.org::*Coq code][Coq code:30]] *)
@@ -201,9 +201,9 @@ Definition reject_impl_convert_from_parse_error  : reject_hacspec_t :=
   (min_v) .+ (@repr WORDSIZE32 2).
 
 Theorem ensures_reject_impl_convert_from_parse_error : forall result_26 ,
-@reject_impl_convert_from_parse_error  = result_26 ->
-~ (result_26 = @repr WORDSIZE32 0).
-Proof. Admitted.
+ @reject_impl_convert_from_parse_error  = result_26 ->
+ ~ (result_26 = @repr WORDSIZE32 0).
+ Proof. Admitted.
 (* Coq code:30 ends here *)
 
 (* [[file:concordium.org::*Coq code][Coq code:31]] *)
@@ -217,9 +217,9 @@ Definition reject_impl_from_log_error
 
 Theorem ensures_reject_impl_from_log_error : forall result_26 (
   le_27 : log_error_t),
-@reject_impl_from_log_error le_27 = result_26 ->
-~ (result_26 = @repr WORDSIZE32 0).
-Proof. Admitted.
+ @reject_impl_from_log_error le_27 = result_26 ->
+ ~ (result_26 = @repr WORDSIZE32 0).
+ Proof. Admitted.
 (* Coq code:31 ends here *)
 
 (* [[file:concordium.org::*Coq code][Coq code:32]] *)
@@ -243,9 +243,9 @@ Definition reject_impl_from_new_contract_name_error
 
 Theorem ensures_reject_impl_from_new_contract_name_error : forall result_26 (
   nre_28 : new_contract_name_error_t),
-@reject_impl_from_new_contract_name_error nre_28 = result_26 ->
-~ (result_26 = @repr WORDSIZE32 0).
-Proof. Admitted.
+ @reject_impl_from_new_contract_name_error nre_28 = result_26 ->
+ ~ (result_26 = @repr WORDSIZE32 0).
+ Proof. Admitted.
 (* Coq code:33 ends here *)
 
 (* [[file:concordium.org::*Coq code][Coq code:34]] *)
@@ -267,9 +267,9 @@ Definition reject_impl_from_new_receive_name_error
 
 Theorem ensures_reject_impl_from_new_receive_name_error : forall result_26 (
   nre_29 : new_receive_name_error_t),
-@reject_impl_from_new_receive_name_error nre_29 = result_26 ->
-~ (result_26 = @repr WORDSIZE32 0).
-Proof. Admitted.
+ @reject_impl_from_new_receive_name_error nre_29 = result_26 ->
+ ~ (result_26 = @repr WORDSIZE32 0).
+ Proof. Admitted.
 (* Coq code:35 ends here *)
 
 (* [[file:concordium.org::*Coq code][Coq code:36]] *)
