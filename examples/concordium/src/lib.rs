@@ -1,4 +1,8 @@
-#![cfg_attr(not(feature = "std"), no_std, feature(alloc_error_handler, core_intrinsics))]
+#![cfg_attr(
+    not(feature = "std"),
+    no_std,
+    feature(alloc_error_handler, core_intrinsics)
+)]
 
 #[cfg(not(feature = "hacspec"))]
 #[cfg(not(feature = "std"))]
@@ -27,11 +31,15 @@ pub use std::process::abort as trap;
 #[cfg(not(feature = "hacspec"))]
 #[cfg(all(not(feature = "std"), target_arch = "wasm32"))]
 #[inline(always)]
-pub fn trap() -> ! { unsafe { core::arch::wasm32::unreachable() } }
+pub fn trap() -> ! {
+    unsafe { core::arch::wasm32::unreachable() }
+}
 #[cfg(not(feature = "hacspec"))]
 #[cfg(all(not(feature = "std"), not(target_arch = "wasm32")))]
 #[inline(always)]
-pub fn trap() -> ! { core::intrinsics::abort() }
+pub fn trap() -> ! {
+    core::intrinsics::abort()
+}
 
 // TODO:
 // #[cfg(not(feature = "hacspec"))]
@@ -66,42 +74,65 @@ pub(crate) use std::vec;
 pub use std::{convert, hash, marker, mem, num, string::String, vec::Vec};
 
 #[cfg(not(feature = "hacspec"))]
-pub mod collections {
-    #[cfg(not(feature = "std"))]
-    use alloc::collections;
-    #[cfg(feature = "std")]
-    use std::collections;
+#[cfg(not(feature = "std"))]
+pub use alloc::collections;
+#[cfg(not(feature = "hacspec"))]
+#[cfg(feature = "std")]
+pub use std::collections;
 
-    pub use collections::*;
-    pub use concordium_contracts_common::{HashMap, HashSet};
-}
+// #[cfg(not(feature = "hacspec"))]
+// pub mod collections {
+//     #[cfg(not(feature = "std"))]
+//     use alloc::collections;
+//     #[cfg(feature = "std")]
+//     use std::collections;
 
+//     pub use collections::*;
+//     pub use collections::{BTreeMap, BTreeSet};
+//     pub use concordium_contracts_common::{HashMap, HashSet};
+// }
+
+#[cfg(not(feature = "hacspec"))]
+extern crate concordium_contracts_common;
 #[cfg(not(feature = "hacspec"))]
 /// Chain constants that impose limits on various aspects of smart contract
 /// execution.
 pub use concordium_contracts_common::*;
 
 #[cfg(not(feature = "hacspec"))]
+extern crate hacspec_concordium_derive;
+#[cfg(not(feature = "hacspec"))]
 pub use hacspec_concordium_derive::*;
 
+// #[cfg(not(feature = "hacspec"))]
+// extern crate wee_alloc;
+// // Use `wee_alloc` as the global allocator to reduce code size.
+// #[cfg(not(feature = "hacspec"))]
+// #[global_allocator]
+// static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 #[cfg(not(feature = "hacspec"))]
-extern crate wee_alloc;
-// Use `wee_alloc` as the global allocator to reduce code size.
-#[cfg(not(feature = "hacspec"))]
-#[global_allocator]
-static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
+extern crate hacspec_lib;
+pub use hacspec_lib::*;
 
-pub mod test_infrastructure;
-mod hacspec_concordium_types;
-mod hacspec_concordium_traits;
-mod hacspec_concordium_prims;
+#[cfg(feature = "hacspec")]
+use hacspec_attributes::*;
+
+#[cfg(not(feature = "hacspec"))]
+extern crate creusot_contracts;
+#[cfg(not(feature = "hacspec"))]
+use creusot_contracts::{ensures, trusted}; // requires, 
+
 mod hacspec_concordium_impls;
+mod hacspec_concordium_prims;
+mod hacspec_concordium_traits;
+mod hacspec_concordium_types;
+pub mod test_infrastructure;
 
 #[cfg(not(feature = "hacspec"))]
-pub use hacspec_concordium_types::*;
+pub use hacspec_concordium_impls::*;
+#[cfg(not(feature = "hacspec"))]
+use hacspec_concordium_prims::*; // TODO: Does not re-export anything, nothing is public enough (removed pub)
 #[cfg(not(feature = "hacspec"))]
 pub use hacspec_concordium_traits::*;
 #[cfg(not(feature = "hacspec"))]
-pub use hacspec_concordium_prims::*;
-#[cfg(not(feature = "hacspec"))]
-pub use hacspec_concordium_impls::*;
+pub use hacspec_concordium_types::*;

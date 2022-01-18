@@ -699,7 +699,7 @@ impl<T: AsRef<[u8]>> Seek for ContractStateTest<T> {
     type Err = ContractStateError;
 
     fn seek(&mut self, pos: SeekFrom) -> Result<u64, Self::Err> {
-        use ContractStateError::*;
+        use self::ContractStateError::*;
         match pos {
             SeekFrom::Start(x) => {
                 // We can set the position to just after the end of the current length.
