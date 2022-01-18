@@ -1487,81 +1487,111 @@ fn translate_item<'a>(
             translate_block(b.clone(), false, top_ctx).group(),
             true,
         )
-
-            
             .append(
                 if ensures.len() > 0 {
                     RcDoc::hardline()
                         .append(RcDoc::hardline())
                         .append(RcDoc::as_string("Theorem ensures_"))
                         .append(translate_ident(Ident::TopLevel(f.clone())))
-                        .append(RcDoc::space())
-                        .append(RcDoc::intersperse(
-                            sig.args
-                                .iter()
-                                .map(|((x, _), _)| translate_ident(x.clone())),
-                            RcDoc::space(),
-                        ))
-                        .append(RcDoc::space())
-                        .append(RcDoc::intersperse(
-                            (0..requires.iter().len()).map(|i| {
-                                RcDoc::as_string("H_")
-                                    .append(RcDoc::as_string(i.to_string()))
-                                    .append(RcDoc::space())
-                            }),
-                            RcDoc::nil(),
-                        ))
-                        .append(RcDoc::as_string("="))
+                        .append(RcDoc::as_string(" : forall"))
                         .append(RcDoc::space())
                         .append(translate_ident(Ident::Local(LocalIdent {
                             id: NodeId::MAX.as_usize(),
                             name: "result".to_string(),
                         })))
                         .append(RcDoc::space())
-                        .append(RcDoc::as_string("->"))
-                        .append(RcDoc::line())
                         .append(RcDoc::intersperse(
-                            ensures
-                                .iter()
-                                .map(|e| translate_quantified_expression(e.clone(), top_ctx)),
-                            RcDoc::as_string("/\\"),
+                            sig.args.iter().map(|((x, _), (tau, _))| {
+                                make_paren(
+                                    translate_ident(x.clone())
+                                        .append(RcDoc::space())
+                                        .append(RcDoc::as_string(":"))
+                                        .append(RcDoc::space())
+                                        .append(translate_typ(tau.clone()))
+                                )
+                            }),
+                            RcDoc::space()
                         ))
-                        .append(RcDoc::as_string("."))
-                        .append(RcDoc::line()), // .nest(1)
-                )
-                .append(RcDoc::as_string("Proof. Admitted."))
-        } else {
-            RcDoc::nil()
-        })
+                        .append(RcDoc::as_string(","))
+                        .append(
+                            requires.iter().enumerate().fold(RcDoc::line(), |rs, (i, e)| {
+                                rs
+                                    .append(RcDoc::as_string("forall {H_"))
+                                    .append(RcDoc::as_string(i.to_string()))
+                                    .append(RcDoc::as_string(" : "))
+                                    .append(translate_quantified_expression(e.clone(), top_ctx))
+                                    .append(RcDoc::as_string("}"))
+                                    .append(RcDoc::as_string(","))
+                                    .append(RcDoc::line())
+                            })
+                                .append(RcDoc::as_string("@"))
+                                .append(translate_ident(Ident::TopLevel(f.clone())))
+                                .append(RcDoc::space())
+                                .append(RcDoc::intersperse(
+                                    sig.args.iter().map(|((x, _), _)| {
+                                        translate_ident(x.clone())
+                                    }),
+                                    RcDoc::space()
+                                ))
+                                .append(RcDoc::space())
+                                .append(RcDoc::intersperse(
+                                    (0..requires.iter().len())
+                                        .map(|i| {
+                                            RcDoc::as_string("H_")
+                                                .append(RcDoc::as_string(i.to_string()))
+                                                .append(RcDoc::space())
+                                        }),
+                                    RcDoc::nil()))
+                                .append(RcDoc::as_string("="))
+                                .append(RcDoc::space())
+                                .append(translate_ident(Ident::Local(LocalIdent {
+                                    id: NodeId::MAX.as_usize(),
+                                    name: "result".to_string(),
+                                })))
+                                .append(RcDoc::space())
+                                .append(RcDoc::as_string("->"))
+                                .append(RcDoc::line())
+                                .append(RcDoc::intersperse(ensures.iter().map(|e| translate_quantified_expression(e.clone(), top_ctx)), RcDoc::as_string("/\\")))
+                                .append(RcDoc::as_string("."))
+                                .append(RcDoc::line())
+                                .nest(1)
+                        )
+                        .append(RcDoc::as_string("Proof. Admitted."))
+                }
+                else {
+                    RcDoc::nil()
+                })
         .append({
             if item.tags.0.contains(&"quickcheck".to_string()) {
                 RcDoc::hardline()
                     .append(RcDoc::as_string("QuickChick"))
                     .append(RcDoc::space())
-                    .append(make_paren(
-                        RcDoc::concat(sig.args.iter().map(|((x, _), (tau, _))| {
-                            RcDoc::as_string("forAll g_")
-                                .append(translate_typ(tau.clone()))
-                                .append(RcDoc::space())
-                                .append("(")
-                                .append(RcDoc::as_string("fun"))
-                                .append(RcDoc::space())
-                                .append(translate_ident(x.clone()))
-                                .append(RcDoc::space())
-                                .append(RcDoc::as_string(":"))
-                                .append(RcDoc::space())
-                                .append(translate_typ(tau.clone()))
-                                .append(RcDoc::space())
-                                .append(RcDoc::as_string("=>"))
-                                .append(RcDoc::space())
-                        }))
-                        .append(translate_ident(Ident::TopLevel(f.clone())))
-                        .append(RcDoc::concat(sig.args.iter().map(|((x, _), (_, _))| {
-                            RcDoc::space().append(translate_ident(x.clone()))
-                        })))
-                        .append(RcDoc::concat(
-                            sig.args.iter().map(|_| RcDoc::as_string(")")),
-                        )),
+                    .append(make_paren(RcDoc::concat(
+                        sig.args
+                            .iter()
+                            .map(|((x, _), (tau, _))| {
+                                RcDoc::as_string("forAll g_")
+                                    .append(translate_typ(tau.clone()))
+                                    .append(RcDoc::space())
+                                    .append("(")
+                                    .append(RcDoc::as_string("fun"))
+                                    .append(RcDoc::space())
+                                    .append(translate_ident(x.clone()))
+                                    .append(RcDoc::space())
+                                    .append(RcDoc::as_string(":"))
+                                    .append(RcDoc::space())
+                                    .append(translate_typ(tau.clone()))
+                                    .append(RcDoc::space())
+                                    .append(RcDoc::as_string("=>"))
+                                    .append(RcDoc::space())
+                            }))
+                            .append(translate_ident(Ident::TopLevel(f.clone())))
+                            .append(RcDoc::concat(sig.args.iter().map(|((x, _), (_, _))| {
+                                        RcDoc::space()
+                                        .append(translate_ident(x.clone()))
+                                }
+                            )))
+                            .append(RcDoc::concat(sig.args.iter().map(|_| RcDoc::as_string(")")))),
                     ))
                     .append(RcDoc::as_string("."))
                     .group()
