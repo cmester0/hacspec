@@ -1,9 +1,4 @@
 #[cfg(not(feature = "hacspec"))]
-extern crate hacspec_lib;
-
-use self::hacspec_lib::*;
-
-#[cfg(not(feature = "hacspec"))]
 use crate::*;
 
 #[cfg(not(feature = "hacspec"))]
