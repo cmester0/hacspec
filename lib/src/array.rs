@@ -19,6 +19,8 @@
 //!
 //! ###
 
+pub extern crate quickcheck;
+
 #[macro_export]
 #[doc(hidden)]
 macro_rules! _array_base {
@@ -319,6 +321,14 @@ macro_rules! _array_base {
                 o
             }
         }
+
+        // TODO: Better generation !
+        impl quickcheck::Arbitrary for $name {
+            fn arbitrary(_g: &mut quickcheck::Gen) -> Self {
+                $name::new()
+            }
+        }
+
     };
 }
 
