@@ -24,7 +24,6 @@ src/Hacspec_P256.v
 # src/Hacspec_Sha3.v # Issues with operations with different types eg ".*" vs "*"
 src/Hacspec_Sha256.v
 
-src/Concordium_Impls.v
 src/Concordium.v
 src/Auction.v
-
+src/Piggybank.v

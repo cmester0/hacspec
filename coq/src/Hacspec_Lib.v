@@ -1341,6 +1341,45 @@ Inductive result (a: Type) (b: Type) :=
 Arguments Ok {_ _}.
 Arguments Err {_ _}.
 
+
+Definition eqb_result {A B} `{EqDec A} `{EqDec B} (a b : result A B) :=
+  match a with
+  | Ok x =>
+      match b with
+      | Ok y => eqb x y
+      | Err _ => false
+      end
+  | Err x =>
+      match b with
+      | Ok _ => false
+      | Err y => eqb x y
+      end
+  end.
+
+Lemma eqb_leibniz_result : forall {A B : Type} `{EqDec A} `{EqDec B} (v1 v2 : result A B), eqb_result v1 v2 = true <-> v1 = v2.
+Proof.
+  split ; intros ; destruct v1; destruct v2.
+  - apply f_equal.
+    apply eqb_leibniz.
+    assumption.
+  - inversion H1.
+  - inversion H1.
+  - apply f_equal.
+    apply eqb_leibniz.
+    assumption.
+  - inversion H1 ; subst.
+    apply eqb_refl.
+  - inversion H1.
+  - inversion H1.
+  - inversion H1.
+    apply eqb_refl.
+Qed.
+
+Global Instance result_eqdec {A B} `{EqDec A} `{EqDec B} : EqDec (result A B) := {
+    eqb := eqb_result ;
+    eqb_leibniz := eqb_leibniz_result ;
+  }.
+
 (*** Be Bytes *)
 
 
