@@ -12,6 +12,6 @@ src/Curve25519.v
 src/Sha256.v
 src/Aes.v
 
-src/Concordium_Impls.v
 src/Concordium.v
 src/Auction.v
+src/Piggybank.v

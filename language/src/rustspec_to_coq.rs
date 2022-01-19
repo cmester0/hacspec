@@ -1909,7 +1909,52 @@ fn translate_item<'a>(
                     .append(make_uint_size_coercion(translate_ident(Ident::TopLevel(
                         index_typ.0.clone(),
                     )))),
-            }),
+            })
+            .append(if export_quick_check {
+                        RcDoc::hardline()
+                            .append(RcDoc::as_string("Instance"))
+                            .append(RcDoc::space())
+                            .append(RcDoc::as_string("show_"))
+                            .append(translate_ident(Ident::TopLevel(name.0.clone())))
+                            .append(RcDoc::space())
+                            .append(RcDoc::as_string(":"))
+                            .append(RcDoc::space())
+                            .append(RcDoc::as_string("Show ("))
+                            .append(translate_ident(Ident::TopLevel(name.0.clone())))
+                            .append(RcDoc::as_string(") := Build_Show ("))
+                            .append(translate_ident(Ident::TopLevel(name.0.clone())))
+                            .append(RcDoc::as_string(") show."))
+                            .append(RcDoc::hardline())
+                            .append(RcDoc::as_string("Definition"))
+                            .append(RcDoc::space())
+                            .append(RcDoc::as_string("g_"))
+                            .append(translate_ident(Ident::TopLevel(name.0.clone())))
+                            .append(RcDoc::space())
+                            .append(RcDoc::as_string(":"))
+                            .append(RcDoc::space())
+                            .append(RcDoc::as_string("G ("))
+                            .append(translate_ident(Ident::TopLevel(name.0.clone())))
+                            .append(RcDoc::as_string(") := arbitrary."))
+                            .append(RcDoc::hardline())
+                            .append(RcDoc::as_string("Instance"))
+                            .append(RcDoc::space())
+                            .append(RcDoc::as_string("gen_"))
+                            .append(translate_ident(Ident::TopLevel(name.0.clone())))
+                            .append(RcDoc::space())
+                            .append(RcDoc::as_string(":"))
+                            .append(RcDoc::space())
+                            .append(RcDoc::as_string("Gen ("))
+                            .append(translate_ident(Ident::TopLevel(name.0.clone())))
+                            .append(RcDoc::as_string(") := Build_Gen"))
+                            .append(RcDoc::space())
+                            .append(translate_ident(Ident::TopLevel(name.0.clone())))
+                            .append(RcDoc::space())
+                            .append(RcDoc::as_string("g_"))
+                            .append(translate_ident(Ident::TopLevel(name.0.clone())))
+                            .append(RcDoc::as_string("."))
+            } else  {
+                RcDoc::nil()
+            }            ),
         Item::ConstDecl(name, ty, e) => make_let_binding(
             translate_ident(Ident::TopLevel(name.0.clone())),
             Some(translate_base_typ(ty.0.clone())),

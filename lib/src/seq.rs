@@ -7,6 +7,7 @@
 //!
 
 use crate::prelude::*;
+pub extern crate quickcheck;
 
 macro_rules! declare_seq {
     ($name:ident, $constraint:ident) => {
@@ -377,6 +378,14 @@ macro_rules! declare_seq_with_contents_constraints_impl {
                 tmp
             }
         }
+
+        // TODO: Better generation !
+        impl<T: 'static + $bound $(+ $others)*> quickcheck::Arbitrary for $name<T> {
+            fn arbitrary(_g: &mut quickcheck::Gen) -> Self {
+                $name::new(0)
+            }
+        }
+
     };
 }
 
@@ -565,20 +574,4 @@ macro_rules! byte_seq {
             ]
         )
     };
-}
-
-extern crate quickcheck;
-use quickcheck::*;
-
-impl Arbitrary for PublicSeq<u8> {
-    fn arbitrary(_g: &mut Gen) -> Self {
-        PublicSeq::<u8>::new(0)
-            
-        // let t : usize = Arbitrary::arbitrary(g);
-        // let mut seq = PublicSeq::<u8>::new(t);
-        // // for _ in 0..t {
-        // //     seq = seq.push_owned(Arbitrary::arbitrary(g));
-        // // }
-        // seq
-    }
 }
