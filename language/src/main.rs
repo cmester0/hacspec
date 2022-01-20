@@ -8,7 +8,6 @@ extern crate rustc_hir;
 extern crate rustc_interface;
 extern crate rustc_metadata;
 extern crate rustc_middle;
-extern crate rustc_parse;
 extern crate rustc_session;
 extern crate rustc_span;
 
