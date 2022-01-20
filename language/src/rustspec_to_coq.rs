@@ -1438,7 +1438,7 @@ fn translate_quantified_expression<'a>(
 fn translate_item<'a>(
     item: &'a DecoratedItem,
     top_ctx: &'a TopLevelContext,
-    org_file: Option<String>,
+    org_file: Option<(String, String)>,
     export_quick_check: bool,
 ) -> RcDoc<'a, ()> {
     let item_rcdoc = match &item.item {
@@ -2202,19 +2202,21 @@ fn translate_item<'a>(
             }),
     };
     match org_file {
-        Some(file) => {
+        Some((file, section)) => {
             let tangle_num = next_tangle_id();
             RcDoc::as_string(format!(
-                "(* [[file:{}::*Coq code][Coq code:{}]] *)",
+                "(* [[file:{}::* {} - Coq code][{} - Coq code:{}]] *)",
                 file.clone(),
+                section.clone(),
+                section.clone(),
                 tangle_num
             ))
             .append(RcDoc::line())
             .append(item_rcdoc)
             .append(RcDoc::line())
             .append(RcDoc::as_string(format!(
-                "(* Coq code:{} ends here *)",
-                tangle_num
+                "(* {} - Coq code:{} ends here *)",
+                section, tangle_num
             )))
         }
         None => item_rcdoc,
@@ -2224,7 +2226,7 @@ fn translate_item<'a>(
 fn translate_program<'a>(
     p: &'a Program,
     top_ctx: &'a TopLevelContext,
-    org_file: Option<String>,
+    org_file: Option<(String, String)>,
     export_quick_check: bool,
 ) -> RcDoc<'a, ()> {
     RcDoc::concat(p.items.iter().map(|(i, _)| {
@@ -2238,7 +2240,7 @@ pub fn translate_and_write_to_file(
     sess: &Session,
     p: &Program,
     file: &str,
-    org_file: &Option<String>,
+    org_file: Option<(String, String)>,
     top_ctx: &TopLevelContext,
 ) {
     let file = file.trim();
@@ -2257,6 +2259,9 @@ pub fn translate_and_write_to_file(
         .items
         .iter()
         .any(|i| i.0.tags.0.contains(&"quickcheck".to_string()));
+
+    TANGLE_COUNTER.store(2, Ordering::SeqCst);
+
     write!(
         file,
         "{}(** This file was automatically generated using Hacspec **)\n\
@@ -2267,8 +2272,11 @@ pub fn translate_and_write_to_file(
         Open Scope bool_scope.\n\
         Open Scope hacspec_scope.\n\
         {}{}\n",
-        match &org_file {
-            Some(f) => format!("(* [[file:{}::*Coq code][Coq code:1]] *)\n", f),
+        match org_file.clone() {
+            Some((f, s)) => format!(
+                "(* [[file:{}::* {} - Coq code][{} - Coq code:1]] *)\n",
+                f, s.clone(), s
+            ),
             None => "".to_string(),
         },
         if export_quick_check {
@@ -2277,9 +2285,9 @@ pub fn translate_and_write_to_file(
         } else {
             ""
         },
-        match &org_file {
-            Some(_) => "(* Coq code:1 ends here *)\n",
-            None => "",
+        match org_file.clone() {
+            Some((_, s)) => format!("(* {} - Coq code:1 ends here *)\n", s),
+            None => "".to_string(),
         },
     )
     .unwrap();

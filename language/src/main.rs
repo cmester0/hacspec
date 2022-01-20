@@ -302,7 +302,10 @@ fn handle_crate<'tcx>(
                     &compiler.session(),
                     &krate,
                     &file,
-                    &org_file,
+                    match org_file {
+                        Some (f) => Some ((f.clone(), krate_path.clone())),
+                        None => None,
+                    },
                     &new_top_ctx,
                 ),
                 _ => {
