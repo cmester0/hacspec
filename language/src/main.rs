@@ -8,7 +8,6 @@ extern crate rustc_hir;
 extern crate rustc_interface;
 extern crate rustc_metadata;
 extern crate rustc_middle;
-extern crate rustc_parse;
 extern crate rustc_session;
 extern crate rustc_span;
 
@@ -102,6 +101,20 @@ fn handle_crate<'tcx>(
         functions: HashMap::new(),
         typ_dict: HashMap::new(),
     };
+    new_top_ctx.consts.insert(
+        rustspec::TopLevelIdent {
+            string: "MIN".to_string(),
+            kind: rustspec::TopLevelIdentKind::Constant,
+        },
+        (rustspec::BaseTyp::Int32, rustc_span::DUMMY_SP.into()),
+    );
+    // new_top_ctx.consts.insert(
+    //     rustspec::TopLevelIdent {
+    //         string: "None".to_string(),
+    //         kind: rustspec::TopLevelIdentKind::Constant,
+    //     },
+    //     (rustspec::BaseTyp::Unit, rustc_span::DUMMY_SP.into()), // Base Type??
+    // );
 
     let krate = match krate {
         rustc_ast::ast::Crate { attrs, items, span } => {
@@ -289,7 +302,7 @@ fn handle_crate<'tcx>(
                     &compiler.session(),
                     &krate,
                     &file,
-                    &self.org_file,
+                    &org_file,
                     &new_top_ctx,
                 ),
                 _ => {
