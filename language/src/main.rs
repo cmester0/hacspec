@@ -9,7 +9,6 @@ extern crate rustc_hir;
 extern crate rustc_interface;
 extern crate rustc_metadata;
 extern crate rustc_middle;
-extern crate rustc_parse;
 extern crate rustc_session;
 extern crate rustc_span;
 
@@ -338,6 +337,20 @@ fn handle_crate<'tcx>(
             functions: HashMap::new(),
             typ_dict: HashMap::new(),
         };
+        new_top_ctx.consts.insert(
+            rustspec::TopLevelIdent {
+                string: "MIN".to_string(),
+                kind: rustspec::TopLevelIdentKind::Constant,
+            },
+            (rustspec::BaseTyp::Int32, rustc_span::DUMMY_SP.into()),
+        );
+        // new_top_ctx.consts.insert(
+        //     rustspec::TopLevelIdent {
+        //         string: "None".to_string(),
+        //         kind: rustspec::TopLevelIdentKind::Constant,
+        //     },
+        //     (rustspec::BaseTyp::Unit, rustc_span::DUMMY_SP.into()), // Base Type??
+        // );
 
         for krate_use_path_string in &krate_use_paths[&krate_path] {
             if let Some(krate_use_string) = construct_module_string(
