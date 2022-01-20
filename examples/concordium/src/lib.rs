@@ -129,7 +129,7 @@ pub mod constants;
 mod hacspec_concordium_prims;
 mod hacspec_concordium_types;
 mod hacspec_concordium_traits;
-// mod hacspec_concordium_impls;
+mod hacspec_concordium_impls;
 
 pub mod test_infrastructure;
 
@@ -140,4 +140,4 @@ pub use hacspec_concordium_types::*;
 // #[cfg(not(feature = "hacspec"))]
 pub use hacspec_concordium_traits::*;
 // #[cfg(not(feature = "hacspec"))]
-// pub use hacspec_concordium_impls::*;
+pub use hacspec_concordium_impls::*;
