@@ -470,7 +470,7 @@ mod tests {
 (org-babel-detangle SOURCE-CODE-FILE)
 #+end_src
 
-*** Coq code
+***  - Coq code
 :PROPERTIES:
 :header-args: coq :tangle Piggybank.v  :comments link
 :header-args: coq :eval never :results output silent

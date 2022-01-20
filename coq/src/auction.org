@@ -1219,7 +1219,7 @@ fn test_auction_bid_and_finalize(item: PublicByteSeq, time : u64, input_amount :
 (org-babel-detangle SOURCE-CODE-FILE)
 #+end_src
 
-*** Coq code
+***  - Coq code
 :PROPERTIES:
 :header-args: coq :tangle Auction.v  :comments link
 :header-args: coq :eval never :results output silent
