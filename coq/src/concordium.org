@@ -962,6 +962,28 @@ Open Scope bool_scope.
 Open Scope hacspec_scope.
 #+end_src
 
+** Coq code
+
+#+begin_src elisp :var SOURCE-CODE-FILE="Concordium_Traits.v" :results output silent :tangle no
+(org-babel-detangle SOURCE-CODE-FILE)
+#+end_src
+
+*** hacspec_concordium_traits - Coq code
+:PROPERTIES:
+:header-args: coq :tangle Concordium_Traits.v :comments link
+:header-args: coq :eval never :results output silent
+:END:
+
+#+begin_src coq
+(** This file was automatically generated using Hacspec **)
+Require Import Lib MachineIntegers.
+From Coq Require Import ZArith.
+Import List.ListNotations.
+Open Scope Z_scope.
+Open Scope bool_scope.
+Open Scope hacspec_scope.
+#+end_src
+
 * Concordium "Prims" specification
 ** Rust code
 :PROPERTIES:
@@ -4604,3 +4626,4 @@ mod test {
     }
 }
 #+end_src
+
