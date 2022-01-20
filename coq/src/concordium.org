@@ -198,18 +198,18 @@ pub mod constants;
 mod hacspec_concordium_prims;
 mod hacspec_concordium_types;
 mod hacspec_concordium_traits;
-mod hacspec_concordium_impls;
+// mod hacspec_concordium_impls;
 
 pub mod test_infrastructure;
 
-#[cfg(not(feature = "hacspec"))]
+// #[cfg(not(feature = "hacspec"))]
 use hacspec_concordium_prims::*; // TODO: Does not re-export anything, nothing is public enough (removed pub)
-#[cfg(not(feature = "hacspec"))]
+// #[cfg(not(feature = "hacspec"))]
 pub use hacspec_concordium_types::*;
-#[cfg(not(feature = "hacspec"))]
+// #[cfg(not(feature = "hacspec"))]
 pub use hacspec_concordium_traits::*;
-#[cfg(not(feature = "hacspec"))]
-pub use hacspec_concordium_impls::*;
+// #[cfg(not(feature = "hacspec"))]
+// pub use hacspec_concordium_impls::*;
 #+END_SRC
 
 * Concordium "Types" specification
@@ -873,6 +873,24 @@ use crate::*;
 #+END_SRC
 
 *** Externs
+Coerce for public byte sequences.
+#+begin_src rust
+  #[cfg(not(feature = "hacspec"))]
+  pub fn coerce_rust_to_hacspec_public_byte_seq(buf: &[u8]) -> PublicByteSeq {
+      PublicByteSeq::from_native_slice(buf)
+  }
+
+  // TODO: Make creusot friendly version
+  #[cfg(not(feature = "hacspec"))]
+  pub fn coerce_hacspec_to_rust_public_byte_seq(buf: PublicByteSeq) -> Vec<u8> {
+      // buf.native_slice().iter().collect();
+      let mut temp_vec: Vec<u8> = Vec::new();
+      for i in 0..buf.len() {
+          temp_vec.push(buf.index(i).clone())
+      }
+      temp_vec
+  }
+#+end_src
 Load state extern
 #+begin_src rust
 #[cfg(not(feature = "hacspec"))]
@@ -1026,14 +1044,6 @@ Extern for parameter size and ~HasParameter~ trait.
   #[cfg(not(feature = "hacspec"))]
   pub(crate) fn get_parameter_size_hacspec() -> u32 {
       get_parameter_size_creusot()
-  }
-
-  #[cfg(not(feature = "hacspec"))]
-  impl HasParameter for Parameter {
-      #[inline(always)]
-      fn size(&self) -> u32 {
-          get_parameter_size_hacspec()
-      }
   }
 
 #+end_src
@@ -1763,21 +1773,6 @@ We then implement the traits
 
 **** Contract State -- Load
 #+begin_src rust
-  #[cfg(not(feature = "hacspec"))]
-  pub fn coerce_rust_to_hacspec_public_byte_seq(buf: &[u8]) -> PublicByteSeq {
-      PublicByteSeq::from_native_slice(buf)
-  }
-
-  // TODO: Make creusot friendly version
-  #[cfg(not(feature = "hacspec"))]
-  pub fn coerce_hacspec_to_rust_public_byte_seq(buf: PublicByteSeq) -> Vec<u8> {
-      // buf.native_slice().iter().collect();
-      let mut temp_vec: Vec<u8> = Vec::new();
-      for i in 0..buf.len() {
-          temp_vec.push(buf.index(i).clone())
-      }
-      temp_vec
-  }
 
 #+end_src
 
@@ -2041,6 +2036,13 @@ We then implement the traits
       }
   }
 
+  #[cfg(not(feature = "hacspec"))]
+  impl HasParameter for Parameter {
+      #[inline(always)]
+      fn size(&self) -> u32 {
+          get_parameter_size_hacspec()
+      }
+  }
 #+end_src
 *** ChainMetaExtern
 We define and implement traits for ~ChainMetaExtern~.

@@ -2,6 +2,22 @@
 use crate::*;
 
 #[cfg(not(feature = "hacspec"))]
+pub fn coerce_rust_to_hacspec_public_byte_seq(buf: &[u8]) -> PublicByteSeq {
+    PublicByteSeq::from_native_slice(buf)
+}
+
+// TODO: Make creusot friendly version
+#[cfg(not(feature = "hacspec"))]
+pub fn coerce_hacspec_to_rust_public_byte_seq(buf: PublicByteSeq) -> Vec<u8> {
+    // buf.native_slice().iter().collect();
+    let mut temp_vec: Vec<u8> = Vec::new();
+    for i in 0..buf.len() {
+        temp_vec.push(buf.index(i).clone())
+    }
+    temp_vec
+}
+
+#[cfg(not(feature = "hacspec"))]
 extern "C" {
     pub(crate) fn load_state(start: *mut u8, length: u32, offset: u32) -> u32;
 }
@@ -141,14 +157,6 @@ pub(crate) fn get_parameter_size_hacspec() -> u32 {
 #[cfg(not(feature = "hacspec"))]
 pub(crate) fn get_parameter_size_hacspec() -> u32 {
     get_parameter_size_creusot()
-}
-
-#[cfg(not(feature = "hacspec"))]
-impl HasParameter for Parameter {
-    #[inline(always)]
-    fn size(&self) -> u32 {
-        get_parameter_size_hacspec()
-    }
 }
 
 #[cfg(not(feature = "hacspec"))]
