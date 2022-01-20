@@ -212,6 +212,48 @@ pub use hacspec_concordium_traits::*;
 pub use hacspec_concordium_impls::*;
 #+END_SRC
 
+** Coq code
+
+#+begin_src elisp :var SOURCE-CODE-FILE="Concordium.v" :results output silent :tangle no
+(org-babel-detangle SOURCE-CODE-FILE)
+#+end_src
+
+***  - Coq code
+:PROPERTIES:
+:header-args: coq :tangle Concordium.v :comments link
+:header-args: coq :eval never :results output silent
+:END:
+
+#+begin_src coq
+(** This file was automatically generated using Hacspec **)
+Require Import Lib MachineIntegers.
+From Coq Require Import ZArith.
+Import List.ListNotations.
+Open Scope Z_scope.
+Open Scope bool_scope.
+Open Scope hacspec_scope.
+#+end_src
+
+#+begin_src coq
+Require Import Hacspec.Lib.
+#+end_src
+
+#+begin_src coq
+Require Import Hacspec.Concordium_Prims.
+#+end_src
+
+#+begin_src coq
+Require Import Hacspec.Concordium_Types.
+#+end_src
+
+#+begin_src coq
+Require Import Hacspec.Concordium_Traits.
+#+end_src
+
+#+begin_src coq
+Require Import Hacspec.Concordium_Impls.
+#+end_src
+
 * Concordium "Types" specification
 ** Rust code
 :PROPERTIES:
@@ -576,6 +618,46 @@ pub(crate) mod sealed {
 }
 #+END_SRC
 
+** Coq code
+
+#+begin_src elisp :var SOURCE-CODE-FILE="Concordium_Types.v" :results output silent :tangle no
+(org-babel-detangle SOURCE-CODE-FILE)
+#+end_src
+
+*** hacspec_concordium_types - Coq code
+:PROPERTIES:
+:header-args: coq :tangle Concordium_Types.v :comments link
+:header-args: coq :eval never :results output silent
+:END:
+
+#+begin_src coq
+(** This file was automatically generated using Hacspec **)
+Require Import Lib MachineIntegers.
+From Coq Require Import ZArith.
+Import List.ListNotations.
+Open Scope Z_scope.
+Open Scope bool_scope.
+Open Scope hacspec_scope.
+#+end_src
+
+#+begin_src coq
+Inductive log_error_t :=
+| Full : log_error_t
+| Malformed : log_error_t.
+
+Definition eqb_log_error_t (x y : log_error_t) : bool :=
+match x with
+   | Full => match y with | Full=> true | _ => false end
+   | Malformed => match y with | Malformed=> true | _ => false end
+   end.
+
+Definition eqb_leibniz_log_error_t (x y : log_error_t) : eqb_log_error_t x y = true <-> x = y.
+Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. intros ; subst ; destruct y ; try reflexivity ; try (apply eqb_refl). Qed.
+
+Instance eq_dec_log_error_t : EqDec (log_error_t) :=
+Build_EqDec (log_error_t) (eqb_log_error_t) (eqb_leibniz_log_error_t).
+#+end_src
+
 * Concordium "Traits" specification
 ** Rust code
 :PROPERTIES:
@@ -859,6 +941,28 @@ use crate::*;
       ) -> ParseResult<Self>;
   }
 #+END_SRC
+
+** Coq code
+
+#+begin_src elisp :var SOURCE-CODE-FILE="Concordium_Traits.v" :results output silent :tangle no
+(org-babel-detangle SOURCE-CODE-FILE)
+#+end_src
+
+*** hacspec_concordium_traits - Coq code
+:PROPERTIES:
+:header-args: coq :tangle Concordium_Traits.v :comments link
+:header-args: coq :eval never :results output silent
+:END:
+
+#+begin_src coq
+(** This file was automatically generated using Hacspec **)
+Require Import Lib MachineIntegers.
+From Coq Require Import ZArith.
+Import List.ListNotations.
+Open Scope Z_scope.
+Open Scope bool_scope.
+Open Scope hacspec_scope.
+#+end_src
 
 * Concordium "Prims" specification
 ** Rust code
@@ -1452,6 +1556,155 @@ Extern combine or
   }
 
 #+end_src
+
+** Coq code
+
+#+begin_src elisp :var SOURCE-CODE-FILE="Concordium_Prims.v" :results output silent :tangle no
+(org-babel-detangle SOURCE-CODE-FILE)
+#+end_src
+
+*** hacspec_concordium_prims - Coq code
+:PROPERTIES:
+:header-args: coq :tangle Concordium_Prims.v :comments link
+:header-args: coq :eval never :results output silent
+:END:
+
+#+begin_src coq
+(** This file was automatically generated using Hacspec **)
+Require Import Lib MachineIntegers.
+From Coq Require Import ZArith.
+Import List.ListNotations.
+Open Scope Z_scope.
+Open Scope bool_scope.
+Open Scope hacspec_scope.
+#+end_src
+
+#+begin_src coq
+Definition load_state_hacspec
+  (buf_0 : public_byte_seq)
+  (offset_1 : int32)
+  : (public_byte_seq × int32) :=
+  (buf_0, @repr WORDSIZE32 1).
+#+end_src
+
+#+begin_src coq
+Definition write_state_hacspec
+  (buf_2 : public_byte_seq)
+  (offset_3 : int32)
+  : (public_byte_seq × int32) :=
+  (buf_2, @repr WORDSIZE32 1).
+#+end_src
+
+#+begin_src coq
+Definition state_size_hacspec  : int32 :=
+  @repr WORDSIZE32 1.
+#+end_src
+
+#+begin_src coq
+Definition resize_state_hacspec (new_size_4 : int32) : int32 :=
+  @repr WORDSIZE32 1.
+#+end_src
+
+#+begin_src coq
+Definition get_parameter_section_hacspec
+  (buf_5 : public_byte_seq)
+  (offset_6 : int32)
+  : (public_byte_seq × int32) :=
+  (buf_5, @repr WORDSIZE32 1).
+#+end_src
+
+#+begin_src coq
+Definition get_parameter_size_hacspec  : int32 :=
+  @repr WORDSIZE32 1.
+#+end_src
+
+#+begin_src coq
+Definition get_slot_time_hacspec  : int64 :=
+  @repr WORDSIZE64 1.
+#+end_src
+
+#+begin_src coq
+Definition get_policy_section_hacspec
+  (policy_bytes_7 : public_byte_seq)
+  (offset_8 : int32)
+  : (public_byte_seq × int32) :=
+  (policy_bytes_7, @repr WORDSIZE32 1).
+#+end_src
+
+#+begin_src coq
+Definition get_init_origin_hacspec
+  (start_9 : public_byte_seq)
+  : public_byte_seq :=
+  start_9.
+#+end_src
+
+#+begin_src coq
+Definition get_receive_invoker_hacspec
+  (start_10 : public_byte_seq)
+  : public_byte_seq :=
+  start_10.
+#+end_src
+
+#+begin_src coq
+Definition get_receive_self_address_hacspec
+  (start_11 : public_byte_seq)
+  : public_byte_seq :=
+  start_11.
+#+end_src
+
+#+begin_src coq
+Definition get_receive_self_balance_hacspec  : int64 :=
+  @repr WORDSIZE64 1.
+#+end_src
+
+#+begin_src coq
+Definition get_receive_sender_hacspec
+  (start_12 : public_byte_seq)
+  : public_byte_seq :=
+  start_12.
+#+end_src
+
+#+begin_src coq
+Definition log_event_hacspec
+  (start_13 : public_byte_seq)
+  : (public_byte_seq × int32) :=
+  (start_13, @repr WORDSIZE32 1).
+#+end_src
+
+#+begin_src coq
+Definition accept_hacspec  : int32 :=
+  @repr WORDSIZE32 1.
+#+end_src
+
+#+begin_src coq
+Definition simple_transfer_hacspec
+  (buf_14 : public_byte_seq)
+  (amount_15 : int64)
+  : int32 :=
+  @repr WORDSIZE32 1.
+#+end_src
+
+#+begin_src coq
+Definition send_hacspec
+  (addr_index_16 : int64)
+  (addr_subindex_17 : int64)
+  (receive_name_18 : public_byte_seq)
+  (amount_19 : int64)
+  (parameter_20 : public_byte_seq)
+  : int32 :=
+  @repr WORDSIZE32 1.
+#+end_src
+
+#+begin_src coq
+Definition combine_and_hacspec (l_21 : int32) (r_22 : int32) : int32 :=
+  @repr WORDSIZE32 1.
+#+end_src
+
+#+begin_src coq
+Definition combine_or_hacspec (l_23 : int32) (r_24 : int32) : int32 :=
+  @repr WORDSIZE32 1.
+#+end_src
+
 
 * Concordium "Impls" specification
 ** Rust code
@@ -3066,15 +3319,15 @@ impl<A, E: fmt::Debug> ExpectReport for Result<A, E> {
 
 #+end_src
 
-* Generation of backend output
+** Coq code
 
-#+begin_src elisp :var SOURCE-CODE-FILE="Concordium.v" :results output silent :tangle no
+#+begin_src elisp :var SOURCE-CODE-FILE="Concordium_Impls.v" :results output silent :tangle no
 (org-babel-detangle SOURCE-CODE-FILE)
 #+end_src
 
-*** Coq code
+*** hacspec_concordium_impls - Coq code
 :PROPERTIES:
-:header-args: coq :tangle Concordium.v :comments link
+:header-args: coq :tangle Concordium_Impls.v :comments link
 :header-args: coq :eval never :results output silent
 :END:
 
@@ -3093,162 +3346,11 @@ Require Import Hacspec.Lib.
 #+end_src
 
 #+begin_src coq
-Definition max_contract_state_size_v : int32 :=
-  @repr WORDSIZE32 16384.
+Require Import Hacspec.Concordium_Prims.
 #+end_src
 
 #+begin_src coq
-Definition max_log_size_v : uint_size :=
-  usize 512.
-#+end_src
-
-#+begin_src coq
-Definition max_num_logs_v : uint_size :=
-  usize 64.
-#+end_src
-
-#+begin_src coq
-Definition load_state_hacspec
-  (buf_0 : public_byte_seq)
-  (offset_1 : int32)
-  : (public_byte_seq × int32) :=
-  (buf_0, @repr WORDSIZE32 1).
-#+end_src
-
-#+begin_src coq
-Definition write_state_hacspec
-  (buf_2 : public_byte_seq)
-  (offset_3 : int32)
-  : (public_byte_seq × int32) :=
-  (buf_2, @repr WORDSIZE32 1).
-#+end_src
-
-#+begin_src coq
-Definition state_size_hacspec  : int32 :=
-  @repr WORDSIZE32 1.
-#+end_src
-
-#+begin_src coq
-Definition resize_state_hacspec (new_size_4 : int32) : int32 :=
-  @repr WORDSIZE32 1.
-#+end_src
-
-#+begin_src coq
-Definition get_parameter_section_hacspec
-  (buf_5 : public_byte_seq)
-  (offset_6 : int32)
-  : (public_byte_seq × int32) :=
-  (buf_5, @repr WORDSIZE32 1).
-#+end_src
-
-#+begin_src coq
-Definition get_parameter_size_hacspec  : int32 :=
-  @repr WORDSIZE32 1.
-#+end_src
-
-#+begin_src coq
-Definition get_slot_time_hacspec  : int64 :=
-  @repr WORDSIZE64 1.
-#+end_src
-
-#+begin_src coq
-Definition get_policy_section_hacspec
-  (policy_bytes_7 : public_byte_seq)
-  (offset_8 : int32)
-  : (public_byte_seq × int32) :=
-  (policy_bytes_7, @repr WORDSIZE32 1).
-#+end_src
-
-#+begin_src coq
-Definition get_init_origin_hacspec
-  (start_9 : public_byte_seq)
-  : public_byte_seq :=
-  start_9.
-#+end_src
-
-#+begin_src coq
-Definition get_receive_invoker_hacspec
-  (start_10 : public_byte_seq)
-  : public_byte_seq :=
-  start_10.
-#+end_src
-
-#+begin_src coq
-Definition get_receive_self_address_hacspec
-  (start_11 : public_byte_seq)
-  : public_byte_seq :=
-  start_11.
-#+end_src
-
-#+begin_src coq
-Definition get_receive_self_balance_hacspec  : int64 :=
-  @repr WORDSIZE64 1.
-#+end_src
-
-#+begin_src coq
-Definition get_receive_sender_hacspec
-  (start_12 : public_byte_seq)
-  : public_byte_seq :=
-  start_12.
-#+end_src
-
-#+begin_src coq
-Definition log_event_hacspec
-  (start_13 : public_byte_seq)
-  : (public_byte_seq × int32) :=
-  (start_13, @repr WORDSIZE32 1).
-#+end_src
-
-#+begin_src coq
-Definition accept_hacspec  : int32 :=
-  @repr WORDSIZE32 1.
-#+end_src
-
-#+begin_src coq
-Definition simple_transfer_hacspec
-  (buf_14 : public_byte_seq)
-  (amount_15 : int64)
-  : int32 :=
-  @repr WORDSIZE32 1.
-#+end_src
-
-#+begin_src coq
-Definition send_hacspec
-  (addr_index_16 : int64)
-  (addr_subindex_17 : int64)
-  (receive_name_18 : public_byte_seq)
-  (amount_19 : int64)
-  (parameter_20 : public_byte_seq)
-  : int32 :=
-  @repr WORDSIZE32 1.
-#+end_src
-
-#+begin_src coq
-Definition combine_and_hacspec (l_21 : int32) (r_22 : int32) : int32 :=
-  @repr WORDSIZE32 1.
-#+end_src
-
-#+begin_src coq
-Definition combine_or_hacspec (l_23 : int32) (r_24 : int32) : int32 :=
-  @repr WORDSIZE32 1.
-#+end_src
-
-#+begin_src coq
-Inductive log_error_t :=
-| Full : log_error_t
-| Malformed : log_error_t.
-
-Definition eqb_log_error_t (x y : log_error_t) : bool :=
-match x with
-   | Full => match y with | Full=> true | _ => false end
-   | Malformed => match y with | Malformed=> true | _ => false end
-   end.
-
-Definition eqb_leibniz_log_error_t (x y : log_error_t) : eqb_log_error_t x y = true <-> x = y.
-Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. intros ; subst ; destruct y ; try reflexivity ; try (apply eqb_refl). Qed.
-
-Instance eq_dec_log_error_t : EqDec (log_error_t) :=
-Build_EqDec (log_error_t) (eqb_log_error_t) (eqb_leibniz_log_error_t).
+Require Import Hacspec.Concordium_Types.
 #+end_src
 
 #+begin_src coq
@@ -3582,7 +3684,6 @@ Notation "'policy_attributes_cursor_hacspec_t'" := ((
 )) : hacspec_scope.
 #+end_src
 
-# Coq code:55
 #+begin_src coq
 Definition iterator_impl_for_policies_iterator_next
   (policies_iterator_77 : policies_iterator_hacspec_t)
@@ -3645,3 +3746,4 @@ Definition iterator_impl_for_policies_iterator_next
       )
     ))).
 #+end_src
+
