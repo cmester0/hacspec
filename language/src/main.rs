@@ -44,8 +44,9 @@ use std::path::Path;
 use std::process::Command;
 use util::APP_USAGE;
 
-use rustc_ast_pretty::pprust::item_to_string;
 use im::{HashMap, HashSet};
+use rustc_ast_pretty::pprust::item_to_string;
+use heck::{SnakeCase, TitleCase};
 
 struct HacspecCallbacks {
     output_file: Option<String>,
@@ -75,25 +76,28 @@ pub fn handle_crate<'tcx>(
     output_file: &Option<String>,
     compiler: &Compiler,
     queries: &'tcx Queries<'tcx>,
-    handled: &HashSet<String>,
+    handled: &mut HashSet<String>,
     ast_crates: &HashMap<String, rustc_ast::ast::Crate>,
     krate_path: String,
-    mut top_ctx : &mut name_resolution::TopLevelContext,
+    top_ctx: &mut name_resolution::TopLevelContext,
 ) -> Compilation {
     if handled.contains(&krate_path) {
         return Compilation::Continue;
     }
-    
+
     // Look at path/mod_name.rs and path/mod_name/mod.rs for module
     let krate = ast_crates[&(if ast_crates.contains_key(&krate_path.clone()) {
         krate_path.clone()
     } else if ast_crates.contains_key(&(krate_path.clone() + "/mod")) {
         krate_path.clone() + "/mod"
     } else {
-        println!("There is no module with name {}", krate_path.clone());
+        compiler
+            .session()
+            .err(format!("There is no module with name {}", krate_path.clone()).as_str());
         return Compilation::Stop;
-    })].clone();
-    
+    })]
+        .clone();
+
     let krate = match krate {
         rustc_ast::ast::Crate { attrs, items, span } => {
             let mut v = vec![];
@@ -103,7 +107,6 @@ pub fn handle_crate<'tcx>(
                         rustc_ast::ast::Unsafe::No,
                         rustc_ast::ast::ModKind::Unloaded,
                     ) => {
-                        println!("{:?}", x.ident.name.to_ident_string());
                         if handle_crate(
                             output_file,
                             compiler,
@@ -111,7 +114,7 @@ pub fn handle_crate<'tcx>(
                             handled,
                             ast_crates,
                             x.ident.name.to_ident_string(),
-                            &mut top_ctx,
+                            top_ctx,
                         ) == Compilation::Stop
                         {
                             return Compilation::Stop;
@@ -142,21 +145,14 @@ pub fn handle_crate<'tcx>(
         }
     };
 
-    for item in &krate.items {
-        println!("{}", item_to_string(item));
-    }
-
     // Start of actual translation
-    
+
     let external_data = |imported_crates: &Vec<rustspec::Spanned<String>>| {
-        println!("EXTERNAL");
         queries.global_ctxt().unwrap().peek_mut().enter(|tcx| {
             hir_to_rustspec::retrieve_external_data(&compiler.session(), &tcx, imported_crates)
         })
     };
-    
 
-    println!("AST_TO_RUSTSPEC");
     let krate = match ast_to_rustspec::translate(&compiler.session(), &krate, &external_data) {
         Ok(krate) => krate,
         Err(_) => {
@@ -167,29 +163,30 @@ pub fn handle_crate<'tcx>(
         }
     };
 
-    println!("NAME RESOLUTION");
-    let krate =
-        match name_resolution::resolve_crate(&compiler.session(), krate, &external_data, &mut top_ctx) {
-            Ok(krate) => krate,
-            Err(_) => {
-                compiler
-                    .session()
-                    .err("found some Hacspec name resolution errors");
-                return Compilation::Stop;
-            }
-        };
-    
-    println!("TYPECHECK");
-    let krate =
-        match typechecker::typecheck_program(&compiler.session(), &krate, &mut top_ctx) {
-            Ok(krate) => krate,
-            Err(_) => {
-                compiler
-                    .session()
-                    .err("found some Hacspec typechecking errors");
-                return Compilation::Stop;
-            }
-        };
+    let krate = match name_resolution::resolve_crate(
+        &compiler.session(),
+        krate,
+        &external_data,
+        top_ctx,
+    ) {
+        Ok(krate) => krate,
+        Err(_) => {
+            compiler
+                .session()
+                .err("found some Hacspec name resolution errors");
+            return Compilation::Stop;
+        }
+    };
+
+    let krate = match typechecker::typecheck_program(&compiler.session(), &krate, top_ctx) {
+        Ok(krate) => krate,
+        Err(_) => {
+            compiler
+                .session()
+                .err("found some Hacspec typechecking errors");
+            return Compilation::Stop;
+        }
+    };
     let imported_crates = name_resolution::get_imported_crates(&krate);
     let imported_crates = imported_crates
         .into_iter()
@@ -213,15 +210,16 @@ pub fn handle_crate<'tcx>(
         Some(file_str) => {
             let original_file = Path::new(file_str);
             let extension = original_file.extension().unwrap();
-            
+
             let oe = if krate_path != "".to_string() {
-                (original_file.parent().unwrap()).join(Path::new(krate_path.clone().as_str())).with_extension(extension)
+                (original_file.parent().unwrap())
+                    .join(Path::new(krate_path.clone().as_str()))
+                    .with_extension(extension)
             } else {
                 original_file.to_path_buf()
             };
-            
-            let file = &(oe.to_str().unwrap().replace("-", "_"));
-            println!("New File {:?}", file);
+
+            let file = &(oe.to_str().unwrap().to_title_case().replace("-", "_"));
             match extension.to_str().unwrap() {
                 "fst" => rustspec_to_fstar::translate_and_write_to_file(
                     &compiler.session(),
@@ -250,33 +248,31 @@ pub fn handle_crate<'tcx>(
                     };
                     match serde_json::to_writer_pretty(file, &krate) {
                         Err(why) => {
-                            compiler.session().err(
-                                format!("Unable to serialize program: \"{}\"", why).as_str(),
-                            );
+                            compiler
+                                .session()
+                                .err(format!("Unable to serialize program: \"{}\"", why).as_str());
                             return Compilation::Stop;
                         }
                         Ok(_) => (),
                     };
                 }
-                "v" => {
-                    println!("Done with file: {}", file);
-                    
-                    rustspec_to_coq::translate_and_write_to_file(
+                "v" => rustspec_to_coq::translate_and_write_to_file(
                     &compiler.session(),
                     &krate,
                     &file,
                     &top_ctx,
-                    )
-                }
+                ),
                 _ => {
                     compiler
                         .session()
                         .err("unknown backend extension for output file");
                     return Compilation::Stop;
-                },
+                }
             }
         }
     }
+
+    handled.insert(krate_path);
 
     Compilation::Continue
 }
@@ -307,7 +303,8 @@ impl Callbacks for HacspecCallbacks {
         analysis_crates.insert("".to_string(), krate);
 
         // Find module location using hir
-        queries.global_ctxt().unwrap().peek_mut().enter(|tcx| { // .take() instead of peek_mut ?
+        queries.global_ctxt().unwrap().peek_mut().enter(|tcx| {
+            // .take() instead of peek_mut ?
             let hir_krate = tcx.hir();
             for item in hir_krate.items() {
                 if let rustc_hir::ItemKind::Mod(_m) = &item.kind {
@@ -315,11 +312,9 @@ impl Callbacks for HacspecCallbacks {
 
                     let sm: &rustc_span::source_map::SourceMap =
                         (compiler.session()).parse_sess.source_map();
-                    println!("{:?}", sm.span_to_filename(expra.inner));
                     if let rustc_span::FileName::Real(rustc_span::RealFileName::LocalPath(s)) =
                         sm.span_to_filename(expra.inner)
                     {
-                        println!("{:?}", sm.span_to_filename(*exprb));
                         if let rustc_span::FileName::Real(rustc_span::RealFileName::LocalPath(
                             root,
                         )) = sm.span_to_filename(*exprb)
@@ -357,7 +352,7 @@ impl Callbacks for HacspecCallbacks {
             &self.output_file,
             compiler,
             queries,
-            &HashSet::new(),
+            &mut HashSet::new(),
             &analysis_crates,
             "".to_string(),
             &mut name_resolution::TopLevelContext {
