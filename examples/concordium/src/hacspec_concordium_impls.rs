@@ -9,6 +9,10 @@ use crate::{
     String, *,
 };
 
+use hacspec_lib::*;
+use hacspec_concordium_prims::*;
+use hacspec_concordium_types::*;
+
 pub type RejectHacspec = i32;
 
 pub fn reject_impl_deafult() -> RejectHacspec {

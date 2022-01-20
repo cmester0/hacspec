@@ -28,9 +28,21 @@ src/Sha256.vos src/Sha256.vok src/Sha256.required_vos: src/Sha256.v src/Lib.vos 
 src/Aes.vo src/Aes.glob src/Aes.v.beautified src/Aes.required_vo: src/Aes.v src/Lib.vo src/MachineIntegers.vo src/Lib.vo
 src/Aes.vio: src/Aes.v src/Lib.vio src/MachineIntegers.vio src/Lib.vio
 src/Aes.vos src/Aes.vok src/Aes.required_vos: src/Aes.v src/Lib.vos src/MachineIntegers.vos src/Lib.vos
-src/Concordium.vo src/Concordium.glob src/Concordium.v.beautified src/Concordium.required_vo: src/Concordium.v src/Lib.vo src/MachineIntegers.vo src/Lib.vo
-src/Concordium.vio: src/Concordium.v src/Lib.vio src/MachineIntegers.vio src/Lib.vio
-src/Concordium.vos src/Concordium.vok src/Concordium.required_vos: src/Concordium.v src/Lib.vos src/MachineIntegers.vos src/Lib.vos
+src/Concordium_Prims.vo src/Concordium_Prims.glob src/Concordium_Prims.v.beautified src/Concordium_Prims.required_vo: src/Concordium_Prims.v src/Lib.vo src/MachineIntegers.vo
+src/Concordium_Prims.vio: src/Concordium_Prims.v src/Lib.vio src/MachineIntegers.vio
+src/Concordium_Prims.vos src/Concordium_Prims.vok src/Concordium_Prims.required_vos: src/Concordium_Prims.v src/Lib.vos src/MachineIntegers.vos
+src/Concordium_Types.vo src/Concordium_Types.glob src/Concordium_Types.v.beautified src/Concordium_Types.required_vo: src/Concordium_Types.v src/Lib.vo src/MachineIntegers.vo
+src/Concordium_Types.vio: src/Concordium_Types.v src/Lib.vio src/MachineIntegers.vio
+src/Concordium_Types.vos src/Concordium_Types.vok src/Concordium_Types.required_vos: src/Concordium_Types.v src/Lib.vos src/MachineIntegers.vos
+src/Concordium_Traits.vo src/Concordium_Traits.glob src/Concordium_Traits.v.beautified src/Concordium_Traits.required_vo: src/Concordium_Traits.v src/Lib.vo src/MachineIntegers.vo
+src/Concordium_Traits.vio: src/Concordium_Traits.v src/Lib.vio src/MachineIntegers.vio
+src/Concordium_Traits.vos src/Concordium_Traits.vok src/Concordium_Traits.required_vos: src/Concordium_Traits.v src/Lib.vos src/MachineIntegers.vos
+src/Concordium_Impls.vo src/Concordium_Impls.glob src/Concordium_Impls.v.beautified src/Concordium_Impls.required_vo: src/Concordium_Impls.v src/Lib.vo src/MachineIntegers.vo src/Lib.vo src/Concordium_Types.vo
+src/Concordium_Impls.vio: src/Concordium_Impls.v src/Lib.vio src/MachineIntegers.vio src/Lib.vio src/Concordium_Types.vio
+src/Concordium_Impls.vos src/Concordium_Impls.vok src/Concordium_Impls.required_vos: src/Concordium_Impls.v src/Lib.vos src/MachineIntegers.vos src/Lib.vos src/Concordium_Types.vos
+src/Concordium.vo src/Concordium.glob src/Concordium.v.beautified src/Concordium.required_vo: src/Concordium.v src/Lib.vo src/MachineIntegers.vo src/Lib.vo src/Concordium_Prims.vo src/Concordium_Types.vo src/Concordium_Traits.vo src/Concordium_Impls.vo
+src/Concordium.vio: src/Concordium.v src/Lib.vio src/MachineIntegers.vio src/Lib.vio src/Concordium_Prims.vio src/Concordium_Types.vio src/Concordium_Traits.vio src/Concordium_Impls.vio
+src/Concordium.vos src/Concordium.vok src/Concordium.required_vos: src/Concordium.v src/Lib.vos src/MachineIntegers.vos src/Lib.vos src/Concordium_Prims.vos src/Concordium_Types.vos src/Concordium_Traits.vos src/Concordium_Impls.vos
 src/Auction.vo src/Auction.glob src/Auction.v.beautified src/Auction.required_vo: src/Auction.v src/Lib.vo src/MachineIntegers.vo src/QuickChickLib.vo src/Lib.vo
 src/Auction.vio: src/Auction.v src/Lib.vio src/MachineIntegers.vio src/QuickChickLib.vio src/Lib.vio
 src/Auction.vos src/Auction.vok src/Auction.required_vos: src/Auction.v src/Lib.vos src/MachineIntegers.vos src/QuickChickLib.vos src/Lib.vos

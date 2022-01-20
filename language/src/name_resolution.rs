@@ -93,13 +93,13 @@ pub(crate) fn find_ident<'b>(
                     Some(_) => Ok(Ident::TopLevel(x_tl)),
                     None => {
                         println!("NAME ISSUE: {}", name.clone());
-                        if name.clone() == "None" {
-                            Ok(Ident::TopLevel(x_tl))
-                        }
-                        else {
+                        // if name.clone() == "None" || name.clone() == "MIN" {
+                        //     Ok(Ident::TopLevel(x_tl))
+                        // }
+                        // else {
                             sess.span_rustspec_err(x.1.clone(), "identifier is not a constant");
                             Err(())
-                        }
+                        // }
                     }
                 }
             }
