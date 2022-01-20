@@ -43,6 +43,7 @@ Global Instance show_piggy_bank_state_hacspec_t : Show (piggy_bank_state_hacspec
  end).
 Definition g_piggy_bank_state_hacspec_t : G (piggy_bank_state_hacspec_t) := oneOf_ (returnGen Intact) [returnGen Intact;returnGen Smashed].
 Global Instance gen_piggy_bank_state_hacspec_t : Gen (piggy_bank_state_hacspec_t) := Build_Gen piggy_bank_state_hacspec_t g_piggy_bank_state_hacspec_t.
+
 (* Coq code:4 ends here *)
 
 (* [[file:piggybank.org::*Coq code][Coq code:5]] *)
@@ -113,6 +114,7 @@ Global Instance show_smash_error_t : Show (smash_error_t) :=
  end).
 Definition g_smash_error_t : G (smash_error_t) := oneOf_ (returnGen NotOwner) [returnGen NotOwner;returnGen AlreadySmashed].
 Global Instance gen_smash_error_t : Gen (smash_error_t) := Build_Gen smash_error_t g_smash_error_t.
+
 (* Coq code:10 ends here *)
 
 (* [[file:piggybank.org::*Coq code][Coq code:11]] *)
@@ -133,7 +135,7 @@ Definition piggy_smash_hacspec
   else (tt) >> (fun 'tt =>
   ifbnd negb ((state_2) =.? (Intact)) : bool
   thenbnd (bind (@Err piggy_bank_state_hacspec_t smash_error_t (
-	AlreadySmashed)) (fun _ =>  Ok (tt)))
+        AlreadySmashed)) (fun _ =>  Ok (tt)))
   else (tt) >> (fun 'tt =>
   @Ok piggy_bank_state_hacspec_t smash_error_t (Smashed))).
 (* Coq code:12 ends here *)
@@ -177,8 +179,8 @@ Definition test_smash_intact_not_owner
   let ctx_13 : (user_address_t × user_address_t × int64) :=
     (owner_10, sender_11, balance_12) in 
   ((owner_10) array_eq (sender_11)) || ((piggy_smash_hacspec (ctx_13) (
-	Intact)) =.? (@Err piggy_bank_state_hacspec_t smash_error_t (
-	NotOwner))).
+        Intact)) =.? (@Err piggy_bank_state_hacspec_t smash_error_t (
+        NotOwner))).
 QuickChick (
   forAll g_user_address_t (fun owner_10 : user_address_t => forAll g_user_address_t (fun sender_11 : user_address_t => forAll g_int64 (fun balance_12 : int64 => test_smash_intact_not_owner owner_10 sender_11 balance_12)))).
 (* Coq code:17 ends here *)
@@ -197,3 +199,4 @@ Definition test_smash_smashed
 QuickChick (
   forAll g_user_address_t (fun owner_14 : user_address_t => forAll g_int64 (fun balance_15 : int64 => test_smash_smashed owner_14 balance_15))).
 (* Coq code:18 ends here *)
+

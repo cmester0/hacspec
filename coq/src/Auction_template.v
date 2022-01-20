@@ -16,6 +16,9 @@ Require Import Hacspec.Lib.
 
 (* [[file:auction.org::*Coq code][Coq code:3]] *)
 Definition user_address_t := nseq (int8) (usize 32).
+Instance show_user_address_t : Show (user_address_t) := Build_Show (user_address_t) show.
+Definition g_user_address_t : G (user_address_t) := arbitrary.
+Instance gen_user_address_t : Gen (user_address_t) := Build_Gen user_address_t g_user_address_t.
 (* Coq code:3 ends here *)
 
 (* [[file:auction.org::*Coq code][Coq code:4]] *)
