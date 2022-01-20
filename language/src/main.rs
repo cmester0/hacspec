@@ -2,6 +2,7 @@
 extern crate im;
 extern crate pretty;
 extern crate rustc_ast;
+extern crate rustc_ast_pretty;
 extern crate rustc_driver;
 extern crate rustc_errors;
 extern crate rustc_hir;
