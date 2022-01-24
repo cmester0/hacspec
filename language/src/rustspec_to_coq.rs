@@ -20,7 +20,7 @@ const SEQ_MODULE: &'static str = "seq";
 
 const ARRAY_MODULE: &'static str = "array";
 
-const NAT_MODULE: &'static str = "nat_mod";
+const NAT_MODULE: &'static str = "finFieldType"; // finFieldType
 
 static ID_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
@@ -42,9 +42,23 @@ fn make_let_binding<'a>(
         .append(RcDoc::space())
         .append(
             pat.append(match typ {
-                None => RcDoc::nil(),
+                None => {
+                    if toplevel {
+                        RcDoc::as_string("{L : {fset Location}} :")
+                            .append(RcDoc::space())
+                            .append("code L [interface] _")
+                    } else {
+                        RcDoc::nil()
+                    }
+                }
                 Some(tau) => RcDoc::space()
-                    .append(RcDoc::as_string(":"))
+                    .append(if toplevel {
+                        RcDoc::as_string("{L : {fset Location}} :")
+                            .append(RcDoc::space())
+                            .append("code L [interface]")
+                    } else {
+                        RcDoc::as_string(":")
+                    })
                     .append(RcDoc::space())
                     .append(tau),
             })
@@ -53,10 +67,16 @@ fn make_let_binding<'a>(
         .append(RcDoc::space())
         .append(RcDoc::as_string(":="))
         .group()
+        .append(if toplevel {
+            RcDoc::line().append("{code")
+        } else {
+            RcDoc::nil()
+        })
         .append(RcDoc::line().append(expr.group()))
         .nest(2)
         .append(if toplevel {
-            RcDoc::as_string(".")
+            RcDoc::line().append("}.")
+            // RcDoc::as_string(".")
         } else {
             RcDoc::space()
                 .append(RcDoc::as_string("in"))
@@ -308,10 +328,13 @@ fn translate_base_typ<'a>(tau: BaseTyp) -> RcDoc<'a, ()> {
                 make_typ_tuple(args.into_iter().map(|(arg, _)| translate_base_typ(arg)))
             }
         }
-        BaseTyp::NaturalInteger(_secrecy, modulo, _bits) => RcDoc::as_string("nat_mod")
-            .append(RcDoc::space())
-            .append(RcDoc::as_string(format!("0x{}", &modulo.0)))
-            .append(RcDoc::hardline()),
+        BaseTyp::NaturalInteger(_secrecy, modulo, _bits) => {
+            // RcDoc::as_string("nat_mod")
+            RcDoc::as_string("Fp_finFieldType")
+                .append(RcDoc::space())
+                .append(RcDoc::as_string(format!("0x{}", &modulo.0)))
+                .append(RcDoc::hardline())
+        }
     }
 }
 
@@ -1144,7 +1167,9 @@ fn translate_statements<'a>(
             }
         }
 
-        Statement::ReturnExp(e1) => translate_expression(e1.clone(), top_ctx),
+        Statement::ReturnExp(e1) => RcDoc::as_string("ret")
+            .append(RcDoc::space())
+            .append(make_paren(translate_expression(e1.clone(), top_ctx))),
         Statement::Conditional((cond, _), (mut b1, _), b2, mutated) => {
             let mutated_info = mutated.unwrap();
             let pat = RcDoc::as_string("'").append(make_tuple(
@@ -1407,15 +1432,8 @@ fn translate_item<'a>(
                     )
                 } else {
                     RcDoc::nil()
-                })
-                .append(RcDoc::line())
-                .append(
-                    RcDoc::as_string(":")
-                        .append(RcDoc::space())
-                        .append(translate_base_typ(sig.ret.0.clone()))
-                        .group(),
-                ),
-            None,
+                }),
+            Some(translate_base_typ(sig.ret.0.clone())),
             translate_block(b.clone(), false, top_ctx)
                 .append(RcDoc::nil())
                 .group(),
@@ -1761,7 +1779,8 @@ fn translate_item<'a>(
                     .append(make_let_binding(
                         translate_ident(Ident::TopLevel(index_typ.0.clone())),
                         None,
-                        RcDoc::as_string("nat_mod")
+                        // RcDoc::as_string("nat_mod")
+                        RcDoc::as_string("Fp_finFieldType")
                             .append(RcDoc::space())
                             .append(make_paren(translate_expression(size.0.clone(), top_ctx))),
                         true,
@@ -1813,7 +1832,8 @@ fn translate_item<'a>(
                     .group()
                     .append(
                         RcDoc::line()
-                            .append(RcDoc::as_string("nat_mod"))
+                            .append(RcDoc::as_string("Fp_finFieldType"))
+                            // .append(RcDoc::as_string("nat_mod"))
                             .append(RcDoc::space())
                             .append(match info {
                                 Some((_, modulo)) => RcDoc::as_string(format!("0x{}", &modulo.0)),
@@ -2061,16 +2081,34 @@ pub fn translate_and_write_to_file(
     write!(
         file,
         "(** This file was automatically generated using Hacspec **)\n\
+         From Coq Require Import Utf8.\n\
+         Set Warnings \"-notation-overridden,-ambiguous-paths\".\n\
+         From mathcomp Require Import all_algebra .\n\
+         Set Warnings \"-ambiguous-paths,-notation-overridden,-notation-incompatible-format\".\n\
+         From extructures Require Import ord fset fmap.\n\
+         From Crypt Require Import RulesStateProb Package Prelude.\n\
+         Import PackageNotation.\n\
+         \n\
+         From Equations Require Import Equations.\n\
+         Require Equations.Prop.DepElim.\n\
+         \n\
+         \n\
+         Set Bullet Behavior \"Strict Subproofs\".\n\
+         Set Default Goal Selector \"!\".\n\
+         Set Primitive Projections.\n\
+         \n\
         Require Import Hacspec_Lib MachineIntegers.\n\
         From Coq Require Import ZArith.\n\
         Import List.ListNotations.\n\
         Open Scope Z_scope.\n\
         Open Scope bool_scope.\n\
         Open Scope hacspec_scope.\n\
-        {}",
+        {}\n\
+         Module test.\n\
+         \tParameter L : {{fset Location}}.\n",
         if export_quick_check {
             "From QuickChick Require Import QuickChick.\n\
-            Require Import QuickChickLib.\n"
+             Require Import QuickChickLib.\n"
         } else {
             ""
         }
