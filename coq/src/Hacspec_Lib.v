@@ -716,95 +716,93 @@ Fixpoint seq_truncate {a} (x : seq a) (n : nat) : seq a := (* uint_size *)
 (* TODO END *)
 
 (**** Integers to arrays *)
-(* TODO START *)
-(* Axiom uint32_to_le_bytes : int32 -> nseq int8 4. *)
-(* (* Definition uint32_to_le_bytes (x: uint32) : nseq uint8 4 := *)
-(*   LBSeq.uint_to_bytes_le x. *) *)
+Axiom uint32_to_le_bytes : int32 -> nseq int8 4.
+(* Definition uint32_to_le_bytes (x: uint32) : nseq uint8 4 := *)
+(*   LBSeq.uint_to_bytes_le x. *)
 
-(* Axiom uint32_to_be_bytes : int32 -> nseq int8 4. *)
-(* (* Definition uint32_to_be_bytes (x: uint32) : nseq uint8 4 := *)
-(*   LBSeq.uint_to_bytes_be x *) *)
+Axiom uint32_to_be_bytes : int32 -> nseq int8 4.
+(* Definition uint32_to_be_bytes (x: uint32) : nseq uint8 4 := *)
+(*   LBSeq.uint_to_bytes_be x *)
 
-(* Axiom uint32_from_le_bytes : nseq int8 4 -> int32. *)
-(* (* Definition uint32_from_le_bytes (s: nseq uint8 4) : uint32 := *)
-(*   LBSeq.uint_from_bytes_le s *) *)
+Axiom uint32_from_le_bytes : nseq int8 4 -> int32.
+(* Definition uint32_from_le_bytes (s: nseq uint8 4) : uint32 := *)
+(*   LBSeq.uint_from_bytes_le s *)
 
-(* Axiom uint32_from_be_bytes : nseq int8 4 -> int32. *)
-(* (* Definition uint32_from_be_bytes (s: nseq uint8 4) : uint32 := *)
-(*   LBSeq.uint_from_bytes_be s *) *)
+Axiom uint32_from_be_bytes : nseq int8 4 -> int32.
+(* Definition uint32_from_be_bytes (s: nseq uint8 4) : uint32 := *)
+(*   LBSeq.uint_from_bytes_be s *)
 
-(* Axiom uint64_to_le_bytes : int64 -> nseq int8 8. *)
-(* (* Definition uint64_to_le_bytes (x: uint64) : nseq uint8 8 := *)
-(*   LBSeq.uint_to_bytes_le x *) *)
+Axiom uint64_to_le_bytes : int64 -> nseq int8 8.
+(* Definition uint64_to_le_bytes (x: uint64) : nseq uint8 8 := *)
+(*   LBSeq.uint_to_bytes_le x *)
 
-(* Axiom uint64_to_be_bytes : int64 -> nseq int8 8. *)
-(* (* Definition uint64_to_be_bytes (x: uint64) : nseq uint8 8 := *)
-(*   LBSeq.uint_to_bytes_be x *) *)
+Axiom uint64_to_be_bytes : int64 -> nseq int8 8.
+(* Definition uint64_to_be_bytes (x: uint64) : nseq uint8 8 := *)
+(*   LBSeq.uint_to_bytes_be x *)
 
-(* Axiom uint64_from_le_bytes : nseq int8 8 -> int64. *)
-(* (* Definition uint64_from_le_bytes (s: nseq uint8 8) : uint64 := *)
-(*   LBSeq.uint_from_bytes_le s *) *)
+Axiom uint64_from_le_bytes : nseq int8 8 -> int64.
+(* Definition uint64_from_le_bytes (s: nseq uint8 8) : uint64 := *)
+(*   LBSeq.uint_from_bytes_le s *)
 
-(* Axiom uint64_from_be_bytes : nseq int8 8 -> int64. *)
-(* (* Definition uint64_from_be_bytes (s: nseq uint8 8) : uint64 := *)
-(*   LBSeq.uint_from_bytes_be s *) *)
+Axiom uint64_from_be_bytes : nseq int8 8 -> int64.
+(* Definition uint64_from_be_bytes (s: nseq uint8 8) : uint64 := *)
+(*   LBSeq.uint_from_bytes_be s *)
 
-(* Axiom uint128_to_le_bytes : int128 -> nseq int8 16. *)
-(* (* Definition uint128_to_le_bytes (x: uint128) : nseq uint8 16 := *)
-(*   LBSeq.uint_to_bytes_le x *) *)
+Axiom uint128_to_le_bytes : int128 -> nseq int8 16.
+(* Definition uint128_to_le_bytes (x: uint128) : nseq uint8 16 := *)
+(*   LBSeq.uint_to_bytes_le x *)
 
-(* Axiom uint128_to_be_bytes : int128 -> nseq int8 16. *)
-(* (* Definition uint128_to_be_bytes (x: uint128) : nseq uint8 16 := *)
-(*   LBSeq.uint_to_bytes_be x *) *)
+Axiom uint128_to_be_bytes : int128 -> nseq int8 16.
+(* Definition uint128_to_be_bytes (x: uint128) : nseq uint8 16 := *)
+(*   LBSeq.uint_to_bytes_be x *)
 
 Axiom uint128_from_le_bytes : nseq int8 16 -> int128.
 (* Definition uint128_from_le_bytes (input: nseq uint8 16) : uint128 := *)
 (*   LBSeq.uint_from_bytes_le input *)
 
-(* Axiom uint128_from_be_bytes : nseq int8 16 -> int128. *)
-(* (* Definition uint128_from_be_bytes (s: nseq uint8 16) : uint128 := *)
-(*   LBSeq.uint_from_bytes_be s *) *)
+Axiom uint128_from_be_bytes : nseq int8 16 -> int128.
+(* Definition uint128_from_be_bytes (s: nseq uint8 16) : uint128 := *)
+(*   LBSeq.uint_from_bytes_be s *)
 
-(* Axiom u32_to_le_bytes : int32 -> nseq int8 4. *)
-(* (* Definition u32_to_le_bytes (x: pub_uint32) : nseq pub_uint8 4 := *)
-(*   LBSeq.uint_to_bytes_le x *) *)
+Axiom u32_to_le_bytes : int32 -> nseq int8 4.
+(* Definition u32_to_le_bytes (x: pub_uint32) : nseq pub_uint8 4 := *)
+(*   LBSeq.uint_to_bytes_le x *)
 
-(* Axiom u32_to_be_bytes : int32 -> nseq int8 4. *)
-(* (* Definition u32_to_be_bytes (x: pub_uint32) : nseq pub_uint8 4 := *)
-(*   LBSeq.uint_to_bytes_be x *) *)
+Axiom u32_to_be_bytes : int32 -> nseq int8 4.
+(* Definition u32_to_be_bytes (x: pub_uint32) : nseq pub_uint8 4 := *)
+(*   LBSeq.uint_to_bytes_be x *)
 
-(* Axiom u32_from_le_bytes : nseq int8 4 -> int32. *)
-(* (* Definition u32_from_le_bytes (s: nseq pub_uint8 4) : pub_uint32 := *)
-(*   LBSeq.uint_from_bytes_le s *) *)
+Axiom u32_from_le_bytes : nseq int8 4 -> int32.
+(* Definition u32_from_le_bytes (s: nseq pub_uint8 4) : pub_uint32 := *)
+(*   LBSeq.uint_from_bytes_le s *)
 
-(* Axiom u32_from_be_bytes : nseq int8 4 -> int32. *)
-(* (* Definition u32_from_be_bytes (s: nseq pub_uint8 4) : pub_uint32 := *)
-(*   LBSeq.uint_from_bytes_be s *) *)
+Axiom u32_from_be_bytes : nseq int8 4 -> int32.
+(* Definition u32_from_be_bytes (s: nseq pub_uint8 4) : pub_uint32 := *)
+(*   LBSeq.uint_from_bytes_be s *)
 
-(* Axiom u64_to_le_bytes : int64 -> nseq int8 8. *)
-(* (* Definition u64_to_le_bytes (x: int64) : nseq int8 8 := *)
-(*   LBSeq.uint_to_bytes_le x *) *)
+Axiom u64_to_le_bytes : int64 -> nseq int8 8.
+(* Definition u64_to_le_bytes (x: int64) : nseq int8 8 := *)
+(*   LBSeq.uint_to_bytes_le x *)
 
-(* Axiom u64_from_le_bytes : nseq int8 8 -> int64. *)
-(* (* Definition u64_from_le_bytes (s: nseq int8 8) : int64 := *)
-(*   LBSeq.uint_from_bytes_le s *) *)
+Axiom u64_from_le_bytes : nseq int8 8 -> int64.
+(* Definition u64_from_le_bytes (s: nseq int8 8) : int64 := *)
+(*   LBSeq.uint_from_bytes_le s *)
 
-(* Axiom u128_to_le_bytes : int128 -> nseq int8 16. *)
-(* (* Definition u128_to_le_bytes (x: int128) : nseq int8 16 := *)
-(*   LBSeq.uint_to_bytes_le x *) *)
+Axiom u128_to_le_bytes : int128 -> nseq int8 16.
+(* Definition u128_to_le_bytes (x: int128) : nseq int8 16 := *)
+(*   LBSeq.uint_to_bytes_le x *)
 
-(* Axiom u128_to_be_bytes : int128 -> nseq int8 16. *)
-(* (* Definition u128_to_be_bytes (x: int128) : nseq int8 16 := *)
-(*   LBSeq.uint_to_bytes_be x *) *)
+Axiom u128_to_be_bytes : int128 -> nseq int8 16.
+(* Definition u128_to_be_bytes (x: int128) : nseq int8 16 := *)
+(*   LBSeq.uint_to_bytes_be x *)
 
-(* Axiom u128_from_le_bytes : nseq int8 16 -> int128. *)
-(* (* Definition u128_from_le_bytes (input: nseq int8 16) : int128 := *)
-(*   LBSeq.uint_from_bytes_le input *) *)
+Axiom u128_from_le_bytes : nseq int8 16 -> int128.
+(* Definition u128_from_le_bytes (input: nseq int8 16) : int128 := *)
+(*   LBSeq.uint_from_bytes_le input *)
 
-(* Axiom u128_from_be_bytes : nseq int8 16 -> int128. *)
-(* (* Definition u128_from_be_bytes (s: nseq int8 16) : pub_uint128 := *)
-(*   LBSeq.uint_from_bytes_be s *) *)
-(* TODO END *)
+Axiom u128_from_be_bytes : nseq int8 16 -> int128.
+(* Definition u128_from_be_bytes (s: nseq int8 16) : pub_uint128 := *)
+(*   LBSeq.uint_from_bytes_be s *)
 
 
 (*** Nats *)
@@ -877,6 +875,10 @@ Definition nat_mod_from_literal (m : Z) (x:int128) : nat_mod m := nat_mod_from_s
 (* Axiom nat_mod_to_byte_seq_be : forall {n : Z}, nat_mod n -> seq int8. *)
 (* Axiom nat_mod_to_public_byte_seq_le : forall (n : Z), nat_mod n -> seq int8. *)
 (* Axiom nat_mod_to_public_byte_seq_be : forall (n : Z), nat_mod n -> seq int8. *)
+Axiom finFieldType_to_byte_seq_le : forall {n : Z}, Fp_finFieldType (Z.to_nat n) -> seq int8.
+Axiom finFieldType_to_byte_seq_be : forall {n : Z}, Fp_finFieldType (Z.to_nat n) -> seq int8.
+Axiom finFieldType_to_public_byte_seq_le : forall (n : Z), Fp_finFieldType (Z.to_nat n) -> seq int8.
+Axiom finFieldType_to_public_byte_seq_be : forall (n : Z), Fp_finFieldType (Z.to_nat n) -> seq int8.
 (* TODO END *)
 
 Definition nat_mod_bit {n : Z} (a : nat_mod n) (i : uint_size) :=
@@ -1136,6 +1138,7 @@ Definition uint16_from_uint128 (n : int128) : int16 := repr n.
 Definition uint8_from_uint128 (n : int128) : int8 := repr n.
 Definition usize_from_uint128 (n : int128) : uint_size := repr n.
 
+(** Equalities **)
 
 (* Comparisons, boolean equality, and notation *)
 
@@ -1351,6 +1354,29 @@ Arguments Err {_ _}.
 
 (*** Be Bytes *)
 
+From compcert Require Import Zbits.
+Print Z_one_bits.
+Fixpoint log2_positive (z : positive) {struct z} : nat :=
+  match z with
+  | 1%positive => 0
+  | (p~0)%positive => S (log2_positive p)
+  | (p~1)%positive => S (log2_positive p)
+  end    .
+Definition log2_WS {WS : WORDSIZE} : nat :=
+  @log2_positive (Pos.of_nat (@wordsize WS)).
+
+Fixpoint Z_one_bits (n : nat) (x i : Z) {struct n} : seq nat_choiceType :=
+  match n with
+  | 0%nat => []
+  | (m.+1)%nat =>
+      if Z.odd x
+      then (Z_one_bits m (Z.div2 x) (i + 1) ++ [1%nat])%SEQ
+      else (Z_one_bits m (Z.div2 x) (i + 1) ++ [0%nat])
+  end.
+
+Definition nat_be_range_WS {WS : WORDSIZE} (k : nat) (z : Z) (n : nat) : seq nat_choiceType :=
+  (* Z_one_bits (@wordsize WS) z 0 *)
+  rev (snd (seq_get_chunk (rev (Z_one_bits (@wordsize WS) z 0)) (k-1) n)).
 
 Fixpoint nat_be_range_at_position (k : nat) (z : Z) (n : Z) : list bool :=
   match k with
@@ -1370,34 +1396,72 @@ Definition nat_be_range_to_position (k : nat) (z : list bool) (n : Z) : Z :=
 Definition nat_be_range (k : nat) (z : Z) (n : nat) : Z :=
   nat_be_range_to_position_ (nat_be_range_at_position k z (n * k)) 0. (* * 2^(k * n) *)
 
-Compute nat_be_range 4 0 300.
+Compute (@log2_WS WORDSIZE64).
 
-(* TODO START *)
-(* Definition u64_to_be_bytes' : int64 -> nseq int8 8 := *)
-(*   fun k => array_from_list (int8) [@nat_to_int WORDSIZE8 (nat_be_range 4 k 7) ; *)
-(*                                @nat_to_int WORDSIZE8 (nat_be_range 4 k 6) ; *)
-(*                                @nat_to_int WORDSIZE8 (nat_be_range 4 k 5) ; *)
-(*                                @nat_to_int WORDSIZE8 (nat_be_range 4 k 4) ; *)
-(*                                @nat_to_int WORDSIZE8 (nat_be_range 4 k 3) ; *)
-(*                                @nat_to_int WORDSIZE8 (nat_be_range 4 k 2) ; *)
-(*                                @nat_to_int WORDSIZE8 (nat_be_range 4 k 1) ; *)
-(*                                @nat_to_int WORDSIZE8 (nat_be_range 4 k 0)]. *)
+Compute Z_one_bits (@wordsize WORDSIZE64) 124 0.
+Compute slice (
+       [0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat;
+        0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat;
+        0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat;
+        0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 1%nat; 1%nat; 1%nat; 1%nat; 1%nat; 0%nat; 0%nat]
+          : seq nat_choiceType) 0 3.
+Compute @nat_be_range_WS WORDSIZE64 4 124 1.
+Compute @nat_be_range               4 124 1.
 
-(* Open Scope hacspec_scope. *)
+Definition int_to_be_bytes {WS : WORDSIZE} : @int WS -> nseq int8 8 :=
+  fun k =>
+    let chunks := Z.to_nat (2 ^ (@log2_WS WS / @log2_WS WORDSIZE8)) in
+    let k_nat := int_to_nat k in
+    array_from_list (int8) [
+            @repr WORDSIZE8 (nat_be_range chunks k_nat 7) ;
+            @repr WORDSIZE8 (nat_be_range chunks k_nat 6) ;
+            @repr WORDSIZE8 (nat_be_range chunks k_nat 5) ;
+            @repr WORDSIZE8 (nat_be_range chunks k_nat 4) ;
+            @repr WORDSIZE8 (nat_be_range chunks k_nat 3) ;
+            @repr WORDSIZE8 (nat_be_range chunks k_nat 2) ;
+            @repr WORDSIZE8 (nat_be_range chunks k_nat 1) ;
+            @repr WORDSIZE8 (nat_be_range chunks k_nat 0)].
 
-(* Definition u64_from_be_bytes_fold_fun (i : int8) (s : prod nat int64) : prod nat int64 := *)
-(*   let (n,v) := s in *)
-(*   (S n, v .+ (@repr WORDSIZE64 ((int8_to_nat i) * 2 ^ (4 * n)))). *)
+Open Scope hacspec_scope.
 
-(* Definition u64_from_be_bytes' : nseq int8 8 -> int64 := *)
-(*   (fun v => snd (VectorDef.fold_right u64_from_be_bytes_fold_fun v (0, @repr WORDSIZE64 0))). *)
+Definition int_from_be_bytes_fold_fun [WS : WORDSIZE] (i : int8) (s : prod nat int) : prod nat int :=
+  let chunks := 2 ^ (@log2_WS WS / @log2_WS WORDSIZE8) in
+  let (n,v) := s in
+  (S n, (v .+ (@repr WS (((int8_to_nat i) * (2 ^ (chunks * n)))%Z)))).
+  
+Definition int_from_be_bytes {WS : WORDSIZE} : nseq int8 8 -> int :=
+  (fun v => snd (fold_right (@int_from_be_bytes_fold_fun WS) (0%nat, @repr WS 0) (tval v))).
 
-(* Definition u64_to_be_bytes : int64 -> nseq int8 8 := u64_to_be_bytes'. *)
-(* Definition u64_from_be_bytes : nseq int8 8 -> int64 := u64_from_be_bytes'. *)
-(* TODO END *)
+(* Example asdf : nseq int8 8. *)
+(* Proof. *)
+(*   assert (H0: Datatypes.is_true (0 < (@wordsize WORDSIZE8).+1)%nat) by easy. *)
+(*   assert (H1: Datatypes.is_true (1 < (@wordsize WORDSIZE8).+1)%nat) by easy. *)
+(*   assert (H2: Datatypes.is_true (2 < (@wordsize WORDSIZE8).+1)%nat) by easy. *)
+(*   assert (H3: Datatypes.is_true (3 < (@wordsize WORDSIZE8).+1)%nat) by easy. *)
+(*   assert (H4: Datatypes.is_true (4 < (@wordsize WORDSIZE8).+1)%nat) by easy. *)
+(*   assert (H5: Datatypes.is_true (5 < (@wordsize WORDSIZE8).+1)%nat) by easy. *)
+(*   assert (H6: Datatypes.is_true (6 < (@wordsize WORDSIZE8).+1)%nat) by easy. *)
+(*   assert (H7: Datatypes.is_true (6 < (@wordsize WORDSIZE8).+1)%nat) by easy. *)
+  
+(*   apply ([tuple of *)
+(*                [Ordinal (n:=wordsize.+1) (m:=0) H0 ; *)
+(*                 Ordinal (n:=wordsize.+1) (m:=0) H0 ; *)
+(*                 Ordinal (n:=wordsize.+1) (m:=0) H0 ; *)
+(*                 Ordinal (n:=wordsize.+1) (m:=0) H0 ; *)
+(*                 Ordinal (n:=wordsize.+1) (m:=0) H0 ; *)
+(*                 Ordinal (n:=wordsize.+1) (m:=0) H0 ; *)
+(*                 Ordinal (n:=wordsize.+1) (m:=5) H5 ; *)
+(*                 Ordinal (n:=wordsize.+1) (m:=1) H1]]). *)
+(* Defined.   *)
+                                                                              
+Definition u64_to_be_bytes : int64 -> nseq int8 8 := @int_to_be_bytes WORDSIZE64.
+Definition u64_from_be_bytes : nseq int8 8 -> int64 := @int_from_be_bytes WORDSIZE64.
 
-(* Definition nat_mod_to_byte_seq_be : forall {n : Z}, nat_mod n -> seq int8 := *)
-(*   fun k => VectorDef.of_list . *)
+(* Unimplemented in library *)
+Axiom nat_mod_to_byte_seq_be {n : Z} : Fp_finFieldType (Z.to_nat n) -> seq int8.
+  
+  
+  (*    @seq . *)
 
 (* (*** Monad / Bind *) *)
 
