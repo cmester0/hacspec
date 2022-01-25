@@ -3,8 +3,6 @@ Global Set Warnings "-uniform-inheritance".
 Global Set Warnings "-auto-template".
 Global Set Warnings "-disj-pattern-notation".
 
-From mathcomp Require Import all_ssreflect all_algebra ssreflect seq tuple. (* vector *)
-
 (*** Integers *)
 From Coq Require Import ZArith List.
 Import ListNotations.
@@ -13,12 +11,13 @@ Import ListNotations.
 Require Import MachineIntegers.
 From Coqprime Require GZnZ.
 
-Declare Scope hacspec_scope.
+From mathcomp Require Import all_ssreflect all_algebra ssreflect seq tuple. (* vector *)
 
-Axiom secret : forall {WS : WORDSIZE},  (@int WS) -> (@int WS).
+Declare Scope hacspec_scope.
 
 Print int8.
 
+Check Choice.pack.
 Definition usize_choiceType : nat -> choiceType := Fp_finFieldType.
 
 Axiom uint8_declassify : int8 -> int8.
@@ -242,8 +241,8 @@ Global Arguments default {_} {_}.
 
 (*** Seq *)
 
-Definition nseq_inner (T : Type) (n : nat) := n.-tuple T.
-Definition nseq (T : choiceType) (n : nat) := tuple_choiceType n T.
+(* Definition nseq (T : Type) (n : nat) := n.-tuple T. *)
+Definition nseq (T : choiceType) (n : nat) : choiceType := tuple_choiceType n T.
 
 (* (T : finFieldType) (n : nat) *)
 
@@ -256,7 +255,7 @@ Definition nseq (T : choiceType) (n : nat) := tuple_choiceType n T.
 (* (* Definition nseq {T : Type} (t : T) (n : nat) := @mathcomp.ssreflect.seq.nseq T n t. *) *)
 
 (* Definition seq (A : Type) := list A. *)
-Definition seq (A : choiceType) := seq_choiceType A.
+Definition seq (A : choiceType) : Type := seq_choiceType A.
 
 (* Automatic conversion from nseq/vector/array to seq/list *)
 Global Coercion VectorDef.to_list : VectorDef.t >-> list.
@@ -316,18 +315,8 @@ Definition array_new_ {A: choiceType} (init:A) (len: nat)  : nseq A len := nseq_
 
 (* TODO START *)
 Open Scope nat_scope.
-Definition array_index {A: choiceType} `{Default A} {len : nat} (s: nseq A len) (i: nat) : A.
-Proof.
-  apply (nth i s default).
-  (* destruct (i < len)%nat eqn:H1. *)
-  (* (* If i < len, index normally *) *)
-  (* - (* rewrite Nat.ltb_lt in H1. *) *)
-    
-  (*   apply (nth i s). *)
-  (*   exact (VectorDef.nth s (Fin.of_nat_lt H1)). *)
-  (* (* otherwise return default element *) *)
-  (* - exact default. *)
-Defined.
+Definition array_index {A: choiceType} `{Default A} {len : nat} (s: nseq A len) (i: nat) : A :=
+  seq_index s i.
 
 Definition array_upd {A: choiceType} {len : nat} (s: nseq A len) (i: nat) (new_v: A) : nseq A len.
 Proof.
@@ -368,7 +357,7 @@ Definition update_sub {A : choiceType} {len slen} `{Default A} (v : nseq A len) 
 (* Sanity check *)
 (* Compute (to_list (update_sub [1;2;3;4;5] 0 4 (of_list [9;8;7;6;12]))). *)
 
-Definition array_from_seq
+Global Coercion array_from_seq
   {a: choiceType}
  `{Default a}
   (out_len:nat)
@@ -383,11 +372,19 @@ Definition array_from_seq
 
 (* Global Coercion array_from_seq : seq >-> nseq. *)
 
-Definition slice {A} (l : seq A) (i j : nat) : seq A :=
+Definition slice {A : choiceType} (l : seq A) (i j : nat) : seq A :=
   if j <=? i then [] else firstn (j-i+1) (skipn i l).
 
-Definition lseq_slice {A n} (l : nseq A n) (i j : nat) : nseq A _ :=
-  in_tuple (slice (tval l) i j).
+Definition seq_from_list {A : choiceType} (x : seq.seq A) : seq A :=
+  match x with
+  | [] => [::]
+  | (y :: ys) => (y :: ys)
+  end.
+
+Global Coercion seq_from_array {A : choiceType} {n} (l : nseq A n) := seq_from_list (tval l).
+
+Definition lseq_slice {A : choiceType} {n} (l : nseq A n) (i j : nat) : nseq A _ :=
+  in_tuple (slice (seq_from_list (tval l)) i j).
   (* VectorDef.of_list (slice (VectorDef.to_list l) i j). *)
 
 Definition array_from_slice
@@ -643,7 +640,7 @@ Definition seq_get_exact_chunk {a} (l : seq a) (chunk_size chunk_num: uint_size)
 
 Definition seq_set_exact_chunk {a} `{H : Default a} := @seq_set_chunk a H.
 
-Definition seq_get_remainder_chunk : forall {a}, seq a -> uint_size -> seq a :=
+Definition seq_get_remainder_chunk : forall {a : choiceType}, seq a -> uint_size -> seq a :=
   fun _ l chunk_size =>
     let chunks := seq_num_chunks l (from_uint_size chunk_size) in
     let last_chunk := if 0 <? chunks then
@@ -756,7 +753,8 @@ Axiom uint128_to_be_bytes : int128 -> nseq int8 16.
 (* Definition uint128_to_be_bytes (x: uint128) : nseq uint8 16 := *)
 (*   LBSeq.uint_to_bytes_be x *)
 
-Axiom uint128_from_le_bytes : nseq int8 16 -> int128.
+Axiom uint128_from_le_bytes : nseq uint8 16 -> int128.
+(* Axiom uint128_from_le_bytes : nseq int8 16 -> int128. *)
 (* Definition uint128_from_le_bytes (input: nseq uint8 16) : uint128 := *)
 (*   LBSeq.uint_from_bytes_le input *)
 
@@ -820,7 +818,7 @@ Definition nat_mod_two {p} : nat_mod p := GZnZ.mkznz p _ (GZnZ.modz p 2).
 
 
 (* convenience coercions from nat_mod to Z and N *)
-(* Coercion Z.of_N : N >-> Z. *)
+Coercion Z.of_N : N >-> Z.
 
 Definition nat_mod_add {n : Z} (a : nat_mod n) (b : nat_mod n) : nat_mod n := GZnZ.add n a b.
 
@@ -1003,7 +1001,7 @@ Section Coercions.
   (* and N >-> nat *)
 
   Global Coercion N.to_nat : N >-> nat.
-  Global Coercion Z.of_N : N >-> Z.
+  (* Global Coercion Z.of_N : N >-> Z. *)
 
   Global Coercion repr : Z >-> int.
 
@@ -1015,7 +1013,7 @@ Section Coercions.
   Definition Z_to_int_size (n : Z) : int_size := repr n.
   Global Coercion Z_to_int_size : Z >-> int_size.
 
-  Definition N_to_int `{WORDSIZE} (n : N) : int := repr (Z.of_N n).
+  Global Coercion N_to_int `{WORDSIZE} (n : N) : int := repr (Z.of_N n).
   Global Coercion N.of_nat : nat >-> N.
   Global Coercion N_to_int : N >-> int.
   Definition N_to_uint_size (n : Z) : uint_size := repr n.
@@ -1071,7 +1069,7 @@ Section Coercions.
 
 
   (* coercions into nat_mod *)
-  Definition Z_in_nat_mod {m : Z} (x:Z) : nat_mod m.
+  Global Coercion Z_in_nat_mod {m : Z} (x:Z) : nat_mod m.
   Proof.
     unfold nat_mod.
     remember ((x) mod m) as zmodm.
@@ -1082,7 +1080,7 @@ Section Coercions.
   Defined.
   (* Global Coercion Z_in_nat_mod : Z >-> nat_mod.  *)
 
-  Definition int_in_nat_mod {m : Z} `{WORDSIZE} (x:int) : nat_mod m.
+  Global Coercion int_in_nat_mod {m : Z} `{WORDSIZE} (x:int) : nat_mod m.
   Proof.
     unfold nat_mod.
     (* since we assume x < m, it will be true that (unsigned x) = (unsigned x) mod m  *)
@@ -1103,41 +1101,41 @@ End Coercions.
 
 (*** Casting *)
 
-Definition uint128_from_usize (n : uint_size) : int128 := repr n.
-Definition uint64_from_usize (n : uint_size) : int64 := repr n.
-Definition uint32_from_usize (n : uint_size) : int32 := repr n.
-Definition uint16_from_usize (n : uint_size) : int16 := repr n.
-Definition uint8_from_usize (n : uint_size) : int8 := repr n.
+Definition uint128_from_usize (n : uint_size) : int128 := repr (unsigned n).
+Definition uint64_from_usize (n : uint_size) : int64 := repr (unsigned n).
+Definition uint32_from_usize (n : uint_size) : int32 := repr (unsigned n).
+Definition uint16_from_usize (n : uint_size) : int16 := repr (unsigned n).
+Definition uint8_from_usize (n : uint_size) : int8 := repr (unsigned n).
 
-Definition uint128_from_uint8 (n : int8) : int128 := repr n.
-Definition uint64_from_uint8 (n : int8) : int64 := repr n.
-Definition uint32_from_uint8 (n : int8) : int32 := repr n.
-Definition uint16_from_uint8 (n : int8) : int16 := repr n.
-Definition usize_from_uint8 (n : int8) : uint_size := repr n.
+Definition uint128_from_uint8 (n : int8) : int128 := repr (unsigned n).
+Definition uint64_from_uint8 (n : int8) : int64 := repr (unsigned n).
+Definition uint32_from_uint8 (n : int8) : int32 := repr (unsigned n).
+Definition uint16_from_uint8 (n : int8) : int16 := repr (unsigned n).
+Definition usize_from_uint8 (n : int8) : uint_size := repr (unsigned n).
 
-Definition uint128_from_uint16 (n : int16) : int128 := repr n.
-Definition uint64_from_uint16 (n : int16) : int64 := repr n.
-Definition uint32_from_uint16 (n : int16) : int32 := repr n.
-Definition uint8_from_uint16 (n : int16) : int8 := repr n.
-Definition usize_from_uint16 (n : int16) : uint_size := repr n.
+Definition uint128_from_uint16 (n : int16) : int128 := repr (unsigned n).
+Definition uint64_from_uint16 (n : int16) : int64 := repr (unsigned n).
+Definition uint32_from_uint16 (n : int16) : int32 := repr (unsigned n).
+Definition uint8_from_uint16 (n : int16) : int8 := repr (unsigned n).
+Definition usize_from_uint16 (n : int16) : uint_size := repr (unsigned n).
 
-Definition uint128_from_uint32 (n : int32) : int128 := repr n.
-Definition uint64_from_uint32 (n : int32) : int64 := repr n.
-Definition uint16_from_uint32 (n : int32) : int16 := repr n.
-Definition uint8_from_uint32 (n : int32) : int8 := repr n.
-Definition usize_from_uint32 (n : int32) : uint_size := repr n.
+Definition uint128_from_uint32 (n : int32) : int128 := repr (unsigned n).
+Definition uint64_from_uint32 (n : int32) : int64 := repr (unsigned n).
+Definition uint16_from_uint32 (n : int32) : int16 := repr (unsigned n).
+Definition uint8_from_uint32 (n : int32) : int8 := repr (unsigned n).
+Definition usize_from_uint32 (n : int32) : uint_size := repr (unsigned n).
 
-Definition uint128_from_uint64 (n : int64) : int128 := repr n.
-Definition uint32_from_uint64 (n : int64) : int32 := repr n.
-Definition uint16_from_uint64 (n : int64) : int16 := repr n.
-Definition uint8_from_uint64 (n : int64) : int8 := repr n.
-Definition usize_from_uint64 (n : int64) : uint_size := repr n.
+Definition uint128_from_uint64 (n : int64) : int128 := repr (unsigned n).
+Definition uint32_from_uint64 (n : int64) : int32 := repr (unsigned n).
+Definition uint16_from_uint64 (n : int64) : int16 := repr (unsigned n).
+Definition uint8_from_uint64 (n : int64) : int8 := repr (unsigned n).
+Definition usize_from_uint64 (n : int64) : uint_size := repr (unsigned n).
 
-Definition uint64_from_uint128 (n : int128) : int64 := repr n.
-Definition uint32_from_uint128 (n : int128) : int32 := repr n.
-Definition uint16_from_uint128 (n : int128) : int16 := repr n.
-Definition uint8_from_uint128 (n : int128) : int8 := repr n.
-Definition usize_from_uint128 (n : int128) : uint_size := repr n.
+Definition uint64_from_uint128 (n : int128) : int64 := repr (unsigned n).
+Definition uint32_from_uint128 (n : int128) : int32 := repr (unsigned n).
+Definition uint16_from_uint128 (n : int128) : int16 := repr (unsigned n).
+Definition uint8_from_uint128 (n : int128) : int8 := repr (unsigned n).
+Definition usize_from_uint128 (n : int128) : uint_size := repr (unsigned n).
 
 (** Equalities **)
 
@@ -1549,7 +1547,8 @@ Infix "/%" := finFieldType_div (at level 33) : hacspec_scope.
 
 Definition finFieldType_zero {n : nat} := @Zp0 n.
 
-Notation "A '× B" := (prod_choiceType A B) (at level 79, left associativity) : hacspec_scope.
+Notation "A '× B" :=
+  (prod_choiceType A B : choiceType) (at level 79, left associativity) : hacspec_scope.
 
 (* Definition usize_choiceType : nat -> choiceType := Fp_finFieldType 32. *)
 

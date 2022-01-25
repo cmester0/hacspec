@@ -1793,7 +1793,7 @@ fn translate_item<'a>(
         Item::ConstDecl(name, ty, e) => make_let_binding(
             translate_ident(Ident::TopLevel(name.0.clone())),
             Some(translate_base_typ(ty.0.clone())),
-            translate_expression(e.0.clone(), top_ctx),
+            RcDoc::as_string("ret").append(RcDoc::space()).append(make_paren(translate_expression(e.0.clone(), top_ctx))),
             true,
         ),
         Item::NaturalIntegerDecl(nat_name, _secrecy, canvas_size, info) => {
@@ -2083,7 +2083,7 @@ pub fn translate_and_write_to_file(
         "(** This file was automatically generated using Hacspec **)\n\
          From Coq Require Import Utf8.\n\
          Set Warnings \"-notation-overridden,-ambiguous-paths\".\n\
-         From mathcomp Require Import all_algebra .\n\
+         From mathcomp Require Import all_ssreflect all_algebra ssreflect seq tuple.\n\
          Set Warnings \"-ambiguous-paths,-notation-overridden,-notation-incompatible-format\".\n\
          From extructures Require Import ord fset fmap.\n\
          From Crypt Require Import RulesStateProb Package Prelude.\n\
