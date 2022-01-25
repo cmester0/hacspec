@@ -875,7 +875,8 @@ Definition nat_mod_from_literal (m : Z) (x:int128) : nat_mod m := nat_mod_from_s
 (* Axiom nat_mod_to_byte_seq_be : forall {n : Z}, nat_mod n -> seq int8. *)
 (* Axiom nat_mod_to_public_byte_seq_le : forall (n : Z), nat_mod n -> seq int8. *)
 (* Axiom nat_mod_to_public_byte_seq_be : forall (n : Z), nat_mod n -> seq int8. *)
-Axiom finFieldType_to_byte_seq_le : forall {n : Z}, Fp_finFieldType (Z.to_nat n) -> seq int8.
+Axiom finFieldType_to_byte_seq_le : forall {n}, Fp_finFieldType n -> seq int8.
+(* Axiom finFieldType_to_byte_seq_le : forall {n : Z}, Fp_finFieldType (Z.to_nat n) -> seq int8. *)
 Axiom finFieldType_to_byte_seq_be : forall {n : Z}, Fp_finFieldType (Z.to_nat n) -> seq int8.
 Axiom finFieldType_to_public_byte_seq_le : forall (n : Z), Fp_finFieldType (Z.to_nat n) -> seq int8.
 Axiom finFieldType_to_public_byte_seq_be : forall (n : Z), Fp_finFieldType (Z.to_nat n) -> seq int8.
@@ -1354,8 +1355,6 @@ Arguments Err {_ _}.
 
 (*** Be Bytes *)
 
-From compcert Require Import Zbits.
-Print Z_one_bits.
 Fixpoint log2_positive (z : positive) {struct z} : nat :=
   match z with
   | 1%positive => 0
@@ -1364,19 +1363,6 @@ Fixpoint log2_positive (z : positive) {struct z} : nat :=
   end    .
 Definition log2_WS {WS : WORDSIZE} : nat :=
   @log2_positive (Pos.of_nat (@wordsize WS)).
-
-Fixpoint Z_one_bits (n : nat) (x i : Z) {struct n} : seq nat_choiceType :=
-  match n with
-  | 0%nat => []
-  | (m.+1)%nat =>
-      if Z.odd x
-      then (Z_one_bits m (Z.div2 x) (i + 1) ++ [1%nat])%SEQ
-      else (Z_one_bits m (Z.div2 x) (i + 1) ++ [0%nat])
-  end.
-
-Definition nat_be_range_WS {WS : WORDSIZE} (k : nat) (z : Z) (n : nat) : seq nat_choiceType :=
-  (* Z_one_bits (@wordsize WS) z 0 *)
-  rev (snd (seq_get_chunk (rev (Z_one_bits (@wordsize WS) z 0)) (k-1) n)).
 
 Fixpoint nat_be_range_at_position (k : nat) (z : Z) (n : Z) : list bool :=
   match k with
@@ -1395,18 +1381,6 @@ Definition nat_be_range_to_position (k : nat) (z : list bool) (n : Z) : Z :=
 
 Definition nat_be_range (k : nat) (z : Z) (n : nat) : Z :=
   nat_be_range_to_position_ (nat_be_range_at_position k z (n * k)) 0. (* * 2^(k * n) *)
-
-Compute (@log2_WS WORDSIZE64).
-
-Compute Z_one_bits (@wordsize WORDSIZE64) 124 0.
-Compute slice (
-       [0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat;
-        0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat;
-        0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat;
-        0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 0%nat; 1%nat; 1%nat; 1%nat; 1%nat; 1%nat; 0%nat; 0%nat]
-          : seq nat_choiceType) 0 3.
-Compute @nat_be_range_WS WORDSIZE64 4 124 1.
-Compute @nat_be_range               4 124 1.
 
 Definition int_to_be_bytes {WS : WORDSIZE} : @int WS -> nseq int8 8 :=
   fun k =>
@@ -1431,34 +1405,12 @@ Definition int_from_be_bytes_fold_fun [WS : WORDSIZE] (i : int8) (s : prod nat i
   
 Definition int_from_be_bytes {WS : WORDSIZE} : nseq int8 8 -> int :=
   (fun v => snd (fold_right (@int_from_be_bytes_fold_fun WS) (0%nat, @repr WS 0) (tval v))).
-
-(* Example asdf : nseq int8 8. *)
-(* Proof. *)
-(*   assert (H0: Datatypes.is_true (0 < (@wordsize WORDSIZE8).+1)%nat) by easy. *)
-(*   assert (H1: Datatypes.is_true (1 < (@wordsize WORDSIZE8).+1)%nat) by easy. *)
-(*   assert (H2: Datatypes.is_true (2 < (@wordsize WORDSIZE8).+1)%nat) by easy. *)
-(*   assert (H3: Datatypes.is_true (3 < (@wordsize WORDSIZE8).+1)%nat) by easy. *)
-(*   assert (H4: Datatypes.is_true (4 < (@wordsize WORDSIZE8).+1)%nat) by easy. *)
-(*   assert (H5: Datatypes.is_true (5 < (@wordsize WORDSIZE8).+1)%nat) by easy. *)
-(*   assert (H6: Datatypes.is_true (6 < (@wordsize WORDSIZE8).+1)%nat) by easy. *)
-(*   assert (H7: Datatypes.is_true (6 < (@wordsize WORDSIZE8).+1)%nat) by easy. *)
-  
-(*   apply ([tuple of *)
-(*                [Ordinal (n:=wordsize.+1) (m:=0) H0 ; *)
-(*                 Ordinal (n:=wordsize.+1) (m:=0) H0 ; *)
-(*                 Ordinal (n:=wordsize.+1) (m:=0) H0 ; *)
-(*                 Ordinal (n:=wordsize.+1) (m:=0) H0 ; *)
-(*                 Ordinal (n:=wordsize.+1) (m:=0) H0 ; *)
-(*                 Ordinal (n:=wordsize.+1) (m:=0) H0 ; *)
-(*                 Ordinal (n:=wordsize.+1) (m:=5) H5 ; *)
-(*                 Ordinal (n:=wordsize.+1) (m:=1) H1]]). *)
-(* Defined.   *)
-                                                                              
+                                                                                
 Definition u64_to_be_bytes : int64 -> nseq int8 8 := @int_to_be_bytes WORDSIZE64.
 Definition u64_from_be_bytes : nseq int8 8 -> int64 := @int_from_be_bytes WORDSIZE64.
 
 (* Unimplemented in library *)
-Axiom nat_mod_to_byte_seq_be {n : Z} : Fp_finFieldType (Z.to_nat n) -> seq int8.
+Axiom nat_mod_to_byte_seq_be : forall {n : Z}, Fp_finFieldType (Z.to_nat n) -> seq int8.
   
   
   (*    @seq . *)

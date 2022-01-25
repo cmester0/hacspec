@@ -164,15 +164,11 @@ Definition poly1305_update_last
   st_25
 }.
 
-Locate "_ ← _ ;; _".
-
 Definition poly1305_update
   (m_29 : byte_seq)
   (
     st_30 : poly_state_t) : code L [interface] poly_state_t :=
   {code
-  (* let st_31 : (field_element_t '× field_element_t '× poly_key_t) := *)
-  (*   poly1305_update_blocks (m_29) (st_30) in *)
    st_31 ← poly1305_update_blocks (m_29) (st_30) ;;
    temp ← blocksize_v ;;
   let last_32 : seq uint8 :=
@@ -190,10 +186,10 @@ Definition poly1305_finish
     uint128_from_le_bytes (array_from_slice (default) (16) (k_35) (usize 16) (
         usize 16)) in
   let aby_37 : seq uint8 := finFieldType_to_byte_seq_le (acc_34) in
-  (* let a_38 : uint128 := *)
-  (*   uint128_from_le_bytes (array_from_slice (default) (16) (aby_37) (usize 0) ( *)
-  (*       usize 16)) in  *)
-  ret (array_from_seq (usize 16) (uint128_to_le_bytes (repr 0) (* ((a_38) + (n_36)) *)))
+  let a_38 : uint128 :=
+    uint128_from_le_bytes (array_from_slice (default) (16) (aby_37) (usize 0) (
+        usize 16)) in
+  ret (array_from_seq (usize 16) (uint128_to_le_bytes ((a_38) .+ (n_36))))
 }.
 
 Definition poly1305
@@ -201,10 +197,8 @@ Definition poly1305
   (
     key_40 : poly_key_t) : code L [interface] poly1305_tag_t :=
   {code
-  let st_41 : (field_element_t × field_element_t × poly_key_t) :=
-    poly1305_init (key_40) in 
-  let st_41 :=
-    poly1305_update (m_39) (st_41) in 
-  ret (poly1305_finish (st_41))
+  st_41 ← poly1305_init (key_40) ;;
+  st_41 ← poly1305_update (m_39) (st_41) ;;
+  poly1305_finish (st_41)
 }.
 
