@@ -12,6 +12,7 @@ use crate::{
 use hacspec_lib::*;
 use hacspec_concordium_prims::*;
 use hacspec_concordium_types::*;
+use hacspec_concordium_traits::*;
 
 pub type RejectHacspec = i32;
 
@@ -29,9 +30,16 @@ pub fn new_reject_impl(x: i32) -> Option::<i32> { // Option<RejectHacspec>
 }
 
 #[cfg(not(feature = "hacspec"))]
+#[trusted]
+#[ensures(!(result === 0i32))]
+pub fn non_zero_i32(v : i32) -> NonZeroI32 {
+    unsafe { NonZeroI32::new_unchecked(v) }
+}
+
+#[cfg(not(feature = "hacspec"))]
 pub fn coerce_hacspec_to_rust_reject(hacspec_reject: RejectHacspec) -> Reject {
     Reject {
-        error_code: unsafe { NonZeroI32::new_unchecked(hacspec_reject) },
+        error_code: non_zero_i32(hacspec_reject),
     }
 }
 
@@ -133,6 +141,20 @@ impl From<NewReceiveNameError> for Reject {
     }
 }
 
+#[ensures(!(result === 0i32))] // !=
+pub fn reject_impl_from_not_payable_error() -> RejectHacspec {
+    i32::MIN + 12i32
+}
+
+#[cfg(not(feature = "hacspec"))]
+/// The error code is i32::MIN + 12
+impl From<NotPayableError> for Reject {
+    #[inline(always)]
+    fn from(_: NotPayableError) -> Self {
+        coerce_hacspec_to_rust_reject(reject_impl_from_not_payable_error())
+    }
+}
+
 pub type ContractStateHacspec = u32;
 
 #[derive(Copy, Clone)] // , Debug, PartialEq, Eq
@@ -159,20 +181,25 @@ pub type U32Option = Option<u32>;
 pub type I64Option = Option<i64>;
 
 // #[requires(forall<delta : i64> pos === SeekFrom::End(delta) ==> exists<b : u32> current_position.checked_add(delta as u32) == U32Option::Some(b))]
-pub fn contract_state_impl_seek(current_position: ContractStateHacspec, pos: SeekFromHacspec) -> Result<(ContractStateHacspec, u64), ()> {
+pub fn contract_state_impl_seek(current_position: ContractStateHacspec, end : u32, pos: SeekFromHacspec) -> Result<(ContractStateHacspec, u64), ()> {
     match pos {
         SeekFromHacspec::Start(offset) => Result::<(ContractStateHacspec, u64), ()>::Ok((offset as u32, offset)),
         SeekFromHacspec::End(delta) => {
             if delta >= 0_i64 {
                 match current_position.checked_add(delta as u32) {
-                    U32Option::Some(b) => Result::<(ContractStateHacspec, u64), ()>::Ok((b, delta as u64)),
+                    U32Option::Some(b) => Result::<(ContractStateHacspec, u64), ()>::Ok((b, b as u64)),
                     U32Option::None => Result::<(ContractStateHacspec, u64), ()>::Err(()),
                 }
             } else {
                 match delta.checked_abs() {
-                    I64Option::Some(b) =>
+                    I64Option::Some(before) =>
                     {
-                        Result::<(ContractStateHacspec, u64), ()>::Ok(((4_u32 - (b as u32)), (4_u32 - (b as u32)) as u64))
+                        if (before as u32) <= end {
+                            Result::<(ContractStateHacspec, u64), ()>::Ok(((end - (before as u32)), (end - (before as u32)) as u64))
+                        }
+                        else {
+                            Result::<(ContractStateHacspec, u64), ()>::Err(())
+                        }
                     }
                     I64Option::None => Result::<(ContractStateHacspec, u64), ()>::Err(()),
                 }
@@ -242,13 +269,12 @@ impl Seek for ContractState {
             self,
             contract_state_impl_seek(
                 contract_state,
+                self.size(),
                 coerce_rust_to_hacspec_seek_from(pos),
             ),
         )
     }
 }
-
-
 
 pub fn contract_state_impl_read_read(
     current_position: ContractStateHacspec,
@@ -262,32 +288,47 @@ pub fn contract_state_impl_read_read(
 /// initialize a dummy value before calling an external function.
 pub fn contract_state_impl_read_read_u64(
     current_position: ContractStateHacspec,
-) -> (ContractStateHacspec, u64) {
+) -> (ContractStateHacspec, Result<u64, ()>) {
     // let mut bytes: MaybeUninit<[u8; 8]> = MaybeUninit::uninit();
     let buf = PublicByteSeq::new(8);
     let (buf, num_read) = load_state_hacspec(buf, current_position);
-    (current_position + num_read, u64_from_le_bytes(u64Word::from_seq(&buf))) // num_read as u64
+    (current_position + num_read,
+     if num_read == 8u32 {
+         Result::<u64, ()>::Ok(u64_from_le_bytes(u64Word::from_seq(&buf)))
+     } else {
+         Result::<u64, ()>::Err(())
+     }) // num_read as u64
 }
 
 /// Read a u32 in little-endian format. This is optimized to not
 /// initialize a dummy value before calling an external function.
 pub fn contract_state_impl_read_read_u32(
     current_position: ContractStateHacspec,
-) -> (ContractStateHacspec, u32) {
+) -> (ContractStateHacspec, Result<u32, ()>) {
     // let mut bytes: MaybeUninit<[u8; 4]> = MaybeUninit::uninit();
     let buf = PublicByteSeq::new(4);
     let (buf, num_read) = load_state_hacspec(buf, current_position);
-    (current_position + num_read, u32_from_le_bytes(u32Word::from_seq(&buf))) // num_read as u64
+    (current_position + num_read,
+     if num_read == 4u32 {
+         Result::<u32, ()>::Ok(u32_from_le_bytes(u32Word::from_seq(&buf)))
+     } else {
+         Result::<u32, ()>::Err(())
+     }) // num_read as u64
 }
 
 /// Read a u8 in little-endian format. This is optimized to not
 /// initialize a dummy value before calling an external function.
 pub fn contract_state_impl_read_read_u8(
     current_position: ContractStateHacspec,
-) -> (ContractStateHacspec, u8) {
+) -> (ContractStateHacspec, Result<u8, ()>) {
     let buf = PublicByteSeq::new(1);
     let (buf, num_read) = load_state_hacspec(buf, current_position);
-    (current_position + num_read, buf[0]) // num_read as u64
+    (current_position + num_read,
+     if num_read == 1u32 {
+         Result::<u8, ()>::Ok(buf[0])
+     } else {
+         Result::<u8, ()>::Err(())
+     }) // num_read as u64
 }
 
 #[cfg(not(feature = "hacspec"))]
@@ -308,12 +349,10 @@ impl Read for ContractState {
         let (cs, nr) =
             contract_state_impl_read_read_u64(coerce_rust_to_hacspec_contract_state(self));
         coerce_hacspec_to_rust_contract_state(self, cs);
-        Ok(nr)
-        // if num_read == 8 {
-        //     unsafe { Ok(u64::from_le_bytes(bytes.assume_init())) }
-        // } else {
-        //     Err(ParseError::default())
-        // }
+        match nr {
+            Result::<u64, ()>::Ok(a) => ParseResult::<u64>::Ok(a),
+            Result::<u64, ()>::Err(_) => ParseResult::<u64>::Err(ParseError::default()),
+        }
     }
 
     /// Read a `u32` in little-endian format. This is optimized to not
@@ -322,17 +361,10 @@ impl Read for ContractState {
         let (cs, nr) =
             contract_state_impl_read_read_u32(coerce_rust_to_hacspec_contract_state(self));
         coerce_hacspec_to_rust_contract_state(self, cs);
-        Ok(nr)
-
-        // let mut bytes: MaybeUninit<[u8; 4]> = MaybeUninit::uninit();
-        // let num_read =
-        //     unsafe { load_state(bytes.as_mut_ptr() as *mut u8, 4, self.current_position) };
-        // self.current_position += num_read;
-        // if num_read == 4 {
-        //     unsafe { Ok(u32::from_le_bytes(bytes.assume_init())) }
-        // } else {
-        //     Err(ParseError::default())
-        // }
+        match nr {
+            Result::<u32, ()>::Ok(a) => ParseResult::<u32>::Ok(a),
+            Result::<u32, ()>::Err(_) => ParseResult::<u32>::Err(ParseError::default()),
+        }
     }
 
     /// Read a `u8` in little-endian format. This is optimized to not
@@ -341,7 +373,10 @@ impl Read for ContractState {
         let (cs, nr) =
             contract_state_impl_read_read_u8(coerce_rust_to_hacspec_contract_state(self));
         coerce_hacspec_to_rust_contract_state(self, cs);
-        Ok(nr)
+        match nr {
+            Result::<u8, ()>::Ok(a) => ParseResult::<u8>::Ok(a),
+            Result::<u8, ()>::Err(_) => ParseResult::<u8>::Err(ParseError::default()),
+        }
     }
 }
 
@@ -376,14 +411,6 @@ impl Write for ContractState {
 pub fn has_contract_state_impl_for_contract_state_open() -> ContractStateHacspec {
     0_u32
 }
-
-// pub fn has_contract_state_impl_for_contract_state_reserve_0(len: u32, cur_size: u32) -> bool {
-//     cur_size < len
-// }
-
-// pub fn has_contract_state_impl_for_contract_state_reserve_1(res: u32) -> bool {
-//     res == 1_u32
-// }
 
 pub fn has_contract_state_impl_for_contract_state_reserve(
     len: u32,
@@ -564,36 +591,6 @@ pub fn coerce_hacspec_to_rust_attributes_cursor(
     let (current_position, remaining_items) = hacspec_attributes_cursor;
     rust_attributes_cursor.current_position = current_position;
     rust_attributes_cursor.remaining_items = remaining_items;
-}
-
-#[cfg(not(feature = "hacspec"))]
-/// Policy on the credential of the account.
-///
-/// This is one of the key features of the Concordium blockchain. Each account
-/// on the chain is backed by an identity. The policy is verified and signed by
-/// the identity provider before an account can be created on the chain.
-///
-/// The type is parameterized by the choice of `Attributes`. These are either
-/// borrowed or owned, in the form of an iterator over key-value pairs or a
-/// vector of such. This flexibility is needed so that attributes can be
-/// accessed efficiently, as well as constructed conveniently for testing.
-#[cfg_attr(feature = "fuzz", derive(Arbitrary))]
-#[derive(Clone)] // TODO: Creusot issue readd "Debug" attribute
-pub struct Policy<Attributes> {
-    /// Identity of the identity provider who signed the identity object that
-    /// this policy is derived from.
-    pub identity_provider: IdentityProvider,
-    /// Timestamp at the beginning of the month when the identity object backing
-    /// this policy was created. This timestamp has very coarse granularity
-    /// in order for the identity provider to not be able to link identities
-    /// they have created with accounts that users created on the chain.
-    /// as a timestamp (which has millisecond granularity) in order to make it
-    /// easier to compare with, e.g., `slot_time`.
-    pub created_at: Timestamp,
-    /// Beginning of the month where the identity is __no longer valid__.
-    pub valid_to: Timestamp,
-    /// List of attributes, in ascending order of the tag.
-    pub items: Attributes,
 }
 
 // TODO: Creusot issues?
@@ -842,13 +839,6 @@ impl HasReceiveContext for ExternContext<ReceiveContextExtern> {
     }
 }
 
-// #[cfg(not(feature = "hacspec"))]
-// /// A type representing the logger.
-// #[derive(Default)]
-// pub struct Logger {
-//     pub(crate) _private: (),
-// }
-
 #[cfg(not(feature = "hacspec"))]
 /// #Implementations of the logger.
 impl HasLogger for Logger {
@@ -877,7 +867,7 @@ impl HasActions for Action {
             _private: accept_hacspec(),
         }
     }
-
+    
     #[inline(always)]
     fn simple_transfer(acc: &AccountAddress, amount: Amount) -> Self {
         let res = simple_transfer_hacspec(coerce_rust_to_hacspec_public_byte_seq(&acc.0), amount.micro_gtu);
@@ -1033,6 +1023,7 @@ impl<A: fmt::Debug> ExpectNoneReport for Option<A> {
     }
 }
 
+// TODO: Remove / is not in concordium-std??
 #[cfg(not(feature = "hacspec"))]
 /// Write a [BTreeSet](https://doc.rust-lang.org/std/collections/struct.BTreeSet.html) as an ascending list of keys, without the length information.
 pub fn serial_set_no_length<W: Write, K: Serial>(
@@ -1058,6 +1049,7 @@ impl<K: Serial + Ord> SerialCtx for BTreeSet<K> {
     }
 }
 
+// TODO: Remove / is not in concordium-std??
 #[cfg(not(feature = "hacspec"))]
 /// Read a [BTreeSet](https://doc.rust-lang.org/std/collections/struct.BTreeSet.html) as a list of keys, given some length.
 /// NB: This ensures there are no duplicates, hence the specialized type.
@@ -1080,6 +1072,7 @@ pub fn deserial_set_no_length<R: Read, K: Deserial + Ord + Copy>(
     Ok(out)
 }
 
+// TODO: Remove / is not in concordium-std??
 #[cfg(not(feature = "hacspec"))]
 /// Read a [BTreeSet](https://doc.rust-lang.org/std/collections/struct.BTreeSet.html) as an list of key-value pairs given some length.
 /// Slightly faster version of `deserial_set_no_length` as it is skipping the
@@ -1117,6 +1110,7 @@ impl<K: Deserial + Ord + Copy> DeserialCtx for BTreeSet<K> {
     }
 }
 
+// TODO: Remove / is not in concordium-std??
 #[cfg(not(feature = "hacspec"))]
 /// Write a Map as a list of key-value pairs ordered by the key, without the
 /// length information.
@@ -1144,6 +1138,7 @@ impl<K: Serial + Ord, V: Serial> SerialCtx for BTreeMap<K, V> {
     }
 }
 
+// TODO: Remove / is not in concordium-std??
 #[cfg(not(feature = "hacspec"))]
 /// Read a [BTreeMap](https://doc.rust-lang.org/std/collections/struct.BTreeMap.html) as a list of key-value pairs given some length.
 /// NB: This ensures there are no duplicates, hence the specialized type.
@@ -1174,6 +1169,7 @@ pub fn deserial_map_no_length<R: Read, K: Deserial + Ord + Copy, V: Deserial>(
     Ok(out)
 }
 
+// TODO: Remove / is not in concordium-std??
 #[cfg(not(feature = "hacspec"))]  
 /// Read a [BTreeMap](https://doc.rust-lang.org/std/collections/struct.BTreeMap.html) as a list of key-value pairs given some length.
 /// Slightly faster version of `deserial_map_no_length` as it is skipping the
@@ -1211,6 +1207,7 @@ impl<K: Deserial + Ord + Copy, V: Deserial> DeserialCtx for BTreeMap<K, V> {
     }
 }
 
+// TODO: Remove / is not in concordium-std??
 #[cfg(not(feature = "hacspec"))]
 /// Write a [HashSet](https://doc.rust-lang.org/std/collections/struct.HashSet.html) as a list of keys in no particular order, without the length information.
 pub fn serial_hashset_no_length<W: Write, K: Serial>(
@@ -1238,6 +1235,7 @@ impl<K: Serial> SerialCtx for HashSet<K> {
     }
 }
 
+// TODO: Remove / is not in concordium-std??
 #[cfg(not(feature = "hacspec"))]
 /// Read a [HashSet](https://doc.rust-lang.org/std/collections/struct.HashSet.html) as a list of keys, given some length.
 /// NB: This ensures there are no duplicates.
@@ -1270,6 +1268,7 @@ impl<K: Deserial + Eq + Hash> DeserialCtx for HashSet<K> {
     }
 }
 
+// TODO: Remove / is not in concordium-std??
 #[cfg(not(feature = "hacspec"))]  
 /// Write a HashMap as a list of key-value pairs in to particular order, without
 /// the length information.
@@ -1298,6 +1297,7 @@ impl<K: Serial, V: Serial> SerialCtx for HashMap<K, V> {
     }
 }
 
+// TODO: Remove / is not in concordium-std??
 #[cfg(not(feature = "hacspec"))]
 /// Read a [HashMap](https://doc.rust-lang.org/std/collections/struct.HashMap.html) as a list of key-value pairs given some length.
 pub fn deserial_hashmap_no_length<R: Read, K: Deserial + Eq + Hash, V: Deserial>(
@@ -1331,6 +1331,7 @@ impl<K: Deserial + Eq + Hash, V: Deserial> DeserialCtx for HashMap<K, V> {
     }
 }
 
+// TODO: Remove / is not in concordium-std??
 #[cfg(not(feature = "hacspec"))]
 /// Write a slice of elements, without including length information.
 /// This is intended to be used either when the length is statically known,
@@ -1356,8 +1357,21 @@ impl<T: Serial> SerialCtx for &[T] {
 }
 
 #[cfg(not(feature = "hacspec"))]
+impl<T: Serial> SerialCtx for Vec<T> {
+    fn serial_ctx<W: Write>(
+        &self,
+        size_len: schema::SizeLength,
+        out: &mut W,
+    ) -> Result<(), W::Err> {
+        self.as_slice().serial_ctx(size_len, out)
+    }
+}
+
+// TODO: Remove / is not in concordium-std??
+#[cfg(not(feature = "hacspec"))]
 pub(crate) static MAX_PREALLOCATED_CAPACITY: usize = 4096;
 
+// TODO: Remove / is not in concordium-std??
 #[cfg(not(feature = "hacspec"))]
 /// Read a vector given a length.
 pub fn deserial_vector_no_length<R: Read, T: Deserial>(
