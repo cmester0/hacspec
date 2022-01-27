@@ -27,10 +27,10 @@ Definition contract_init_hacspec  : state_hacspec_t :=
 
 (* [[file:fib.org::*  - Coq code][ - Coq code:6]] *)
 Inductive action_t :=
-| Value : int64 -> action_t
+| Start : int64 -> action_t
 | Continuation0 : (int64 × int64) -> action_t
 | Continuation1 : (int64 × int64) -> action_t
-| Start : int64 -> action_t.
+| Value : int64 -> action_t.
 (*  - Coq code:6 ends here *)
 
 (* [[file:fib.org::*  - Coq code][ - Coq code:7]] *)
@@ -49,4 +49,11 @@ Definition contract_receive_hacspec (action_0 : action_t) : action_t :=
   | Value v_6 => Value (v_6)
   end.
 (*  - Coq code:7 ends here *)
+
+(* [[file:fib.org::*  - Coq code][ - Coq code:8]] *)
+Definition fib (n_7 : int64) : int64 :=
+  (if ((n_7) =.? (@repr WORDSIZE64 1)):bool then (@repr WORDSIZE64 1) else ((
+        fib ((n_7) .- (@repr WORDSIZE64 2))) .+ (fib ((n_7) .- (
+            @repr WORDSIZE64 1))))).
+(*  - Coq code:8 ends here *)
 

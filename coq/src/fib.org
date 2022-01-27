@@ -129,70 +129,11 @@ fn contract_init(_ctx: &impl HasInitContext) -> InitResult<((), State)> {
     Ok(((), state))
 }
 
-// pub enum Action {
-//     Value(u64),
-//     Continuation0(u64, u64),
-//     Continuation1(u64, u64),
-//     Start(u64),
-// }
-
-// fn contract_receive_hacspec(
-//     action : Action,
-// ) -> Action {
-//     match action {
-//         Action::Start(n) =>
-//             if n <= 1u64 {
-//                 Action::Value(1u64)
-//             } else {
-//                 Action::Continuation0(n, n-2u64)
-//             },
-//         Action::Continuation0(n, p) => Action::Continuation1(p, n-1u64),
-//         Action::Continuation1(p, q) => Action::Value(p + q),
-//         Action::Value(v) => Action::Value(v) // TODO: Should never happen ! (happens because return / call statement in strange recursive )
-//     }
-// }
-
-// #[cfg(not(feature = "hacspec"))]
-// fn contract_receive_creusot(
-//     ctx: &impl HasReceiveContext,
-//     host: &mut impl HasHost<State>,
-//     action : Action,
-// ) -> u64 {
-//     match contract_receive_hacspec(action) {
-//         Action::Start(n) => panic!(), // Should never happen
-//         Action::Continuation0(n, nsub2) => {
-//             let cv2 = contract_receive_call(ctx, host, nsub2);
-//             contract_receive_creusot(ctx, host, Action::Continuation0(n, cv2))
-//         }
-//         Action::Continuation1(p, nsub1) => {
-//             let cv2 = contract_receive_call(ctx, host, nsub1);
-//             contract_receive_creusot(ctx, host, Action::Continuation0(p, cv2))
-//         }
-//         Action::Value(v) => v
-//     }
-// }
-
-// #[cfg(not(feature = "hacspec"))]
-// // Add the the nth Fibonacci number F(n) to this contract's state.
-// // This is achieved by recursively calling the contract itself.
-// #[inline(always)]
-// #[receive(contract = "fib", name = "receive", parameter = "u64", return_value = "u64")]
-// fn contract_receive(
-//     ctx: &impl HasReceiveContext,
-//     host: &mut impl HasHost<State>,
-// ) -> ReceiveResult<u64> {
-//     // Try to get the parameter (64bit unsigned integer).
-//     let n: u64 = ctx.parameter_cursor().get()?;
-//     let result = contract_receive_creusot(ctx, host, Action::Start(n));
-//     host.state().result = result;
-//     Ok(result)
-// }
-
 pub enum Action {
-    Value(u64),
+    Start(u64),
     Continuation0(u64, u64),
     Continuation1(u64, u64),
-    Start(u64),
+    Value(u64),
 }
 
 fn contract_receive_hacspec(action: Action) -> Action {
@@ -234,6 +175,14 @@ fn contract_receive_call(
     cv2
 }
 
+fn fib (n : u64) -> u64 {
+    if n == 1u64 {
+        1u64
+    } else {
+        fib (n - 2u64) + fib (n - 1u64)
+    }
+}
+
 #[cfg(not(feature = "hacspec"))]
 // Add the the nth Fibonacci number F(n) to this contract's state.
 // This is achieved by recursively calling the contract itself.
@@ -250,7 +199,6 @@ fn contract_receive(
 ) -> ReceiveResult<u64> {
     // Try to get the parameter (64bit unsigned integer).
     let n: u64 = ctx.parameter_cursor().get()?;
-
     match contract_receive_hacspec(Action::Start(n)) {
         Action::Value(v) => {
             host.state().result = v;
@@ -266,7 +214,6 @@ fn contract_receive(
                             host.state().result = v;
                             Ok(v)
                         }
-
                         _ => Err(Reject {
                             error_code: unsafe {
                                 core::num::NonZeroI32::new_unchecked(i32::MIN + 5i32)
@@ -279,7 +226,6 @@ fn contract_receive(
                 }),
             }
         }
-
         _ => {
             Err(Reject {
                 error_code: unsafe { core::num::NonZeroI32::new_unchecked(i32::MIN + 5i32) },
