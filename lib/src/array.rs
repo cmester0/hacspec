@@ -21,6 +21,7 @@
 
 pub extern crate quickcheck;
 
+
 #[macro_export]
 #[doc(hidden)]
 macro_rules! _array_base {
@@ -151,11 +152,19 @@ macro_rules! _array_base {
             fn len(&self) -> usize {
                 $l
             }
+
+            #[cfg(feature = "std")]
             #[cfg_attr(feature = "use_attributes", not_hacspec($name))]
             fn iter(&self) -> std::slice::Iter<$t> {
                 self.0.iter()
             }
 
+            #[cfg(not(feature = "std"))]
+            #[cfg_attr(feature = "use_attributes", not_hacspec($name))]
+            fn iter(&self) -> core::slice::Iter<$t> {
+                self.0.iter()
+            }
+            
             #[cfg_attr(feature = "use_attributes", in_hacspec($name))]
             fn update_slice<A: SeqTrait<$t>>(
                 mut self,
@@ -270,8 +279,19 @@ macro_rules! _array_base {
         }
 
         impl $name {
+            #[cfg(feature = "std")]
             fn hex_string_to_vec(s: &str) -> Vec<$t> {
                 debug_assert!(s.len() % std::mem::size_of::<$t>() == 0);
+                let b: Result<Vec<$t>, ParseIntError> = (0..s.len())
+                    .step_by(2)
+                    .map(|i| u8::from_str_radix(&s[i..i + 2], 16).map(<$t>::from))
+                    .collect();
+                b.expect("Error parsing hex string")
+            }
+            
+            #[cfg(not(feature = "std"))]
+            fn hex_string_to_vec(s: &str) -> Vec<$t> {
+                debug_assert!(s.len() % core::mem::size_of::<$t>() == 0);
                 let b: Result<Vec<$t>, ParseIntError> = (0..s.len())
                     .step_by(2)
                     .map(|i| u8::from_str_radix(&s[i..i + 2], 16).map(<$t>::from))
@@ -678,6 +698,7 @@ macro_rules! _public_array {
     };
 }
 
+
 #[macro_export]
 #[doc(hidden)]
 macro_rules! _implement_secret_u8_array {
@@ -685,6 +706,7 @@ macro_rules! _implement_secret_u8_array {
         _secret_array!($name, $l, U8, u8);
         _implement_numeric_unsigned_secret!($name, U8);
 
+        
         impl $name {
             #[allow(non_snake_case)]
             #[cfg_attr(feature = "use_attributes", unsafe_hacspec($name))]
@@ -746,9 +768,11 @@ macro_rules! _implement_secret_u8_array {
                 }
                 out
             }
+
+            #[cfg(feature = "std")]
             #[cfg_attr(feature = "use_attributes", not_hacspec($name))]
             pub fn to_hex(&self) -> String {
-                let strs: Vec<String> = self.0.iter().map(|b| format!("{:02x}", b)).collect();
+                let strs: Vec<String> = self.0.iter().map(|b| std::format!("{:02x}", b)).collect();
                 strs.join("")
             }
         }
@@ -817,9 +841,10 @@ macro_rules! _implement_public_u8_array {
                 }
                 out
             }
+            #[cfg(feature = "std")]
             #[cfg_attr(feature = "use_attributes", not_hacspec($name))]
             pub fn to_hex(&self) -> String {
-                let strs: Vec<String> = self.0.iter().map(|b| format!("{:02x}", b)).collect();
+                let strs: Vec<String> = self.0.iter().map(|b| std::format!("{:02x}", b)).collect();
                 strs.join("")
             }
         }

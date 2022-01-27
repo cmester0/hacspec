@@ -38,32 +38,40 @@
 #+BEGIN_SRC toml :tangle ../../examples/concordium/Cargo.toml  :mkdirp yes :eval never
 [package]
 name = "hacspec-concordium"
-version = "0.1.0"
+version = "2.0.0"
 authors = [""]
 edition = "2018"
 
-[lib]
-path = "src/concordium.rs"
 
 [dependencies]
-hacspec-lib = { path = "../../lib" }
-hacspec-attributes = { path = "../../utils/attributes", version = "0.1.0-beta.1" , features = ["print_attributes", "hacspec_unsafe"] } # , features = ["hacspec_unsafe"] , , optional = true
-creusot-contracts = { path = "../../../../creusot/creusot-contracts" }
-concordium-contracts-common = { path = "../../../../concordium-rust-smart-contracts/concordium-contracts-common" ,  version = "=2.0.0" , default-features = false }
-hacspec-concordium-derive = { path = "../concordium-derive" }
-
 # Reduce code size, at the cost of performance in allocation heavy-code.
 wee_alloc="0.4.5"
 
-[features]
-use_attributes = ["hacspec-attributes/print_attributes", "hacspec-attributes/hacspec_unsafe"]
+hacspec-lib = { path = "../../lib" }
+hacspec-attributes = { path = "../../utils/attributes", version = "0.1.0-beta.1" , features = ["print_attributes", "hacspec_unsafe"] } # , features = ["hacspec_unsafe"] , , optional = true
+creusot-contracts = { path = "../../../../creusot/creusot-contracts" }
 
-[dev-dependencies]
-hacspec-dev = { path = "../../utils/dev" }
-criterion = "0.3"
-rand = "0.8"
-quickcheck = "1"
-quickcheck_macros = "1"
+	
+[dependencies.hacspec-concordium-derive]
+path = "../concordium-derive"
+version = "2.0"
+
+[dependencies.concordium-contracts-common]
+path = "../../../../concordium-rust-smart-contracts/concordium-contracts-common"
+version = "2.0"
+default-features = false
+
+# [features]
+# default = ["std"]
+
+# std = ["concordium-contracts-common/std"]
+# wasm-test = ["hacspec-concordium-derive/wasm-test"]
+# build-schema = ["hacspec-concordium-derive/build-schema"]
+
+[lib]
+crate-type = ["rlib"]
+path = "src/concordium.rs"
+
 #+END_SRC
 *** Imports
 #+BEGIN_SRC rust :tangle ../../examples/concordium/src/concordium.rs  :mkdirp yes :eval never
@@ -124,7 +132,9 @@ pub fn trap() -> ! { core::intrinsics::abort() }
 /// Re-export.
 #[cfg(not(feature = "hacspec"))]
 #[cfg(not(feature = "std"))]
-pub use alloc::{borrow::ToOwned, string, string::String, string::ToString, vec, vec::Vec};
+pub use alloc::{
+    borrow::ToOwned, boxed::Box, string, string::String, string::ToString, vec, vec::Vec,
+};
 /// Re-export.
 #[cfg(not(feature = "hacspec"))]
 #[cfg(not(feature = "std"))]
@@ -159,26 +169,6 @@ pub use std::collections;
 // }
 
 #[cfg(not(feature = "hacspec"))]
-extern crate concordium_contracts_common;
-#[cfg(not(feature = "hacspec"))]
-/// Chain constants that impose limits on various aspects of smart contract
-/// execution.
-pub use concordium_contracts_common::*;
-
-// TODO: Need derive
-#[cfg(not(feature = "hacspec"))]
-extern crate hacspec_concordium_derive;
-#[cfg(not(feature = "hacspec"))]
-pub use hacspec_concordium_derive::*;
-
-#[cfg(not(feature = "hacspec"))]
-extern crate wee_alloc;
-// Use `wee_alloc` as the global allocator to reduce code size.
-#[cfg(not(feature = "hacspec"))]
-#[global_allocator]
-static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
-
-#[cfg(not(feature = "hacspec"))]
 extern crate hacspec_lib;
 // pub use hacspec_lib::*;
 
@@ -188,24 +178,35 @@ use hacspec_attributes::*;
 #[cfg(not(feature = "hacspec"))]
 extern crate creusot_contracts;
 #[cfg(not(feature = "hacspec"))]
-use creusot_contracts::*; // {ensures, trusted}; // requires, 
+pub use creusot_contracts::*; // {ensures, trusted}; // requires,
 
 pub mod constants;
-mod hacspec_concordium_prims;
 mod hacspec_concordium_types;
 mod hacspec_concordium_traits;
+mod hacspec_concordium_prims;
 mod hacspec_concordium_impls;
 
-pub mod test_infrastructure;
+#[cfg(not(feature = "hacspec"))]
+pub use concordium_contracts_common::*;
+#[cfg(not(feature = "hacspec"))]
+pub use hacspec_concordium_derive::*;
 
-use hacspec_concordium_prims::*; // TODO: Does not re-export anything, nothing is public enough (removed pub)
 pub use hacspec_concordium_types::*;
 pub use hacspec_concordium_traits::*;
+pub use hacspec_concordium_prims::*;
 pub use hacspec_concordium_impls::*;
+
+#[cfg(not(feature = "hacspec"))]
+extern crate wee_alloc;
+// Use `wee_alloc` as the global allocator to reduce code size.
+#[cfg(not(feature = "hacspec"))]
+#[global_allocator]
+static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
+
+pub mod test_infrastructure;
 #+END_SRC
 
 ** Coq code
-
 #+begin_src elisp :var SOURCE-CODE-FILE="Concordium.v" :results output silent :tangle no
 (org-babel-detangle SOURCE-CODE-FILE)
 #+end_src
@@ -256,6 +257,8 @@ Require Import Hacspec.Concordium_Impls.
 #+BEGIN_SRC rust
 #[cfg(not(feature = "hacspec"))]
 use crate::num::NonZeroI32;
+#[cfg(not(feature = "hacspec"))]
+use crate::num::NonZeroU32;
 #+END_SRC
 
 *** Types code
@@ -270,7 +273,24 @@ pub struct ContractState {
 #[cfg(not(feature = "hacspec"))]
 #[derive(Default)]
 /// A type representing the parameter to init and receive methods.
-pub struct Parameter {
+/// Its trait implementations are backed by host functions.
+pub struct ExternParameter {
+    pub(crate) current_position: u32,
+}
+
+#[cfg(not(feature = "hacspec"))]
+/// A type representing the return value of contract calls.
+/// This is when a contract calls another contract, it may get a return value.
+#[derive(Debug)]
+pub struct CallResponse {
+    /// The index of the call response.
+    pub(crate) i:                NonZeroU32,
+    pub(crate) current_position: u32,
+}
+
+#[cfg(not(feature = "hacspec"))]
+/// A type representing the return value of contract init or receive method.
+pub struct ReturnValue {
     pub(crate) current_position: u32,
 }
 
@@ -293,7 +313,6 @@ pub struct Logger {
     pub(crate) _private: (),
 }
 
-// #[cfg(not(feature = "hacspec"))]
 /// Errors that can occur during logging.
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 #[repr(u8)]
@@ -309,26 +328,6 @@ pub enum LogError {
 /// init or receive function that is not marked as `payable`.
 #[derive(Clone, Copy, Debug)]
 pub struct NotPayableError;
-
-#[cfg(not(feature = "hacspec"))]
-/// Actions that can be produced at the end of a contract execution. This
-/// type is deliberately not cloneable so that we can enforce that
-/// `and_then` and `or_else` can only be used when more than one event is
-/// created.
-///
-/// This type is marked as `must_use` since functions that produce
-/// values of the type are effectful.
-#[must_use]
-pub struct Action {
-    pub(crate) _private: u32,
-}
-
-#[cfg(not(feature = "hacspec"))]
-impl Action {
-    pub fn tag(&self) -> u32 {
-        self._private
-    }
-}
 
 #[cfg(not(feature = "hacspec"))]
 /// An error message, signalling rejection of a smart contract invocation.
@@ -584,6 +583,14 @@ pub type ReceiveResult<A> = Result<A, Reject>;
 pub type InitResult<S> = Result<S, Reject>;
 
 #[cfg(not(feature = "hacspec"))]
+/// Operations based on host functions, TODO: update.
+#[derive(Default)]
+#[doc(hidden)]
+pub struct Host<State> {
+    pub state: State,
+}
+
+#[cfg(not(feature = "hacspec"))]
 /// Context backed by host functions.
 #[derive(Default)]
 #[doc(hidden)]
@@ -674,6 +681,16 @@ use crate::*;
 // //! contract invocations.
 
 #[cfg(not(feature = "hacspec"))]
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
+
+#[cfg(not(feature = "hacspec"))]
+use crate::{*, CallResponse};
+use hacspec_concordium_types::*; // hacspec_concordium_types::LogError, 
+#[cfg(not(feature = "hacspec"))]
+use concordium_contracts_common::*; // 
+
+#[cfg(not(feature = "hacspec"))]
 /// Objects which can access parameters to contracts.
 ///
 /// This trait has a Read supertrait which means that structured parameters can
@@ -683,6 +700,20 @@ use crate::*;
 /// methods of this trait.
 pub trait HasParameter: Read {
     /// Get the size of the parameter to the method.
+    fn size(&self) -> u32;
+}
+
+#[cfg(not(feature = "hacspec"))]
+/// Objects which can access call responses from contract invocations.
+///
+/// This trait has a Read supertrait which means that structured call responses
+/// can be directly deserialized by using `.get()` function from the `Get`
+/// trait.
+///
+/// The reuse of `Read` methods is the reason for the slightly strange choice of
+/// methods of this trait.
+pub trait HasCallResponse: Read {
+    /// Get the size of the call response to the contract invocation.
     fn size(&self) -> u32;
 }
 
@@ -801,6 +832,55 @@ where
 }
 
 #[cfg(not(feature = "hacspec"))]
+/// FIXME: Have two error types, one for transfers, one for calls.
+/// FIXME: Consider adding `#[non_exhaustive]`.
+#[repr(i32)]
+#[derive(Debug)]
+pub enum InvokeError {
+    /// Amount that was to be transferred is not available to the sender.
+    AmountTooLarge,
+    /// Account that is to be transferred to does not exist.
+    MissingAccount,
+    /// Contract that is to be transferred to does not exist.
+    MissingContract,
+    /// The contract to be invoked exists, but the entrypoint that was named
+    /// does not.
+    MissingEntrypoint,
+    /// Sending a message to the V0 contract failed.
+    MessageFailed,
+    /// Contract that was called rejected with the given reason.
+    LogicReject {
+        reason:       i32,
+        return_value: CallResponse,
+    },
+    /// Execution of a contract call triggered a runtime error.
+    Trap,
+    /// Unrecognized error. Reser
+    Unknown,
+}
+
+#[cfg(not(feature = "hacspec"))]
+pub type InvokeResult<A> = Result<A, InvokeError>;
+
+#[cfg(not(feature = "hacspec"))]
+/// A type that can serve as the host.
+/// It supports invoking operations, accessing state and self_balance.
+pub trait HasHost<State> {
+    type CallResponseType: HasCallResponse;
+
+    fn invoke_transfer(&mut self, receiver: &AccountAddress, amount: Amount) -> InvokeResult<()>;
+    fn invoke_contract(
+        &mut self,
+        to: &ContractAddress,
+        parameter: Parameter,
+        method: EntrypointName,
+        amount: Amount,
+    ) -> InvokeResult<(bool, Option<Self::CallResponseType>)>;
+    fn state(&mut self) -> &mut State;
+    fn self_balance(&self) -> Amount;
+}
+
+#[cfg(not(feature = "hacspec"))]
 /// Objects which can serve as loggers.
 ///
 /// Logging functionality can be used by smart contracts to record events that
@@ -824,35 +904,6 @@ pub trait HasLogger {
         }
         self.log_raw(&out)
     }
-}
-
-#[cfg(not(feature = "hacspec"))]
-/// An object that can serve to construct actions.
-///
-/// The actions that a smart contract can produce as a
-/// result of its execution. These actions form a tree and are executed by
-/// the scheduler in the predefined order.
-pub trait HasActions {
-    /// Default accept action.
-    fn accept() -> Self;
-
-    /// Send a given amount to an account.
-    fn simple_transfer(acc: &AccountAddress, amount: Amount) -> Self;
-
-    /// Send a message to a contract.
-    fn send_raw(
-        ca: &ContractAddress,
-        receive_name: ReceiveName,
-        amount: Amount,
-        parameter: &[u8],
-    ) -> Self;
-
-    /// If the execution of the first action succeeds, run the second action
-    /// as well.
-    fn and_then(self, then: Self) -> Self;
-
-    /// If the execution of the first action fails, try the second.
-    fn or_else(self, el: Self) -> Self;
 }
 
 #[cfg(not(feature = "hacspec"))]
@@ -1018,6 +1069,485 @@ Coerce for public byte sequences.
   }
 #+end_src
 
+Extern invoke
+#+begin_src rust
+#[cfg(not(feature = "hacspec"))]
+extern "C" {
+  /// Invoke a host instruction. The arguments are
+  ///
+  /// - `tag`, which instruction to invoke
+  ///   - 0 for transfer to account
+  ///   - 1 for call to a contract
+  /// - `start`, pointer to the start of the invoke payload
+  /// - `length`, length of the payload
+  /// The return value positive is ... TODO.
+  pub(crate) fn invoke(tag: u32, start: *const u8, length: u32) -> u64;
+}
+
+#[cfg(not(feature = "hacspec"))]
+#[trusted]
+pub(crate) fn invoke_creusot(tag: u32, start: *const u8, length: u32) -> u64 {
+    unsafe { invoke(tag, start, length) }
+}
+
+#[cfg(feature = "hacspec")]
+pub(crate) fn invoke_hacspec(tag: u32, start: PublicByteSeq) -> u64 {
+    1u64
+}
+
+#[cfg(not(feature = "hacspec"))]
+pub(crate) fn invoke_hacspec(tag: u32, start: PublicByteSeq) -> u64 {
+    let temp = &mut coerce_hacspec_to_rust_public_byte_seq(start.clone())[..];
+    invoke_creusot(tag, temp.as_ptr(), start.len() as u32)
+}
+
+#+end_src
+Extern write output
+#+begin_src rust
+#[cfg(not(feature = "hacspec"))]
+extern "C" {
+    /// Write to the return value of the contract. The parameters are
+    ///
+    /// - `start` the pointer to the location in memory where the data resides
+    /// - `length` the size of data (in bytes)
+    /// - `offset` where in the return value to write the data
+    ///
+    /// The return value indicates how many bytes were written.
+    pub(crate) fn write_output(start: *const u8, length: u32, offset: u32) -> u32;
+}
+
+#[cfg(not(feature = "hacspec"))]
+#[trusted]
+pub(crate) fn write_output_creusot(start: *const u8, length: u32, offset: u32) -> u32 {
+    unsafe { write_output(start, length, offset) }
+}
+
+#[cfg(feature = "hacspec")]
+pub(crate) fn write_output_hacspec(start: PublicByteSeq, offset: u32) -> u32 {
+    1u32
+}
+
+#[cfg(not(feature = "hacspec"))]
+pub(crate) fn write_output_hacspec(start: PublicByteSeq, offset: u32) -> u32 {
+    let temp = &mut coerce_hacspec_to_rust_public_byte_seq(start.clone())[..];
+    write_output_creusot(temp.as_ptr(), start.len() as u32, offset)
+}
+
+#+end_src
+Extern get parameter size
+#+begin_src rust
+#[cfg(not(feature = "hacspec"))]
+extern "C" {
+  /// Get the size of the `i`-th parameter to the call. 0-th parameter is
+  /// always the original parameter that the method was invoked with,
+  /// calling invoke adds additional parameters to the stack. Returns `-1`
+  /// if the given parameter does not exist.
+  pub(crate) fn get_parameter_size(i: u32) -> i32;
+}
+
+#[cfg(not(feature = "hacspec"))]
+#[trusted]
+pub(crate) fn get_parameter_size_creusot(i : u32) -> i32 {
+    unsafe { get_parameter_size(i) }
+}
+
+#[cfg(feature = "hacspec")]
+pub(crate) fn get_parameter_size_hacspec(i : u32) -> i32 {
+    1i32
+}
+
+#[cfg(not(feature = "hacspec"))]
+pub(crate) fn get_parameter_size_hacspec(i : u32) -> i32 {
+    get_parameter_size_creusot(i)
+}
+
+#+end_src
+Extern for parameter section
+#+begin_src rust
+#[cfg(not(feature = "hacspec"))]
+extern "C" {
+  /// Write a section of the `i`-th parameter to the given location. Return
+  /// the number of bytes written or `-1` if the parameter does not exist.
+  /// The location is assumed to contain enough memory to
+  /// write the requested length into.
+  pub(crate) fn get_parameter_section(
+      i: u32,
+      param_bytes: *mut u8,
+      length: u32,
+      offset: u32,
+  ) -> i32;
+}
+
+#[cfg(not(feature = "hacspec"))]
+#[trusted]
+pub(crate) fn get_parameter_section_creusot(i: u32, param_bytes: *mut u8, length: u32, offset: u32) -> i32 {
+    unsafe { get_parameter_section(i, param_bytes, length, offset) }
+}
+
+#[cfg(feature = "hacspec")]
+pub(crate) fn get_parameter_section_hacspec(i : u32, buf: PublicByteSeq, offset: u32) -> (PublicByteSeq, i32) {
+    (buf, 1i32)
+}
+
+#[cfg(not(feature = "hacspec"))]
+pub(crate) fn get_parameter_section_hacspec(i : u32, buf: PublicByteSeq, offset: u32) -> (PublicByteSeq, i32) {
+    let temp = &mut coerce_hacspec_to_rust_public_byte_seq(buf.clone())[..];
+    let result = get_parameter_section_creusot(i, temp.as_mut_ptr(), buf.len() as u32, offset);
+    (
+        coerce_rust_to_hacspec_public_byte_seq(&temp),
+        result,
+    )
+}
+
+#+end_src
+Extern get policy section
+#+begin_src rust
+  #[cfg(not(feature = "hacspec"))]
+  extern "C" {
+    // Write a section of the policy to the given location. Return the number
+    // of bytes written. The location is assumed to contain enough memory to
+    // write the requested length into.
+    pub(crate) fn get_policy_section(policy_bytes: *mut u8, length: u32, offset: u32) -> u32;
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  #[trusted]
+  pub(crate) fn get_policy_section_creusot(policy_bytes: *mut u8, length: u32, offset: u32) -> u32 {
+      unsafe { get_policy_section(policy_bytes, length, offset) }
+  }
+
+  #[cfg(feature = "hacspec")]
+  pub(crate) fn get_policy_section_hacspec(policy_bytes: PublicByteSeq, offset: u32) -> (PublicByteSeq, u32) {
+      (policy_bytes, 1u32)
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  pub(crate) fn get_policy_section_hacspec(policy_bytes: PublicByteSeq, offset: u32) -> (PublicByteSeq, u32) {
+      let temp = &mut coerce_hacspec_to_rust_public_byte_seq(policy_bytes.clone())[..];
+      let result = get_policy_section_creusot(temp.as_mut_ptr(), policy_bytes.len() as u32, offset);
+      (
+          coerce_rust_to_hacspec_public_byte_seq(&temp),
+          result,
+      )
+  }
+
+#+end_src
+Extern log event
+#+begin_src rust
+  #[cfg(not(feature = "hacspec"))]
+  extern "C" {
+      // Add a log item. Return values are
+      // - -1 if logging failed due to the message being too long
+      // - 0 if the log is already full
+      // - 1 if data was successfully logged.
+      pub(crate) fn log_event(start: *const u8, length: u32) -> i32;
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  #[trusted]
+  pub(crate) fn log_event_creusot(start: *const u8, length: u32) -> i32 {
+      unsafe { log_event(start, length) }
+  }
+
+  #[cfg(feature = "hacspec")]
+  pub(crate) fn log_event_hacspec(start: PublicByteSeq) -> i32 {
+      1i32
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  pub(crate) fn log_event_hacspec(start: PublicByteSeq) -> i32 {
+      let temp = &mut coerce_hacspec_to_rust_public_byte_seq(start.clone())[..];
+      log_event_creusot(temp.as_ptr(), start.len() as u32)
+  }
+
+#+end_src
+Extern load state
+#+begin_src rust
+#[cfg(not(feature = "hacspec"))]
+extern "C" {
+    pub(crate) fn load_state(start: *mut u8, length: u32, offset: u32) -> u32;
+}
+
+#[cfg(not(feature = "hacspec"))]
+#[trusted]
+pub(crate) fn load_state_creusot(start: *mut u8, length: u32, offset: u32) -> u32 {
+    unsafe { load_state(start, length, offset) }
+}
+
+#[cfg(feature = "hacspec")]
+pub(crate) fn load_state_hacspec(buf: PublicByteSeq, offset: u32) -> (PublicByteSeq, u32) {
+    (buf, 1u32)
+}
+
+#[cfg(not(feature = "hacspec"))]
+pub(crate) fn load_state_hacspec(buf: PublicByteSeq, offset: u32) -> (PublicByteSeq, u32) {
+    let temp = &mut coerce_hacspec_to_rust_public_byte_seq(buf.clone())[..];
+    let result = load_state_creusot(temp.as_mut_ptr(), buf.len() as u32, offset);
+    (coerce_rust_to_hacspec_public_byte_seq(&temp), result)
+}
+#+end_src
+Extern write state
+#+begin_src rust
+#[cfg(not(feature = "hacspec"))]
+extern "C" {
+    pub(crate) fn write_state(start: *mut u8, length: u32, offset: u32) -> u32;
+}
+
+#[cfg(not(feature = "hacspec"))]
+#[trusted]
+pub(crate) fn write_state_creusot(start: *mut u8, length: u32, offset: u32) -> u32 {
+    unsafe { write_state(start, length, offset) }
+}
+
+#[cfg(feature = "hacspec")]
+pub(crate) fn write_state_hacspec(buf: PublicByteSeq, offset: u32) -> (PublicByteSeq, u32) {
+    (buf, 1u32)
+}
+
+#[cfg(not(feature = "hacspec"))]
+pub(crate) fn write_state_hacspec(buf: PublicByteSeq, offset: u32) -> (PublicByteSeq, u32) {
+    let temp = &mut coerce_hacspec_to_rust_public_byte_seq(buf.clone())[..];
+    let result = write_state_creusot(temp.as_mut_ptr(), buf.len() as u32, offset);
+    (coerce_rust_to_hacspec_public_byte_seq(&temp), result)
+}
+#+end_src
+Extern resize state
+#+begin_src rust
+  #[cfg(not(feature = "hacspec"))]
+  extern "C" {
+      // Resize state to the new value (truncate if new size is smaller). Return 0 if
+      // this was unsuccesful (new state too big), or 1 if successful.
+      pub(crate) fn resize_state(new_size: u32) -> u32; // returns 0 or 1.
+                                                        // get current state size in bytes.
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  #[trusted]
+  pub(crate) fn resize_state_creusot(new_size: u32) -> u32 {
+      unsafe { resize_state(new_size) }
+  }
+
+  #[cfg(feature = "hacspec")]
+  pub(crate) fn resize_state_hacspec(new_size: u32) -> u32 {
+      1u32
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  pub(crate) fn resize_state_hacspec(new_size: u32) -> u32 {
+      resize_state_creusot(new_size)
+  }
+#+end_src
+State size extern
+#+begin_src rust
+#[cfg(not(feature = "hacspec"))]
+extern "C" {
+    pub(crate) fn state_size() -> u32;
+}
+
+#[cfg(not(feature = "hacspec"))]
+#[trusted]
+pub(crate) fn state_size_creusot() -> u32 {
+    unsafe { state_size() }
+}
+
+#[cfg(feature = "hacspec")]
+pub(crate) fn state_size_hacspec() -> u32 {
+    1u32
+}
+
+#[cfg(not(feature = "hacspec"))]
+pub(crate) fn state_size_hacspec() -> u32 {
+    state_size_creusot()
+}
+#+end_src
+Extern get init origin
+#+begin_src rust
+  #[cfg(not(feature = "hacspec"))]
+  extern "C" {
+    // Getter for the init context.
+    /// Address of the sender, 32 bytes
+    pub(crate) fn get_init_origin(start: *mut u8);
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  #[trusted]
+  pub(crate) fn get_init_origin_creusot(start: *mut u8) {
+      unsafe { get_init_origin(start) }
+  }
+
+  #[cfg(feature = "hacspec")]
+  pub(crate) fn get_init_origin_hacspec(start: PublicByteSeq) -> PublicByteSeq {
+      start
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  pub(crate) fn get_init_origin_hacspec(start: PublicByteSeq) -> PublicByteSeq {
+      let temp = &mut coerce_hacspec_to_rust_public_byte_seq(start.clone())[..];
+      get_init_origin_creusot(temp.as_mut_ptr());
+      coerce_rust_to_hacspec_public_byte_seq(&temp)
+  }
+
+#+end_src
+Extern get receive invoker
+#+begin_src rust
+  #[cfg(not(feature = "hacspec"))]
+  extern "C" {
+    /// Invoker of the top-level transaction, AccountAddress.
+    pub(crate) fn get_receive_invoker(start: *mut u8);
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  #[trusted]
+  pub(crate) fn get_receive_invoker_creusot(start: *mut u8) {
+      unsafe { get_receive_invoker(start) }
+  }
+
+  #[cfg(feature = "hacspec")]
+  pub(crate) fn get_receive_invoker_hacspec(start: PublicByteSeq) -> PublicByteSeq {
+      start
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  pub(crate) fn get_receive_invoker_hacspec(start: PublicByteSeq) -> PublicByteSeq {
+      let temp = &mut coerce_hacspec_to_rust_public_byte_seq(start.clone())[..];
+      get_receive_invoker_creusot(temp.as_mut_ptr());
+      coerce_rust_to_hacspec_public_byte_seq(&temp)
+  }
+
+#+end_src
+Extern get receive self address
+#+begin_src rust
+  #[cfg(not(feature = "hacspec"))]
+  extern "C" {
+    /// Address of the contract itself, ContractAddress.
+    pub(crate) fn get_receive_self_address(start: *mut u8);
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  #[trusted]
+  pub(crate) fn get_receive_self_address_creusot(start: *mut u8) {
+      unsafe { get_receive_self_address(start) }
+  }
+
+  #[cfg(feature = "hacspec")]
+  pub(crate) fn get_receive_self_address_hacspec(start: PublicByteSeq) -> PublicByteSeq {
+      start
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  pub(crate) fn get_receive_self_address_hacspec(start: PublicByteSeq) -> PublicByteSeq {
+      let temp = &mut coerce_hacspec_to_rust_public_byte_seq(start.clone())[..];
+      get_receive_self_address_creusot(temp.as_mut_ptr());
+      coerce_rust_to_hacspec_public_byte_seq(&temp)
+  }
+
+#+end_src
+Extern get receive self balance
+#+begin_src rust
+  #[cfg(not(feature = "hacspec"))]
+  extern "C" {
+    /// Self-balance of the contract, returns the amount
+    pub(crate) fn get_receive_self_balance() -> u64;
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  #[trusted]
+  pub(crate) fn get_receive_self_balance_creusot() -> u64 {
+      unsafe { get_receive_self_balance() }
+  }
+
+  #[cfg(feature = "hacspec")]
+  pub(crate) fn get_receive_self_balance_hacspec() -> u64 {
+      1u64
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  pub(crate) fn get_receive_self_balance_hacspec() -> u64 {
+      get_receive_self_balance_creusot()
+  }
+
+#+end_src
+Extern get receive sender
+#+begin_src rust
+  #[cfg(not(feature = "hacspec"))]
+  extern "C" {
+    /// Immediate sender of the message (either contract or account).
+    pub(crate) fn get_receive_sender(start: *mut u8);
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  #[trusted]
+  pub(crate) fn get_receive_sender_creusot(start: *mut u8) {
+      unsafe { get_receive_sender(start) }
+  }
+
+  #[cfg(feature = "hacspec")]
+  pub(crate) fn get_receive_sender_hacspec(start: PublicByteSeq) -> PublicByteSeq {
+      start
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  pub(crate) fn get_receive_sender_hacspec(start: PublicByteSeq) -> PublicByteSeq {
+      let temp = &mut coerce_hacspec_to_rust_public_byte_seq(start.clone())[..];
+      get_receive_sender_creusot(temp.as_mut_ptr());
+      coerce_rust_to_hacspec_public_byte_seq(&temp)
+  }
+
+#+end_src
+Extern get receive owner (unused)
+#+begin_src rust :tangle no
+#[cfg(not(feature = "hacspec"))]
+extern "C" {
+    /// Owner of the contract, AccountAddress.
+    pub(crate) fn get_receive_owner(start: *mut u8);
+}
+
+#[cfg(not(feature = "hacspec"))]
+#[trusted]
+pub(crate) fn get_receive_owner_creusot(start: *mut u8) {
+    unsafe { get_receive_owner(start) }
+}
+
+#[cfg(feature = "hacspec")]
+pub(crate) fn get_receive_owner_hacspec(start: PublicByteSeq) -> PublicByteSeq {
+    start
+}
+
+#[cfg(not(feature = "hacspec"))]
+pub(crate) fn get_receive_owner_hacspec(start: PublicByteSeq) -> PublicByteSeq {
+    let temp = &mut coerce_hacspec_to_rust_public_byte_seq(start.clone())[..];
+    get_receive_owner_creusot(temp.as_mut_ptr());
+    coerce_rust_to_hacspec_public_byte_seq(&temp)
+}
+#+end_src
+Get slot time extern
+#+begin_src rust
+  #[cfg(not(feature = "hacspec"))]
+  extern "C" {
+    // Getters for the chain meta data
+    /// Slot time (in milliseconds) from chain meta data
+    pub(crate) fn get_slot_time() -> u64;
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  #[trusted]
+  pub(crate) fn get_slot_time_creusot() -> u64 {
+      unsafe { get_slot_time() }
+  }
+
+  #[cfg(feature = "hacspec")]
+  pub(crate) fn get_slot_time_hacspec() -> u64 {
+      1u64
+  }
+
+  #[cfg(not(feature = "hacspec"))]
+  pub(crate) fn get_slot_time_hacspec() -> u64 {
+      get_slot_time_creusot()
+  }
+#+end_src
+Report Error (TODO)
+
+*** COMMENT Old
 Extern accept
 #+begin_src rust
   #[cfg(not(feature = "hacspec"))]
@@ -1175,410 +1705,6 @@ pub(crate) fn combine_or_hacspec(l: u32, r: u32) -> u32 {
 }
 
 #+end_src
-Extern parameter size
-#+begin_src rust
-  #[cfg(not(feature = "hacspec"))]
-  extern "C" {
-      // Get the size of the parameter to the method (either init or receive).
-      pub(crate) fn get_parameter_size() -> u32;
-  }
-
-  #[cfg(not(feature = "hacspec"))]
-  #[trusted]
-  pub(crate) fn get_parameter_size_creusot() -> u32 {
-      unsafe { get_parameter_size() }
-  }
-
-  #[cfg(feature = "hacspec")]
-  pub(crate) fn get_parameter_size_hacspec() -> u32 {
-      1u32
-  }
-
-  #[cfg(not(feature = "hacspec"))]
-  pub(crate) fn get_parameter_size_hacspec() -> u32 {
-      get_parameter_size_creusot()
-  }
-
-#+end_src
-Extern for parameter section
-#+begin_src rust
-  #[cfg(not(feature = "hacspec"))]
-  extern "C" {
-      // Write a section of the parameter to the given location. Return the number
-      // of bytes written. The location is assumed to contain enough memory to
-      // write the requested length into.
-      pub(crate) fn get_parameter_section(param_bytes: *mut u8, length: u32, offset: u32) -> u32;
-  }
-
-  #[cfg(not(feature = "hacspec"))]
-  #[trusted]
-  pub(crate) fn get_parameter_section_creusot(start: *mut u8, length: u32, offset: u32) -> u32 {
-      unsafe { get_parameter_section(start, length, offset) }
-  }
-
-  #[cfg(feature = "hacspec")]
-  pub(crate) fn get_parameter_section_hacspec(buf: PublicByteSeq, offset: u32) -> (PublicByteSeq, u32) {
-      (buf, 1u32)
-  }
-
-  #[cfg(not(feature = "hacspec"))]
-  pub(crate) fn get_parameter_section_hacspec(buf: PublicByteSeq, offset: u32) -> (PublicByteSeq, u32) {
-      let temp = &mut coerce_hacspec_to_rust_public_byte_seq(buf.clone())[..];
-      let result = get_parameter_section_creusot(temp.as_mut_ptr(), buf.len() as u32, offset);
-      (
-          coerce_rust_to_hacspec_public_byte_seq(&temp),
-          result,
-      )
-  }
-
-#+end_src
-Get policy section extern
-#+begin_src rust
-  #[cfg(not(feature = "hacspec"))]
-  extern "C" {
-    // Write a section of the policy to the given location. Return the number
-    // of bytes written. The location is assumed to contain enough memory to
-    // write the requested length into.
-    pub(crate) fn get_policy_section(policy_bytes: *mut u8, length: u32, offset: u32) -> u32;
-  }
-
-  #[cfg(not(feature = "hacspec"))]
-  #[trusted]
-  pub(crate) fn get_policy_section_creusot(policy_bytes: *mut u8, length: u32, offset: u32) -> u32 {
-      unsafe { get_policy_section(policy_bytes, length, offset) }
-  }
-
-  #[cfg(feature = "hacspec")]
-  pub(crate) fn get_policy_section_hacspec(policy_bytes: PublicByteSeq, offset: u32) -> (PublicByteSeq, u32) {
-      (policy_bytes, 1u32)
-  }
-
-  #[cfg(not(feature = "hacspec"))]
-  pub(crate) fn get_policy_section_hacspec(policy_bytes: PublicByteSeq, offset: u32) -> (PublicByteSeq, u32) {
-      let temp = &mut coerce_hacspec_to_rust_public_byte_seq(policy_bytes.clone())[..];
-      let result = get_policy_section_creusot(temp.as_mut_ptr(), policy_bytes.len() as u32, offset);
-      (
-          coerce_rust_to_hacspec_public_byte_seq(&temp),
-          result,
-      )
-  }
-
-#+end_src
-Log event extern
-#+begin_src rust
-  #[cfg(not(feature = "hacspec"))]
-  extern "C" {
-      // Add a log item. Return values are
-      // - -1 if logging failed due to the message being too long
-      // - 0 if the log is already full
-      // - 1 if data was successfully logged.
-      pub(crate) fn log_event(start: *const u8, length: u32) -> i32;
-  }
-
-  #[cfg(not(feature = "hacspec"))]
-  #[trusted]
-  pub(crate) fn log_event_creusot(start: *const u8, length: u32) -> i32 {
-      unsafe { log_event(start, length) }
-  }
-
-  #[cfg(feature = "hacspec")]
-  pub(crate) fn log_event_hacspec(start: PublicByteSeq) -> (PublicByteSeq, i32) {
-      (start, 1i32)
-  }
-
-  #[cfg(not(feature = "hacspec"))]
-  pub(crate) fn log_event_hacspec(start: PublicByteSeq) -> (PublicByteSeq, i32) {
-      let temp = &mut coerce_hacspec_to_rust_public_byte_seq(start.clone())[..];
-      let result = log_event_creusot(temp.as_ptr(), start.len() as u32);
-      (coerce_rust_to_hacspec_public_byte_seq(&temp), result)
-  }
-
-#+end_src
-Load state extern
-#+begin_src rust
-#[cfg(not(feature = "hacspec"))]
-extern "C" {
-    pub(crate) fn load_state(start: *mut u8, length: u32, offset: u32) -> u32;
-}
-
-#[cfg(not(feature = "hacspec"))]
-#[trusted]
-pub(crate) fn load_state_creusot(start: *mut u8, length: u32, offset: u32) -> u32 {
-    unsafe { load_state(start, length, offset) }
-}
-
-#[cfg(feature = "hacspec")]
-pub(crate) fn load_state_hacspec(buf: PublicByteSeq, offset: u32) -> (PublicByteSeq, u32) {
-    (buf, 1u32)
-}
-
-#[cfg(not(feature = "hacspec"))]
-pub(crate) fn load_state_hacspec(buf: PublicByteSeq, offset: u32) -> (PublicByteSeq, u32) {
-    let temp = &mut coerce_hacspec_to_rust_public_byte_seq(buf.clone())[..];
-    let result = load_state_creusot(temp.as_mut_ptr(), buf.len() as u32, offset);
-    (coerce_rust_to_hacspec_public_byte_seq(&temp), result)
-}
-#+end_src
-Write state extern
-#+begin_src rust
-#[cfg(not(feature = "hacspec"))]
-extern "C" {
-    pub(crate) fn write_state(start: *mut u8, length: u32, offset: u32) -> u32;
-}
-
-#[cfg(not(feature = "hacspec"))]
-#[trusted]
-pub(crate) fn write_state_creusot(start: *mut u8, length: u32, offset: u32) -> u32 {
-    unsafe { write_state(start, length, offset) }
-}
-
-#[cfg(feature = "hacspec")]
-pub(crate) fn write_state_hacspec(buf: PublicByteSeq, offset: u32) -> (PublicByteSeq, u32) {
-    (buf, 1u32)
-}
-
-#[cfg(not(feature = "hacspec"))]
-pub(crate) fn write_state_hacspec(buf: PublicByteSeq, offset: u32) -> (PublicByteSeq, u32) {
-    let temp = &mut coerce_hacspec_to_rust_public_byte_seq(buf.clone())[..];
-    let result = write_state_creusot(temp.as_mut_ptr(), buf.len() as u32, offset);
-    (coerce_rust_to_hacspec_public_byte_seq(&temp), result)
-}
-#+end_src
-Resize state extern
-#+begin_src rust
-  #[cfg(not(feature = "hacspec"))]
-  extern "C" {
-      // Resize state to the new value (truncate if new size is smaller). Return 0 if
-      // this was unsuccesful (new state too big), or 1 if successful.
-      pub(crate) fn resize_state(new_size: u32) -> u32; // returns 0 or 1.
-                                                        // get current state size in bytes.
-  }
-
-  #[cfg(not(feature = "hacspec"))]
-  #[trusted]
-  pub(crate) fn resize_state_creusot(new_size: u32) -> u32 {
-      unsafe { resize_state(new_size) }
-  }
-
-  #[cfg(feature = "hacspec")]
-  pub(crate) fn resize_state_hacspec(new_size: u32) -> u32 {
-      1u32
-  }
-
-  #[cfg(not(feature = "hacspec"))]
-  pub(crate) fn resize_state_hacspec(new_size: u32) -> u32 {
-      resize_state_creusot(new_size)
-  }
-#+end_src
-State size extern
-#+begin_src rust
-#[cfg(not(feature = "hacspec"))]
-extern "C" {
-    pub(crate) fn state_size() -> u32;
-}
-
-#[cfg(not(feature = "hacspec"))]
-#[trusted]
-pub(crate) fn state_size_creusot() -> u32 {
-    unsafe { state_size() }
-}
-
-#[cfg(feature = "hacspec")]
-pub(crate) fn state_size_hacspec() -> u32 {
-    1u32
-}
-
-#[cfg(not(feature = "hacspec"))]
-pub(crate) fn state_size_hacspec() -> u32 {
-    state_size_creusot()
-}
-#+end_src
-Get init origin extern
-#+begin_src rust
-  #[cfg(not(feature = "hacspec"))]
-  extern "C" {
-    // Getter for the init context.
-    /// Address of the sender, 32 bytes
-    pub(crate) fn get_init_origin(start: *mut u8);
-  }
-
-  #[cfg(not(feature = "hacspec"))]
-  #[trusted]
-  pub(crate) fn get_init_origin_creusot(start: *mut u8) {
-      unsafe { get_init_origin(start) }
-  }
-
-  #[cfg(feature = "hacspec")]
-  pub(crate) fn get_init_origin_hacspec(start: PublicByteSeq) -> PublicByteSeq {
-      start
-  }
-
-  #[cfg(not(feature = "hacspec"))]
-  pub(crate) fn get_init_origin_hacspec(start: PublicByteSeq) -> PublicByteSeq {
-      let temp = &mut coerce_hacspec_to_rust_public_byte_seq(start.clone())[..];
-      get_init_origin_creusot(temp.as_mut_ptr());
-      coerce_rust_to_hacspec_public_byte_seq(&temp)
-  }
-
-#+end_src
-Get receive invoker extern
-#+begin_src rust
-  #[cfg(not(feature = "hacspec"))]
-  extern "C" {
-    /// Invoker of the top-level transaction, AccountAddress.
-    pub(crate) fn get_receive_invoker(start: *mut u8);
-  }
-
-  #[cfg(not(feature = "hacspec"))]
-  #[trusted]
-  pub(crate) fn get_receive_invoker_creusot(start: *mut u8) {
-      unsafe { get_receive_invoker(start) }
-  }
-
-  #[cfg(feature = "hacspec")]
-  pub(crate) fn get_receive_invoker_hacspec(start: PublicByteSeq) -> PublicByteSeq {
-      start
-  }
-
-  #[cfg(not(feature = "hacspec"))]
-  pub(crate) fn get_receive_invoker_hacspec(start: PublicByteSeq) -> PublicByteSeq {
-      let temp = &mut coerce_hacspec_to_rust_public_byte_seq(start.clone())[..];
-      get_receive_invoker_creusot(temp.as_mut_ptr());
-      coerce_rust_to_hacspec_public_byte_seq(&temp)
-  }
-
-#+end_src
-Get receive self address extern
-#+begin_src rust
-  #[cfg(not(feature = "hacspec"))]
-  extern "C" {
-    /// Address of the contract itself, ContractAddress.
-    pub(crate) fn get_receive_self_address(start: *mut u8);
-  }
-
-  #[cfg(not(feature = "hacspec"))]
-  #[trusted]
-  pub(crate) fn get_receive_self_address_creusot(start: *mut u8) {
-      unsafe { get_receive_self_address(start) }
-  }
-
-  #[cfg(feature = "hacspec")]
-  pub(crate) fn get_receive_self_address_hacspec(start: PublicByteSeq) -> PublicByteSeq {
-      start
-  }
-
-  #[cfg(not(feature = "hacspec"))]
-  pub(crate) fn get_receive_self_address_hacspec(start: PublicByteSeq) -> PublicByteSeq {
-      let temp = &mut coerce_hacspec_to_rust_public_byte_seq(start.clone())[..];
-      get_receive_self_address_creusot(temp.as_mut_ptr());
-      coerce_rust_to_hacspec_public_byte_seq(&temp)
-  }
-
-#+end_src
-Get receive self balance extern
-#+begin_src rust
-  #[cfg(not(feature = "hacspec"))]
-  extern "C" {
-    /// Self-balance of the contract, returns the amount
-    pub(crate) fn get_receive_self_balance() -> u64;
-  }
-
-  #[cfg(not(feature = "hacspec"))]
-  #[trusted]
-  pub(crate) fn get_receive_self_balance_creusot() -> u64 {
-      unsafe { get_receive_self_balance() }
-  }
-
-  #[cfg(feature = "hacspec")]
-  pub(crate) fn get_receive_self_balance_hacspec() -> u64 {
-      1u64
-  }
-
-  #[cfg(not(feature = "hacspec"))]
-  pub(crate) fn get_receive_self_balance_hacspec() -> u64 {
-      get_receive_self_balance_creusot()
-  }
-
-#+end_src
-Get receive sender extern
-#+begin_src rust
-  #[cfg(not(feature = "hacspec"))]
-  extern "C" {
-    /// Immediate sender of the message (either contract or account).
-    pub(crate) fn get_receive_sender(start: *mut u8);
-  }
-
-  #[cfg(not(feature = "hacspec"))]
-  #[trusted]
-  pub(crate) fn get_receive_sender_creusot(start: *mut u8) {
-      unsafe { get_receive_sender(start) }
-  }
-
-  #[cfg(feature = "hacspec")]
-  pub(crate) fn get_receive_sender_hacspec(start: PublicByteSeq) -> PublicByteSeq {
-      start
-  }
-
-  #[cfg(not(feature = "hacspec"))]
-  pub(crate) fn get_receive_sender_hacspec(start: PublicByteSeq) -> PublicByteSeq {
-      let temp = &mut coerce_hacspec_to_rust_public_byte_seq(start.clone())[..];
-      get_receive_sender_creusot(temp.as_mut_ptr());
-      coerce_rust_to_hacspec_public_byte_seq(&temp)
-  }
-
-#+end_src
-Get receive owner extern (unused)
-#+begin_src rust :tangle no
-#[cfg(not(feature = "hacspec"))]
-extern "C" {
-    /// Owner of the contract, AccountAddress.
-    pub(crate) fn get_receive_owner(start: *mut u8);
-}
-
-#[cfg(not(feature = "hacspec"))]
-#[trusted]
-pub(crate) fn get_receive_owner_creusot(start: *mut u8) {
-    unsafe { get_receive_owner(start) }
-}
-
-#[cfg(feature = "hacspec")]
-pub(crate) fn get_receive_owner_hacspec(start: PublicByteSeq) -> PublicByteSeq {
-    start
-}
-
-#[cfg(not(feature = "hacspec"))]
-pub(crate) fn get_receive_owner_hacspec(start: PublicByteSeq) -> PublicByteSeq {
-    let temp = &mut coerce_hacspec_to_rust_public_byte_seq(start.clone())[..];
-    get_receive_owner_creusot(temp.as_mut_ptr());
-    coerce_rust_to_hacspec_public_byte_seq(&temp)
-}
-#+end_src
-Get slot time extern
-#+begin_src rust
-  #[cfg(not(feature = "hacspec"))]
-  extern "C" {
-    // Getters for the chain meta data
-    /// Slot time (in milliseconds) from chain meta data
-    pub(crate) fn get_slot_time() -> u64;
-  }
-
-  #[cfg(not(feature = "hacspec"))]
-  #[trusted]
-  pub(crate) fn get_slot_time_creusot() -> u64 {
-      unsafe { get_slot_time() }
-  }
-
-  #[cfg(feature = "hacspec")]
-  pub(crate) fn get_slot_time_hacspec() -> u64 {
-      1u64
-  }
-
-  #[cfg(not(feature = "hacspec"))]
-  pub(crate) fn get_slot_time_hacspec() -> u64 {
-      get_slot_time_creusot()
-  }
-#+end_src
-Report Error (TODO)
 
 ** Coq code
 
@@ -1742,7 +1868,7 @@ use crate::{
     collections::{BTreeMap, BTreeSet},
     convert::{self}, // , TryFrom, TryInto
     hash::Hash,
-    num::NonZeroI32,
+    num::{NonZeroI32, NonZeroU32},
     trap,
     vec::Vec,
     String,
@@ -1827,25 +1953,25 @@ We then implement the traits
 #+end_src
 We define a log error type and function converting from it to the reject type
 #+begin_src rust
-  #[ensures(!(result === 0i32))] // !=
-  pub fn reject_impl_from_log_error(le: LogError) -> RejectHacspec {
-      match le {
-          LogError::Full => i32::MIN + 3i32,
-          LogError::Malformed => i32::MIN + 4i32,
-      }
-  }
+#[ensures(!(result === 0i32))] // !=
+pub fn reject_impl_from_log_error(le: LogError) -> RejectHacspec {
+    match le {
+        LogError::Full => i32::MIN + 3i32,
+        LogError::Malformed => i32::MIN + 4i32,
+    }
+}
 
 #+end_src
 We then implement the traits
 #+begin_src rust
-  #[cfg(not(feature = "hacspec"))]
-  /// Full is mapped to i32::MIN+3, Malformed is mapped to i32::MIN+4.
-  impl From<LogError> for Reject {
-      #[inline(always)]
-      fn from(le: LogError) -> Self {
-          coerce_hacspec_to_rust_reject(reject_impl_from_log_error(le))
-      }
-  }
+#[cfg(not(feature = "hacspec"))]
+/// Full is mapped to i32::MIN+3, Malformed is mapped to i32::MIN+4.
+impl From<LogError> for Reject {
+    #[inline(always)]
+    fn from(le: LogError) -> Self {
+        coerce_hacspec_to_rust_reject(reject_impl_from_log_error(le))
+    }
+}
 
 #+end_src
 We define a type for new contract name errors and conversion from it to reject
@@ -1935,6 +2061,71 @@ impl From<NotPayableError> for Reject {
 }
 #+end_src
 
+*** Return value
+#+begin_src rust
+  pub type ReturnValueHacspec = u32;  
+#+end_src
+
+#+begin_src rust
+pub fn return_value_impl_write(
+    current_position: ReturnValueHacspec,
+    buf: PublicByteSeq,
+) -> Result<(ReturnValueHacspec, usize), ()> {
+    if current_position.checked_add(buf.len() as u32).is_none() {
+        Result::<(ReturnValueHacspec, usize), ()>::Err(())?;
+    }
+    let num_bytes = write_output_hacspec(buf, current_position);
+    Result::<(ReturnValueHacspec, usize), ()>::Ok((
+        current_position + (num_bytes as u32),
+        num_bytes as usize,
+    ))
+}
+#+end_src
+
+#+begin_src rust
+#[cfg(not(feature = "hacspec"))]
+pub fn coerce_rust_to_hacspec_return_value(
+    rust_return_value: &mut ReturnValue,
+) -> ReturnValueHacspec {
+    rust_return_value.current_position.clone()
+}
+
+#[cfg(not(feature = "hacspec"))]
+pub fn coerce_hacspec_to_rust_return_value(
+    rust_return_value: &mut ReturnValue,
+    hacspec_return_value: ReturnValueHacspec,
+) {
+    rust_return_value.current_position = hacspec_return_value;
+}
+#+end_src
+
+#+begin_src rust
+#[cfg(not(feature = "hacspec"))]
+impl Write for ReturnValue {
+    type Err = ();
+
+    fn write(&mut self, buf: &[u8]) -> Result<usize, Self::Err> {
+        let (cs, nr) = return_value_impl_write(
+            coerce_rust_to_hacspec_return_value(self),
+            coerce_rust_to_hacspec_public_byte_seq(buf),
+        )?;
+        coerce_hacspec_to_rust_return_value(self, cs);
+        Ok(nr)
+    }
+}
+
+// TODO : Hacspec implementation
+#[cfg(not(feature = "hacspec"))]
+impl ReturnValue {
+    #[inline(always)]
+    pub fn open() -> Self {
+        Self {
+            current_position: 0,
+        }
+    }
+}
+
+#+end_src
 *** Contract state
 We define contract state as its inner state namely the current position of the src_rust[:eval never]{u32} type.
 #+begin_src rust
@@ -2279,33 +2470,33 @@ impl HasContractState<()> for ContractState {
 
 #+end_src
 
-*** Parameter
+*** ExternParameter
 We define parameter
 #+begin_src rust
-  pub type ParameterHacspec = u32;
+pub type ExternParameterHacspec = u32;
 
-  pub fn read_impl_for_parameter_read(
-      current_position: ParameterHacspec,
-      buf: PublicByteSeq,
-  ) -> (ParameterHacspec, usize) {
-      let (_buf, num_read) = get_parameter_section_hacspec(buf, current_position);
-      (current_position + num_read, num_read as usize)
-  }
+pub fn read_impl_for_extern_parameter_read(
+    current_position: ExternParameterHacspec,
+    buf: PublicByteSeq,
+) -> (ExternParameterHacspec, usize) {
+    let (_buf, num_read) = get_parameter_section_hacspec(0u32, buf, current_position);
+    (current_position + (num_read as u32), num_read as usize)
+}
 
 #+end_src
 We then implement the traits
 #+begin_src rust
 #[cfg(not(feature = "hacspec"))]
-pub fn coerce_rust_to_hacspec_parameter(
-    rust_parameter: &mut hacspec_concordium_types::Parameter,
-) -> ParameterHacspec {
+pub fn coerce_rust_to_hacspec_extern_parameter(
+    rust_parameter: &mut ExternParameter,
+) -> ExternParameterHacspec {
     rust_parameter.current_position.clone()
 }
 
 #[cfg(not(feature = "hacspec"))]
-pub fn coerce_hacspec_to_rust_parameter(
-    rust_parameter: &mut hacspec_concordium_types::Parameter,
-    hacspec_parameter: ParameterHacspec,
+pub fn coerce_hacspec_to_rust_extern_parameter(
+    rust_parameter: &mut ExternParameter,
+    hacspec_parameter: ExternParameterHacspec,
 ) {
     rust_parameter.current_position = hacspec_parameter;
 }
@@ -2313,24 +2504,91 @@ pub fn coerce_hacspec_to_rust_parameter(
 
 #[cfg(not(feature = "hacspec"))]
 /// # Trait implementations for Parameter
-impl Read for hacspec_concordium_types::Parameter {
+impl Read for ExternParameter {
     fn read(&mut self, buf: &mut [u8]) -> ParseResult<usize> {
-        let (cs, nr) = read_impl_for_parameter_read(
-            coerce_rust_to_hacspec_parameter(self),
+        let (cs, nr) = read_impl_for_extern_parameter_read(
+            coerce_rust_to_hacspec_extern_parameter(self),
             coerce_rust_to_hacspec_public_byte_seq(buf),
         );
-        coerce_hacspec_to_rust_parameter(self, cs);
+        coerce_hacspec_to_rust_extern_parameter(self, cs);
         Ok(nr)
     }
 }
 
 #[cfg(not(feature = "hacspec"))]
-impl HasParameter for hacspec_concordium_types::Parameter {
+impl HasParameter for ExternParameter {
     #[inline(always)]
     fn size(&self) -> u32 {
-        get_parameter_size_hacspec()
+        get_parameter_size_hacspec(0) as u32
     }
 }
+#+end_src
+
+*** CallResponse
+#+begin_src rust
+// #[derive(Debug)]
+pub type CallResponseHacspec = (u32, u32);
+// pub struct CallResponse {
+//     /// The index of the call response.
+//     pub(crate) i:                NonZeroU32,
+//     pub(crate) current_position: u32,
+// }
+
+#[cfg(not(feature = "hacspec"))]
+pub fn coerce_rust_to_hacspec_call_response(
+    rust_call_response: &mut CallResponse,
+) -> CallResponseHacspec {
+    (rust_call_response.i.get(), rust_call_response.current_position.clone())
+}
+
+#[cfg(not(feature = "hacspec"))]
+pub fn coerce_hacspec_to_rust_call_response(
+    rust_call_response: &mut CallResponse,
+    hacspec_call_response: CallResponseHacspec,
+) {
+    let (i, current_position) = hacspec_call_response;
+    rust_call_response.i = unsafe { NonZeroU32::new_unchecked(i) }; // TODO: Move unsafe to its own function
+    rust_call_response.current_position = current_position;
+}
+
+
+/// Read a u32 in little-endian format. This is optimized to not
+/// initialize a dummy value before calling an external function.
+pub fn call_response_impl_read(
+    call_response: CallResponseHacspec,
+) -> (CallResponseHacspec, Result<usize, ()>) {
+    // let mut bytes: MaybeUninit<[u8; 8]> = MaybeUninit::uninit();
+    let (i, current_position) = call_response;
+    let buf = PublicByteSeq::new(8);
+    let (buf, num_read) = get_parameter_section_hacspec(i as u32, buf, current_position);
+    ((i, current_position + (num_read as u32)), // TODO: should i be updated? ,, if num_read >= 0i32 { should be added to current_position + num_read
+     if num_read >= 0i32 {
+         Result::<usize, ()>::Ok(num_read as usize)
+     } else {
+         Result::<usize, ()>::Err(())
+     }) // num_read as u64
+}
+
+// TODO : Hacspec implementation
+#[cfg(not(feature = "hacspec"))]
+/// # Trait implementations ReturnValue
+impl Read for CallResponse {
+    fn read(&mut self, buf: &mut [u8]) -> ParseResult<usize> {
+        let (cs, nr) =
+            call_response_impl_read(coerce_rust_to_hacspec_call_response(self));
+        coerce_hacspec_to_rust_call_response(self, cs);
+        match nr {
+            Result::<usize, ()>::Ok(a) => ParseResult::<usize>::Ok(a),
+            Result::<usize, ()>::Err(_) => ParseResult::<usize>::Err(ParseError::default()),
+        }
+    }
+}
+
+#[cfg(not(feature = "hacspec"))]
+impl HasCallResponse for CallResponse {
+    fn size(&self) -> u32 { get_parameter_size_hacspec(self.i.get()) as u32 }
+}
+
 #+end_src
 *** ChainMetaExtern
 We define and implement traits for ~ChainMetaExtern~.
@@ -2540,7 +2798,7 @@ impl ExactSizeIterator for PoliciesIterator {
 #[cfg(not(feature = "hacspec"))]
 impl<T: sealed::ContextType> HasCommonData for ExternContext<T> {
     type MetadataType = ChainMetaExtern;
-    type ParamType = hacspec_concordium_types::Parameter;
+    type ParamType = ExternParameter;
     type PolicyIteratorType = PoliciesIterator;
     type PolicyType = Policy<AttributesCursor>;
 
@@ -2560,7 +2818,7 @@ impl<T: sealed::ContextType> HasCommonData for ExternContext<T> {
 
     #[inline(always)]
     fn parameter_cursor(&self) -> Self::ParamType {
-        hacspec_concordium_types::Parameter {
+        ExternParameter {
             current_position: 0,
         }
     }
@@ -2669,6 +2927,314 @@ impl HasReceiveContext for ExternContext<ReceiveContextExtern> {
 }
 #+end_src
 
+*** Invoke
+#+begin_src rust
+// TODO : Hacspec implementation
+
+const INVOKE_TRANSFER_TAG: u32 = 0u32;
+const INVOKE_CALL_TAG: u32 = 1u32;
+
+pub enum InvokeErrorHacspec {
+    LogicReject(i32, u32, u32),
+    AmountTooLarge,
+    MissingAccount,
+    MissingContract,
+    MissingEntrypoint,
+    MessageFailed,
+    Trap,
+    Unknown,
+    IsTrap,
+}
+
+// TODO: pearlite guarantee #[ensures(exists<b : bool> exists<v : u32> result === Ok((b, v)) && !(v === 0))]
+fn parse_response_code_hacspec(code: u64) -> Result<(bool, u32), InvokeErrorHacspec> {
+    let mut result = Result::<(bool, u32), InvokeErrorHacspec>::Err(
+        InvokeErrorHacspec::IsTrap,
+    );
+    
+    if code & !0xffff_ff00_0000_0000u64 == 0u64 {
+        // this means success
+        let rv = (code >> 40) as u32;
+        let tag = 0x80_0000u32;
+        if tag & rv != 0u32 {
+            result = Result::<(bool, u32), InvokeErrorHacspec>::Ok((true, rv & !tag))
+        } else {
+            result = Result::<(bool, u32), InvokeErrorHacspec>::Ok((false, rv))
+        }
+    } else {
+        let match_val = (0x0000_00ff_0000_0000u64 & code) >> 32;
+        if match_val == 0x00u64
+        // response with logic error and return value.
+        {
+            let reason = (0x0000_0000_ffff_ffffu64 & code) as u32 as i32;
+            if reason == 0i32 {
+                result = Result::<(bool, u32), InvokeErrorHacspec>::Err(
+                    InvokeErrorHacspec::IsTrap,
+                )
+
+                // trap() // crate:: // todo?
+            } else {
+                let rv = (code >> 40) as u32;
+                if rv > 0u32 {
+                    result = Result::<(bool, u32), InvokeErrorHacspec>::Err(InvokeErrorHacspec::LogicReject(
+                        reason, rv, 0u32,
+                    ))
+                } else {
+                    result = Result::<(bool, u32), InvokeErrorHacspec>::Err(
+                        InvokeErrorHacspec::IsTrap,
+                    )
+                    // trap() // crate:: // host precondition violation.
+                }
+            }
+        } else {
+            if match_val == 0x01u64 {
+                result = Result::<(bool, u32), InvokeErrorHacspec>::Err(InvokeErrorHacspec::AmountTooLarge)
+            } else {
+                if match_val == 0x02u64 {
+                    result = Result::<(bool, u32), InvokeErrorHacspec>::Err(
+                        InvokeErrorHacspec::MissingAccount,
+                    )
+                } else {
+                    if match_val == 0x03u64 {
+                        result = Result::<(bool, u32), InvokeErrorHacspec>::Err(
+                            InvokeErrorHacspec::MissingContract,
+                        )
+                    } else {
+                        if match_val == 0x04u64 {
+                            result = Result::<(bool, u32), InvokeErrorHacspec>::Err(
+                                InvokeErrorHacspec::MissingEntrypoint,
+                            )
+                        } else {
+                            if match_val == 0x05u64 {
+                                result = Result::<(bool, u32), InvokeErrorHacspec>::Err(
+                                    InvokeErrorHacspec::MessageFailed,
+                                )
+                            } else {
+                                if match_val == 0x06u64 {
+                                    result = Result::<(bool, u32), InvokeErrorHacspec>::Err(
+                                        InvokeErrorHacspec::Trap,
+                                    )
+                                } else {
+                                    result = Result::<(bool, u32), InvokeErrorHacspec>::Err(
+                                        InvokeErrorHacspec::Unknown,
+                                    )
+                                } // FIXME: This should be trap as well.
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    };
+
+    result    
+}
+
+#[cfg(not(feature = "hacspec"))]
+fn parse_response_code(code: u64) -> InvokeResult<(bool, Option<NonZeroU32>)> {
+    match parse_response_code_hacspec(code) {
+        Ok((a, b)) => Ok((a, NonZeroU32::new(b))),
+        Err(err) => Err(match err {
+            InvokeErrorHacspec::LogicReject(reason, rv, cp) => InvokeError::LogicReject {
+                reason,
+                return_value: CallResponse {
+                    i: unsafe { NonZeroU32::new_unchecked(rv) },
+                    current_position: cp,
+                },
+            }, // TODO: Move unsafe to its own function
+            InvokeErrorHacspec::AmountTooLarge => InvokeError::AmountTooLarge,
+            InvokeErrorHacspec::MissingAccount => InvokeError::MissingAccount,
+            InvokeErrorHacspec::MissingContract => InvokeError::MissingContract,
+            InvokeErrorHacspec::MissingEntrypoint => InvokeError::MissingEntrypoint,
+            InvokeErrorHacspec::MessageFailed => InvokeError::MessageFailed,
+            InvokeErrorHacspec::Trap => InvokeError::Trap,
+            InvokeErrorHacspec::Unknown => InvokeError::Unknown,
+            InvokeErrorHacspec::IsTrap => trap(),
+        }),
+    }
+}
+
+array!(UserAddress, 32, u8);
+
+#[cfg(not(feature = "hacspec"))]
+pub fn coerce_hacspec_to_rust_account_address(ua: UserAddress) -> AccountAddress {
+    AccountAddress([
+        ua[0], ua[1], ua[2], ua[3], ua[4], ua[5], ua[6], ua[7], ua[8], ua[9], ua[10], ua[11],
+        ua[12], ua[13], ua[14], ua[15], ua[16], ua[17], ua[18], ua[19], ua[20], ua[21], ua[22],
+        ua[23], ua[24], ua[25], ua[26], ua[27], ua[28], ua[29], ua[30], ua[31],
+    ])
+}
+
+#[cfg(not(feature = "hacspec"))]
+pub fn coerce_rust_to_hacspec_account_address(aa: &AccountAddress) -> UserAddress {
+    UserAddress::from_native_slice(&aa.0)
+}
+
+pub fn host_impl_has_host_state_invoke_transfer(receiver: UserAddress, amount: u64) -> u64 {
+    let data = PublicByteSeq::new(0)
+        .concat(&receiver)
+        .concat(&u64_to_be_bytes(amount)); // Should end at length 'ACCOUNT_ADDRESS_SIZE + 8'
+    let response = invoke_hacspec(INVOKE_TRANSFER_TAG, data); // length data == (ACCOUNT_ADDRESS_SIZE + 8) as u32
+    response
+}
+
+// CURRENT
+#[cfg(not(feature = "hacspec"))]
+impl<State: Deserial + Serial> HasHost<State> for Host<State> {
+    type CallResponseType = CallResponse;
+
+    fn invoke_transfer(&mut self, receiver: &AccountAddress, amount: Amount) -> InvokeResult<()> {
+        let response = host_impl_has_host_state_invoke_transfer(
+            coerce_rust_to_hacspec_account_address(receiver),
+            amount.micro_ccd,
+        );
+        parse_response_code(response).map(|_| ())
+    }
+
+    fn invoke_contract(
+        &mut self,
+        to: &ContractAddress,
+        parameter: Parameter,
+        method: EntrypointName,
+        amount: Amount,
+    ) -> InvokeResult<(bool, Option<Self::CallResponseType>)> {
+        // calling V0 contracts returns None
+        let mut data =
+            Vec::with_capacity(16 + parameter.0.len() + 2 + method.size() as usize + 2 + 8);
+        let mut cursor = Cursor::new(&mut data);
+        to.serial(&mut cursor).unwrap_abort();
+        parameter.serial(&mut cursor).unwrap_abort();
+        method.serial(&mut cursor).unwrap_abort();
+        amount.serial(&mut cursor).unwrap_abort();
+        // serialize state since it might have been modified
+        // FIXME: Only do this if needed.
+        self.state
+            .serial(&mut ContractState::open(()))
+            .unwrap_abort();
+        let len = data.len();
+        let response = unsafe { invoke(INVOKE_CALL_TAG, data.as_ptr(), len as u32) };
+        let (state_modified, res) = parse_response_code(response)?;
+        if state_modified {
+            // The state of the contract changed as a result of the call.
+            // So we refresh it.
+            if let Ok(new_state) = (&mut ContractState::open(())).get() {
+                self.state = new_state;
+            } else {
+                return Err(InvokeError::Unknown);
+            }
+        }
+        if let Some(i) = res {
+            Ok((
+                state_modified,
+                Some(CallResponse {
+                    i,
+                    current_position: 0,
+                }),
+            ))
+        } else {
+            Ok((state_modified, None))
+        }
+    }
+
+    fn state(&mut self) -> &mut State {
+        &mut self.state
+    }
+
+    #[inline(always)]
+    fn self_balance(&self) -> Amount {
+        Amount::from_micro_ccd(unsafe { get_receive_self_balance() })
+    }
+}
+
+// #[cfg(not(feature = "hacspec"))]
+// /// # Trait implementations for the init context
+// impl HasInitContext for ExternContext<crate::types::InitContextExtern> {
+//     type InitData = ();
+
+//     /// Create a new init context by using an external call.
+//     fn open(_: Self::InitData) -> Self { ExternContext::default() }
+
+//     #[inline(always)]
+//     fn init_origin(&self) -> AccountAddress {
+//         let mut bytes: MaybeUninit<[u8; ACCOUNT_ADDRESS_SIZE]> = MaybeUninit::uninit();
+//         let ptr = bytes.as_mut_ptr();
+//         let address = unsafe {
+//             get_init_origin(ptr as *mut u8);
+//             bytes.assume_init()
+//         };
+//         AccountAddress(address)
+//     }
+// }
+
+// #[cfg(not(feature = "hacspec"))]
+// /// # Trait implementations for the receive context
+// impl HasReceiveContext for ExternContext<crate::types::ReceiveContextExtern> {
+//     type ReceiveData = ();
+
+//     /// Create a new receive context
+//     fn open(_: Self::ReceiveData) -> Self { ExternContext::default() }
+
+//     #[inline(always)]
+//     fn invoker(&self) -> AccountAddress {
+//         let mut bytes: MaybeUninit<[u8; ACCOUNT_ADDRESS_SIZE]> = MaybeUninit::uninit();
+//         let ptr = bytes.as_mut_ptr();
+//         let address = unsafe {
+//             get_receive_invoker(ptr as *mut u8);
+//             bytes.assume_init()
+//         };
+//         AccountAddress(address)
+//     }
+
+//     #[inline(always)]
+//     fn self_address(&self) -> ContractAddress {
+//         let mut bytes: MaybeUninit<[u8; 16]> = MaybeUninit::uninit();
+//         let ptr = bytes.as_mut_ptr();
+//         let address = unsafe {
+//             get_receive_self_address(ptr as *mut u8);
+//             bytes.assume_init()
+//         };
+//         match from_bytes(&address) {
+//             Ok(v) => v,
+//             Err(_) => trap(), // crate::
+//         }
+//     }
+
+//     #[inline(always)]
+//     fn sender(&self) -> Address {
+//         let mut bytes: MaybeUninit<[u8; 33]> = MaybeUninit::uninit();
+//         let ptr = bytes.as_mut_ptr() as *mut u8;
+//         unsafe {
+//             get_receive_sender(ptr);
+//             let tag = *ptr;
+//             match tag {
+//                 0u8 => {
+//                     match from_bytes(core::slice::from_raw_parts(ptr.add(1), ACCOUNT_ADDRESS_SIZE))
+//                     {
+//                         Ok(v) => Address::Account(v),
+//                         Err(_) => trap(), // crate::
+//                     }
+//                 }
+//                 1u8 => match from_bytes(core::slice::from_raw_parts(ptr.add(1), 16)) {
+//                     Ok(v) => Address::Contract(v),
+//                     Err(_) => trap(), // crate::
+//                 },
+//                 _ => trap(), // crate:: // unreachable!("Host violated precondition."),
+//             }
+//         }
+//     }
+
+//     #[inline(always)]
+//     fn owner(&self) -> AccountAddress {
+//         let mut bytes: MaybeUninit<[u8; ACCOUNT_ADDRESS_SIZE]> = MaybeUninit::uninit();
+//         let ptr = bytes.as_mut_ptr();
+//         let address = unsafe {
+//             get_receive_owner(ptr as *mut u8);
+//             bytes.assume_init()
+//         };
+//         AccountAddress(address)
+//     }
+// }
+#+end_src
 *** Logger
 #+begin_src rust
   #[cfg(not(feature = "hacspec"))]
@@ -2680,8 +3246,7 @@ impl HasReceiveContext for ExternContext<ReceiveContextExtern> {
       }
 
       fn log_raw(&mut self, event: &[u8]) -> Result<(), LogError> {
-          let (_, res) = log_event_hacspec(coerce_rust_to_hacspec_public_byte_seq(event));
-          match res {
+          match log_event_hacspec(coerce_rust_to_hacspec_public_byte_seq(event)) {
               1 => Ok(()),
               0 => Err(LogError::Full),
               _ => Err(LogError::Malformed),
@@ -2689,59 +3254,6 @@ impl HasReceiveContext for ExternContext<ReceiveContextExtern> {
       }
   }
 #+end_src
-*** Action
-#+begin_src rust
-#[cfg(not(feature = "hacspec"))]
-/// #Implementation of actions.
-/// These actions are implemented by direct calls to host functions.
-impl HasActions for Action {
-    #[inline(always)]
-    fn accept() -> Self {
-        Action {
-            _private: accept_hacspec(),
-        }
-    }
-    
-    #[inline(always)]
-    fn simple_transfer(acc: &AccountAddress, amount: Amount) -> Self {
-        let res = simple_transfer_hacspec(coerce_rust_to_hacspec_public_byte_seq(&acc.0), amount.micro_ccd);
-        Action { _private: res }
-    }
-
-    #[inline(always)]
-    fn send_raw(
-        ca: &ContractAddress,
-        receive_name: ReceiveName,
-        amount: Amount,
-        parameter: &[u8],
-    ) -> Self {
-        let receive_bytes = receive_name.get_chain_name().as_bytes();
-        let res = 
-            send_hacspec(
-                ca.index,
-                ca.subindex,
-                coerce_rust_to_hacspec_public_byte_seq(&receive_bytes),
-                amount.micro_ccd,
-                coerce_rust_to_hacspec_public_byte_seq(&parameter),
-            );
-        Action { _private: res }
-    }
-
-    #[inline(always)]
-    fn and_then(self, then: Self) -> Self {
-        let res = combine_and_hacspec(self._private, then._private);
-        Action { _private: res }
-    }
-
-    #[inline(always)]
-    fn or_else(self, el: Self) -> Self {
-        let res = combine_or_hacspec(self._private, el._private);
-        Action { _private: res }
-    }
-}
-
-#+end_src
-
 *** Remaining todo
 # TODO: Get functionlity of everything into hacspec
 #+begin_src rust
@@ -2763,27 +3275,6 @@ pub fn put_in_memory(input: &[u8]) -> *mut u8 {
     ptr
 }
 
-#+end_src
-
-#+begin_src rust
-// TODO: never used
-#[allow(dead_code)]
-#[cfg(not(feature = "hacspec"))]
-/// Wrapper for
-/// [HasActions::send_raw](./trait.HasActions.html#tymethod.send_raw), which
-/// automatically serializes the parameter. Note that if the parameter is
-/// already a byte array or convertible to a byte array without allocations it
-/// is preferrable to use [send_raw](./trait.HasActions.html#tymethod.send_raw).
-/// It is more efficient and avoids memory allocations.
-pub fn send<A: HasActions, P: Serial>(
-    ca: &ContractAddress,
-    receive_name: ReceiveName,
-    amount: Amount,
-    parameter: &P,
-) -> A {
-    let param_bytes = concordium_contracts_common::to_bytes(parameter);
-    A::send_raw(ca, receive_name, amount, &param_bytes)
-}
 #+end_src
 
 #+begin_src rust
@@ -3328,10 +3819,6 @@ impl DeserialCtx for String {
 }
 #+end_src
 
-*** Rust Tests
-#+begin_src rust
-
-#+end_src
 
 ** Coq code
 

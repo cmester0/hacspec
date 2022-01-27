@@ -41,33 +41,27 @@
 #+begin_src toml :tangle ../../examples/piggybank/Cargo.toml :mkdirp yes :eval never
 [package]
 name = "hacspec-piggybank"
-version = "0.1.0"
+version = "0.1.1"
 authors = [""]
 edition = "2018"
 
 [lib]
 path = "src/piggybank.rs"
 
+[dependencies.hacspec-concordium]
+version = "2.0"
+path = "../concordium"
+default-features = false
+		 
 [dependencies]
 hacspec-lib = { path = "../../lib" }
 hacspec-attributes = { path = "../../utils/attributes", version = "0.1.0-beta.1" , features = ["print_attributes"] } # , features = ["hacspec_unsafe"] , , optional = true
 # pearlite-syn = { path = "../../../../creusot/pearlite-syn" }
 creusot-contracts = { path = "../../../../creusot/creusot-contracts" }
 # hacspec = {optional = true}
-concordium-contracts-common = { path = "../../../../concordium-rust-smart-contracts/concordium-contracts-common" }
-hacspec-concordium = { path = "../concordium" }
-hacspec-concordium-derive = { path = "../concordium-derive" }
 
-[features]
-hacspec = []
-# use_attributes = ["hacspec-attributes", "hacspec-attributes/print_attributes"]
-
-[dev-dependencies]
-hacspec-dev = { path = "../../utils/dev" }
-criterion = "0.3"
-rand = "0.8"
-quickcheck = "1"
-quickcheck_macros = "1"
+[profile.release]
+opt-level = 3
 #+end_src
 
 ** Rust code
@@ -103,18 +97,18 @@ use hacspec_concordium::*;
 /// The state of the piggy bank
 #[derive(Debug, Serialize, PartialEq, Eq)]
 enum PiggyBankState {
-    /// Alive and well, allows for GTU to be inserted.
+    /// Alive and well, allows for CCD to be inserted.
     Intact,
-    /// The piggy bank has been emptied, preventing further GTU to be inserted.
+    /// The piggy bank has been emptied, preventing further CCD to be inserted.
     Smashed,
 }
 
 /// The state of the piggy bank
 #[derive(Debug, PartialEq, Eq)] // , Serialize
 pub enum PiggyBankStateHacspec {
-    /// Alive and well, allows for GTU to be inserted.
+    /// Alive and well, allows for CCD to be inserted.
     Intact,
-    /// The piggy bank has been emptied, preventing further GTU to be inserted.
+    /// The piggy bank has been emptied, preventing further CCD to be inserted.
     Smashed,
 }
 
@@ -172,7 +166,7 @@ pub fn piggy_insert_hacspec(state: PiggyBankStateHacspec) -> PiggyInsertResult {
 }
 
 #[cfg(not(feature = "hacspec"))]
-/// Insert some GTU into a piggy bank, allowed by anyone.
+/// Insert some CCD into a piggy bank, allowed by anyone.
 #[receive(contract = "PiggyBank", name = "insert", payable)]
 fn piggy_insert<A: HasActions>(
     _ctx: &impl HasReceiveContext,
@@ -181,7 +175,7 @@ fn piggy_insert<A: HasActions>(
 ) -> ReceiveResult<A> {
     // Ensure the piggy bank has not been smashed already.
     piggy_insert_hacspec(coerce_rust_to_hacspec_piggybank_state(state))?;
-    // Just accept since the GTU balance is managed by the chain.
+    // Just accept since the CCD balance is managed by the chain.
     Ok(A::accept())
 }
 
@@ -233,7 +227,7 @@ fn piggy_smash_hacspec(ctx: Context, state: PiggyBankStateHacspec) -> PiggySmash
 }
 
 #[cfg(not(feature = "hacspec"))]
-/// Smash a piggy bank retrieving the GTU, only allowed by the owner.
+/// Smash a piggy bank retrieving the CCD, only allowed by the owner.
 #[receive(contract = "PiggyBank", name = "smash")]
 fn piggy_smash<A: HasActions>(
     ctx: &impl HasReceiveContext,
@@ -359,7 +353,7 @@ mod tests {
         let actions_result: ReceiveResult<ActionsTree> = piggy_insert(&ctx, amount, &mut state);
 
         // Inspect the result
-        let actions = actions_result.expect_report("Inserting GTU results in error.");
+        let actions = actions_result.expect_report("Inserting CCD results in error.");
 
         claim_eq!(
             actions,
@@ -408,7 +402,7 @@ mod tests {
         let actions_result: Result<ActionsTree, _> = piggy_smash(&ctx, &mut state);
 
         // Inspect the result
-        let actions = actions_result.expect_report("Inserting GTU results in error.");
+        let actions = actions_result.expect_report("Inserting CCD results in error.");
         claim_eq!(actions, ActionsTree::simple_transfer(&owner, balance));
         claim_eq!(state, PiggyBankState::Smashed);
     }
