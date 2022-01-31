@@ -9,6 +9,7 @@ extern crate rustc_hir;
 extern crate rustc_interface;
 extern crate rustc_metadata;
 extern crate rustc_middle;
+extern crate rustc_parse;
 extern crate rustc_session;
 extern crate rustc_span;
 
@@ -523,7 +524,10 @@ fn handle_crate<'tcx>(
                     &compiler.session(),
                     &krate,
                     &file,
-                    &callback.org_file,
+                    match &callback.org_file {
+                        Some(f) => Some((f.clone(), krate_path.clone())),
+                        None => None,
+                    },
                     &top_ctx_map[&krate_path],
                 ),
                 _ => {
