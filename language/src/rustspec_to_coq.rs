@@ -676,8 +676,7 @@ fn translate_func_name<'a>(
                         FuncPrefix::Array(ArraySize::Integer(i), _) => {
                             if *i == 0 {
                                 additional_args.push(RcDoc::as_string("_"))
-                            }
-                            else {
+                            } else {
                                 additional_args.push(RcDoc::as_string(format!("{}", i)))
                             }
                         }
@@ -2275,13 +2274,15 @@ pub fn translate_and_write_to_file(
         match org_file.clone() {
             Some((f, s)) => format!(
                 "(* [[file:{}::* {} - Coq code][{} - Coq code:1]] *)\n",
-                f, s.clone(), s
+                f,
+                s.clone(),
+                s
             ),
             None => "".to_string(),
         },
         if export_quick_check {
             "From QuickChick Require Import QuickChick.\n\
-            Require Import QuickChickLib.\n"
+             Require Import QuickChickLib.\n"
         } else {
             ""
         },
