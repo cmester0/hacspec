@@ -8,7 +8,7 @@
 # C-c C-v b   -  create results / run this file
 
 #+name: split-file
-#+begin_src python :wrap "src coq :tangle Concordium_Impls.v :results output silent" :exports none :results code :var ARG="0 -1" :var FILENAME="Concordium_Impls.v" :eval never
+#+begin_src python :wrap "src coq :tangle Concordium_Impls.v :mkdirp yes :results output silent" :exports none :results code :var ARG="0 -1" :var FILENAME="Concordium_Impls.v" :eval never
   import functools
 
   lower, upper = map(int, ARG.split())
@@ -85,7 +85,7 @@
 
 * Concordium derive
 ** Config
-#+BEGIN_SRC toml :tangle ../../examples/concordium-derive/Cargo.toml :eval never
+#+BEGIN_SRC toml :tangle ../../examples/concordium-derive/Cargo.toml :mkdirp yes :eval never
   [package]
   name = "hacspec-concordium-derive"
   version = "0.1.0"
@@ -122,7 +122,7 @@
 
 ** Rust code
 :PROPERTIES:
-:header-args:  :tangle ../../examples/concordium-derive/src/lib.rs
+:header-args:  :tangle ../../examples/concordium-derive/src/lib.rs :mkdirp yes
 :END:
 
 *** Imports

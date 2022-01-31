@@ -38,7 +38,7 @@
 
 * Auction smart contract specification
 ** Config
-#+begin_src toml :tangle ../../examples/auction/Cargo.toml :eval never
+#+begin_src toml :tangle ../../examples/auction/Cargo.toml :mkdirp yes :eval never
 [package]
 name = "hacspec-auction"
 version = "0.1.0"
@@ -72,7 +72,7 @@ quickcheck_macros = "1"
 
 ** Rust code
 :PROPERTIES:
-:header-args: :tangle ../../examples/auction/src/auction.rs 
+:header-args: :tangle ../../examples/auction/src/auction.rs :mkdirp yes
 :END:
 
 *** Imports
@@ -822,8 +822,9 @@ fn useraddress_from_u8(i : u8) -> UserAddress {
 /// auction after its end time.    Alice gets her money back, while
 /// Carol (the owner of the contract) collects the highest bid amount.
 /// 6. Attempts to subsequently bid or finalize fail.
-#[requires(18446744073709551615u64 > time)]
-#[requires(18446744073709551615u64 / 5u64 - 1u64 > input_amount)]
+// TODO: Requires
+// #[requires(18446744073709551615u64 > time)]
+// #[requires(18446744073709551615u64 / 5u64 - 1u64 > input_amount)]
 #[ensures(result === true)]
 #[quickcheck]
 fn test_auction_bid_and_finalize(item: PublicByteSeq, time : u64, input_amount : u64) -> bool {
@@ -1221,7 +1222,7 @@ fn test_auction_bid_and_finalize(item: PublicByteSeq, time : u64, input_amount :
 
 ***  - Coq code
 :PROPERTIES:
-:header-args: coq :tangle Auction.v  :comments link
+:header-args: coq :tangle Auction.v :mkdirp yes :comments link
 :header-args: coq :eval never :results output silent
 :END:
 
