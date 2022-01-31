@@ -90,7 +90,7 @@ pub fn coerce_hacspec_to_rust_b_tree_map(m: SeqMap) -> BTreeMap<AccountAddress, 
     (m1prime.zip(m2prime)).fold(BTreeMap::new(), |mut t, (x, y)| {
 	t.insert(
 	    coerce_hacspec_to_rust_account_address(x),
-	    Amount { micro_gtu: y },
+	    Amount { micro_ccd: y },
 	);
 	t
     })
@@ -103,7 +103,7 @@ pub fn coerce_rust_to_hacspec_b_tree_map(m: &BTreeMap<AccountAddress, Amount>) -
 	    .map(|x| coerce_rust_to_hacspec_account_address(x))
 	    .fold(PublicByteSeq::new(0_usize), |v, x| v.concat(&x)),
 	m.values()
-	    .map(|x| x.micro_gtu)
+	    .map(|x| x.micro_ccd)
 	    .fold(PublicSeq::new(0_usize), |v, x| {
 		v.concat(&u64_to_be_bytes(x))
 	    }),
@@ -146,7 +146,7 @@ pub struct StateHacspec(
 pub fn coerce_hacspec_to_rust_state(s : StateHacspec) -> State {
     let StateHacspec(auction_state_hacspec, amount, item_seq, time, bid_map) = s;
     let auction_state = coerce_hacspec_to_rust_auction_state(auction_state_hacspec);
-    let highest_bid = Amount { micro_gtu: amount };
+    let highest_bid = Amount { micro_ccd: amount };
     let item = item_seq.native_slice().to_vec();
     let expiry = Timestamp::from_timestamp_millis(time);
     let bids = coerce_hacspec_to_rust_b_tree_map(bid_map);
@@ -163,7 +163,7 @@ pub fn coerce_hacspec_to_rust_state(s : StateHacspec) -> State {
 #[cfg(not(feature = "hacspec"))]
 pub fn coerce_rust_to_hacspec_state(s : &State) -> StateHacspec {
     let auction_state = coerce_rust_to_hacspec_auction_state(&s.auction_state);
-    let highest_bid = s.highest_bid.micro_gtu;
+    let highest_bid = s.highest_bid.micro_ccd;
     let item = PublicByteSeq::from_native_slice(&s.item);
     let expiry = s.expiry.timestamp_millis();
     let bids = coerce_rust_to_hacspec_b_tree_map(&s.bids);
@@ -403,7 +403,7 @@ fn auction_bid<A: HasActions>(
 
     let new_state = match auction_bid_hacspec(
 	coerce_rust_to_hacspec_context(ctx),
-	amount.micro_gtu,
+	amount.micro_ccd,
 	hacspec_state,
     ) {
 	Ok (a) => a,
@@ -459,7 +459,7 @@ pub fn coerce_rust_to_hacspec_finalize_context(ctx: &impl HasReceiveContext) -> 
   (
       ctx.metadata().slot_time().timestamp_millis(),
       coerce_rust_to_hacspec_account_address(&ctx.owner()),
-      ctx.self_balance().micro_gtu,
+      ctx.self_balance().micro_ccd,
   )
 }
 
@@ -568,7 +568,7 @@ fn simple_transfer_from_index_and_seq<A: HasActions>(x: usize, s: PublicByteSeq)
             &s.slice(x * (32 + 8), 32), // TODO: use chunks instead of doing the math yourself
         )),
         Amount {
-            micro_gtu: u64_from_be_bytes(u64Word::from_seq(&s.slice(x * (32 + 8) + 32, 8))),
+            micro_ccd: u64_from_be_bytes(u64Word::from_seq(&s.slice(x * (32 + 8) + 32, 8))),
         },
     )
 }
@@ -934,9 +934,9 @@ mod tests {
 	let parameter_bytes = create_parameter_bytes(&item_expiry_parameter());
 	let ctx0 = parametrized_init_ctx(&parameter_bytes);
 
-	let amount = Amount::from_micro_gtu(100);
-	let winning_amount = Amount::from_micro_gtu(300);
-	let big_amount = Amount::from_micro_gtu(500);
+	let amount = Amount::from_micro_ccd(100);
+	let winning_amount = Amount::from_micro_ccd(300);
+	let big_amount = Amount::from_micro_ccd(500);
 
 	let mut bid_map = BTreeMap::new();
 
@@ -1050,7 +1050,7 @@ mod tests {
 	let parameter_bytes = create_parameter_bytes(&item_expiry_parameter());
 	let ctx0 = parametrized_init_ctx(&parameter_bytes);
 
-	let amount = Amount::from_micro_gtu(100);
+	let amount = Amount::from_micro_ccd(100);
 
 	let mut bid_map = BTreeMap::new();
 

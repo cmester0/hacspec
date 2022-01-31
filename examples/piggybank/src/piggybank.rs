@@ -116,7 +116,7 @@ fn coerce_rust_to_hacspec_context(ctx: &impl HasReceiveContext) -> Result<Contex
             }?),
         ),
         match ctx.self_balance() {
-            Amount { micro_gtu } => micro_gtu,
+            Amount { micro_ccd } => micro_ccd,
         },
     ))
 }
@@ -263,7 +263,7 @@ mod tests {
     fn test_insert_intact() {
         // Setup
         let ctx = ReceiveContextTest::empty();
-        let amount = Amount::from_micro_gtu(100);
+        let amount = Amount::from_micro_ccd(100);
         let mut state = PiggyBankState::Intact;
 
         // Trigger the insert
@@ -288,7 +288,7 @@ mod tests {
     fn test_insert_smashed() {
         // Setup
         let ctx = ReceiveContextTest::empty();
-        let amount = Amount::from_micro_gtu(100);
+        let amount = Amount::from_micro_ccd(100);
         let mut state = PiggyBankState::Smashed;
 
         // Trigger the insert
@@ -310,7 +310,7 @@ mod tests {
         ctx.set_owner(owner);
         let sender = Address::Account(owner);
         ctx.set_sender(sender);
-        let balance = Amount::from_micro_gtu(100);
+        let balance = Amount::from_micro_ccd(100);
         ctx.set_self_balance(balance);
 
         let mut state = PiggyBankState::Intact;
@@ -333,7 +333,7 @@ mod tests {
         ctx.set_owner(owner);
         let sender = Address::Account(AccountAddress([1u8; 32]));
         ctx.set_sender(sender);
-        let balance = Amount::from_micro_gtu(100);
+        let balance = Amount::from_micro_ccd(100);
         ctx.set_self_balance(balance);
 
         let mut state = PiggyBankState::Intact;
@@ -357,7 +357,7 @@ mod tests {
         ctx.set_owner(owner);
         let sender = Address::Account(owner);
         ctx.set_sender(sender);
-        let balance = Amount::from_micro_gtu(100);
+        let balance = Amount::from_micro_ccd(100);
         ctx.set_self_balance(balance);
 
         let mut state = PiggyBankState::Smashed;

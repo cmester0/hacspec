@@ -522,7 +522,7 @@ fn contract_function_optional_args_tokens<'a, I: Copy + IntoIterator<Item = &'a 
 	fn_args.push(quote!(#amount_ident));
     } else {
 	setup_fn_args.extend(quote! {
-	    if #amount_ident.micro_gtu != 0 {
+	    if #amount_ident.micro_ccd != 0 {
 		return -1;
 	    }
 	});

@@ -12,7 +12,7 @@ proc-macro = true
 hacspec-lib = { path = "../../lib" }
 hacspec-attributes = { path = "../../utils/attributes", version = "0.1.0-beta.1" , features = ["print_attributes", "hacspec_unsafe"] } # , features = ["hacspec_unsafe"] , , optional = true
 creusot-contracts = { path = "../../../../creusot/creusot-contracts" }
-concordium-contracts-common = { path = "../../../../concordium-rust-smart-contracts/concordium-contracts-common" ,  version = "=0.4" , default-features = false }
+concordium-contracts-common = { path = "../../../../concordium-rust-smart-contracts/concordium-contracts-common" ,  version = "=2.0.0" , default-features = false }
 # hacspec-concordium = { path = "../concordium" }
 syn = { version = "1.0.63", features = [ "full", "extra-traits" ] }
 quote = "=1.0.0"

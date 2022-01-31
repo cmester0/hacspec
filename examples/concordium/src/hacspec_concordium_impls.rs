@@ -6,7 +6,8 @@ use crate::{
     num::NonZeroI32,
     trap,
     vec::Vec,
-    String, *,
+    String,
+    *
 };
 
 use hacspec_lib::*;
@@ -484,14 +485,14 @@ pub fn read_impl_for_parameter_read(
 
 #[cfg(not(feature = "hacspec"))]
 pub fn coerce_rust_to_hacspec_parameter(
-    rust_parameter: &mut Parameter,
+    rust_parameter: &mut hacspec_concordium_types::Parameter,
 ) -> ParameterHacspec {
     rust_parameter.current_position.clone()
 }
 
 #[cfg(not(feature = "hacspec"))]
 pub fn coerce_hacspec_to_rust_parameter(
-    rust_parameter: &mut Parameter,
+    rust_parameter: &mut hacspec_concordium_types::Parameter,
     hacspec_parameter: ParameterHacspec,
 ) {
     rust_parameter.current_position = hacspec_parameter;
@@ -500,7 +501,7 @@ pub fn coerce_hacspec_to_rust_parameter(
 
 #[cfg(not(feature = "hacspec"))]
 /// # Trait implementations for Parameter
-impl Read for Parameter {
+impl Read for hacspec_concordium_types::Parameter {
     fn read(&mut self, buf: &mut [u8]) -> ParseResult<usize> {
         let (cs, nr) = read_impl_for_parameter_read(
             coerce_rust_to_hacspec_parameter(self),
@@ -512,7 +513,7 @@ impl Read for Parameter {
 }
 
 #[cfg(not(feature = "hacspec"))]
-impl HasParameter for Parameter {
+impl HasParameter for hacspec_concordium_types::Parameter {
     #[inline(always)]
     fn size(&self) -> u32 {
         get_parameter_size_hacspec()
@@ -711,7 +712,7 @@ impl ExactSizeIterator for PoliciesIterator {
 #[cfg(not(feature = "hacspec"))]
 impl<T: sealed::ContextType> HasCommonData for ExternContext<T> {
     type MetadataType = ChainMetaExtern;
-    type ParamType = Parameter;
+    type ParamType = hacspec_concordium_types::Parameter;
     type PolicyIteratorType = PoliciesIterator;
     type PolicyType = Policy<AttributesCursor>;
 
@@ -731,7 +732,7 @@ impl<T: sealed::ContextType> HasCommonData for ExternContext<T> {
 
     #[inline(always)]
     fn parameter_cursor(&self) -> Self::ParamType {
-        Parameter {
+        hacspec_concordium_types::Parameter {
             current_position: 0,
         }
     }
@@ -797,7 +798,7 @@ impl HasReceiveContext for ExternContext<ReceiveContextExtern> {
 
     #[inline(always)]
     fn self_balance(&self) -> Amount {
-        Amount::from_micro_gtu(get_receive_self_balance_hacspec())
+        Amount::from_micro_ccd(get_receive_self_balance_hacspec())
     }
 
     // TODO: Make usable by creusot
@@ -870,7 +871,7 @@ impl HasActions for Action {
     
     #[inline(always)]
     fn simple_transfer(acc: &AccountAddress, amount: Amount) -> Self {
-        let res = simple_transfer_hacspec(coerce_rust_to_hacspec_public_byte_seq(&acc.0), amount.micro_gtu);
+        let res = simple_transfer_hacspec(coerce_rust_to_hacspec_public_byte_seq(&acc.0), amount.micro_ccd);
         Action { _private: res }
     }
 
@@ -887,7 +888,7 @@ impl HasActions for Action {
                 ca.index,
                 ca.subindex,
                 coerce_rust_to_hacspec_public_byte_seq(&receive_bytes),
-                amount.micro_gtu,
+                amount.micro_ccd,
                 coerce_rust_to_hacspec_public_byte_seq(&parameter),
             );
         Action { _private: res }
