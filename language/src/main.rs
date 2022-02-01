@@ -2,17 +2,15 @@
 extern crate im;
 extern crate pretty;
 extern crate rustc_ast;
-extern crate rustc_ast_pretty;
 extern crate rustc_driver;
 extern crate rustc_errors;
 extern crate rustc_hir;
 extern crate rustc_interface;
 extern crate rustc_metadata;
 extern crate rustc_middle;
+extern crate rustc_parse;
 extern crate rustc_session;
 extern crate rustc_span;
-
-extern crate rustc_parse;
 
 mod ast_to_rustspec;
 mod hir_to_rustspec;
@@ -24,6 +22,8 @@ mod rustspec_to_fstar;
 mod typechecker;
 mod util;
 
+use heck::TitleCase;
+use im::{HashMap, HashSet};
 use itertools::Itertools;
 use rustc_driver::{Callbacks, Compilation, RunCompiler};
 use rustc_errors::emitter::{ColorConfig, HumanReadableErrorType};
@@ -42,9 +42,6 @@ use std::fs::File;
 use std::path::Path;
 use std::process::Command;
 use util::APP_USAGE;
-
-use heck::TitleCase;
-use im::{HashMap, HashSet};
 
 struct HacspecCallbacks {
     output_file: Option<String>,
@@ -93,7 +90,7 @@ pub fn handle_crate<'tcx>(
     if handled.contains(&krate_module_string) {
         return Compilation::Continue;
     }
-    
+
     // Look at path/mod_name.rs and path/mod_name/mod.rs for module
     let krate = ast_crates_map[&krate_module_string].clone();
 
@@ -327,16 +324,15 @@ impl Callbacks for HacspecCallbacks {
         log::debug!(" --- hacspec after_analysis callback");
         let krate: rustc_ast::ast::Crate = queries.parse().unwrap().take();
 
-        let mut analysis_crates = HashMap::new(); // [krate]
+        let mut analysis_crates = HashMap::new();
         analysis_crates.insert("".to_string(), krate);
 
         // Find module location using hir
         queries.global_ctxt().unwrap().peek_mut().enter(|tcx| {
-            // .take() instead of peek_mut ?
             let hir_krate = tcx.hir();
             for item in hir_krate.items() {
                 if let rustc_hir::ItemKind::Mod(_m) = &item.kind {
-                    let (expra, exprb, _exprc) = &tcx.hir().get_module(item.def_id); // expra == m
+                    let (expra, exprb, _exprc) = &tcx.hir().get_module(item.def_id);
 
                     let sm: &rustc_span::source_map::SourceMap =
                         (compiler.session()).parse_sess.source_map();
@@ -384,11 +380,6 @@ impl Callbacks for HacspecCallbacks {
             &analysis_crates,
             "".to_string(),
             &mut HashMap::new(),
-            // &mut name_resolution::TopLevelContext {
-            //     consts: HashMap::new(),
-            //     functions: HashMap::new(),
-            //     typ_dict: HashMap::new(),
-            // },
         );
 
         Compilation::Stop
