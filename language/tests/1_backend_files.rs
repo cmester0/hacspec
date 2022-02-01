@@ -35,12 +35,10 @@ fn positive_question_mark() {
 
 #[test]
 fn positive_loops() {
-    run_tests("backend-tests/loops.rs",
-              HashMap::from([("coq", true)]));
+    run_tests("backend-tests/loops.rs", HashMap::from([("coq", true)]));
 }
 
 #[test]
 fn positive_types() {
-    run_tests("backend-tests/types.rs",
-              HashMap::from([("coq", true)]));
+    run_tests("backend-tests/types.rs", HashMap::from([("coq", true)]));
 }
