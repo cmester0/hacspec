@@ -327,7 +327,8 @@ impl Callbacks for HacspecCallbacks {
         log::debug!(" --- hacspec after_expansion callback");
         let expanded_krate;
         {
-            let (_, lint_store) = &*queries.register_plugins().unwrap().peek(); // ?
+            let (_, _lint_store) = &*queries.register_plugins().unwrap().peek();
+            // ?
 
             // // Lint plugins are registered; now we can process command line flags.
             // if sess.opts.describe_lints {
@@ -387,7 +388,12 @@ impl Callbacks for HacspecCallbacks {
                             .to_ident_string()
                             .as_str()
                         {
-                            "secret_array" | "array" | "public_nat_mod" => {
+                            "array"
+                            | "bytes"
+                            | "public_bytes"
+                            | "public_nat_mod"
+                            | "nat_mod"
+                            | "unsigned_public_integer" => {
                                 items.push(krate.items[index].clone());
                                 false
                             }
@@ -444,7 +450,6 @@ impl Callbacks for HacspecCallbacks {
         queries.global_ctxt().unwrap().peek_mut().enter(|tcx| {
             let hir_krate = tcx.hir();
             for item in hir_krate.items() {
-
                 if let rustc_hir::ItemKind::Mod(_m) = &item.kind {
                     let (expra, exprb, _exprc) = &tcx.hir().get_module(item.def_id);
 
