@@ -55,10 +55,10 @@ struct HacspecCallbacks {
     output_filename: Option<String>,
     output_directory: Option<String>,
     output_type: Option<String>,
+    org_file: Option<String>,
     target_directory: String,
     version_control: VersionControlArg,
     crate_root_directory: String,
-    org_file: Option<String>,
 }
 
 const ERROR_OUTPUT_CONFIG: ErrorOutputType =
