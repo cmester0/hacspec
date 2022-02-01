@@ -8,6 +8,7 @@ extern crate rustc_hir;
 extern crate rustc_interface;
 extern crate rustc_metadata;
 extern crate rustc_middle;
+extern crate rustc_parse;
 extern crate rustc_session;
 extern crate rustc_span;
 
@@ -45,9 +46,9 @@ use util::APP_USAGE;
 struct HacspecCallbacks {
     output_directory: Option<String>,
     output_type: String,
+    org_file: Option<String>,
     target_directory: String,
     crate_root_directory: String,
-    org_file: Option<String>,
 }
 
 const ERROR_OUTPUT_CONFIG: ErrorOutputType =
@@ -162,7 +163,7 @@ fn handle_crate<'tcx>(
                                         .extend(top_ctx_map[&krate_use_string].typ_dict.clone());
                                 }
                             }
-                            _ => (),
+                            _ => v.push((*x).clone()),
                         };
                         v.push((*x).clone())
                     }
@@ -302,8 +303,8 @@ fn handle_crate<'tcx>(
                     &compiler.session(),
                     &krate,
                     &file,
-                    match org_file {
-                        Some (f) => Some ((f.clone(), krate_path.clone())),
+                    match &callback.org_file {
+                        Some(f) => Some((f.clone(), krate_path.clone())),
                         None => None,
                     },
                     &new_top_ctx,
@@ -460,8 +461,13 @@ impl Callbacks for HacspecCallbacks {
             krate.items = items;
         }
 
-        let crate_origin_file = compiler.build_output_filenames(compiler.session(), &[]).with_extension("").to_str().unwrap().to_string();
-        
+        let crate_origin_file = compiler
+            .build_output_filenames(compiler.session(), &[])
+            .with_extension("")
+            .to_str()
+            .unwrap()
+            .to_string();
+
         let mut analysis_crates = HashMap::new();
         analysis_crates.insert(crate_origin_file.clone(), krate);
 
@@ -665,6 +671,7 @@ fn main() -> Result<(), usize> {
             args.remove(i)
         }
         None => "".to_string(),
+    };
 
     let org_file_index = args.iter().position(|a| a == "--org-file");
     let org_file = match org_file_index {
@@ -708,11 +715,11 @@ fn main() -> Result<(), usize> {
     let mut callbacks = HacspecCallbacks {
         output_directory,
         output_type,
+        org_file,
         // This defaults to the default target directory.
         target_directory: env::current_dir().unwrap().to_str().unwrap().to_owned()
             + "/../target/debug/deps",
         crate_root_directory: "".to_string(),
-        org_file,
     };
 
     match input_file {
