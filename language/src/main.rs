@@ -107,7 +107,7 @@ fn handle_crate<'tcx>(
             string: "MIN".to_string(),
             kind: rustspec::TopLevelIdentKind::Constant,
         },
-        (rustspec::BaseTyp::Int32, rustc_span::DUMMY_SP.into()),
+        (rustspec::BaseTyp::Int32, rustspec::RustspecSpan(rustc_span::DUMMY_SP)),
     );
     // new_top_ctx.consts.insert(
     //     rustspec::TopLevelIdent {
@@ -515,22 +515,6 @@ impl Callbacks for HacspecCallbacks {
                 }
             }
         });
-
-        let mut temp = HashMap::new();
-        temp.insert(
-            rustspec::TopLevelIdent {
-                string: "MIN".to_string(),
-                kind: rustspec::TopLevelIdentKind::Constant,
-            },
-            (rustspec::BaseTyp::Int32, rustc_span::DUMMY_SP.into()),
-        );
-        // temp.insert(
-        //     rustspec::TopLevelIdent {
-        //         string: "None".to_string(),
-        //         kind: rustspec::TopLevelIdentKind::Constant,
-        //     },
-        //     (rustspec::BaseTyp::Unit, rustc_span::DUMMY_SP.into()), // Base Type??
-        // );
 
         handle_crate(
             &self,

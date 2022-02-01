@@ -38,7 +38,7 @@
 
 * Fib smart contract specification
 ** Config
-#+begin_src toml :tangle ../../examples/fib/Cargo.toml :eval never
+#+begin_src toml :tangle ../../examples/fib/Cargo.toml :mkdirp yes :eval never
 [package]
 name = "hacspec-fib"
 version = "0.1.0"
@@ -72,7 +72,7 @@ quickcheck_macros = "1"
 
 ** Rust code
 :PROPERTIES:
-:header-args: rust :tangle ../../examples/fib/src/fib.rs :eval never
+:header-args: rust :tangle ../../examples/fib/src/fib.rs :mkdirp yes :eval never
 :END:
 
 *** Imports
@@ -313,6 +313,6 @@ mod tests {
 
 ***  - Coq code
 :PROPERTIES:
-:header-args: coq :tangle Fib.v  :comments link
+:header-args: coq :tangle Fib.v :mkdirp yes :comments link
 :header-args: coq :eval never :results output silent
 :END:

@@ -35,7 +35,7 @@
 
 * Concordium specification
 ** Config
-#+BEGIN_SRC toml :tangle ../../examples/concordium/Cargo.toml  :mkdirp yes :eval never
+#+BEGIN_SRC toml :tangle ../../examples/concordium/Cargo.toml :mkdirp yes :eval never
 [package]
 name = "hacspec-concordium"
 version = "2.0.0"
@@ -796,8 +796,6 @@ pub trait HasReceiveContext<Error: Default = ()>: HasCommonData {
     fn invoker(&self) -> AccountAddress;
     /// The address of the contract being invoked.
     fn self_address(&self) -> ContractAddress;
-    /// Balance on the contract before the call was made.
-    fn self_balance(&self) -> Amount;
     /// The immediate sender of the message. In general different from the
     /// invoker.
     fn sender(&self) -> Address;
@@ -2882,11 +2880,6 @@ impl HasReceiveContext for ExternContext<ReceiveContextExtern> {
         }
     }
 
-    #[inline(always)]
-    fn self_balance(&self) -> Amount {
-        Amount::from_micro_ccd(get_receive_self_balance_hacspec())
-    }
-
     // TODO: Make usable by creusot
     // TODO: Remove/replace unsafe code !
     #[inline(always)]
@@ -4274,7 +4267,7 @@ pub const MAX_NUM_LOGS: usize = 64usize;
 
 #+begin_src rust
 //! The test infrastructure module provides alternative implementations of
-//! `HasInitContext`, `HasReceiveContext`, `HasParameter`, `HasActions`, and
+//! `HasInitContext`, `HasReceiveContext`, `HasParameter`, and
 //! `HasContractState` traits intended for testing.
 //!
 //! They allow writing unit tests directly in contract modules with little to no
@@ -4335,6 +4328,8 @@ use convert::TryInto;
 #[cfg(not(feature = "hacspec"))]
 #[cfg(not(feature = "std"))]
 use core::{cmp, num};
+// #[cfg(not(feature = "hacspec"))]
+// use concordium_commen::HashMap;
 #[cfg(not(feature = "hacspec"))]
 #[cfg(feature = "std")]
 use std::{boxed::Box, cmp, num};
@@ -4404,6 +4399,7 @@ pub struct ContextTest<'a, C> {
     pub(crate) custom: C,
 }
 
+#[cfg(not(feature = "hacspec"))]
 /// Placeholder for the initial context. All the fields can be set optionally
 /// and the getting an unset field will result in calling
 /// [`fail!`](../macro.fail.html). Use only in tests!
@@ -4462,7 +4458,6 @@ pub struct ContextTest<'a, C> {
 ///     }
 /// }
 /// ```
-#[cfg(not(feature = "hacspec"))]
 pub type InitContextTest<'a> = ContextTest<'a, InitOnlyDataTest>;
 
 #[cfg(not(feature = "hacspec"))]
@@ -4472,6 +4467,7 @@ pub struct InitOnlyDataTest {
     init_origin: Option<AccountAddress>,
 }
 
+#[cfg(not(feature = "hacspec"))]
 /// Placeholder for the receiving context. All the fields can be set optionally
 /// and the getting an unset field will result in calling
 /// [`fail!`](../macro.fail.html). Use only in tests!
@@ -4532,7 +4528,6 @@ pub struct InitOnlyDataTest {
 ///     }
 /// }
 /// ```
-#[cfg(not(feature = "hacspec"))]
 pub type ReceiveContextTest<'a> = ContextTest<'a, ReceiveOnlyDataTest>;
 
 #[cfg(not(feature = "hacspec"))]
@@ -4723,8 +4718,6 @@ impl<'a> HasReceiveContext for ReceiveContextTest<'a> {
         unwrap_ctx_field(self.custom.self_address, "self_address")
     }
 
-    fn self_balance(&self) -> Amount { unwrap_ctx_field(self.custom.self_balance, "self_balance") }
-
     fn sender(&self) -> Address { unwrap_ctx_field(self.custom.sender, "sender") }
 
     fn owner(&self) -> AccountAddress { unwrap_ctx_field(self.custom.owner, "owner") }
@@ -4735,9 +4728,9 @@ impl<'a> HasParameter for Cursor<&'a [u8]> {
     fn size(&self) -> u32 { self.data.len() as u32 }
 }
 
+#[cfg(not(feature = "hacspec"))]
 /// A logger that simply accumulates all the logged items to be inspected at the
 /// end of execution.
-#[cfg(not(feature = "hacspec"))]
 pub struct LogRecorder {
     pub logs: Vec<Vec<u8>>,
 }
@@ -4788,46 +4781,6 @@ pub enum ActionsTree {
 }
 
 #[cfg(not(feature = "hacspec"))]
-impl HasActions for ActionsTree {
-    fn accept() -> Self { ActionsTree::Accept }
-
-    fn simple_transfer(acc: &AccountAddress, amount: Amount) -> Self {
-        ActionsTree::SimpleTransfer {
-            to: *acc,
-            amount,
-        }
-    }
-
-    fn send_raw(
-        ca: &ContractAddress,
-        receive_name: ReceiveName,
-        amount: Amount,
-        parameter: &[u8],
-    ) -> Self {
-        ActionsTree::Send {
-            to: *ca,
-            receive_name: receive_name.to_owned(),
-            amount,
-            parameter: parameter.to_vec(),
-        }
-    }
-
-    fn and_then(self, then: Self) -> Self {
-        ActionsTree::AndThen {
-            left:  Box::new(self),
-            right: Box::new(then),
-        }
-    }
-
-    fn or_else(self, el: Self) -> Self {
-        ActionsTree::OrElse {
-            left:  Box::new(self),
-            right: Box::new(el),
-        }
-    }
-}
-
-#[cfg(not(feature = "hacspec"))]
 /// Reports back an error to the host when compiled to wasm
 /// Used internally, not meant to be called directly by contract writers
 #[doc(hidden)]
@@ -4854,9 +4807,9 @@ pub fn report_error(message: &str, filename: &str, line: u32, column: u32) {
 #[cfg(not(all(feature = "wasm-test", target_arch = "wasm32")))]
 pub fn report_error(_message: &str, _filename: &str, _line: u32, _column: u32) {}
 
+#[cfg(not(feature = "hacspec"))]
 /// Contract state for testing, mimicking the operations the scheduler allows,
 /// including the limit on the size of the maximum size of the contract state.
-#[cfg(not(feature = "hacspec"))]
 pub struct ContractStateTest<T> {
     pub cursor: Cursor<T>,
 }
@@ -5008,6 +4961,168 @@ impl<T: AsRef<[u8]>> Seek for ContractStateTest<T> {
                 }
             },
         }
+    }
+}
+
+#[cfg(not(feature = "hacspec"))]
+impl HasCallResponse for Cursor<Vec<u8>> {
+    fn size(&self) -> u32 { self.data.len() as u32 }
+}
+
+#[cfg(not(feature = "hacspec"))]
+pub struct Handler<State> {
+    /// A mock function. The return value indicates whether the state was
+    /// updated or not.
+    mock_fn: MockFn<dyn FnMut(Parameter, Amount, &mut State, &mut Vec<u8>) -> InvokeResult<bool>>,
+}
+
+#[cfg(not(feature = "hacspec"))]
+pub type MockFn<T> = Box<T>;
+
+#[cfg(not(feature = "hacspec"))]
+// A MockFn that returns a value.
+type MockFnReturn<Value, State> =
+    MockFn<dyn FnMut(Parameter, Amount, &mut State) -> InvokeResult<(bool, Value)>>;
+
+#[cfg(not(feature = "hacspec"))]
+impl<State: 'static> Handler<State> {
+    // TODO: Remove the need for boxing the closure, so you can call
+    // Handler::new(|parameter, amount, ...| {...}).
+    pub fn new<R: 'static>(mut mock_fn_return: MockFnReturn<R, State>) -> Self
+    where
+        R: Serial, {
+        let mock_fn = MockFn::new(
+            move |parameter: Parameter, amount: Amount, state: &mut State, output: &mut Vec<u8>| {
+                let (modified, return_value) = mock_fn_return(parameter, amount, state)?;
+                return_value.serial(output).map_err(|_| InvokeError::Trap)?;
+                Ok(modified)
+            },
+        );
+
+        Self {
+            mock_fn,
+        }
+    }
+}
+
+#[cfg(not(feature = "hacspec"))]
+pub struct HostTest<State> {
+    mocking_fns:      HashMap<(ContractAddress, OwnedEntrypointName), Handler<State>>,
+    transfers:        Vec<(AccountAddress, Amount)>,
+    contract_balance: Amount,
+    state:            State,
+    missing_accounts: Vec<AccountAddress>,
+}
+
+#[cfg(not(feature = "hacspec"))]
+impl<State> HasHost<State> for HostTest<State> {
+    type CallResponseType = Cursor<Vec<u8>>;
+
+    /// Perform a transfer to the given account if the contract has sufficient
+    /// balance. Use `make_account_missing` to test out transfers to
+    /// accounts not on chain.
+    ///
+    /// Possible errors:
+    ///   - `InvokeError::AmountTooLarge`: Contract has insufficient funds.
+    ///   - `InvokeError::MissingAccount`: Attempted transfer to an account set
+    ///     a missing with `make_account_missing`.
+    fn invoke_transfer(&mut self, receiver: &AccountAddress, amount: Amount) -> InvokeResult<()> {
+        if self.missing_accounts.contains(receiver) {
+            return Err(InvokeError::MissingAccount);
+        }
+        if self.contract_balance >= amount {
+            self.contract_balance -= amount;
+            self.transfers.push((receiver.clone(), amount));
+            Ok(())
+        } else {
+            Err(InvokeError::AmountTooLarge)
+        }
+    }
+
+    /// Invoke a contract.
+    fn invoke_contract(
+        &mut self,
+        to: &ContractAddress,
+        parameter: Parameter,
+        method: EntrypointName,
+        amount: Amount,
+    ) -> InvokeResult<(bool, Option<Self::CallResponseType>)> {
+        let handler = match self.mocking_fns.get_mut(&(*to, OwnedEntrypointName::from(method))) {
+            Some(handler) => handler,
+            None => fail!(
+                "Mocking has not been set up for invoking contract {:?} with
+        method '{}'.",
+                to,
+                method
+            ),
+        };
+        if self.contract_balance <= amount {
+            return Err(InvokeError::AmountTooLarge);
+        }
+        let mut output = Vec::new();
+        let res = (handler.mock_fn)(parameter, amount, &mut self.state, &mut output)
+            .and_then(|state_modified| Ok((state_modified, Some(Cursor::new(output)))));
+        if res.is_ok() {
+            self.contract_balance -= amount;
+        }
+        res
+    }
+
+    fn state(&mut self) -> &mut State { &mut self.state }
+
+    fn self_balance(&self) -> Amount { self.contract_balance }
+}
+
+#[cfg(not(feature = "hacspec"))]
+impl<State> HostTest<State> {
+    pub fn new(state: State) -> Self {
+        Self {
+            mocking_fns: HashMap::default(),
+            transfers: Vec::new(),
+            // TODO: Wrap in Option, similar to ctx?
+            contract_balance: Amount::zero(),
+            state,
+            missing_accounts: Vec::new(),
+        }
+    }
+
+    pub fn setup_mock_invocation(
+        &mut self,
+        to: ContractAddress,
+        method: OwnedEntrypointName,
+        handler: Handler<State>,
+    ) {
+        self.mocking_fns.insert((to, method), handler);
+    }
+
+    pub fn set_balance(&mut self, amount: Amount) { self.contract_balance = amount; }
+
+    /// Check whether a given transfer occured.
+    pub fn transfer_occurred(&self, receiver: &AccountAddress, amount: Amount) -> bool {
+        self.transfers.contains(&(receiver.clone(), amount))
+    }
+
+    /// Get a list of all transfers that has occurred.
+    pub fn get_transfers(&self) -> &[(AccountAddress, Amount)] { &self.transfers }
+
+    /// Get a list of all transfers to a specific account.
+    pub fn get_transfers_to(&self, account: AccountAddress) -> Vec<Amount> {
+        self.transfers
+            .iter()
+            .filter_map(|(acc, amount)| {
+                if *acc == account {
+                    Some(*amount)
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
+    /// Set an account to be missing. Any transfers to this account will result
+    /// in an `InvokeError::MissingAccount` error.
+    pub fn make_account_missing(&mut self, account: AccountAddress) {
+        self.missing_accounts.push(account);
     }
 }
 
