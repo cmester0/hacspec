@@ -71,7 +71,6 @@ default-features = false
 [lib]
 crate-type = ["rlib"]
 path = "src/concordium.rs"
-
 #+END_SRC
 *** Imports
 #+BEGIN_SRC rust :tangle ../../examples/concordium/src/concordium.rs  :mkdirp yes :eval never

@@ -8,6 +8,7 @@ extern crate rustc_hir;
 extern crate rustc_interface;
 extern crate rustc_metadata;
 extern crate rustc_middle;
+extern crate rustc_parse;
 extern crate rustc_session;
 extern crate rustc_span;
 
@@ -48,7 +49,6 @@ struct HacspecCallbacks {
     org_file: Option<String>,
     target_directory: String,
     crate_root_directory: String,
-    org_file: Option<String>,
 }
 
 const ERROR_OUTPUT_CONFIG: ErrorOutputType =
@@ -107,7 +107,10 @@ fn handle_crate<'tcx>(
             string: "MIN".to_string(),
             kind: rustspec::TopLevelIdentKind::Constant,
         },
-        (rustspec::BaseTyp::Int32, rustspec::RustspecSpan(rustc_span::DUMMY_SP)),
+        (
+            rustspec::BaseTyp::Int32,
+            rustspec::RustspecSpan(rustc_span::DUMMY_SP),
+        ),
     );
     // new_top_ctx.consts.insert(
     //     rustspec::TopLevelIdent {
@@ -720,7 +723,6 @@ fn main() -> Result<(), usize> {
         target_directory: env::current_dir().unwrap().to_str().unwrap().to_owned()
             + "/../target/debug/deps",
         crate_root_directory: "".to_string(),
-        org_file,
     };
 
     match input_file {
