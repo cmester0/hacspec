@@ -38,7 +38,7 @@
 
 * Piggybank smart contract specification
 ** Config
-#+begin_src toml :tangle ../../examples/piggybank/Cargo.toml  :mkdirp yes :eval never
+#+begin_src toml :tangle ../../examples/piggybank/Cargo.toml :mkdirp yes :eval never
 [package]
 name = "hacspec-piggybank"
 version = "0.1.0"
@@ -72,7 +72,7 @@ quickcheck_macros = "1"
 
 ** Rust code
 :PROPERTIES:
-:header-args: rust :tangle ../../examples/piggybank/src/piggybank.rs  :mkdirp yes :eval never
+:header-args: rust :tangle ../../examples/piggybank/src/piggybank.rs :mkdirp yes :eval never
 :END:
 
 *** Imports
