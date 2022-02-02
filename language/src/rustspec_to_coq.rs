@@ -20,7 +20,7 @@ const SEQ_MODULE: &'static str = "seq";
 
 const ARRAY_MODULE: &'static str = "array";
 
-const NAT_MODULE: &'static str = "finFieldType"; // finFieldType
+const NAT_MODULE: &'static str = "chFin";
 
 static ID_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
@@ -42,23 +42,9 @@ fn make_let_binding<'a>(
         .append(RcDoc::space())
         .append(
             pat.append(match typ {
-                None => {
-                    if toplevel {
-                        RcDoc::as_string("{L : {fset Location}} :")
-                            .append(RcDoc::space())
-                            .append("code L [interface] _")
-                    } else {
-                        RcDoc::nil()
-                    }
-                }
+                None => RcDoc::nil(),
                 Some(tau) => RcDoc::space()
-                    .append(if toplevel {
-                        RcDoc::as_string("{L : {fset Location}} :")
-                            .append(RcDoc::space())
-                            .append("code L [interface]")
-                    } else {
-                        RcDoc::as_string(":")
-                    })
+                    .append(RcDoc::as_string(":"))
                     .append(RcDoc::space())
                     .append(tau),
             })
@@ -67,16 +53,10 @@ fn make_let_binding<'a>(
         .append(RcDoc::space())
         .append(RcDoc::as_string(":="))
         .group()
-        .append(if toplevel {
-            RcDoc::line().append("{code")
-        } else {
-            RcDoc::nil()
-        })
         .append(RcDoc::line().append(expr.group()))
         .nest(2)
-        .append(if toplevel {
-            RcDoc::line().append("}.")
-            // RcDoc::as_string(".")
+        .append(if toplevel {            
+            RcDoc::as_string(".")
         } else {
             RcDoc::space()
                 .append(RcDoc::as_string("in"))
@@ -330,7 +310,7 @@ fn translate_base_typ<'a>(tau: BaseTyp) -> RcDoc<'a, ()> {
         }
         BaseTyp::NaturalInteger(_secrecy, modulo, _bits) => {
             // RcDoc::as_string("nat_mod")
-            RcDoc::as_string("Fp_finFieldType")
+            RcDoc::as_string("'fin")
                 .append(RcDoc::space())
                 .append(RcDoc::as_string(format!("0x{}", &modulo.0)))
                 .append(RcDoc::hardline())
@@ -1167,7 +1147,7 @@ fn translate_statements<'a>(
             }
         }
 
-        Statement::ReturnExp(e1) => RcDoc::as_string("ret")
+        Statement::ReturnExp(e1) => RcDoc::nil() // as_string("ret")
             .append(RcDoc::space())
             .append(make_paren(translate_expression(e1.clone(), top_ctx))),
         Statement::Conditional((cond, _), (mut b1, _), b2, mutated) => {
@@ -1780,7 +1760,7 @@ fn translate_item<'a>(
                         translate_ident(Ident::TopLevel(index_typ.0.clone())),
                         None,
                         // RcDoc::as_string("nat_mod")
-                        RcDoc::as_string("Fp_finFieldType")
+                        RcDoc::as_string("'fin")
                             .append(RcDoc::space())
                             .append(make_paren(translate_expression(size.0.clone(), top_ctx))),
                         true,
@@ -1793,7 +1773,8 @@ fn translate_item<'a>(
         Item::ConstDecl(name, ty, e) => make_let_binding(
             translate_ident(Ident::TopLevel(name.0.clone())),
             Some(translate_base_typ(ty.0.clone())),
-            RcDoc::as_string("ret").append(RcDoc::space()).append(make_paren(translate_expression(e.0.clone(), top_ctx))),
+            RcDoc::nil() // as_string("ret")
+                .append(RcDoc::space()).append(make_paren(translate_expression(e.0.clone(), top_ctx))),
             true,
         ),
         Item::NaturalIntegerDecl(nat_name, _secrecy, canvas_size, info) => {
@@ -1832,7 +1813,7 @@ fn translate_item<'a>(
                     .group()
                     .append(
                         RcDoc::line()
-                            .append(RcDoc::as_string("Fp_finFieldType"))
+                            .append(RcDoc::as_string("'fin"))
                             // .append(RcDoc::as_string("nat_mod"))
                             .append(RcDoc::space())
                             .append(match info {
