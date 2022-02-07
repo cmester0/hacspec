@@ -461,7 +461,9 @@ Qed.
 Definition add {WS : WORDSIZE} (x y: int WS) := repr WS ((unsigned WS x) + (unsigned WS y)).
 Infix ".+" := (do_add) (at level 77) : hacspec_scope. 
 (* Infix ".-" := (MachineIntegers.sub) (at level 77) : hacspec_scope. *)
-(* Infix ".*" := (MachineIntegers.mul) (at level 77) : hacspec_scope. *)
+Definition mul {WS : WORDSIZE} (x y: int WS) := repr WS ((unsigned WS x) * (unsigned WS y)).
+Infix ".*" := mul (at level 77) : hacspec_scope.
+
 Definition divs {WS : WORDSIZE} (x y: int WS) : int WS :=
   repr WS (Z.quot (signed WS x) (signed WS y)).
 Infix "./" := (divs) (at level 77) : hacspec_scope.
@@ -650,7 +652,8 @@ Definition list_len := length.
 Definition seq_index {A: choice_type} `{Default A} (s: seq A) (i : nat) :=
   List.nth i s default.
 
-Definition seq_len {A: choice_type} (s: seq A) : N := N.of_nat (length s).
+(* Definition seq_len {A: choice_type} (s: seq A) : N := N.of_nat (length s). *)
+Definition seq_len {A: choice_type} (s: seq A) : uint_size := usize (length s).
 
 Definition seq_new_ {A: choice_type} (init : A) (len: nat) : seq A :=
   VectorDef.const init len.
@@ -809,10 +812,10 @@ Definition array_from_slice
   (default_value: a)
   (out_len: nat)
   (input: seq a)
-  (start: nat)
-  (slice_len: nat)
+  (start: uint_size)
+  (slice_len: uint_size)
     : nseq a (usize out_len) :=
-  nseq_to_nseq_nat (array_from_slice_nat default_value out_len input start slice_len).
+  nseq_to_nseq_nat (array_from_slice_nat default_value out_len input (from_uint_size start) (from_uint_size slice_len)).
 
 
 (* Definition array_slice *)
@@ -2051,7 +2054,7 @@ Definition chFin_from_secret_literal {m : nat} (x : int128) {H : Prelude.Positiv
   chFin_from_nat_mod (@nat_mod_from_secret_literal (Z.of_nat m) x).
 
 Definition chFin_pow2 m n `{Prelude.Positive m} : 'fin m :=
-  chFin_from_nat_mod (@nat_mod_pow2 (Z.of_nat m) n).
+  chFin_from_nat_mod (@nat_mod_pow2 (Z.of_nat m) (from_uint_size n)).
 
 (* Coercion code_from_nat_mod {m : nat} (a : nat_mod m) : raw_code (chFin m) := *)
 (*   ret (chFin_from_nat_mod a). *)
