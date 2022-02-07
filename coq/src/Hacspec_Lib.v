@@ -11,10 +11,10 @@ Import ListNotations.
 Require Import MachineIntegers.
 From Coqprime Require GZnZ.
 
-Set Warnings "-notation-overridden".
-From mathcomp Require Import all_ssreflect all_algebra ssreflect seq tuple. (* vector *)
-
-Declare Scope hacspec_scope.
+(* Set Warnings "-notation-overridden". *)
+From mathcomp Require Import all_ssreflect (* all_algebra  *)ssreflect (* seq tuple *). (* vector *)
+Locate introT.
+(* Declare Scope hacspec_scope. *)
 
 From Crypt Require Import choice_type Package.
 Import PackageNotation.
@@ -23,66 +23,195 @@ Open Scope Z_scope.
 
 From Relational Require Import OrderEnrichedCategory GenericRulesSimple.
 
-Set Warnings "-notation-overridden,-ambiguous-paths".
-From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
-  ssrnat ssreflect ssrfun ssrbool ssrnum eqtype choice seq.
+(* Set Warnings "-notation-overridden,-ambiguous-paths". *)
+(* From mathcomp Require Import all_ssreflect all_algebra reals distr realsum *)
+(*   ssrnat ssreflect ssrfun ssrbool ssrnum eqtype choice seq. *)
 Set Warnings "notation-overridden,ambiguous-paths".
 
-From Mon Require Import SPropBase.
+(* From Mon Require Import SPropBase. *)
 From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb
   pkg_core_definition choice_type pkg_composition pkg_rhl Package Prelude.
 
-From Coq Require Import Utf8.
-From extructures Require Import ord fset fmap.
+(* From Coq Require Import Utf8. *)
+(* From extructures Require Import ord fset fmap. *)
 
 (* From Coq Require Import Uint63. *)
 
-Theorem modulus_is_pow2 : forall {WS : WORDSIZE}, Z.to_nat modulus = (2 ^ wordsize)%N.
-Proof.
-  intros.
-  unfold modulus.
-  
-  pose (two_power_nat_equiv wordsize).
-  rewrite e.
-  rewrite Z2Nat.inj_pow.
-  rewrite Nat2Z.id.
-  replace (Z.to_nat 2) with 2%nat by reflexivity.
+Section IntDefinition.
 
-  induction wordsize.
-  - reflexivity.
-  - rewrite Nat.pow_succ_r'.
-    rewrite IHn.
-    rewrite expnS.  
+  Context (WS : WORDSIZE).
+
+  (* Compute (2 ^ (N.of_nat 100))%N. *)
+  
+  Theorem modulus_is_pow2 : Z.to_N modulus = (N.pow 2 (N.of_nat wordsize))%N.
+  Proof.
+    intros.
+    unfold modulus.
+    
+    rewrite (two_power_nat_equiv wordsize).
+    rewrite Z2N.inj_pow.
+    (* rewrite Z2Nat.inj_pow. *)
+    - rewrite <- nat_N_Z.
+      rewrite N2Z.id.
+      (* rewrite Nat2Z.id. *)
+      cbn.
+      reflexivity.
+    - easy.
+    - induction wordsize.
+      + reflexivity.
+      + easy.
+  Qed.
+  
+  Definition int_max : N := Z.to_N modulus.
+  Definition int_pos : Prelude.Positive (N.to_nat int_max).
+  Proof.    
+    unfold int_max.
+    rewrite Z_N_nat.
+    unfold modulus.
+    rewrite (two_power_nat_equiv wordsize).
+    rewrite Z2Nat.inj_pow.
+    - rewrite Nat2Z.id.
+      replace (Z.to_nat 2) with 2%nat by reflexivity.
+
+      pose (PositiveExp2 (wordsize)).
+      induction wordsize.
+      + cbn in *.
+        apply p.
+      + rewrite Nat.pow_succ_r'.
+        apply Positive_prod.
+        easy.
+        easy.
+        easy.
+    - induction wordsize.
+      + reflexivity.
+      + easy.
+  Defined. 
+
+  (* Compute (2 ^ 16)%N. *)
+  (* Definition Words : finType := [finType of 'Z_modulus]. *)
+  
+  Definition int_spec : {int : choice_type | (int = chFin (@Prelude.mkpos (N.to_nat int_max) int_pos))}.
+    apply (@exist choice_type (fun int => (int = chFin (@Prelude.mkpos (N.to_nat int_max) int_pos))) (chFin (@Prelude.mkpos (N.to_nat int_max) int_pos))).
     reflexivity.
-  - easy.
-  - destruct wordsize.
-    + reflexivity.
-    + easy.
-Qed.
+  Qed.
   
-Definition int_max {WS : WORDSIZE} : nat := Z.to_nat modulus.
-Definition int_pos {WS : WORDSIZE} : Prelude.Positive (int_max).
-Proof.  
-  unfold int_max.
-  rewrite modulus_is_pow2.
-  apply (Prelude.PositiveExp2 (@wordsize WS)).
-Defined. 
+  Definition int : choice_type.
+    apply (proj1_sig int_spec).
+  Defined.  
+  Definition int_compute : int = chFin (@Prelude.mkpos (N.to_nat int_max) int_pos).
+  Proof.
+    apply (proj2_sig int_spec).
+  Qed.    
 
-Definition int {WS : WORDSIZE} : choice_type := chFin (@Prelude.mkpos int_max int_pos). (* 'fin int_max. *)
+  Theorem repr_helper : forall n k, (n mod 2 ^ k < 2 ^ k)%nat.
+  Proof.
+    intros.
+    apply (introT ltP).  
+    apply Nat.mod_upper_bound.
+    induction k.
+    - easy.
+    - rewrite expnSr.
+      apply Nat.neq_mul_0.
+      split ; easy.
+  Qed.
+  Theorem repr_helper_2 : forall {n m}, (0 < m)%nat -> (n mod m < m)%nat.
+  Proof.
+    intros.
+    apply (introT ltP).  
+    apply Nat.mod_upper_bound.
+    induction m ; easy.
+  Qed.
+  Check (fun x => @repr_helper_2 (x) (Z.to_nat modulus)).
+  Theorem repr_helper_3 : (0 < Z.to_nat modulus)%N.
+  Proof.
+    intros.
+    (* unfold modulus in *. *)
+    pose (introT (Nat.ltb_spec0 0 (Z.to_nat (@modulus WS)))).
+    pose (Z2Nat.inj_lt (0) (@modulus WS) ).
+    replace 0%nat with (Z.to_nat 0) by reflexivity.
+    apply (introT (ltP)).
+    apply i0 ; try easy.
+  Qed.
 
-(* Program Definition a {WS : WORDSIZE} (z : Z) : int := _. *)
-(* Next Obligation. *)
-(*   intros. *)
-(*   unfold int_max. *)
-(*   rewrite modulus_is_pow2. *)
-(*   Check (2 ^ wordsize)%N. *)
-(*   Check [choiceType of ordinal _.(pos) ]. *)
-  
-  
-(*   (* exists z. *) *)
-(*   Check fullrankfun. *)
+  Definition repr (x : Z) : int.
+    (* rewrite int_compute. *)
+    unfold int.
+    unfold sval.
+    destruct int_spec.
+    subst.
+    
+    apply (Ordinal (n:=Z.to_nat modulus) (m:= Z.to_nat x mod Z.to_nat modulus) (repr_helper_2 (repr_helper_3))).
+  Qed.
 
+  Definition unsigned (x : int) : Z.
+  Proof.
+    (* rewrite int_compute. *)
+    unfold int in x.
+    unfold sval in x.
+    destruct int_spec.
+    subst.
+
+    destruct x.
+    apply (Z.of_nat m).    
+  Qed.  
+
+  Definition signed (x : int) : Z.
+  Proof.
+    rewrite int_compute in x.
+    destruct WS.
+    destruct x.
+    apply (Z.of_nat m).
+  Qed.  
+
+  (* Theorem repr_unsigned_id : forall n, repr (unsigned n) = n. *)
+  (* Proof. *)
+  (*   intros. *)
+  (*   pose int_compute. *)
+  (*   unfold int_compute. *)
+    
+  Axiom repr_unsigned_id : forall n, repr (unsigned n) = n.
+  Axiom unsigned_repr_id : forall n, unsigned (repr n) = n. (* `{n mod modulus = n} *)
+  (* Theorem unsigned_repr_id : forall n `{n mod modulus = n}, unsigned (repr n) = n. *)
+  (* Proof. *)
+  (*   intros. *)
+
+  (*   assert (modulus_not_zero : @modulus WS <> 0). *)
+  (*   { *)
+  (*     destruct WS. *)
+  (*     destruct wordsize. *)
+  (*     - contradiction. *)
+  (*     - easy. *)
+  (*   } *)
+        
+  (*   unfold unsigned. *)
+  (*   unfold repr. *)
+
+  (*   destruct int_spec. *)
+  (*   subst. *)
+
+  (*   cbn. *)
+  (*   rewrite <- Z2Nat.inj_pos. *)
+    
+  (*   rewrite Nat2Z.inj_mod. *)
+    
+  (*   rewrite Z2Nat.id. *)
+  (*   - rewrite Z2Nat.id. *)
+  (*     + apply H. *)
+  (*     + easy. *)
+  (*   - destruct n. *)
+  (*     + reflexivity. *)
+  (*     + easy. *)
+  (*     + apply (Z.mod_small_iff (Z.neg p) _ modulus_not_zero) in H. *)
+  (*       destruct H. *)
+  (*       * easy. *)
+  (*       * easy. *)
+  (* Qed. *)
+
+  Opaque int.
+  Opaque repr.
+  Opaque unsigned.
+End IntDefinition.
 
 Definition int8 : choice_type := @int WORDSIZE8.
 Definition int16 : choice_type := @int WORDSIZE16.
@@ -90,106 +219,17 @@ Definition int32 : choice_type := @int WORDSIZE32.
 Definition int64 : choice_type := @int WORDSIZE64.
 Definition int128 : choice_type := @int WORDSIZE128.
 
+Compute int16.
+Print repr.
+Print int.
+Compute repr WORDSIZE16 100.
+
 Axiom secret : forall {WS : WORDSIZE},  (@int WS) -> (@int WS).
 
 Locate Ordinal.
 
-Theorem repr_helper : forall n k, (n mod 2 ^ k < 2 ^ k)%nat.
-Proof.
-  intros.
-  apply (introT ltP).  
-  apply Nat.mod_upper_bound.
-  induction k.
-  - easy.
-  - rewrite expnSr.
-    apply Nat.neq_mul_0.
-    split ; easy.
-Qed.
-Theorem repr_helper_2 : forall {n m}, (0 < m)%nat -> (n mod m < m)%nat.
-Proof.
-  intros.
-  apply (introT ltP).  
-  apply Nat.mod_upper_bound.
-  induction m ; easy.
-Qed.
-Check (fun x => @repr_helper_2 (x) (Z.to_nat modulus)).
-Theorem repr_helper_3 : forall {WS : WORDSIZE}, (0 < Z.to_nat modulus)%N.
-Proof.
-  intros.
-  (* unfold modulus in *. *)
-  pose (introT (Nat.ltb_spec0 0 (Z.to_nat (@modulus WS)))).
-  pose (Z2Nat.inj_lt (0) (@modulus WS) ).
-  replace 0%nat with (Z.to_nat 0) by reflexivity.
-  apply (introT (ltP)).
-  apply i0 ; try easy.
-Qed.
 
 Print int.
-
-Definition repr (WS : WORDSIZE) (x : Z) : @int WS.
-  apply (Ordinal (n:=Z.to_nat modulus) (m:= Z.to_nat x mod Z.to_nat modulus) (repr_helper_2 (repr_helper_3))).
-Defined.
-(* Next Obligation. *)
-(*   intros. *)
-(*   unfold int_max. *)
-  
-  
-(*   fold (Z.to_nat modulus). *)
-(*   fold Z.to_nat. *)
-(*   Print Z.to_nat.  *)
-(*   intros. *)
-(*   pose proof (modulus_pos). *)
-(*   cbn in H. *)
-(*   apply Z.gt_lt in H. *)
-(*   cbn. *)
-
-Definition unsigned (WS : WORDSIZE) (x : @int WS) : Z.
-Proof.
-  destruct WS.
-  destruct x.
-  apply (Z.of_nat m).
-Defined.  
-
-Definition signed (WS : WORDSIZE) (x : @int WS) : Z.
-Proof.
-  destruct WS.
-  destruct x.
-  apply (Z.of_nat m).
-Defined.  
-
-
-Theorem unsigned_repr_id : forall {WS : WORDSIZE} n `{n mod modulus = n}, unsigned WS (repr WS n) = n.
-Proof.
-  intros.
-
-  assert (modulus_not_zero : @modulus WS <> 0).
-  {
-    destruct WS.
-    destruct wordsize.
-    - contradiction.
-    - easy.
-  }
-
-  destruct WS.
-  unfold unsigned.
-  unfold repr.
-  rewrite Nat2Z.inj_mod.
-    
-  rewrite Z2Nat.id.
-  - rewrite Z2Nat.id.
-    + apply H.
-    + easy.
-  - 
-    
-    destruct n.
-    + reflexivity.
-    + easy.
-    + apply (Z.mod_small_iff (Z.neg p) _ modulus_not_zero) in H.
-      destruct H.
-      * easy.
-      * easy.
-Qed.
-
 
 (* Global Instance Z_uint_sizable : UInt_sizable Z := { *)
 (*   usize n := repr n; *)
@@ -293,7 +333,7 @@ Global Instance Z_Int_sizable : Int_sizable Z := {
 (**** Public integers *)
 
 (* Definition pub_u8 (n:range_t U8) : u:pub_uint8{v u == n} := uint #U8 #PUB n *)
-Definition pub_u8 (n : Z) : int8 := repr n.
+Definition pub_u8 (n : Z) : int8 := repr WORDSIZE8 n. (* repr *)
 
 (* Definition pub_i8 (n:N) : u:pub_int8{v u == n} := sint #S8 #PUB n *)
 Definition pub_i8 (n : Z) : int8 := repr WORDSIZE8 n.
@@ -378,51 +418,56 @@ Definition pub_i128 (n : Z) : int128 := repr WORDSIZE128 n.
 
 (* (* Infix "%%" := Z.rem (at level 40, left associativity) : hacspec_scope. *) *)
 (* Infix ".+" := (MachineIntegers.add) (at level 77) : hacspec_scope. *)
-Theorem int_max_is_succ : forall {WS : WORDSIZE}, exists k, int_max = k.+1.
+Theorem int_max_is_succ : forall {WS : WORDSIZE}, exists k, int_max WS = N.succ k.
 Proof.
   intros.
   unfold int_max.
   unfold modulus.
   unfold two_power_nat.
   cbn.
-  apply (Pos2Nat.is_succ _).
-Defined.
+  unfold N.succ.
+  exists (N.pos (Pos.pred (shift_nat wordsize 1))).
+  f_equal.
+  rewrite Pos.succ_pred.
+  reflexivity.
+
+  intro a.
+  destruct wordsize eqn:ow.
+  - destruct WS.
+    contradiction.
+  - inversion a.
+Qed.
 
 Definition do_add {WS : WORDSIZE} (x y : @int WS) : @int WS.
-  assert (int_max = int_max.-1.+1).
+  assert (N.to_nat (int_max WS) = (N.to_nat (int_max WS)).-1.+1).
   {
     apply S_pred_pos.
     destruct int_max_is_succ.
     rewrite H.
-    apply Nat.lt_0_succ.
+    rewrite Nnat.N2Nat.inj_succ.
+    apply Nat.lt_0_succ.    
   }
   unfold int in *.
-
-  assert ('I_ int_max).
-  apply x.
-
-  assert ('I_ int_max).
-  apply y.
-
-  rewrite H in X.
-  rewrite H in X0.
+  unfold sval in *.
+  destruct int_spec.
+  subst.
   
-  pose (Zp_add X X0).
-
-  rewrite <- H in o.
-  
-  apply o.
+  apply (Ordinal (n := N.to_nat (int_max WS)) (m := (x + y) %% (N.to_nat (int_max WS)))).
+  apply ltn_pmod.
+  rewrite H.
+  easy.
 Qed.
-  
+
+Definition add {WS : WORDSIZE} (x y: int WS) := repr WS ((unsigned WS x) + (unsigned WS y)).
 Infix ".+" := (do_add) (at level 77) : hacspec_scope. 
 (* Infix ".-" := (MachineIntegers.sub) (at level 77) : hacspec_scope. *)
 (* Infix ".*" := (MachineIntegers.mul) (at level 77) : hacspec_scope. *)
-Definition divs {WS : WORDSIZE} `{Prelude.Positive (@wordsize WS)} (x y: int) : int :=
+Definition divs {WS : WORDSIZE} (x y: int WS) : int WS :=
   repr WS (Z.quot (signed WS x) (signed WS y)).
 Infix "./" := (divs) (at level 77) : hacspec_scope.
 (* Infix ".%" := (MachineIntegers.mods) (at level 77) : hacspec_scope. *)
 (* Infix ".^" := (MachineIntegers.xor) (at level 77) : hacspec_scope. *)
-Definition and {WS : WORDSIZE} `{Prelude.Positive (@wordsize WS)} (x y: int): int := repr WS (Z.land (unsigned WS x) (unsigned WS y)).
+Definition and {WS : WORDSIZE} (x y: int WS): int WS := repr WS (Z.land (unsigned WS x) (unsigned WS y)).
 Infix ".&" := and (at level 77) : hacspec_scope.
 (* Infix ".|" := (MachineIntegers.or) (at level 77) : hacspec_scope. *)
 (* (* Infix "==" := (MachineIntegers.eq) (at level 32) : hacspec_scope. *) *)
@@ -467,10 +512,11 @@ Definition usize_shift_left (u: uint_size) (s: int32) : uint_size :=
   (rol u s).
 Infix "usize_shift_left" := (usize_shift_left) (at level 77) : hacspec_scope.
 
-Definition pub_uint128_wrapping_add (x y: int128) : int128 :=
-  add x y.
+Lemma int_eqb_eq : forall {WS : WORDSIZE} (a b : int WS), a == b = true <-> a = b. (* eq  *)
+Proof.
+Admitted.
 
-Global Instance int_eqdec `{WS: WORDSIZE} : EqDec int := {
+Global Instance int_eqdec `{WS: WORDSIZE} : EqDec (int WS) := {
   eqb := eq_op;
   eqb_leibniz := int_eqb_eq ;
 }.
@@ -500,8 +546,8 @@ Infix ".|" := (MachineIntegers.or) (at level 77) : hacspec_scope.
 (* Open Scope nat_scope. *)
 
 (* TODO START , FORMALIZATION OF MACHINE INTEGERS BASED ON SSREFLET INSTEAD!! *)
-Definition add {WS : WORDSIZE} (x y: int) : int :=
-  repr WS (unsigned WS x + unsigned WS y).
+(* Definition add {WS : WORDSIZE} (x y: int WS) : int WS := *)
+(*   repr WS (unsigned WS x + unsigned WS y). *)
 Definition one {WS : WORDSIZE} := repr WS 1.
 (* TODO END *)
 
@@ -548,6 +594,27 @@ Proof.
   apply (nseq_nat T (Z.to_nat (from_uint_size n))).
 Defined.
 
+Definition nseq_to_nseq_nat {T} {n : nat} (v : nseq_nat T n) : nseq T (usize n).
+  unfold nseq.
+  cbn.
+  rewrite unsigned_repr_id.
+  rewrite Nat2Z.id.
+  apply v.
+Qed.
+
+(* Theorem nseq_to_nseq_nat : *)
+(*   forall T n `{H: Z.of_nat n mod (@modulus WORDSIZE32) = Z.of_nat n}, nseq_nat T n = nseq T (usize n). *)
+(* Proof. *)
+(*   intros. *)
+(*   unfold nseq. *)
+(*   cbn. *)
+(*   rewrite unsigned_repr_id. *)
+(*   rewrite Nat2Z.id. *)
+(*   reflexivity. *)
+(*   apply H. *)
+(* Qed. *)
+  
+
 (* Check (usize 32 : @int WORDSIZE32). *)
 (* Compute repr WORDSIZE32 32. *)
 (* Compute (usize 32%nat : @int WORDSIZE32). *)
@@ -591,11 +658,14 @@ Definition seq_new_ {A: choice_type} (init : A) (len: nat) : seq A :=
 Definition seq_new {A: choice_type} `{Default A} (len: nat) : seq A :=
   seq_new_ default len.
 
-Fixpoint array_from_list (A: choice_type) (l: list A) : nseq_nat A (length l) :=
+Fixpoint array_from_list_nat (A: choice_type) (l: list A) : nseq_nat A (length l) :=
   match l with
   | [::] => Datatypes.tt
-  | (x :: xs) => (pair x (array_from_list A xs))
+  | (x :: xs) => (pair x (array_from_list_nat A xs))
   end.
+Definition array_from_list (A: choice_type) (l: list A) : nseq A (usize (length l)) :=
+  nseq_to_nseq_nat (array_from_list_nat A l).
+  
   (* match l return (nseq A (length l)) with *)
   (* | [] => nil_tuple A  (* VectorDef.nil A *) *)
   (* | x :: xs => [tuple of x (in_tuple xs)] (* array_from_list A xs *) *)
@@ -672,7 +742,7 @@ Definition update_sub {A : choice_type} {len slen} `{Default A} (v : nseq_nat A 
 (* Sanity check *)
 (* Compute (to_list (update_sub [1;2;3;4;5] 0 4 (of_list [9;8;7;6;12]))). *)
 
-Global Coercion array_from_seq
+Global Coercion array_from_seq_nat
   {a: choice_type}
  `{Default a}
   (out_len:nat)
@@ -682,9 +752,17 @@ Global Coercion array_from_seq
   (* tval . *)
   let out := array_new_ default out_len in
     (* let out := VectorDef.const default out_len in *)
-    update_sub out 0 (out_len - 1) (array_from_list a input).
-  (* VectorDef.of_list input. *)
+    update_sub out 0 (out_len - 1) (array_from_list_nat a input).
 
+Global Coercion array_from_seq
+  {a: choice_type}
+ `{Default a}
+  (out_len:nat)
+  (input: seq a)
+  (* {H : List.length input = out_len} *)
+  : nseq a (usize out_len) :=
+  nseq_to_nseq_nat (array_from_seq_nat out_len input).
+  
 (* Global Coercion array_from_seq : seq >-> nseq. *)
 
 Definition slice {A : choice_type} (l : seq A) (i j : nat) : seq A :=
@@ -712,7 +790,7 @@ Definition lseq_slice {A : choice_type} `{Default A} {n} (l : nseq_nat A n) (i j
     array_from_seq n (slice (seq_from_list (array_to_list l)) i j).
   (* VectorDef.of_list (slice (VectorDef.to_list l) i j). *)
 
-Definition array_from_slice
+Definition array_from_slice_nat
   {a: choice_type}
  `{Default a}
   (default_value: a)
@@ -723,7 +801,18 @@ Definition array_from_slice
     : nseq_nat a out_len :=
   let out := array_new_ default out_len in
     (* let out := VectorDef.const default_value out_len in *)
-    update_sub out 0 slice_len (lseq_slice (array_from_list a input) start (start + slice_len)).
+    update_sub out 0 slice_len (lseq_slice (array_from_list_nat a input) start (start + slice_len)).
+
+Definition array_from_slice
+  {a: choice_type}
+ `{Default a}
+  (default_value: a)
+  (out_len: nat)
+  (input: seq a)
+  (start: nat)
+  (slice_len: nat)
+    : nseq a (usize out_len) :=
+  nseq_to_nseq_nat (array_from_slice_nat default_value out_len input start slice_len).
 
 
 (* Definition array_slice *)
@@ -961,7 +1050,7 @@ Definition seq_num_exact_chunks {a} (l : seq a) (chunk_size : uint_size) : uint_
 (* (* Until #84 is fixed this returns an empty sequence if not enough *) *)
 Definition seq_get_exact_chunk {a : choice_type} (l : seq a) (chunk_size chunk_num: uint_size) : seq a :=
   let '(len, chunk) := seq_get_chunk l (from_uint_size chunk_size) (from_uint_size chunk_num) in
-  if eqn len chunk_size then [] else chunk.
+  if eqb len chunk_size then [] else chunk.
 
 Definition seq_set_exact_chunk {a} `{H : Default a} := @seq_set_chunk a H.
 
@@ -972,7 +1061,7 @@ Definition seq_get_remainder_chunk : forall {a : choice_type}, seq a -> uint_siz
       chunks - 1
     else 0 in
     let (len, chunk) := seq_get_chunk l (from_uint_size chunk_size) last_chunk in
-    if eqn len chunk_size then
+    if eqb len chunk_size then
       []
     else chunk.
 
@@ -1078,7 +1167,7 @@ Axiom uint128_to_be_bytes : int128 -> nseq_nat int8 16.
 (* Definition uint128_to_be_bytes (x: uint128) : nseq uint8 16 := *)
 (*   LBSeq.uint_to_bytes_be x *)
 
-Axiom uint128_from_le_bytes : nseq_nat uint8 16 -> int128.
+Axiom uint128_from_le_bytes : nseq uint8 (usize 16) -> int128.
 (* Axiom uint128_from_le_bytes : nseq int8 16 -> int128. *)
 (* Definition uint128_from_le_bytes (input: nseq uint8 16) : uint128 := *)
 (*   LBSeq.uint_from_bytes_le input *)
@@ -1316,7 +1405,7 @@ Section Casting.
     cast n := repr WORDSIZE32 (unsigned WORDSIZE8 n)
   }.
 
-  Global Instance cast_int_to_nat `{WS: WORDSIZE} `{Prelude.Positive (@wordsize WS)} : Cast int nat := {
+  Global Instance cast_int_to_nat `{WS: WORDSIZE} : Cast (int WS) nat := {
     cast n := Z.to_nat (signed WS n)
   }.
 
@@ -1339,7 +1428,7 @@ Section Coercions.
 
   Global Coercion repr : Z >-> int.
 
-  Global Coercion Z_to_int `{WS: WORDSIZE} `{Prelude.Positive (@wordsize WS)} (n : Z) : int := repr WS n.
+  Global Coercion Z_to_int `{WS: WORDSIZE} (n : Z) : (int WS) := repr WS n.
   (* Global Coercion  Z_to_int : Z >-> int. *)
 
   Global Coercion Z_to_uint_size (n : Z) : uint_size.
@@ -1354,12 +1443,12 @@ Section Coercions.
   Global Coercion Z_to_int_size (n : Z) : int_size := repr WORDSIZE32 n.
   (* Global Coercion Z_to_int_size : Z >-> int_size. *)
 
-  Global Coercion N_to_int `{WS: WORDSIZE}`{Prelude.Positive (@wordsize WS)} (n : N) : int := repr WS (Z.of_N n).
+  Global Coercion N_to_int `{WS: WORDSIZE} (n : N) : (int WS) := repr WS (Z.of_N n).
   Global Coercion N.of_nat : nat >-> N.
   (* Global Coercion N_to_int : N >-> int. *)
   Global Coercion N_to_uint_size (n : Z) : uint_size := repr WORDSIZE32 n.
   (* Global Coercion N_to_uint_size : Z >-> uint_size. *)
-  Global Coercion nat_to_int `{WS: WORDSIZE} `{Prelude.Positive (@wordsize WS)} (n : nat) := repr WS (Z.of_nat n).
+  Global Coercion nat_to_int `{WS: WORDSIZE} (n : nat) := repr WS (Z.of_nat n).
   (* Global Coercion nat_to_int : nat >-> int. *)
 
   Global Coercion uint_to_uint_sizable {A : choice_type} `{H : UInt_sizable A} (n : uint_size) : A.
@@ -1433,7 +1522,7 @@ Section Coercions.
   (* Defined. *)
   (* (* Global Coercion Z_in_nat_mod : Z >-> nat_mod.  *) *)
 
-  (* Global Coercion int_in_nat_mod {m : Z} `{WS: WORDSIZE} `{Prelude.Positive (@wordsize WS)} (x:int) : nat_mod m. *)
+  (* Global Coercion int_in_nat_mod {m : Z} `{WS: WORDSIZE} (x:int) : nat_mod m. *)
   (* Proof. *)
   (*   unfold nat_mod. *)
   (*   (* since we assume x < m, it will be true that (unsigned x) = (unsigned x) mod m  *) *)
@@ -1740,7 +1829,7 @@ Definition int_to_be_bytes {WS : WORDSIZE} : @int WS -> nseq_nat int8 8 :=
   fun k =>
     let chunks := Z.to_nat (2 ^ (Z.of_nat (@log2_WS WS) / Z.of_nat (@log2_WS WORDSIZE8))) in
     let k_nat := Z.of_nat (int_to_nat k) in
-    array_from_list (int8) [
+    array_from_list_nat (int8) [
             @repr WORDSIZE8 (nat_be_range chunks k_nat 7) ;
             @repr WORDSIZE8 (nat_be_range chunks k_nat 6) ;
             @repr WORDSIZE8 (nat_be_range chunks k_nat 5) ;
@@ -1771,7 +1860,7 @@ Defined.
   (* let (n,v) := s in *)
   (* (S n, (v .+ (@repr WS _ (((int8_to_nat i) * (2 ^ (chunks * n)))%Z)))). *)
   
-Definition int_from_be_bytes {WS : WORDSIZE} : nseq_nat int8 8 -> int :=
+Definition int_from_be_bytes {WS : WORDSIZE} : nseq_nat int8 8 -> int WS :=
   (fun v => snd (fold_right (@int_from_be_bytes_fold_fun WS) (0%nat, @repr WS 0) (array_to_list v))).
                                                                                 
 Definition u64_to_be_bytes : int64 -> nseq_nat int8 8 := @int_to_be_bytes WORDSIZE64.
@@ -1973,7 +2062,7 @@ Program Definition sanatize_val {n : nat} `{Prelude.Positive n} (val : nat) :=
   | false =>
     match n with
     | O => _
-    | S n' => @Zp0 n'
+    | S n' => @ord0 n'
     end
   end.
 
@@ -1993,7 +2082,7 @@ Definition chFin_div {n : nat} `{Prelude.Positive n} (a: 'fin n) (b: 'fin n) : '
   sanatize_val (nat_of_ord a / nat_of_ord b)%nat.
 Infix "/%" := chFin_div (at level 33) : hacspec_scope.
 
-Definition chFin_zero {n : nat} := @Zp0 n.
+Definition chFin_zero {n : nat} := @ord0 n.
 
 Notation "A '× B" :=
   (chProd A B : choice_type) (at level 79, left associativity) : hacspec_scope.

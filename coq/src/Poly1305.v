@@ -22,13 +22,21 @@ Open Scope Z_scope.
 Open Scope bool_scope.
 Open Scope hacspec_scope.
 
+From mathcomp Require Import fingroup.fingroup.
+
+Local Open Scope ring_scope.
+Import GroupScope GRing.Theory.
+
 Require Import Hacspec.Lib.
 
-Definition poly_key_t := nseq (uint8) (usize 32).
+
+
+
+
+
 Remark poly_key_t_nat : forall n, n mod (@modulus WORDSIZE32) = n -> nseq uint8 (usize n) = nseq_nat uint8 (Z.to_nat n).
 Proof.
   intros n H.
-  unfold poly_key_t.
   unfold nseq.
   (* unfold nseq_nat. *)
   unfold usize.
@@ -36,10 +44,18 @@ Proof.
   unfold nat_uint_sizable.
   unfold Z_uint_sizable.
   rewrite unsigned_repr_id.
-  - reflexivity.
-  - apply H.
+  reflexivity.
 Qed.
-    
+
+Definition poly_key_t := nseq (uint8) (usize 32).
+Definition of_poly_key_t : poly_key_t -> nseq_nat uint8 32.
+  intros.
+  assert (32%nat = Z.to_nat 32) by reflexivity.
+  rewrite H.
+  rewrite <- (poly_key_t_nat) by reflexivity.
+  apply X.
+Qed.
+
 Definition blocksize_v : uint_size :=
    (usize 16).
 
@@ -80,6 +96,7 @@ Proof.
   assert (from_uint_size (usize 16) = 16).
   2 : {
     rewrite H.
+    exists (16%nat).
     reflexivity.
   }.
   
@@ -88,12 +105,11 @@ Proof.
   unfold Z_uint_sizable.
   
   apply unsigned_repr_id.
-  reflexivity.
 Qed.
    
 Program Definition temp (b_0 : poly_block_t) :=
   let n_1 : uint128 :=
-    uint128_from_le_bytes ((* array_from_seq (16) *) (b_0)) in 
+    uint128_from_le_bytes ((* array_from_seq (16) *) b_0) in 
   n_1.
 
 Definition poly1305_encode_r (b_0 : poly_block_t) : field_element_t :=
@@ -101,7 +117,7 @@ Definition poly1305_encode_r (b_0 : poly_block_t) : field_element_t :=
     uint128_from_le_bytes ((* array_from_seq (16) *) (b_0)) in 
   let n_1 :=
     (n_1) .& (secret (
-        @repr WORDSIZE128 21267647620597763993911028882763415551) : int128) in 
+        @Lib.repr WORDSIZE128 21267647620597763993911028882763415551) : int128) in 
    (chFin_from_secret_literal (n_1)).
 
 Definition poly1305_encode_block (b_2 : poly_block_t) : field_element_t :=
@@ -116,8 +132,7 @@ Definition poly1305_encode_last
   (pad_len_5 : block_index_t)
   (b_6 : sub_block_t) : field_element_t :=
   let n_7 : uint128 :=
-    uint128_from_le_bytes (array_from_slice (default) (16) (b_6) ((* usize *) 0) (
-        seq_len (b_6))) in 
+    uint128_from_le_bytes (array_from_slice (default) (16) (b_6) ((* usize *) 0) (seq_len (b_6))) in 
   let f_8 : field_element_t :=
     chFin_from_secret_literal (n_7) in 
    ((f_8) +% (chFin_pow2 (0x03fffffffffffffffffffffffffffffffb) (((* usize *) 8) * (
