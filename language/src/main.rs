@@ -163,13 +163,17 @@ fn handle_crate<'tcx>(
             // Remove the modules statements from the crate
             rustc_ast::ast::Crate {
                 attrs,
-                items: items.clone().into_iter().filter(|x| match x.kind {
-                    rustc_ast::ast::ItemKind::Mod(
-                        rustc_ast::ast::Unsafe::No,
-                        rustc_ast::ast::ModKind::Unloaded,
-                    ) => false,
-                    _ => true
-                }).collect(),
+                items: items
+                    .clone()
+                    .into_iter()
+                    .filter(|x| match x.kind {
+                        rustc_ast::ast::ItemKind::Mod(
+                            rustc_ast::ast::Unsafe::No,
+                            rustc_ast::ast::ModKind::Unloaded,
+                        ) => false,
+                        _ => true,
+                    })
+                    .collect(),
                 span,
             }
         }
@@ -243,20 +247,40 @@ fn handle_crate<'tcx>(
             let original_file = Path::new(file_str);
             let extension = &callback.output_type;
 
-            // Compute file name as output directory with crate local path (krate_path)
-            let oe = 
-                (original_file)
-                .join(Path::new(
-                    krate_path
-                        .clone()
-                        .to_title_case()
-                        .replace(" ", "_")
-                        .replace("Hacspec_", "")
-                        .as_str(),
-                ))
-                .with_extension(extension);
+            let file = match extension.clone().as_str() {
+                "fst" | "ec" | "json" => {
+                    // Compute file name as output directory with crate local path (krate_path)
+                    (original_file)
+                        .join(Path::new(
+                            (krate_path
+                                .clone()
+                                .to_title_case()
+                                .replace(" ", ".")
+                                + "." + extension)
+                                .as_str(),
+                        ))
+                }
+                "v" => {
+                    // Compute file name as output directory with crate local path (krate_path)
+                    (original_file)
+                        .join(Path::new(
+                            (krate_path
+                             .clone()
+                             .to_title_case()
+                             .replace(" ", "_")
+                             + "." + extension)
+                                .as_str(),
+                        ))
+                }
+                _ => {
+                    compiler
+                        .session()
+                        .err("unknown backend extension for output file");
+                    return Compilation::Stop;
+                }
+            };
+            let file = file.to_str().unwrap();
 
-            let file = &(oe.to_str().unwrap());
             match extension.as_str() {
                 "fst" => rustspec_to_fstar::translate_and_write_to_file(
                     &compiler.session(),
