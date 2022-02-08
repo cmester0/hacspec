@@ -230,7 +230,8 @@ fn handle_crate<'tcx>(
         .map(|(x, _)| x)
         .collect::<Vec<_>>();
     println!(
-        " > Successfully typechecked{}",
+        " > Successfully typechecked {}{}",
+        krate_path.clone(),
         if imported_crates.len() == 0 {
             ".".to_string()
         } else {
@@ -242,7 +243,7 @@ fn handle_crate<'tcx>(
     );
 
     match &callback.output_directory {
-        None => return Compilation::Stop,
+        None => (),
         Some(file_str) => {
             let original_file = Path::new(file_str);
             let extension = &callback.output_type;
@@ -275,7 +276,7 @@ fn handle_crate<'tcx>(
                 _ => {
                     compiler
                         .session()
-                        .err("unknown backend extension for output file");
+                        .err("unknown backend extension for output files");
                     return Compilation::Stop;
                 }
             };
@@ -334,7 +335,7 @@ fn handle_crate<'tcx>(
     }
 
     handled.insert(krate_module_string.clone());
-    (*top_ctx_map).insert(krate_module_string, new_top_ctx.clone());
+    (*top_ctx_map).insert(krate_path, new_top_ctx.clone());
 
     Compilation::Continue
 }
@@ -556,7 +557,7 @@ fn main() -> Result<(), usize> {
     // Drop and pass along binary name.
     compiler_args.push(args.remove(0));
 
-    // Optionally get output file.
+    // Optionally get output directory.
     let output_directory_index = args.iter().position(|a| a == "-o");
     let output_directory = match output_directory_index {
         Some(i) => {
@@ -566,7 +567,7 @@ fn main() -> Result<(), usize> {
         None => None,
     };
 
-    // Optionally get output file.
+    // Optionally get output file extension.
     let output_type_index = args.iter().position(|a| a == "-e");
     let output_type = match output_type_index {
         Some(i) => {
