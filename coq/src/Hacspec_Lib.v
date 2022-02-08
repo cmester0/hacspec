@@ -745,29 +745,6 @@ Definition update_sub {A : choice_type} {len slen} `{Default A} (v : nseq_nat A 
 (* Sanity check *)
 (* Compute (to_list (update_sub [1;2;3;4;5] 0 4 (of_list [9;8;7;6;12]))). *)
 
-Global Coercion array_from_seq_nat
-  {a: choice_type}
- `{Default a}
-  (out_len:nat)
-  (input: seq a)
-  (* {H : List.length input = out_len} *)
-  : nseq_nat a out_len :=
-  (* tval . *)
-  let out := array_new_ default out_len in
-    (* let out := VectorDef.const default out_len in *)
-    update_sub out 0 (out_len - 1) (array_from_list_nat a input).
-
-Global Coercion array_from_seq
-  {a: choice_type}
- `{Default a}
-  (out_len:nat)
-  (input: seq a)
-  (* {H : List.length input = out_len} *)
-  : nseq a (usize out_len) :=
-  nseq_to_nseq_nat (array_from_seq_nat out_len input).
-  
-(* Global Coercion array_from_seq : seq >-> nseq. *)
-
 Definition slice {A : choice_type} (l : seq A) (i j : nat) : seq A :=
   if j <=? i then [] else firstn (j-i+1) (skipn i l).
 
@@ -785,12 +762,79 @@ Proof.
     + apply (s :: array_to_list A n s0).
 Defined.
 
-Global Coercion seq_from_array {A : choice_type} {n} (l : nseq_nat A n) :=
-  seq_from_list (array_to_list l).
-  (* seq_from_list (tval l). *)
+(* Global Coercion seq_from_array {A : choice_type} {n} (l : nseq_nat A n) := *)
+(*   seq_from_list (array_to_list l). *)
+
+Global Coercion seq_from_array {A : choice_type} {n : nat} (l : nseq A (usize n)) : seq A.
+Proof.
+  Set Printing All.
+  (* pose (nseq_to_nseq_nat l). *)
+  (* pose (array_to_list s). *)
+  (* pose (seq_from_list l0). *)  
+  apply (seq_from_list (array_to_list (nseq_to_nseq_nat (l)))).
+Defined.
+Check seq_from_array.
+
+Global Coercion seq_from_array2 {A : choice_type} {n : nat} (l : chElement (nseq A (usize n))) : seq A.
+Proof.
+  Set Printing All.
+  (* pose (nseq_to_nseq_nat l). *)
+  (* pose (array_to_list s). *)
+  (* pose (seq_from_list l0). *)  
+  apply (seq_from_list (array_to_list (nseq_to_nseq_nat (l)))).
+Defined.
+
+
+Global Coercion seq_from_array {A : choice_type} {n : nat} (l : nseq A (usize n)) :=
+  seq_from_list (array_to_list (nseq_to_nseq_nat (l))).
+
+(* seq_from_list (tval l). *)
+
+
+
+
+Global Coercion array_from_seq_nat
+  {a: choice_type}
+ `{Default a}
+  (out_len:nat)
+  (input: seq a)
+  (* {H : List.length input = out_len} *)
+  : nseq_nat a out_len :=
+  (* tval . *)
+  let out := array_new_ default out_len in
+    (* let out := VectorDef.const default out_len in *)
+    update_sub out 0 (out_len - 1) (array_from_list_nat a input).
+
+Global Coercion array_from_seq_2
+  {a: choice_type}
+ `{Default a}
+  (out_len:nat)
+  (input: seq a)
+  (* {H : List.length input = out_len} *)
+  : nseq a (usize out_len) :=
+  nseq_to_nseq_nat (array_from_seq_nat out_len input).
+
+Global Coercion array_from_seq
+  {a: choice_type}
+ `{Default a}
+  (out_len:nat)
+  (input: nseq a (usize out_len))
+  (* {H : List.length input = out_len} *)
+  : nseq a (usize out_len) :=
+(* Proof. *)
+(*   apply nseq_to_nseq_nat. *)
+(*   apply (array_from_seq_nat out_len). *)
+(*   apply (@seq_from_array a out_len). *)
+(*   apply input. *)
+(* Defined. *)
+  nseq_to_nseq_nat (array_from_seq_nat out_len (seq_from_array input)).
+
+(* Global Coercion array_from_seq : seq >-> nseq. *)
+
+
 
 Definition lseq_slice {A : choice_type} `{Default A} {n} (l : nseq_nat A n) (i j : nat) : nseq_nat A _ :=
-    array_from_seq n (slice (seq_from_list (array_to_list l)) i j).
+    array_from_seq_2 n (slice (seq_from_list (array_to_list l)) i j).
   (* VectorDef.of_list (slice (VectorDef.to_list l) i j). *)
 
 Definition array_from_slice_nat
@@ -811,11 +855,11 @@ Definition array_from_slice
  `{Default a}
   (default_value: a)
   (out_len: nat)
-  (input: seq a)
+  (input: nseq a (usize out_len))
   (start: uint_size)
   (slice_len: uint_size)
     : nseq a (usize out_len) :=
-  nseq_to_nseq_nat (array_from_slice_nat default_value out_len input (from_uint_size start) (from_uint_size slice_len)).
+  nseq_to_nseq_nat (array_from_slice_nat default_value out_len (seq_from_array input) (from_uint_size start) (from_uint_size slice_len)).
 
 
 (* Definition array_slice *)

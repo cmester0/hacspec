@@ -55,7 +55,7 @@ fn make_let_binding<'a>(
         .group()
         .append(RcDoc::line().append(expr.group()))
         .nest(2)
-        .append(if toplevel {            
+        .append(if toplevel {
             RcDoc::as_string(".")
         } else {
             RcDoc::space()
@@ -443,7 +443,7 @@ fn translate_binop<'a, 'b>(
             RcDoc::as_string("+")
         }
         (BinOpKind::Mul, BaseTyp::Usize) | (BinOpKind::Mul, BaseTyp::Isize) => {
-            RcDoc::as_string("*")
+            RcDoc::as_string(".*")
         }
         (BinOpKind::Div, BaseTyp::Usize) | (BinOpKind::Div, BaseTyp::Isize) => {
             RcDoc::as_string("/")
@@ -1796,7 +1796,10 @@ fn translate_item<'a>(
                             .append(RcDoc::space())
                             .append(make_paren(translate_base_typ(BaseTyp::UInt8)))
                             .append(RcDoc::space())
-                            .append(make_paren(canvas_size_bytes.clone()))
+                            .append(make_paren(
+                                RcDoc::as_string("usize")
+                                    .append(RcDoc::space())
+                                    .append(canvas_size_bytes.clone())))
                             .group()
                             .nest(2),
                     )
@@ -2084,9 +2087,7 @@ pub fn translate_and_write_to_file(
         Open Scope Z_scope.\n\
         Open Scope bool_scope.\n\
         Open Scope hacspec_scope.\n\
-        {}\n\
-         Module test.\n\
-         \tParameter L : {{fset Location}}.\n",
+         {}\n",
         if export_quick_check {
             "From QuickChick Require Import QuickChick.\n\
              Require Import QuickChickLib.\n"

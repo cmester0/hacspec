@@ -46,9 +46,10 @@ Notation "'poly_state_t'" := ((
   poly_key_t
 )) : hacspec_scope.
 
+
 Definition poly1305_encode_r (b_0 : poly_block_t) : field_element_t :=
   let n_1 : uint128 :=
-    uint128_from_le_bytes (array_from_seq (16) (seq_from_array b_0)) in 
+    uint128_from_le_bytes (array_from_seq (16) (b_0)) in 
   let n_1 :=
     (n_1) .& (secret (
         @repr WORDSIZE128 21267647620597763993911028882763415551) : int128) in 
@@ -56,11 +57,38 @@ Definition poly1305_encode_r (b_0 : poly_block_t) : field_element_t :=
 
 Definition poly1305_encode_block (b_2 : poly_block_t) : field_element_t :=
   let n_3 : uint128 :=
-    uint128_from_le_bytes (array_from_seq (16) (seq_from_array b_2)) in 
+    uint128_from_le_bytes (array_from_seq (16) (b_2)) in 
   let f_4 : field_element_t :=
     chFin_from_secret_literal (n_3) in 
-  ((f_4) +% (chFin_pow2 (0x03fffffffffffffffffffffffffffffffb) (usize 128)
-              : field_element_t)).
+   ((f_4) +% (chFin_pow2 (0x03fffffffffffffffffffffffffffffffb) (
+        usize 128) : field_element_t)).
+
+Definition asdf {X : choice_type} : X -> Choice.sort X.
+Proof.
+  intros.
+  apply X0.
+Defined.
+
+Definition k : forall (b : sub_block_t), nseq int8 (usize 16) .
+Proof.
+  intros.
+  pose (@array_from_slice).
+  specialize (s int8).
+  specialize (s int_default).
+  specialize (s default).
+  specialize (s 16%nat).
+  unfold byte_seq in b.
+  Set Printing All.
+
+
+  
+  apply asdf.
+  specialize (s b).
+  specialize (s (@default int8 int_default)).
+  (default) (16) (b) (usize 0) (seq_len b)).
+
+Check (fun (b : sub_block_t) => (array_from_slice (default) (16) (asdf b) (usize 0) (
+        seq_len b))).
 
 Definition poly1305_encode_last
   (pad_len_5 : block_index_t)
@@ -75,7 +103,7 @@ Definition poly1305_encode_last
 
 Definition poly1305_init (k_9 : poly_key_t) : poly_state_t :=
   let r_10 : field_element_t :=
-    poly1305_encode_r (array_from_slice (default) (16) (seq_from_array k_9) (usize 0) (
+    poly1305_encode_r (array_from_slice (default) (16) (k_9) (usize 0) (
         usize 16)) in 
    ((chFin_zero , r_10, k_9)).
 
@@ -92,7 +120,7 @@ Definition poly1305_update_blocks
   let st_18 : (field_element_t '× field_element_t '× poly_key_t) :=
     st_17 in 
   let n_blocks_19 : uint_size :=
-    (seq_len (m_16)) ./ (blocksize_v) in 
+    (seq_len (m_16)) / (blocksize_v) in 
   let st_18 :=
     foldi (usize 0) (n_blocks_19) (fun i_20 st_18 =>
       let block_21 : poly_block_t :=
@@ -135,14 +163,14 @@ Definition poly1305_finish (st_33 : poly_state_t) : poly1305_tag_t :=
   let '(acc_34, _, k_35) :=
     st_33 in 
   let n_36 : uint128 :=
-    uint128_from_le_bytes (array_from_slice (default) (16) (seq_from_array k_35) (usize 16) (
+    uint128_from_le_bytes (array_from_slice (default) (16) (k_35) (usize 16) (
         usize 16)) in 
   let aby_37 : seq uint8 :=
     chFin_to_byte_seq_le (acc_34) in 
   let a_38 : uint128 :=
     uint128_from_le_bytes (array_from_slice (default) (16) (aby_37) (usize 0) (
         usize 16)) in 
-   (array_from_seq (16) (seq_from_array (uint128_to_le_bytes ((a_38) .+ (n_36))))).
+   (array_from_seq (16) (uint128_to_le_bytes ((a_38) .+ (n_36)))).
 
 Definition poly1305 (m_39 : byte_seq) (key_40 : poly_key_t) : poly1305_tag_t :=
   let st_41 : (field_element_t '× field_element_t '× poly_key_t) :=
