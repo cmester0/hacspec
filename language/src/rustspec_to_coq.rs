@@ -443,7 +443,7 @@ fn translate_binop<'a, 'b>(
             RcDoc::as_string("+")
         }
         (BinOpKind::Mul, BaseTyp::Usize) | (BinOpKind::Mul, BaseTyp::Isize) => {
-            RcDoc::as_string(".*")
+            RcDoc::as_string("*")
         }
         (BinOpKind::Div, BaseTyp::Usize) | (BinOpKind::Div, BaseTyp::Isize) => {
             RcDoc::as_string("/")
@@ -2065,28 +2065,21 @@ pub fn translate_and_write_to_file(
     write!(
         file,
         "(** This file was automatically generated using Hacspec **)\n\
-         From Coq Require Import Utf8.\n\
-         Set Warnings \"-notation-overridden,-ambiguous-paths\".\n\
-         From mathcomp Require Import all_ssreflect all_algebra ssreflect seq tuple.\n\
-         Set Warnings \"-ambiguous-paths,-notation-overridden,-notation-incompatible-format\".\n\
-         From extructures Require Import ord fset fmap.\n\
-         From Crypt Require Import RulesStateProb Package Prelude.\n\
+         From mathcomp Require Import all_ssreflect all_algebra.\n\
+         From Crypt Require Import choice_type Package Prelude.\n\
          Import PackageNotation.\n\
          \n\
-         From Equations Require Import Equations.\n\
-         Require Equations.Prop.DepElim.\n\
+         Import fingroup.fingroup.\n\
+         Import GroupScope GRing.Theory.\n\
          \n\
+         Local Open Scope package_scope.\n\
          \n\
-         Set Bullet Behavior \"Strict Subproofs\".\n\
-         Set Default Goal Selector \"!\".\n\
-         Set Primitive Projections.\n\
-         \n\
-        Require Import Hacspec_Lib MachineIntegers.\n\
-        From Coq Require Import ZArith.\n\
-        Import List.ListNotations.\n\
-        Open Scope Z_scope.\n\
-        Open Scope bool_scope.\n\
-        Open Scope hacspec_scope.\n\
+         Require Import Hacspec_Lib MachineIntegers.\n\
+         From Coq Require Import ZArith.\n\
+         Import List.ListNotations.\n\
+         Open Scope Z_scope.\n\
+         Open Scope bool_scope.\n\
+         Open Scope hacspec_scope.\n\
          {}\n",
         if export_quick_check {
             "From QuickChick Require Import QuickChick.\n\
