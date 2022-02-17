@@ -304,7 +304,7 @@ fn handle_crate<'tcx>(
         let original_file = Path::new(file_str);
 
         let file_name = if let Some(file_name) = &callback.output_filename {
-            file_name.clone()
+            Path::new(&file_name.clone()).with_extension("").to_str().unwrap().to_string()
         } else {
             krate_path.clone()
         };
