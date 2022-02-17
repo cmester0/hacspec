@@ -1419,6 +1419,60 @@ fn translate_item<'a>(
                 .group(),
             true,
         )
+            .append(
+                RcDoc::hardline()
+                    .append(
+                        RcDoc::as_string("Program Definition")
+                            .append(RcDoc::space())
+                            .append(
+                                translate_ident(Ident::TopLevel(f.clone()))
+                                    .append("_code_block")
+                                    .append(RcDoc::line())
+                                    .append(if sig.args.len() > 0 {
+                                        RcDoc::intersperse(
+                                            sig.args.iter().map(|((x, _), (tau, _))| {
+                                                make_paren(
+                                                    translate_ident(x.clone())
+                                                        .append(RcDoc::space())
+                                                        .append(RcDoc::as_string(":"))
+                                                        .append(RcDoc::space())
+                                                        .append(translate_typ(tau.clone())),
+                                                )
+                                            }),
+                                            RcDoc::line(),
+                                        )
+                                    } else {
+                                        RcDoc::nil()
+                                    })
+                                    .append(RcDoc::space()
+                                            .append(RcDoc::as_string(":"))
+                                            .append(RcDoc::space())
+                                            .append(RcDoc::as_string("code fset0 [interface]").append(RcDoc::space()).append(translate_base_typ(sig.ret.0.clone()))),
+                                    )
+                                    .group(),
+                            )
+                            .append(RcDoc::space())
+                            .append(RcDoc::as_string(":="))
+                            .group()
+                            .append(
+                                RcDoc::line()
+                                    .append(RcDoc::as_string("@ret _ _ _")
+                                            .append(RcDoc::space())
+                                            .append(make_paren(
+                                                translate_ident(Ident::TopLevel(f.clone()))
+                                                    .append(RcDoc::space())
+                                                    .append(RcDoc::intersperse(
+                                                        sig.args.iter().map(|((x, _), (_, _))| {
+                                                            translate_ident(x.clone())
+                                                        }
+                                                        ),
+                                                        RcDoc::space()))
+                                            )).group())
+                            )
+                            .nest(2)
+                            .append(RcDoc::as_string("."))
+                    )
+            )
         .append({
             if item.tags.0.contains(&"quickcheck".to_string()) {
                 RcDoc::hardline()
@@ -2073,6 +2127,8 @@ pub fn translate_and_write_to_file(
          Import GroupScope GRing.Theory.\n\
          \n\
          Local Open Scope package_scope.\n\
+         \n\
+         From extructures Require Import ord fset fmap.\n\
          \n\
          Require Import Hacspec_Lib MachineIntegers.\n\
          From Coq Require Import ZArith.\n\

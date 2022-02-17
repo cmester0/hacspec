@@ -320,7 +320,7 @@ Infix ".|" := (MachineIntegers.or) (at level 77) : hacspec_scope.
 (* Infix "==" := (MachineIntegers.eq) (at level 32) : hacspec_scope. *)
 Definition one := (@one WORDSIZE32).
 Definition zero := (@zero WORDSIZE32).
-Notation "A '× B" := (prod A B) (at level 79, left associativity) : hacspec_scope.
+Notation "A '× B" := (chProd A B) (at level 79, left associativity) : hacspec_scope.
 (*** Loops *)
 
 Open Scope nat_scope.
