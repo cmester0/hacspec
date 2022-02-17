@@ -320,7 +320,9 @@ Infix ".|" := (MachineIntegers.or) (at level 77) : hacspec_scope.
 (* Infix "==" := (MachineIntegers.eq) (at level 32) : hacspec_scope. *)
 Definition one := (@one WORDSIZE32).
 Definition zero := (@zero WORDSIZE32).
-Notation "A '× B" := (chProd A B) (at level 79, left associativity) : hacspec_scope.
+
+Notation "A '× B" := (chProd A B : choice_type) (at level 79, left associativity) : hacspec_scope.
+(* Notation "A '× B" := (chProd A B) (at level 79, left associativity) : hacspec_scope. *)
 (*** Loops *)
 
 Open Scope nat_scope.
@@ -780,10 +782,10 @@ Definition positive_slice {A : Type} `{Hd: Default A} {n} `{H: Positive n} (l : 
   apply H0.
 Defined.  
 
-Definition lseq_slice' {A : choice_type} `{Default A} {n} (l : nseq' A n) (i j : nat) `{K: i < j} `{K': j - i < length (array_to_list' l) - i} : @nseq' A (length (slice (array_to_list' l) i j)) :=
+Definition lseq_slice' {A : choice_type} `{Default A} {n} (l : nseq' A n) (i j : nat) : @nseq' A (length (slice (array_to_list' l) i j)) :=
   array_from_list' _ (slice (array_to_list' l) i j).
 
-Definition lseq_slice {A : Type} `{Default A} {n} (l : nseq A n) (i j : nat) `{K: i < j} `{K': j - i < length (array_to_list l) - i} : @nseq A (length (slice (array_to_list l) i j)) :=
+Definition lseq_slice {A : Type} `{Default A} {n} (l : nseq A n) (i j : nat) : @nseq A (length (slice (array_to_list l) i j)) :=
   array_from_list _ (slice (array_to_list l) i j).
 
 (* TODO Continue from here *)
@@ -883,8 +885,26 @@ Definition vec_array_slice_range
   {len : nat}
   (input: nseq_vec a len)
   (start_fin:(uint_size * uint_size))
-    : nseq_vec a _ :=
-  vec_lseq_slice input (from_uint_size (fst start_fin)) (from_uint_size (snd start_fin)).
+    : seq a :=
+  VectorDef.to_list (vec_lseq_slice input (from_uint_size (fst start_fin)) (from_uint_size (snd start_fin))).
+
+Definition array_slice_range'
+  {a: choice_type}
+ `{Default a}
+  {len : nat}
+  (input: nseq' a len)
+  (start_fin:(uint_size * uint_size))
+    : seq a :=
+  array_to_list' (lseq_slice' input (from_uint_size (fst start_fin)) (from_uint_size (snd start_fin))).
+
+Definition array_slice_range
+  {a: Type}
+ `{Default a}
+  {len : nat}
+  (input: nseq a len)
+  (start_fin:(uint_size * uint_size))
+    : seq a :=
+  array_to_list (lseq_slice input (from_uint_size (fst start_fin)) (from_uint_size (snd start_fin))).
 
 Definition vec_array_update
   {a: Type}

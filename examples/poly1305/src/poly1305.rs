@@ -38,13 +38,13 @@ public_nat_mod!(
 pub type PolyState = (FieldElement, FieldElement, PolyKey); //(accumulator,r,key)
 
 pub fn poly1305_encode_r(b: &PolyBlock) -> FieldElement {
-    let mut n = U128_from_le_bytes(U128Word::from_seq(b));
+    let mut n = U128_from_le_bytes(U128Word::from_seq(&b.slice_range(0..16)));
     n = n & U128(0x0fff_fffc_0fff_fffc_0fff_fffc_0fff_ffffu128);
     FieldElement::from_secret_literal(n)
 }
 
 pub fn poly1305_encode_block(b: &PolyBlock) -> FieldElement {
-    let n = U128_from_le_bytes(U128Word::from_seq(b));
+    let n = U128_from_le_bytes(U128Word::from_seq(&b.slice_range(0..16)));
     let f = FieldElement::from_secret_literal(n);
     f + FieldElement::pow2(128)
 }
@@ -58,7 +58,7 @@ pub fn poly1305_encode_last(pad_len: BlockIndex, b: &SubBlock) -> FieldElement {
 }
 
 pub fn poly1305_init(k: PolyKey) -> PolyState {
-    let r = poly1305_encode_r(&PolyBlock::from_slice(&k, 0, 16));
+    let r = poly1305_encode_r(&PolyBlock::from_slice(&k.slice_range(0..16), 0, 16));
     (FieldElement::ZERO(), r, k)
 }
 
@@ -93,12 +93,13 @@ pub fn poly1305_update(m: &ByteSeq, st: PolyState) -> PolyState {
 }
 
 pub fn poly1305_finish(st: PolyState) -> Poly1305Tag {
-    let (acc, _, k) = st;
-    let n = U128_from_le_bytes(U128Word::from_slice(&k, 16, 16));
+    let (acc, _, k_prime) = st;
+    let k : PolyKey = k_prime;
+    let n = U128_from_le_bytes(U128Word::from_slice(&k.slice_range(0..16), 16, 16));
     let aby = acc.to_byte_seq_le();
     // We can't use from_seq here because the accumulator is larger than 16 bytes.
     let a = U128_from_le_bytes(U128Word::from_slice(&aby, 0, 16));
-    Poly1305Tag::from_seq(&U128_to_le_bytes(a + n))
+    Poly1305Tag::from_seq(&U128_to_le_bytes(a + n).slice_range(0..16))
 }
 
 pub fn poly1305(m: &ByteSeq, key: PolyKey) -> Poly1305Tag {

@@ -553,7 +553,11 @@ fn translate_func_name<'a>(
     prefix: Option<Spanned<BaseTyp>>,
     name: Ident,
     top_ctx: &'a TopLevelContext,
-) -> (RcDoc<'a, ()>, Vec<RcDoc<'a, ()>>, Option<BaseTyp>) {
+) -> (
+    RcDoc<'a, ()>,
+    Vec<RcDoc<'a, ()>>,
+    Option<BaseTyp>,
+) {
     match prefix.clone() {
         None => {
             let name = translate_ident(name.clone());
@@ -665,6 +669,32 @@ fn translate_func_name<'a>(
                 | (ARRAY_MODULE, "from_seq")
                 | (ARRAY_MODULE, "from_slice")
                 | (ARRAY_MODULE, "from_slice_range") => {
+                    // match &prefix_info {
+                    //     FuncPrefix::Array(..) => {
+                    //         if let Some((((arg_hd, _), _), args_tl)) = args.clone().split_first() {
+                    //             args_combined = make_paren(
+                    //                 RcDoc::as_string("array_to_list")
+                    //                     .append(RcDoc::space())
+                    //                     .append(make_paren(translate_expression(
+                    //                         arg_hd.clone(),
+                    //                         top_ctx,
+                    //                     ))),
+                    //             )
+                    //             .append(if args_tl.len() > 0 {
+                    //                 RcDoc::space().append(RcDoc::intersperse(
+                    //                     args_tl.into_iter().map(|((arg, _), _)| {
+                    //                         make_paren(translate_expression(arg.clone(), top_ctx))
+                    //                     }),
+                    //                     RcDoc::space(),
+                    //                 ))
+                    //             } else {
+                    //                 RcDoc::nil()
+                    //             });
+                    //         }
+                    //     }
+                    //     _ => (),
+                    // };
+
                     match &prefix_info {
                         FuncPrefix::Array(ArraySize::Ident(s), _) => {
                             additional_args.push(translate_ident(Ident::TopLevel(s.clone())))
@@ -787,8 +817,12 @@ fn translate_expression<'a>(e: Expression, top_ctx: &'a TopLevelContext) -> RcDo
         ),
         Expression::Named(p) => translate_ident(p.clone()),
         Expression::FuncCall(prefix, name, args) => {
-            let (func_name, additional_args, func_ret_ty) =
-                translate_func_name(prefix.clone(), Ident::TopLevel(name.0.clone()), top_ctx);
+            let (func_name, additional_args, func_ret_ty) = translate_func_name(
+                prefix.clone(),
+                Ident::TopLevel(name.0.clone()),
+                top_ctx,
+            );
+
             let total_args = args.len() + additional_args.len();
             func_name
                 // We append implicit arguments first
@@ -798,9 +832,13 @@ fn translate_expression<'a>(e: Expression, top_ctx: &'a TopLevelContext) -> RcDo
                         .map(|arg| RcDoc::space().append(make_paren(arg))),
                 ))
                 // Then the explicit arguments
-                .append(RcDoc::concat(args.into_iter().map(|((arg, _), _)| {
-                    RcDoc::space().append(make_paren(translate_expression(arg, top_ctx)))
-                })))
+                .append(RcDoc::space())
+                .append(RcDoc::intersperse(
+                    args.into_iter().map(|((arg, _), _)| {
+                        make_paren(translate_expression(arg.clone(), top_ctx))
+                    }),
+                    RcDoc::space(),
+                ))
                 .append(if total_args == 0 {
                     RcDoc::space() //.append(RcDoc::as_string("()"))
                 } else {
@@ -836,9 +874,13 @@ fn translate_expression<'a>(e: Expression, top_ctx: &'a TopLevelContext) -> RcDo
                     // Then the self argument
                     .append(make_paren(translate_expression((sel_arg.0).0, top_ctx)))
                     // And finally the rest of the arguments
-                    .append(RcDoc::concat(args.into_iter().map(|((arg, _), _)| {
-                        RcDoc::space().append(make_paren(translate_expression(arg, top_ctx)))
-                    })))
+                    .append(RcDoc::space())
+                    .append(RcDoc::intersperse(
+                        args.into_iter().map(|((arg, _), _)| {
+                            make_paren(translate_expression(arg.clone(), top_ctx))
+                        }),
+                        RcDoc::space(),
+                    ))
                     .append(match func_ret_ty {
                         Some(ret_ty) => RcDoc::as_string(" : ").append(translate_base_typ(ret_ty)),
                         None => RcDoc::nil(),
