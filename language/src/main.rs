@@ -93,90 +93,66 @@ fn construct_module_string<T>(
 fn construct_handle_crate_queue<'tcx>(
     compiler: &Compiler,
     handled: &mut HashSet<String>,
-    ast_crates_map: &HashMap<String, rustc_ast::ast::Crate>,
     krate_path: String,
     krate_dir: String,
-) -> Result<Vec<((String, String, String), rustc_ast::ast::Crate)>, bool> {
-    // Compute the crate module string, based on local path (krate_path)
-    // Look at path/mod_name.rs and path/mod_name/mod.rs for module
-    let krate_module_string =
-        match construct_module_string(krate_path.clone(), krate_dir.clone(), ast_crates_map) {
-            Some(s) => s,
-            None => {
-                compiler
-                    .session()
-                    .err(format!("There is no module with name {}", krate_path.clone()).as_str());
-                return Err(false);
-            }
-        };
-
+    krate_items : Vec<rustc_ast::ptr::P<rustc_ast::ast::Item>>
+) -> Result<Vec<((String, String), Vec<rustc_ast::ptr::P<rustc_ast::ast::Item>>)>, bool> {
     // Depth first handling, skip module if already visited
-    if handled.contains(&krate_module_string) {
+    if handled.contains(&krate_path) {
         return Err(true);
     }
 
-    let krate = ast_crates_map[&krate_module_string].clone();
-
     let mut krates = Vec::new();
 
-    let krate = match krate {
-        rustc_ast::ast::Crate { attrs, items, span } => {
-            // Parse over the crate, loading modules and filling top_level_ctx
-            for x in items.clone().into_iter() {
-                match x.kind {
-                    // Whenever a module statement is encountered, add it to the queue
-                    rustc_ast::ast::ItemKind::Mod(
-                        rustc_ast::ast::Unsafe::No,
-                        rustc_ast::ast::ModKind::Unloaded,
-                    ) => {
-                        match construct_handle_crate_queue(
-                            compiler,
-                            handled,
-                            ast_crates_map,
-                            x.ident.name.to_ident_string(),
-                            krate_path.clone(),
-                        ) {
-                            Ok(v) => krates.extend(v),
-                            Err(false) => {
-                                // If not able to handle module, stop compilation.
-                                return Err(false);
-                            }
-                            Err(true) => (),
-                        }
+    // Parse over the crate, loading modules and filling top_level_ctx
+    for x in krate_items.clone().into_iter() {
+        match &x.kind {
+            // Whenever a module statement is encountered, add it to the queue
+            rustc_ast::ast::ItemKind::Mod(
+                rustc_ast::ast::Unsafe::No,
+                rustc_ast::ast::ModKind::Loaded(items, _inline, _span), // _, // rustc_ast::ast::ModKind::Unloaded,
+            ) => {
+                match construct_handle_crate_queue(
+                    compiler,
+                    handled,
+                    x.ident.name.to_ident_string(),
+                    krate_path.clone(),
+                    items.clone(),
+                ) {
+                    Ok(v) => krates.extend(v),
+                    Err(false) => {
+                        // If not able to handle module, stop compilation.
+                        return Err(false);
                     }
-                    _ => (),
+                    Err(true) => (),
                 }
             }
-
-            // Remove the modules statements from the crate
-            rustc_ast::ast::Crate {
-                attrs,
-                items: items
-                    .clone()
-                    .into_iter()
-                    .filter(|x| match x.kind {
-                        rustc_ast::ast::ItemKind::Mod(
-                            rustc_ast::ast::Unsafe::No,
-                            rustc_ast::ast::ModKind::Unloaded,
-                        ) => false,
-                        _ => true,
-                    })
-                    .collect(),
-                span,
-            }
+            _ => (),
         }
-    };
+    }
 
+    // Remove the modules statements from the crate
+    let krate_items = krate_items
+            .clone()
+            .into_iter()
+            .filter(|x| match x.kind {
+                rustc_ast::ast::ItemKind::Mod(
+                    rustc_ast::ast::Unsafe::No,
+                    _, // rustc_ast::ast::ModKind::Unloaded
+                ) => false,
+                _ => true,
+            })
+        .collect();
+    
     krates.push((
         (
             krate_path.clone(),
             krate_dir.clone(),
-            krate_module_string.clone(),
         ),
-        krate,
+        krate_items,
     ));
 
-    handled.insert(krate_module_string.clone());
+    handled.insert(krate_path.clone());
 
     Ok(krates)
 }
@@ -185,16 +161,16 @@ fn handle_crate<'tcx>(
     callback: &HacspecCallbacks,
     compiler: &Compiler,
     queries: &'tcx Queries<'tcx>,
-    ast_crates_map: &HashMap<String, rustc_ast::ast::Crate>,
     krate_path: String,
+    krate_items : Vec<rustc_ast::ptr::P<rustc_ast::ast::Item>>
 ) -> Compilation {
     // Construct a queue of files to handle
     let krate_queue = match construct_handle_crate_queue(
         compiler,
         &mut HashSet::new(),
-        ast_crates_map,
         krate_path,
         "".to_string(),
+        krate_items,
     ) {
         Ok(v) => v,
         Err(false) => {
@@ -212,56 +188,57 @@ fn handle_crate<'tcx>(
 
     // Get all 'use' dependencies per module
     let mut krate_queue_no_module_statements = Vec::new();
-    for ((krate_path, krate_dir, krate_module_string), krate) in krate_queue {
+    for ((krate_path, krate_dir), krate_items) in krate_queue {
         krate_use_paths.insert(krate_path.clone(), Vec::new());
 
-        match krate {
-            rustc_ast::ast::Crate { attrs, items, span } => {
-                // Parse over the crate, loading modules and filling top_level_ctx
-                for x in items.clone().into_iter() {
-                    match x.kind {
-                        // Load the top_ctx from the module specified in the use statement
-                        rustc_ast::ast::ItemKind::Use(ref tree) => {
-                            match tree.kind {
-                                rustc_ast::ast::UseTreeKind::Glob => {
-                                    krate_use_paths[&krate_path].push(
-                                        (&tree.prefix)
-                                            .segments
-                                            .last()
-                                            .unwrap()
-                                            .ident
-                                            .name
-                                            .to_ident_string(),
-                                    );
-                                }
-                                _ => (),
-                            };
+        // Parse over the crate, loading modules and filling top_level_ctx
+        for x in krate_items.clone().into_iter() {
+            match x.kind {
+                // Load the top_ctx from the module specified in the use statement
+                rustc_ast::ast::ItemKind::Use(ref tree) => {
+                    match tree.kind {
+                        rustc_ast::ast::UseTreeKind::Glob => {
+                            krate_use_paths[&krate_path].push(
+                                (&tree.prefix)
+                                    .segments
+                                    .last()
+                                    .unwrap()
+                                    .ident
+                                    .name
+                                    .to_ident_string(),
+                            );
                         }
                         _ => (),
-                    }
+                    };
                 }
-
-                // Remove the modules statements from the crate
-                krate_queue_no_module_statements.push((
-                    (krate_path, krate_dir, krate_module_string),
-                    rustc_ast::ast::Crate {
-                        attrs,
-                        items: items
-                            .clone()
-                            .into_iter()
-                            .filter(|x| match x.kind {
-                                rustc_ast::ast::ItemKind::Mod(
-                                    rustc_ast::ast::Unsafe::No,
-                                    rustc_ast::ast::ModKind::Unloaded,
-                                ) => false,
-                                _ => true,
-                            })
-                            .collect(),
-                        span,
-                    },
-                ))
+                _ => (),
             }
         }
+
+        // Remove the modules statements from the crate
+        krate_queue_no_module_statements.push((
+            (krate_path, krate_dir),
+            krate_items
+                .clone()
+                .into_iter()
+                .filter(|x| match x.kind {
+                    rustc_ast::ast::ItemKind::Mod(
+                        _,
+                        _,
+                        // rustc_ast::ast::Unsafe::No,
+                        // rustc_ast::ast::ModKind::Unloaded,
+                    ) => false,
+                    rustc_ast::ast::ItemKind::Use(ref tree) => match tree.kind {
+                        rustc_ast::ast::UseTreeKind::Glob => {
+                            (&tree.prefix).segments.len() <= 1
+                        }
+                        _ => false,
+                    },
+                    rustc_ast::ast::ItemKind::ExternCrate(_) => false,
+                    _ => true,
+                })
+                .collect(),
+        ))
     }
 
     /////////////////////////////////
@@ -279,7 +256,7 @@ fn handle_crate<'tcx>(
     ///////////////////////////////////////////////////////////////////////////
 
     let mut krate_queue_programs = Vec::new();
-    for ((krate_path, krate_dir, krate_module_string), krate) in krate_queue_no_module_statements {
+    for ((krate_path, krate_dir), krate_items) in krate_queue_no_module_statements {
         // Generate an empty context then fill it whenever an Use statement is encountered
         let new_specials = &mut ast_to_rustspec::SpecialNames {
             arrays: HashSet::new(),
@@ -307,7 +284,7 @@ fn handle_crate<'tcx>(
 
         let krate = match ast_to_rustspec::translate(
             &compiler.session(),
-            &krate,
+            &rustc_ast::ast::Crate { attrs: vec![], items: krate_items, span: rustc_span::DUMMY_SP },
             &external_data,
             new_specials,
         ) {
@@ -322,7 +299,7 @@ fn handle_crate<'tcx>(
 
         (*special_names_map).insert(krate_path.clone(), new_specials.clone());
 
-        krate_queue_programs.push(((krate_path, krate_dir, krate_module_string), krate));
+        krate_queue_programs.push(((krate_path, krate_dir), krate));
     }
 
     ///////////////////////////////
@@ -331,7 +308,7 @@ fn handle_crate<'tcx>(
 
     let mut root_module: bool = true;
     let mut krate_queue_typechecked = Vec::new();
-    for ((krate_path, krate_dir, krate_module_string), krate) in krate_queue_programs {
+    for ((krate_path, krate_dir), krate) in krate_queue_programs {
         let new_top_ctx = &mut name_resolution::TopLevelContext {
             consts: HashMap::new(),
             functions: HashMap::new(),
@@ -382,7 +359,7 @@ fn handle_crate<'tcx>(
         };
 
         (*top_ctx_map).insert(krate_path.clone(), new_top_ctx.clone());
-        krate_queue_typechecked.push(((krate_path, krate_dir, krate_module_string), krate));
+        krate_queue_typechecked.push(((krate_path, krate_dir), krate));
     }
 
     let imported_crates = (&krate_queue_typechecked).into_iter().fold(
@@ -421,7 +398,7 @@ fn handle_crate<'tcx>(
     if let (Some(extension), Some(file_str)) = (&callback.output_type, &callback.output_directory) {
         let original_file = Path::new(file_str);
 
-        for ((krate_path, _, _), krate) in krate_queue_typechecked {
+        for ((krate_path,_), krate) in krate_queue_typechecked {
             let file_name = if root_module {
                 if let Some(file_name) = &callback.output_filename {
                     Path::new(&file_name.clone())
@@ -530,13 +507,54 @@ impl Callbacks for HacspecCallbacks {
         ));
     }
 
-    fn after_analysis<'tcx>(
+    fn after_parsing<'tcx>(
         &mut self,
         compiler: &Compiler,
         queries: &'tcx Queries<'tcx>,
     ) -> Compilation {
-        log::debug!(" --- hacspec after_analysis callback");
-        let krate: rustc_ast::ast::Crate = queries.parse().unwrap().take();
+        // queries.parse().unwrap();
+
+        let k = queries.expansion().unwrap().peek();
+        
+        let krate: &rustc_ast::ast::Crate = &*(k.0.clone());
+        let mut krate: rustc_ast::ast::Crate = krate.clone();
+
+        krate.items = krate.items
+            .clone()
+            .into_iter()
+            .filter(|x| match x.kind {
+                // rustc_ast::ast::ItemKind::Mod(
+                //     _,
+                //     _,
+                //     // rustc_ast::ast::Unsafe::No,
+                //     // rustc_ast::ast::ModKind::Unloaded,
+                // ) => false,
+                rustc_ast::ast::ItemKind::Use(ref tree) => match tree.kind {
+                    rustc_ast::ast::UseTreeKind::Glob => {
+                        (&tree.prefix).segments.len() <= 1
+                    }
+                    _ => false,
+                },
+                rustc_ast::ast::ItemKind::ExternCrate(_) => false,
+                _ => true,
+            })
+            .collect();
+        
+        // let resolver : rustc_middle::ty::ResolverOutputs = rustc_interface::interface::BoxedResolver::to_resolver_outputs(k.1.clone());
+        // let lint_store = &*(k.2.clone());
+        
+        // let krate_parse = queries.parse().unwrap().take();
+        // for i in 0..(krate_parse.items.len()-1) {
+        //     println!("{:?}\nvs\n{:?}\n", krate.items[i].kind, krate_parse.items[i].kind);
+        // }
+        
+        // fn after_analysis<'tcx>(
+        //     &mut self,
+        //     compiler: &Compiler,
+        //     queries: &'tcx Queries<'tcx>,
+        // ) -> Compilation {
+        //     log::debug!(" --- hacspec after_analysis callback");
+        //     let krate: rustc_ast::ast::Crate = queries.parse().unwrap().take();
         let crate_origin_file = compiler
             .build_output_filenames(compiler.session(), &[])
             .with_extension("")
@@ -544,69 +562,13 @@ impl Callbacks for HacspecCallbacks {
             .unwrap()
             .to_string();
 
-        let mut analysis_crates = HashMap::new();
-        analysis_crates.insert(crate_origin_file.clone(), krate);
-
-        // Find module location using hir
-        queries.global_ctxt().unwrap().peek_mut().enter(|tcx| {
-            let hir_krate = tcx.hir();
-            for item in hir_krate.items() {
-                if let rustc_hir::ItemKind::Mod(_m) = &item.kind {
-                    let (expra, exprb, _exprc) = &tcx.hir().get_module(item.def_id);
-
-                    // locate the file from a module using the span
-                    let sm: &rustc_span::source_map::SourceMap =
-                        (compiler.session()).parse_sess.source_map();
-                    if let (
-                        rustc_span::FileName::Real(rustc_span::RealFileName::LocalPath(
-                            module_path,
-                        )),
-                        rustc_span::FileName::Real(rustc_span::RealFileName::LocalPath(root)),
-                    ) = (
-                        sm.span_to_filename(expra.inner),
-                        sm.span_to_filename(*exprb),
-                    ) {
-                        // parse the file for the module
-                        let mut parser = rustc_parse::new_parser_from_file(
-                            &(&compiler.session()).parse_sess,
-                            module_path.as_path(),
-                            None,
-                        );
-
-                        // get the items of the module
-                        let parse_mod_krate_items: Vec<rustc_ast::ptr::P<rustc_ast::Item>> =
-                            parser.parse_crate_mod().unwrap().items;
-
-                        // Make new crate with the parsed items
-                        let new_crate: rustc_ast::ast::Crate = rustc_ast::ast::Crate {
-                            attrs: vec![],
-                            items: parse_mod_krate_items,
-                            span: rustc_span::DUMMY_SP,
-                        };
-
-                        // Calculate the local path from the crate root file
-                        let crate_local_path = module_path
-                            .strip_prefix(root.parent().unwrap())
-                            .unwrap()
-                            .with_extension("")
-                            .to_str()
-                            .unwrap()
-                            .to_string();
-
-                        // Add to map from module path to crate data
-                        analysis_crates.insert(crate_local_path, new_crate);
-                    }
-                }
-            }
-        });
-
         // Do depth first handling of modules starting search at crate root
         handle_crate(
             &self,
             compiler,
             queries,
-            &analysis_crates,
             crate_origin_file,
+            krate.items
         );
 
         Compilation::Stop
