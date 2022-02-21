@@ -12,6 +12,10 @@ extern crate rustc_parse;
 extern crate rustc_session;
 extern crate rustc_span;
 
+extern crate rustc_expand;
+extern crate rustc_lint;
+extern crate rustc_resolve;
+
 mod ast_to_rustspec;
 mod hir_to_rustspec;
 mod name_resolution;
@@ -530,13 +534,132 @@ impl Callbacks for HacspecCallbacks {
         ));
     }
 
-    fn after_analysis<'tcx>(
+    fn after_parsing<'tcx>(
         &mut self,
         compiler: &Compiler,
         queries: &'tcx Queries<'tcx>,
     ) -> Compilation {
-        log::debug!(" --- hacspec after_analysis callback");
-        let krate: rustc_ast::ast::Crate = queries.parse().unwrap().take();
+        let mut krate: rustc_ast::ast::Crate = queries.parse().unwrap().take();
+
+        let crate_name = queries.crate_name().unwrap().peek().clone();
+        let sess = compiler.session();
+
+        let (_krate, resolver, lint_store) = queries.expansion().unwrap().take();
+        let lint_store = &*(lint_store.clone());
+
+        let resolver: rustc_middle::ty::ResolverOutputs =
+            rustc_interface::interface::BoxedResolver::to_resolver_outputs(resolver.clone());
+        // let mut resolver = resolver.clone().into_inner();
+        // let resolver : &mut rustc_interface::interface::BoxedResolver = Rc<(*std::rc::Rc::into_raw(resolver.clone())).get_mut()>;
+        // let resolver : &mut rustc_interface::interface::BoxedResolver = tempexpndata.get_mut(); // .into_inner();
+
+        let arena = rustc_resolve::ResolverArenas::default();
+        let resolver: &mut rustc_resolve::Resolver = &mut rustc_resolve::Resolver::new(
+            sess,
+            &krate.clone(),
+            crate_name.as_str(),
+            compiler.codegen_backend().metadata_loader(),
+            &arena,
+        );
+
+        // let (_, lint_store) = &*queries.register_plugins().unwrap().peek();
+
+        // let mut resolver = rustc_interface::interface::BoxedResolver::new(sess.clone(), move |sess, resolver_arenas| {
+        //     rustc_resolve::Resolver::new(sess, krate.clone(), crate_name, queries.codegen_backend().metadata_loader(), resolver_arenas)
+        // });
+
+        // //  = rustc_interface::create_resolver( // rustc_interface::passes
+        // //     sess.clone(),
+        // //     queries.codegen_backend().metadata_loader(),
+        // //     &krate,
+        // //     &crate_name,
+        // // );
+
+        // for item in krate.clone().items {
+        //     println!("BEFORE ITEM {:?}", item);
+        // }
+
+        krate = {
+            // let (_krate, lint_store) = queries.register_plugins().unwrap().take();
+            // // resolver.access(|resolver| {
+
+            // Create the config for macro expansion
+            let features = sess.features_untracked();
+            let recursion_limit = rustc_session::Limit::new(128); // get_recursion_limit(&krate.attrs, sess);
+            let cfg = rustc_expand::expand::ExpansionConfig {
+                features: Some(features),
+                recursion_limit,
+                trace_mac: sess.opts.debugging_opts.trace_macros,
+                should_test: sess.opts.test,
+                span_debug: sess.opts.debugging_opts.span_debug,
+                proc_macro_backtrace: sess.opts.debugging_opts.proc_macro_backtrace,
+                ..rustc_expand::expand::ExpansionConfig::default(crate_name.to_string())
+            };
+                
+            // // let lint_store = rustc_interface::passes::LintStoreExpandImpl(lint_store);
+            let mut ecx = rustc_expand::base::ExtCtxt::new(sess, cfg, resolver, None); // Some(&lint_store)
+            
+            // Expand macros now!
+            let krate = ecx.monotonic_expander().expand_crate(krate);
+            krate
+
+            // // The rest is error reporting
+
+            // sess.time("check_unused_macros", || {
+            //     ecx.check_unused_macros();
+            // });
+
+            // let mut missing_fragment_specifiers: Vec<_> = ecx
+            //     .sess
+            //     .parse_sess
+            //     .missing_fragment_specifiers
+            //     .borrow()
+            //     .iter()
+            //     .map(|(span, node_id)| (*span, *node_id))
+            //     .collect();
+            // missing_fragment_specifiers.sort_unstable_by_key(|(span, _)| *span);
+
+            // let recursion_limit_hit = ecx.reduced_recursion_limit.is_some();
+
+            // for (span, node_id) in missing_fragment_specifiers {
+            //     let lint = lint::builtin::MISSING_FRAGMENT_SPECIFIER;
+            //     let msg = "missing fragment specifier";
+            //     resolver.lint_buffer().buffer_lint(lint, node_id, span, msg);
+            // }
+
+            // if recursion_limit_hit {
+            //     // If we hit a recursion limit, exit early to avoid later passes getting overwhelmed
+            //     // with a large AST
+            //     Err(ErrorReported)
+            // } else {
+            //     Ok(krate)
+                // }
+            // })
+        }// .unwrap()
+            ;
+
+        for item in krate.clone().items {
+            println!("ITEM {:?}", item);
+        }
+
+        
+        // rustc_interface::passes::parse(compiler.session, File(Path()));
+        // // rustc_interface::passes
+        // //     configure_and_expand();
+
+        // pre_expansion_lint(sess, lint_store, resolver.registered_tools(), &krate, crate_name);
+        // rustc_builtin_macros::register_builtin_macros(resolver);
+
+        // krate = sess.time("crate_injection", || {
+        //     rustc_builtin_macros::standard_library_imports::inject(krate, resolver, sess)
+        // });
+
+        // util::check_attr_crate_type(sess, &krate.attrs, &mut resolver.lint_buffer());
+
+        // # https://doc.rust-lang.org/nightly/nightly-rustc/src/rustc_interface/passes.rs.html#277-283
+
+        // log::debug!(" --- hacspec after_analysis callback");
+        // let krate: rustc_ast::ast::Crate = queries.parse().unwrap().take();
         let crate_origin_file = compiler
             .build_output_filenames(compiler.session(), &[])
             .with_extension("")
