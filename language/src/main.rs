@@ -12,6 +12,10 @@ extern crate rustc_parse;
 extern crate rustc_session;
 extern crate rustc_span;
 
+extern crate rustc_resolve;
+extern crate rustc_expand;
+extern crate rustc_lint;
+
 mod ast_to_rustspec;
 mod hir_to_rustspec;
 mod name_resolution;
@@ -493,6 +497,151 @@ fn handle_crate<'tcx>(
     Compilation::Continue
 }
 
+
+// // TODO: https://doc.rust-lang.org/beta/nightly-rustc/src/rustc_expand/expand.rs.html#365-383
+// // Recursively expand all macro invocations in this AST fragment.
+// pub fn fully_expand_fragment(&mut self, input_fragment: AstFragment) -> AstFragment {
+//     let orig_expansion_data = self.cx.current_expansion.clone();
+//     let orig_force_mode = self.cx.force_mode;
+
+//     // Collect all macro invocations and replace them with placeholders.
+//     let (mut fragment_with_placeholders, mut invocations) =
+//         self.collect_invocations(input_fragment, &[]);
+
+//     // Optimization: if we resolve all imports now,
+//     // we'll be able to immediately resolve most of imported macros.
+//     self.resolve_imports();
+
+//     // Resolve paths in all invocations and produce output expanded fragments for them, but
+//     // do not insert them into our input AST fragment yet, only store in `expanded_fragments`.
+//     // The output fragments also go through expansion recursively until no invocations are left.
+//     // Unresolved macros produce dummy outputs as a recovery measure.
+//     invocations.reverse();
+//     let mut expanded_fragments = Vec::new();
+//     let mut undetermined_invocations = Vec::new();
+//     let (mut progress, mut force) = (false, !self.monotonic);
+//     loop {
+//         let Some((invoc, ext)) = invocations.pop() else {
+//             self.resolve_imports();
+//             if undetermined_invocations.is_empty() {
+//                 break;
+//             }
+//             invocations = mem::take(&mut undetermined_invocations);
+//             force = !mem::replace(&mut progress, false);
+//             if force && self.monotonic {
+//                 self.cx.sess.delay_span_bug(
+//                     invocations.last().unwrap().0.span(),
+//                     "expansion entered force mode without producing any errors",
+//                 );
+//             }
+//             continue;
+//         };
+
+//         let ext = match ext {
+//             Some(ext) => ext,
+//             None => {
+//                 let eager_expansion_root = if self.monotonic {
+//                     invoc.expansion_data.id
+//                 } else {
+//                     orig_expansion_data.id
+//                 };
+//                 match self.cx.resolver.resolve_macro_invocation(
+//                     &invoc,
+//                     eager_expansion_root,
+//                     force,
+//                 ) {
+//                     Ok(ext) => ext,
+//                     Err(Indeterminate) => {
+//                         // Cannot resolve, will retry this invocation later.
+//                         undetermined_invocations.push((invoc, None));
+//                         continue;
+//                     }
+//                 }
+//             }
+//         };
+
+//         let ExpansionData { depth, id: expn_id, .. } = invoc.expansion_data;
+//         let depth = depth - orig_expansion_data.depth;
+//         self.cx.current_expansion = invoc.expansion_data.clone();
+//         self.cx.force_mode = force;
+
+//         let fragment_kind = invoc.fragment_kind;
+//         let (expanded_fragment, new_invocations) = match self.expand_invoc(invoc, &ext.kind) {
+//             ExpandResult::Ready(fragment) => {
+//                 let mut derive_invocations = Vec::new();
+//                 let derive_placeholders = self
+//                     .cx
+//                     .resolver
+//                     .take_derive_resolutions(expn_id)
+//                     .map(|derives| {
+//                         derive_invocations.reserve(derives.len());
+//                         derives
+//                             .into_iter()
+//                             .map(|(path, item, _exts)| {
+//                                 // FIXME: Consider using the derive resolutions (`_exts`)
+//                                 // instead of enqueuing the derives to be resolved again later.
+//                                 let expn_id = LocalExpnId::fresh_empty();
+//                                 derive_invocations.push((
+//                                     Invocation {
+//                                         kind: InvocationKind::Derive { path, item },
+//                                         fragment_kind,
+//                                         expansion_data: ExpansionData {
+//                                             id: expn_id,
+//                                             ..self.cx.current_expansion.clone()
+//                                         },
+//                                     },
+//                                     None,
+//                                 ));
+//                                 NodeId::placeholder_from_expn_id(expn_id)
+//                             })
+//                             .collect::<Vec<_>>()
+//                     })
+//                     .unwrap_or_default();
+
+//                 let (fragment, collected_invocations) =
+//                     self.collect_invocations(fragment, &derive_placeholders);
+//                 // We choose to expand any derive invocations associated with this macro invocation
+//                 // *before* any macro invocations collected from the output fragment
+//                 derive_invocations.extend(collected_invocations);
+//                 (fragment, derive_invocations)
+//             }
+//             ExpandResult::Retry(invoc) => {
+//                 if force {
+//                     self.cx.span_bug(
+//                         invoc.span(),
+//                         "expansion entered force mode but is still stuck",
+//                     );
+//                 } else {
+//                     // Cannot expand, will retry this invocation later.
+//                     undetermined_invocations.push((invoc, Some(ext)));
+//                     continue;
+//                 }
+//             }
+//         };
+
+//         progress = true;
+//         if expanded_fragments.len() < depth {
+//             expanded_fragments.push(Vec::new());
+//         }
+//         expanded_fragments[depth - 1].push((expn_id, expanded_fragment));
+//         invocations.extend(new_invocations.into_iter().rev());
+//     }
+
+//     self.cx.current_expansion = orig_expansion_data;
+//     self.cx.force_mode = orig_force_mode;
+
+//     // Finally incorporate all the expanded macros into the input AST fragment.
+//     let mut placeholder_expander = PlaceholderExpander::default();
+//     while let Some(expanded_fragments) = expanded_fragments.pop() {
+//         for (expn_id, expanded_fragment) in expanded_fragments.into_iter().rev() {
+//             placeholder_expander
+//                 .add(NodeId::placeholder_from_expn_id(expn_id), expanded_fragment);
+//         }
+//     }
+//     fragment_with_placeholders.mut_visit_with(&mut placeholder_expander);
+//     fragment_with_placeholders
+// }
+
 impl Callbacks for HacspecCallbacks {
     fn config(&mut self, config: &mut Config) {
         log::debug!(" --- hacspec config callback");
@@ -534,8 +683,8 @@ impl Callbacks for HacspecCallbacks {
             resolver = rustc_interface::interface::BoxedResolver::to_resolver_outputs(krate_and_resolver.1.clone());
             let lint_store = &*(krate_and_resolver.2.clone());
 
-            println!("{:?}", lint_store.get_lint_groups());
-            println!("{:?}", queries.codegen_backend().metadata_loader())
+            // println!("{:?}", lint_store.get_lint_groups());
+            // println!("{:?}", compiler.codegen_backend().metadata_loader())
             // # https://doc.rust-lang.org/nightly/nightly-rustc/src/rustc_interface/passes.rs.html#277-283
             
             // for local_id in resolver.definitions.iter_local_def_id() {
@@ -543,6 +692,100 @@ impl Callbacks for HacspecCallbacks {
             // }
         }
 
+        let mut krate: rustc_ast::ast::Crate = queries.parse().unwrap().take();
+
+        let crate_name = queries.crate_name().unwrap().peek().clone();
+        let sess = compiler.session();
+
+        let arena = rustc_resolve::ResolverArenas::default();
+        let resolver: &mut rustc_resolve::Resolver = &mut rustc_resolve::Resolver::new(
+            sess,
+            &krate.clone(),
+            crate_name.as_str(),
+            compiler.codegen_backend().metadata_loader(),
+            &arena,
+        );
+
+        krate = {
+            // let (_krate, lint_store) = queries.register_plugins().unwrap().take();
+            // // resolver.access(|resolver| {
+
+            // Create the config for macro expansion
+            let features = sess.features_untracked();
+            let recursion_limit = rustc_session::Limit::new(128); // get_recursion_limit(&krate.attrs, sess);
+            let cfg = rustc_expand::expand::ExpansionConfig {
+                features: Some(features),
+                recursion_limit,
+                trace_mac: sess.opts.debugging_opts.trace_macros,
+                should_test: sess.opts.test,
+                span_debug: sess.opts.debugging_opts.span_debug,
+                proc_macro_backtrace: sess.opts.debugging_opts.proc_macro_backtrace,
+                ..rustc_expand::expand::ExpansionConfig::default(crate_name.to_string())
+            };
+                
+            // // let lint_store = rustc_interface::passes::LintStoreExpandImpl(lint_store);
+            let mut ecx = rustc_expand::base::ExtCtxt::new(sess, cfg, resolver, None); // Some(&lint_store)
+
+            // Expand macros now!
+            // let krate = ecx.monotonic_expander().expand_crate(krate);
+
+            let krate = {
+                let file_path = match ecx.source_map().span_to_filename(krate.span) {
+                    FileName::Real(name) => name
+                        .into_local_path()
+                        .expect("attempting to resolve a file path in an external file"),
+                    other => PathBuf::from(other.prefer_local().to_string()),
+                };
+                let dir_path = file_path.parent().unwrap_or(&file_path).to_owned();
+                ecx.root_path = dir_path.clone();
+                ecx.current_expansion.module = std::rc::Rc::new(ModuleData {
+                    mod_path: vec![Ident::from_str(&ecx.ecfg.crate_name)],
+                    file_path_stack: vec![file_path],
+                    dir_path,
+                });
+                let krate = self.fully_expand_fragment(AstFragment::Crate(krate)).make_crate();
+                assert_eq!(krate.id, rustc_ast::ast::CRATE_NODE_ID);
+                ecx.trace_macros_diag();
+                krate
+            }            
+            // krate
+
+            // The rest is error reporting
+
+            sess.time("check_unused_macros", || {
+                ecx.check_unused_macros();
+            });
+
+            let mut missing_fragment_specifiers: Vec<_> = ecx
+                .sess
+                .parse_sess
+                .missing_fragment_specifiers
+                .borrow()
+                .iter()
+                .map(|(span, node_id)| (*span, *node_id))
+                .collect();
+            missing_fragment_specifiers.sort_unstable_by_key(|(span, _)| *span);
+
+            let recursion_limit_hit = ecx.reduced_recursion_limit.is_some();
+
+            for (span, node_id) in missing_fragment_specifiers {
+                let lint = rustc_lint::builtin::MISSING_FRAGMENT_SPECIFIER;
+                let msg = "missing fragment specifier";
+                resolver.lint_buffer().buffer_lint(lint, node_id, span, msg);
+            }
+
+            // Ok::<_,()>(krate)
+            
+            if recursion_limit_hit {
+                // If we hit a recursion limit, exit early to avoid later passes getting overwhelmed
+                // with a large AST
+                Err(())
+            } else {
+                Ok(krate)
+                }
+        }.unwrap();
+
+        
         queries.prepare_outputs().unwrap(); // ?
         queries.global_ctxt().unwrap(); // ?
 
@@ -557,10 +800,8 @@ impl Callbacks for HacspecCallbacks {
             })
             .unwrap(); // ?
 
-        println!("{:?}", resolver.trait_impls);
-
         krate.items = krate.items.into_iter().map(|x| {
-            println!("{:?}", x.id);
+            println!("{:?}", x);
             x
         }).collect();
 
