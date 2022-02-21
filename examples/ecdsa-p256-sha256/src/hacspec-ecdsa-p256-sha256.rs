@@ -50,7 +50,7 @@ pub fn sign(payload: &ByteSeq, sk: SecretKey, nonce: P256Scalar) -> SignatureRes
     let (k_x, _k_y) = ecdsa_point_mul_base(nonce)?;
     let r = P256Scalar::from_byte_seq_be(&k_x.to_byte_seq_be());
     check_scalar_zero(r)?;
-    let payload_hash = hash(payload);
+    let payload_hash = sha256(payload);
     let payload_hash = P256Scalar::from_byte_seq_be(&payload_hash);
     let rsk = r * sk;
     let hash_rsk = payload_hash + rsk;
@@ -71,7 +71,7 @@ pub fn ecdsa_p256_sha256_sign(
 pub fn verify(payload: &ByteSeq, pk: PublicKey, signature: Signature) -> VerifyResult {
     // signature = (r, s) must be in [1, n-1] because they are Scalars
     let (r, s) = signature;
-    let payload_hash = hash(payload);
+    let payload_hash = sha256(payload);
     let payload_hash = P256Scalar::from_byte_seq_be(&payload_hash);
     let s_inv = s.inv();
 

@@ -842,8 +842,13 @@ Definition nat_mod_to_public_byte_seq_le (n: pos)  (len: uint_size) (x: nat_mod_
   Lib.ByteSequence.nat_to_bytes_be len n' *)
 
 Axiom array_declassify_eq : forall  {A l}, nseq A l -> nseq A l -> bool.
+
 Axiom array_to_le_uint32s : forall {A l}, nseq A l -> nseq uint32 l.
 Axiom array_to_be_uint32s : forall {l}, nseq uint8 l -> nseq uint32 (l/4).
+
+Axiom array_to_le_uint64s : forall {A l}, nseq A l -> nseq uint64 l.
+Axiom array_to_be_uint64s : forall {l}, nseq uint8 l -> nseq uint64 (l/4).
+
 Axiom array_to_le_bytes : forall {A l}, nseq A l -> seq uint8.
 Axiom array_to_be_bytes : forall {A l}, nseq A l -> seq uint8.
 Axiom nat_mod_from_byte_seq_le : forall  {A n}, seq A -> nat_mod n.

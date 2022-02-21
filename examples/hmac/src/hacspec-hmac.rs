@@ -2,8 +2,8 @@ use hacspec_lib::*;
 use hacspec_sha256::*;
 
 // HASH_SIZE and K_SIZE are defined in the sha256 crate.
-const BLOCK_LEN: usize = K_SIZE;
-bytes!(PRK, HASH_SIZE);
+const BLOCK_LEN: usize = K_SIZE_256;
+bytes!(PRK, HASH_SIZE_256);
 bytes!(Block, BLOCK_LEN);
 
 const I_PAD: Block = Block(secret_bytes!([
@@ -25,7 +25,7 @@ const O_PAD: Block = Block(secret_bytes!([
 
 fn k_block(k: &ByteSeq) -> Block {
     if k.len() > BLOCK_LEN {
-        Block::new().update_start(&hash(k))
+        Block::new().update_start(&sha256(k))
     } else {
         Block::new().update_start(k)
     }
@@ -39,10 +39,10 @@ pub fn hmac(k: &ByteSeq, txt: &ByteSeq) -> PRK {
 
     let mut h_in = ByteSeq::from_seq(&(k_block ^ I_PAD));
     h_in = h_in.concat(txt);
-    let h_inner = hash(&h_in);
+    let h_inner = sha256(&h_in);
 
     let mut h_in = ByteSeq::from_seq(&(k_block ^ O_PAD));
     h_in = h_in.concat(&h_inner);
 
-    PRK::from_seq(&hash(&h_in))
+    PRK::from_seq(&sha256(&h_in))
 }

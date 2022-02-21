@@ -55,7 +55,7 @@ fn check_output_limit(l: usize) -> Result<usize, HkdfError> {
 pub fn expand(prk: &ByteSeq, info: &ByteSeq, l: usize) -> HkdfByteSeqResult {
     let n = check_output_limit(l)?;
     let mut t_i = PRK::new(); // PRK is of length HASH_SIZE
-    let mut t = ByteSeq::new(n * HASH_SIZE);
+    let mut t = ByteSeq::new(n * HASH_SIZE_256);
     for i in 0..n {
         let hmac_txt_in = if i == 0 {
             build_hmac_txt(&ByteSeq::new(0), info, U8((i as u8) + 1u8))
