@@ -513,11 +513,56 @@ impl Callbacks for HacspecCallbacks {
         queries: &'tcx Queries<'tcx>,
     ) -> Compilation {
         // queries.parse().unwrap();
-
-        let k = queries.expansion().unwrap().peek();
+        let mut krate;
+        let resolver : rustc_middle::ty::ResolverOutputs;
         
-        let krate: &rustc_ast::ast::Crate = &*(k.0.clone());
-        let mut krate: rustc_ast::ast::Crate = krate.clone();
+        {
+            let (_, _lint_store) = &*queries.register_plugins().unwrap().peek();
+        }
+
+        {
+            let krate_and_resolver = queries.expansion().unwrap().peek_mut().clone(); // ?
+            krate = (*krate_and_resolver.0).clone();
+
+            // let krate: &rustc_ast::ast::Crate = &*(k.0.clone());
+            // let mut krate: rustc_ast::ast::Crate = krate.clone();
+
+            // for item in krate.items.clone() {
+            //     println!("ITEM: {:#?}", item.kind);
+            // }
+            
+            resolver = rustc_interface::interface::BoxedResolver::to_resolver_outputs(krate_and_resolver.1.clone());
+            let lint_store = &*(krate_and_resolver.2.clone());
+
+            println!("{:?}", lint_store.get_lint_groups());
+            println!("{:?}", queries.codegen_backend().metadata_loader())
+            // # https://doc.rust-lang.org/nightly/nightly-rustc/src/rustc_interface/passes.rs.html#277-283
+            
+            // for local_id in resolver.definitions.iter_local_def_id() {
+            //     println!("LID {:?}", local_id);
+            // }
+        }
+
+        queries.prepare_outputs().unwrap(); // ?
+        queries.global_ctxt().unwrap(); // ?
+
+        queries
+            .global_ctxt()
+            .unwrap()
+            .peek_mut()
+            .enter(|tcx| {
+                // ?
+                let result = tcx.analysis(());
+                result
+            })
+            .unwrap(); // ?
+
+        println!("{:?}", resolver.trait_impls);
+
+        krate.items = krate.items.into_iter().map(|x| {
+            println!("{:?}", x.id);
+            x
+        }).collect();
 
         krate.items = krate.items
             .clone()
@@ -539,10 +584,7 @@ impl Callbacks for HacspecCallbacks {
                 _ => true,
             })
             .collect();
-        
-        // let resolver : rustc_middle::ty::ResolverOutputs = rustc_interface::interface::BoxedResolver::to_resolver_outputs(k.1.clone());
-        // let lint_store = &*(k.2.clone());
-        
+                
         // let krate_parse = queries.parse().unwrap().take();
         // for i in 0..(krate_parse.items.len()-1) {
         //     println!("{:?}\nvs\n{:?}\n", krate.items[i].kind, krate_parse.items[i].kind);
