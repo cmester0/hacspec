@@ -2,6 +2,13 @@ Global Set Warnings "-ambiguous-paths".
 Global Set Warnings "-uniform-inheritance".
 Global Set Warnings "-auto-template".
 Global Set Warnings "-disj-pattern-notation".
+
+From mathcomp Require Import choice (* all_ssreflect *) (* ssreflect *) (* seq tuple *).
+From Crypt Require Import choice_type Package Prelude.
+Import PackageNotation.
+
+Axiom choice_type_from_type : Type -> choice_type.
+
 (*** Integers *)
 From Coq Require Import ZArith List.
 Import ListNotations.
@@ -152,7 +159,7 @@ Definition shift_right_ `{WS : WORDSIZE} (i : @int WS) (j : uint_size) :=
 Infix "shift_left" := (shift_left_) (at level 77) : hacspec_scope.
 Infix "shift_right" := (shift_right_) (at level 77) : hacspec_scope.
 
-Infix "%%" := Z.rem (at level 40, left associativity) : Z_scope.
+(* Infix "%%" := Z.rem (at level 40, left associativity) : Z_scope. *)
 Infix ".+" := (MachineIntegers.add) (at level 77) : hacspec_scope.
 Infix ".-" := (MachineIntegers.sub) (at level 77) : hacspec_scope.
 Notation "-" := (MachineIntegers.neg) (at level 77) : hacspec_scope.
@@ -162,10 +169,11 @@ Infix ".%" := (MachineIntegers.mods) (at level 77) : hacspec_scope.
 Infix ".^" := (MachineIntegers.xor) (at level 77) : hacspec_scope.
 Infix ".&" := (MachineIntegers.and) (at level 77) : hacspec_scope.
 Infix ".|" := (MachineIntegers.or) (at level 77) : hacspec_scope.
-Infix "==" := (MachineIntegers.eq) (at level 32) : hacspec_scope.
+(* Infix "==" := (MachineIntegers.eq) (at level 32) : hacspec_scope. *)
 (* Definition one := (@one WORDSIZE32). *)
 (* Definition zero := (@zero WORDSIZE32). *)
-Notation "A × B" := (prod A B) (at level 79, left associativity) : hacspec_scope.
+
+Notation "A '× B" := (prod A B) (at level 79, left associativity) : hacspec_scope.
 
 (*** Positive util *)
 
@@ -721,7 +729,7 @@ Definition array_index {A: Type} `{Default A} {len : nat} (s: nseq A len) (i: na
 Proof.
   destruct (i <? len) eqn:H1.
   (* If i < len, index normally *)
-  - rewrite Nat.ltb_lt in H1.
+  - apply Nat.ltb_lt in H1.
     exact (VectorDef.nth s (Fin.of_nat_lt H1)).
   (* otherwise return default element *)
   - exact default.
@@ -732,7 +740,7 @@ Definition array_upd {A: Type} {len : nat} (s: nseq A len) (i: nat) (new_v: A) :
 Proof.
   destruct (i <? len) eqn:H.
   (* If i < len, update normally *)
-  - rewrite Nat.ltb_lt in H.
+  - apply Nat.ltb_lt in H.
     exact (VectorDef.replace s (Fin.of_nat_lt H) new_v).
   (* otherwise return original array *)
   - exact s.
@@ -1305,15 +1313,15 @@ Section Casting.
   }.
 
   Global Instance cast_prod {A B C D} `{Cast A B} `{Cast C D} : Cast (A * C) (B * D) := {
-    cast '(a, c) := ('a, 'c)
+    cast '(a, c) := (cast _ a, cast _ c)
   }.
 
   Global Instance cast_option {A B} `{Cast A B} : Cast (option A) (option B) := {
-    cast a := match a with Some a => Some ('a) | None => None end
+    cast a := match a with Some a => Some (cast _ a) | None => None end
   }.
 
   Global Instance cast_option_b {A B} `{Cast A B} : Cast A (option B) := {
-    cast a := Some ('a)
+    cast a := Some (cast _ a)
   }.
 
   (* Global Instances for common types *)
@@ -1355,7 +1363,7 @@ End Casting.
 
 
 Global Arguments pair {_ _} & _ _.
-Global Arguments id {_} & _.
+(* Global Arguments id {_} & _. *)
 Section Coercions.
   (* First, in order to have automatic coercions for tuples, we add bidirectionality hints: *)
 
@@ -1637,10 +1645,10 @@ Global Instance string_eqdec : EqDec String.string := {
   eqb_leibniz := String.eqb_eq ;
 }.
 
-Global Instance unit_eqdec : EqDec unit := {
-  eqb := fun _ _ => true ;
-  eqb_leibniz := fun 'tt 'tt => (conj (fun _ => eq_refl) (fun _ => eq_refl)) ;
-}.
+(* Global Instance unit_eqdec : EqDec unit := { *)
+(*   eqb := fun _ _ => true ; *)
+(*   eqb_leibniz := fun 'tt 'tt => (conj (fun _ => eq_refl) (fun _ => eq_refl)) ; *)
+(* }. *)
 
 Require Import Sumbool.
 Open Scope list_scope.
@@ -1694,12 +1702,12 @@ Global Program Instance Dec_eq_prod (A B : Type) `{EqDec A} `{EqDec B} : EqDec (
   eqb '(a0, b0) '(a1, b1) := andb (eqb a0 a1) (eqb b0 b1)
 }.
 Next Obligation.
-  split ; intros.
+  split ; intros ; destruct x ; destruct y.
   - symmetry in H1.
     apply Bool.andb_true_eq in H1. destruct H1.
-    symmetry in H1. apply (eqb_leibniz a0 a) in H1.
-    symmetry in H2. apply (eqb_leibniz b0 b) in H2.
-    rewrite H1, H2. reflexivity.
+    symmetry in H1. rewrite (eqb_leibniz) in H1.
+    symmetry in H2. rewrite (eqb_leibniz) in H2.
+    rewrite H1. rewrite H2. reflexivity.
   - inversion_clear H1. now do 2 rewrite eqb_refl.
 Defined.
 
@@ -1747,7 +1755,7 @@ Definition u64_to_be_bytes' : int64 -> nseq int8 8 :=
 
 Open Scope hacspec_scope.
 
-Definition u64_from_be_bytes_fold_fun (i : int8) (s : nat × int64) : nat × int64 :=
+Definition u64_from_be_bytes_fold_fun (i : int8) (s : nat '× int64) : nat '× int64 :=
   let (n,v) := s in
   (S n, v .+ (@repr WORDSIZE64 ((int8_to_nat i) * 2 ^ (4 * n)))).
 
@@ -1852,6 +1860,6 @@ Global Instance uint8_default : Default uint8 := _.
 Global Instance nat_mod_default {p : Z} : Default (nat_mod p) := {
   default := nat_mod_zero
 }.
-Global Instance prod_default {A B} `{Default A} `{Default B} : Default (A × B) := {
+Global Instance prod_default {A B} `{Default A} `{Default B} : Default (A '× B) := {
   default := (default, default)
 }.
