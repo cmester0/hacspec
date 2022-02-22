@@ -8,8 +8,8 @@ src/QuickChickLib.v
 
 # src/Hacspec_Aes.v # TODO: not currently working ?
 # src/Hacspec_Aes128_Gcm.v # requires Aes
-src/Hacspec_Bls12_381.v
-src/Hacspec_Bls12_381_Hash.v
+# src/Hacspec_Bls12_381.v
+# src/Hacspec_Bls12_381_Hash.v
 src/Hacspec_Chacha20.v
 src/Hacspec_Chacha20poly1305.v
 src/Hacspec_Poly1305.v
@@ -24,12 +24,14 @@ src/Hacspec_P256.v
 # src/Hacspec_Sha3.v # Issues with operations with different types eg ".*" vs "*"
 src/Hacspec_Sha256.v
 
+# src/Hacspec_Concordium_Derive.v
+
 src/Concordium_Prims.v
 src/Concordium_Types.v
 src/Concordium_Traits.v
 src/Concordium_Impls.v
 
-src/Concordium.v
+src/Hacspec_Concordium.v
 
-src/Auction.v
-src/Piggybank.v
+# src/Auction.v
+# src/Piggybank.v
