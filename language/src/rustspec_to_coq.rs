@@ -1421,6 +1421,59 @@ fn translate_item<'a>(
                 .group(),
             true,
         )
+        .append(
+            RcDoc::hardline()
+                .append(RcDoc::as_string("Program"))
+                .append(RcDoc::space())
+                .append(make_let_binding(
+                    translate_ident(Ident::TopLevel(f.clone()))
+                        .append(RcDoc::as_string("_code"))
+                        .append(RcDoc::line())
+                        .append(if sig.args.len() > 0 {
+                            RcDoc::intersperse(
+                                sig.args.iter().map(|((x, _), (tau, _))| {
+                                    make_paren(
+                                        translate_ident(x.clone())
+                                            .append(RcDoc::space())
+                                            .append(RcDoc::as_string(":"))
+                                            .append(RcDoc::space())
+                                            .append(translate_typ(tau.clone())),
+                                    )
+                                }),
+                                RcDoc::line(),
+                            )
+                        } else {
+                            RcDoc::nil()
+                        })
+                        .append(RcDoc::line())
+                        .append(
+                            RcDoc::as_string(":")
+                                .append(RcDoc::space())
+                                .append(RcDoc::as_string("code fset.fset0 [interface] (choice_type_from_type "))
+                                .append(translate_base_typ(sig.ret.0.clone()))
+                                .append(RcDoc::as_string(")"))
+                                .group(),
+                        ),
+                    None,
+                    RcDoc::as_string("@ret _ _ _")
+                        .append(RcDoc::space())
+                        .append(make_paren(
+                            translate_ident(Ident::TopLevel(f.clone()))
+                                .append(RcDoc::space()
+                                        .append(if sig.args.len() > 0 {
+                                            RcDoc::intersperse(
+                                                sig.args.iter().map(|((x, _), (_, _))| {
+                                                    translate_ident(x.clone())
+                                                }),
+                                                RcDoc::line(),
+                                            )
+                                        } else {
+                                            RcDoc::nil()
+                                        })
+                                )
+                        )),
+                    true
+                )))
         .append({
             if item.tags.0.contains(&"quickcheck".to_string()) {
                 RcDoc::hardline()
