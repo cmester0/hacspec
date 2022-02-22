@@ -41,14 +41,15 @@ fn make_let_binding<'a>(
     RcDoc::as_string(if toplevel { "Definition" } else { "let" })
         .append(RcDoc::space())
         .append(
-            pat.append(match typ {
-                None => RcDoc::nil(),
-                Some(tau) => RcDoc::space()
-                    .append(RcDoc::as_string(":"))
-                    .append(RcDoc::space())
-                    .append(tau),
-            })
-            .group(),
+            pat.clone()
+                .append(match typ.clone() {
+                    None => RcDoc::nil(),
+                    Some(tau) => RcDoc::space()
+                        .append(RcDoc::as_string(":"))
+                        .append(RcDoc::space())
+                        .append(tau),
+                })
+                .group(),
         )
         .append(RcDoc::space())
         .append(RcDoc::as_string(":="))
@@ -125,7 +126,7 @@ fn make_typ_tuple<'a, I: IntoIterator<Item = RcDoc<'a, ()>>>(args: I) -> RcDoc<'
                 .append(RcDoc::intersperse(
                     args.into_iter(),
                     RcDoc::space()
-                        .append(RcDoc::as_string("×"))
+                        .append(RcDoc::as_string("'×"))
                         .append(RcDoc::line()),
                 ))
                 .group()
@@ -2179,6 +2180,9 @@ pub fn translate_and_write_to_file(
     write!(
         file,
         "(** This file was automatically generated using Hacspec **)\n\
+         From Crypt Require Import choice_type Package Prelude.\n\
+         Import PackageNotation.\n\
+         \n\
         Require Import Hacspec_Lib MachineIntegers.\n\
         From Coq Require Import ZArith.\n\
         Import List.ListNotations.\n\
