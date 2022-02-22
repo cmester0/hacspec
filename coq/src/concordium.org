@@ -26,7 +26,7 @@
 #+end_src
 
 #+begin_src sh
-cargo hacspec -e v -dir coq/src -o Concordium --org-file concordium.org hacspec-concordium
+cargo hacspec -e v -dir coq/src --org-file concordium.org hacspec-concordium
 #+end_src
 
 * Concordium specification
@@ -191,28 +191,28 @@ extern crate creusot_contracts;
 use creusot_contracts::*; // {ensures, trusted}; // requires, 
 
 pub mod constants;
-mod hacspec_concordium_prims;
-mod hacspec_concordium_types;
-mod hacspec_concordium_traits;
-mod hacspec_concordium_impls;
+mod concordium_prims;
+mod concordium_types;
+mod concordium_traits;
+mod concordium_impls;
 
 pub mod test_infrastructure;
 
-use hacspec_concordium_prims::*; // TODO: Does not re-export anything, nothing is public enough (removed pub)
-pub use hacspec_concordium_types::*;
-pub use hacspec_concordium_traits::*;
-pub use hacspec_concordium_impls::*;
+use concordium_prims::*; // TODO: Does not re-export anything, nothing is public enough (removed pub)
+pub use concordium_types::*;
+pub use concordium_traits::*;
+pub use concordium_impls::*;
 #+END_SRC
 
 ** Coq code
 
-#+begin_src elisp :var SOURCE-CODE-FILE="Concordium.v" :results output silent :tangle no
+#+begin_src elisp :var SOURCE-CODE-FILE="Hacspec_Concordium.v" :results output silent :tangle no
 (org-babel-detangle SOURCE-CODE-FILE)
 #+end_src
 
 ***  - Coq code
 :PROPERTIES:
-:header-args: coq :tangle Concordium.v :mkdirp yes :comments link
+:header-args: coq :tangle Hacspec_Concordium.v :mkdirp yes :comments link
 :header-args: coq :eval never :results output silent
 :END:
 
@@ -249,7 +249,7 @@ Require Import Hacspec.Concordium_Impls.
 * Concordium "Types" specification
 ** Rust code
 :PROPERTIES:
-:header-args:  :tangle ../../examples/concordium/src/hacspec_concordium_types.rs :mkdirp yes :eval never
+:header-args:  :tangle ../../examples/concordium/src/concordium_types.rs :mkdirp yes :eval never
 :END:
 
 *** Imports
@@ -622,7 +622,7 @@ pub(crate) mod sealed {
 (org-babel-detangle SOURCE-CODE-FILE)
 #+end_src
 
-*** hacspec_concordium_types - Coq code
+*** concordium_types - Coq code
 :PROPERTIES:
 :header-args: coq :tangle Concordium_Types.v :mkdirp yes :comments link
 :header-args: coq :eval never :results output silent
@@ -659,7 +659,7 @@ Build_EqDec (log_error_t) (eqb_log_error_t) (eqb_leibniz_log_error_t).
 * Concordium "Traits" specification
 ** Rust code
 :PROPERTIES:
-:header-args: rust :tangle ../../examples/concordium/src/hacspec_concordium_traits.rs :mkdirp yes :eval never
+:header-args: rust :tangle ../../examples/concordium/src/concordium_traits.rs :mkdirp yes :eval never
 :END:
 *** Imports
 #+BEGIN_SRC rust
@@ -946,7 +946,7 @@ pub trait DeserialCtx: Sized {
 (org-babel-detangle SOURCE-CODE-FILE)
 #+end_src
 
-*** hacspec_concordium_traits - Coq code
+*** concordium_traits - Coq code
 :PROPERTIES:
 :header-args: coq :tangle Concordium_Traits.v :mkdirp yes :comments link
 :header-args: coq :eval never :results output silent
@@ -965,7 +965,7 @@ Open Scope hacspec_scope.
 * Concordium "Prims" specification
 ** Rust code
 :PROPERTIES:
-:header-args: rust :tangle ../../examples/concordium/src/hacspec_concordium_prims.rs :mkdirp yes :eval never
+:header-args: rust :tangle ../../examples/concordium/src/concordium_prims.rs :mkdirp yes :eval never
 :END:
 
 *** Imports
@@ -1564,7 +1564,7 @@ Report Error (TODO)
 (org-babel-detangle SOURCE-CODE-FILE)
 #+end_src
 
-*** hacspec_concordium_prims - Coq code
+*** concordium_prims - Coq code
 :PROPERTIES:
 :header-args: coq :tangle Concordium_Prims.v :mkdirp yes :comments link
 :header-args: coq :eval never :results output silent
@@ -1710,7 +1710,7 @@ Definition combine_or_hacspec (l_23 : int32) (r_24 : int32) : int32 :=
 * Concordium "Impls" specification
 ** Rust code
 :PROPERTIES:
-:header-args:  :tangle ../../examples/concordium/src/hacspec_concordium_impls.rs :mkdirp yes :eval never
+:header-args:  :tangle ../../examples/concordium/src/concordium_impls.rs :mkdirp yes :eval never
 :END:
 
 *** Imports
@@ -1728,9 +1728,9 @@ use crate::{
 };
 
 use hacspec_lib::*;
-use hacspec_concordium_prims::*;
-use hacspec_concordium_types::*;
-use hacspec_concordium_traits::*;
+use concordium_prims::*;
+use concordium_types::*;
+use concordium_traits::*;
 #+END_SRC
 
 *** Reject
@@ -2275,14 +2275,14 @@ We then implement the traits
 #+begin_src rust
 #[cfg(not(feature = "hacspec"))]
 pub fn coerce_rust_to_hacspec_parameter(
-    rust_parameter: &mut hacspec_concordium_types::Parameter,
+    rust_parameter: &mut concordium_types::Parameter,
 ) -> ParameterHacspec {
     rust_parameter.current_position.clone()
 }
 
 #[cfg(not(feature = "hacspec"))]
 pub fn coerce_hacspec_to_rust_parameter(
-    rust_parameter: &mut hacspec_concordium_types::Parameter,
+    rust_parameter: &mut concordium_types::Parameter,
     hacspec_parameter: ParameterHacspec,
 ) {
     rust_parameter.current_position = hacspec_parameter;
@@ -2291,7 +2291,7 @@ pub fn coerce_hacspec_to_rust_parameter(
 
 #[cfg(not(feature = "hacspec"))]
 /// # Trait implementations for Parameter
-impl Read for hacspec_concordium_types::Parameter {
+impl Read for concordium_types::Parameter {
     fn read(&mut self, buf: &mut [u8]) -> ParseResult<usize> {
         let (cs, nr) = read_impl_for_parameter_read(
             coerce_rust_to_hacspec_parameter(self),
@@ -2303,7 +2303,7 @@ impl Read for hacspec_concordium_types::Parameter {
 }
 
 #[cfg(not(feature = "hacspec"))]
-impl HasParameter for hacspec_concordium_types::Parameter {
+impl HasParameter for concordium_types::Parameter {
     #[inline(always)]
     fn size(&self) -> u32 {
         get_parameter_size_hacspec()
@@ -2518,7 +2518,7 @@ impl ExactSizeIterator for PoliciesIterator {
 #[cfg(not(feature = "hacspec"))]
 impl<T: sealed::ContextType> HasCommonData for ExternContext<T> {
     type MetadataType = ChainMetaExtern;
-    type ParamType = hacspec_concordium_types::Parameter;
+    type ParamType = concordium_types::Parameter;
     type PolicyIteratorType = PoliciesIterator;
     type PolicyType = Policy<AttributesCursor>;
 
@@ -2538,7 +2538,7 @@ impl<T: sealed::ContextType> HasCommonData for ExternContext<T> {
 
     #[inline(always)]
     fn parameter_cursor(&self) -> Self::ParamType {
-        hacspec_concordium_types::Parameter {
+        concordium_types::Parameter {
             current_position: 0,
         }
     }
@@ -3317,7 +3317,7 @@ impl DeserialCtx for String {
 (org-babel-detangle SOURCE-CODE-FILE)
 #+end_src
 
-*** hacspec_concordium_impls - Coq code
+*** concordium_impls - Coq code
 :PROPERTIES:
 :header-args: coq :tangle Concordium_Impls.v :mkdirp yes :comments link
 :header-args: coq :eval never :results output silent
