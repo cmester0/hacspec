@@ -26,11 +26,7 @@
 #+end_src
 
 #+begin_src sh
-  cargo hacspec -o coq/src/Concordium.v hacspec-concordium --init --org-file concordium.org
-#+end_src
-
-#+begin_src sh
-  cargo hacspec -o coq/src/Concordium.v hacspec-concordium --update --org-file concordium.org
+cargo hacspec -e v -dir coq/src -o Concordium --org-file concordium.org hacspec-concordium
 #+end_src
 
 * Concordium specification

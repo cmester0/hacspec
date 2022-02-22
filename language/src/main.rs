@@ -119,6 +119,8 @@ fn construct_handle_crate_queue<'tcx>(
     }
     handled.insert(krate_module_string.clone());
 
+    println!("Module {}", krate_module_string);
+    
     let krate = ast_crates_map[&krate_module_string].clone();
 
     let mut krates = Vec::new();
@@ -218,6 +220,13 @@ fn handle_crate<'tcx>(
                         rustc_ast::ast::ItemKind::Use(ref tree) => {
                             match tree.kind {
                                 rustc_ast::ast::UseTreeKind::Glob => {
+                                    println!("{} USE: {}", krate_path, (&tree.prefix)
+                                            .segments
+                                            .last()
+                                            .unwrap()
+                                            .ident
+                                            .name
+                                            .to_ident_string());
                                     krate_use_paths[&krate_path].push(
                                         (&tree.prefix)
                                             .segments
