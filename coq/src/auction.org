@@ -29,11 +29,7 @@
 #+end_src
 
 #+begin_src sh
-  cargo hacspec -o coq/src/Auction.v hacspec-auction --init --org-file auction.org
-#+end_src
-
-#+begin_src sh
-  cargo hacspec -o coq/src/Auction.v hacspec-auction --update --org-file auction.org
+cargo hacspec -e v -dir coq/src -o Auction --org-file auction.org hacspec-auction
 #+end_src
 
 * Auction smart contract specification
