@@ -39,10 +39,11 @@ Definition poly1305_encode_r (b_0 : poly_block_t) : field_element_t :=
     (n_1) .& (secret (
         @repr WORDSIZE128 21267647620597763993911028882763415551) : int128) in 
   nat_mod_from_secret_literal (n_1).
-Program Definition poly1305_encode_r_code
+Definition poly1305_encode_r_code
   (b_0 : poly_block_t)
   : code fset.fset0 [interface] (choice_type_from_type field_element_t) :=
-  @ret _ _ _ (poly1305_encode_r b_0).
+  {code pkg_core_definition.ret (choice_type_from_type_elem (
+    poly1305_encode_r b_0))}.
 
 Definition poly1305_encode_block (b_2 : poly_block_t) : field_element_t :=
   let n_3 : uint128 :=
@@ -51,10 +52,11 @@ Definition poly1305_encode_block (b_2 : poly_block_t) : field_element_t :=
     nat_mod_from_secret_literal (n_3) in 
   (f_4) +% (nat_mod_pow2 (0x03fffffffffffffffffffffffffffffffb) (
       usize 128) : field_element_t).
-Program Definition poly1305_encode_block_code
+Definition poly1305_encode_block_code
   (b_2 : poly_block_t)
   : code fset.fset0 [interface] (choice_type_from_type field_element_t) :=
-  @ret _ _ _ (poly1305_encode_block b_2).
+  {code pkg_core_definition.ret (choice_type_from_type_elem (
+    poly1305_encode_block b_2))}.
 
 Definition poly1305_encode_last
   (pad_len_5 : block_index_t)
@@ -67,21 +69,24 @@ Definition poly1305_encode_last
     nat_mod_from_secret_literal (n_7) in 
   (f_8) +% (nat_mod_pow2 (0x03fffffffffffffffffffffffffffffffb) ((usize 8) * (
         pad_len_5)) : field_element_t).
-Program Definition poly1305_encode_last_code
+Definition poly1305_encode_last_code
   (pad_len_5 : block_index_t)
   (b_6 : sub_block_t)
   : code fset.fset0 [interface] (choice_type_from_type field_element_t) :=
-  @ret _ _ _ (poly1305_encode_last pad_len_5 b_6).
+  {code pkg_core_definition.ret (choice_type_from_type_elem (
+    poly1305_encode_last pad_len_5
+    b_6))}.
 
 Definition poly1305_init (k_9 : poly_key_t) : poly_state_t :=
   let r_10 : field_element_t :=
     poly1305_encode_r (array_from_slice (default) (16) (k_9) (usize 0) (
         usize 16)) in 
   (nat_mod_zero , r_10, k_9).
-Program Definition poly1305_init_code
+Definition poly1305_init_code
   (k_9 : poly_key_t)
   : code fset.fset0 [interface] (choice_type_from_type poly_state_t) :=
-  @ret _ _ _ (poly1305_init k_9).
+  {code pkg_core_definition.ret (choice_type_from_type_elem (
+    poly1305_init k_9))}.
 
 Definition poly1305_update_block
   (b_11 : poly_block_t)
@@ -90,11 +95,13 @@ Definition poly1305_update_block
   let '(acc_13, r_14, k_15) :=
     st_12 in 
   (((poly1305_encode_block (b_11)) +% (acc_13)) *% (r_14), r_14, k_15).
-Program Definition poly1305_update_block_code
+Definition poly1305_update_block_code
   (b_11 : poly_block_t)
   (st_12 : poly_state_t)
   : code fset.fset0 [interface] (choice_type_from_type poly_state_t) :=
-  @ret _ _ _ (poly1305_update_block b_11 st_12).
+  {code pkg_core_definition.ret (choice_type_from_type_elem (
+    poly1305_update_block b_11
+    st_12))}.
 
 Definition poly1305_update_blocks
   (m_16 : byte_seq)
@@ -114,11 +121,13 @@ Definition poly1305_update_blocks
       (st_18))
     st_18 in 
   st_18.
-Program Definition poly1305_update_blocks_code
+Definition poly1305_update_blocks_code
   (m_16 : byte_seq)
   (st_17 : poly_state_t)
   : code fset.fset0 [interface] (choice_type_from_type poly_state_t) :=
-  @ret _ _ _ (poly1305_update_blocks m_16 st_17).
+  {code pkg_core_definition.ret (choice_type_from_type_elem (
+    poly1305_update_blocks m_16
+    st_17))}.
 
 Definition poly1305_update_last
   (pad_len_22 : uint_size)
@@ -138,12 +147,15 @@ Definition poly1305_update_last
         ) in 
       (st_25)) else ((st_25)) in 
   st_25.
-Program Definition poly1305_update_last_code
+Definition poly1305_update_last_code
   (pad_len_22 : uint_size)
   (b_23 : sub_block_t)
   (st_24 : poly_state_t)
   : code fset.fset0 [interface] (choice_type_from_type poly_state_t) :=
-  @ret _ _ _ (poly1305_update_last pad_len_22 b_23 st_24).
+  {code pkg_core_definition.ret (choice_type_from_type_elem (
+    poly1305_update_last pad_len_22
+    b_23
+    st_24))}.
 
 Definition poly1305_update
   (m_29 : byte_seq)
@@ -154,11 +166,13 @@ Definition poly1305_update
   let last_32 : seq uint8 :=
     seq_get_remainder_chunk (m_29) (blocksize_v) in 
   poly1305_update_last (seq_len (last_32)) (last_32) (st_31).
-Program Definition poly1305_update_code
+Definition poly1305_update_code
   (m_29 : byte_seq)
   (st_30 : poly_state_t)
   : code fset.fset0 [interface] (choice_type_from_type poly_state_t) :=
-  @ret _ _ _ (poly1305_update m_29 st_30).
+  {code pkg_core_definition.ret (choice_type_from_type_elem (
+    poly1305_update m_29
+    st_30))}.
 
 Definition poly1305_finish (st_33 : poly_state_t) : poly1305_tag_t :=
   let '(acc_34, _, k_35) :=
@@ -172,10 +186,11 @@ Definition poly1305_finish (st_33 : poly_state_t) : poly1305_tag_t :=
     uint128_from_le_bytes (array_from_slice (default) (16) (aby_37) (usize 0) (
         usize 16)) in 
   array_from_seq (16) (uint128_to_le_bytes ((a_38) .+ (n_36))).
-Program Definition poly1305_finish_code
+Definition poly1305_finish_code
   (st_33 : poly_state_t)
   : code fset.fset0 [interface] (choice_type_from_type poly1305_tag_t) :=
-  @ret _ _ _ (poly1305_finish st_33).
+  {code pkg_core_definition.ret (choice_type_from_type_elem (
+    poly1305_finish st_33))}.
 
 Definition poly1305 (m_39 : byte_seq) (key_40 : poly_key_t) : poly1305_tag_t :=
   let st_41 : (field_element_t '× field_element_t '× poly_key_t) :=
@@ -183,9 +198,10 @@ Definition poly1305 (m_39 : byte_seq) (key_40 : poly_key_t) : poly1305_tag_t :=
   let st_41 :=
     poly1305_update (m_39) (st_41) in 
   poly1305_finish (st_41).
-Program Definition poly1305_code
+Definition poly1305_code
   (m_39 : byte_seq)
   (key_40 : poly_key_t)
   : code fset.fset0 [interface] (choice_type_from_type poly1305_tag_t) :=
-  @ret _ _ _ (poly1305 m_39 key_40).
+  {code pkg_core_definition.ret (choice_type_from_type_elem (poly1305 m_39
+    key_40))}.
 

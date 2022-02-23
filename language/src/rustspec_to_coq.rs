@@ -1423,8 +1423,6 @@ fn translate_item<'a>(
         )
         .append(
             RcDoc::hardline()
-                .append(RcDoc::as_string("Program"))
-                .append(RcDoc::space())
                 .append(make_let_binding(
                     translate_ident(Ident::TopLevel(f.clone()))
                         .append(RcDoc::as_string("_code"))
@@ -1455,7 +1453,7 @@ fn translate_item<'a>(
                                 .group(),
                         ),
                     None,
-                    RcDoc::as_string("@ret _ _ _")
+                    RcDoc::as_string("{code pkg_core_definition.ret (choice_type_from_type_elem")
                         .append(RcDoc::space())
                         .append(make_paren(
                             translate_ident(Ident::TopLevel(f.clone()))
@@ -1471,7 +1469,8 @@ fn translate_item<'a>(
                                             RcDoc::nil()
                                         })
                                 )
-                        )),
+                        ))
+                        .append(RcDoc::as_string(")}")),
                     true
                 )))
         .append({
