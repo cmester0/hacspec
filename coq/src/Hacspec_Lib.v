@@ -8,6 +8,30 @@ From Crypt Require Import choice_type Package Prelude.
 Import PackageNotation.
 
 Axiom choice_type_from_type : Type -> choice_type.
+Axiom choice_type_from_type_elem : forall {T : Type}, T -> choice_type_from_type T.
+Axiom type_from_choice_type_elem : forall {T : Type}, choice_type_from_type T -> T.
+
+Definition code_injection {T : Type} (t : T) : code fset.fset0 [interface] (choice_type_from_type T) :=
+  {code
+     @pkg_core_definition.ret (choice_type_from_type T) (choice_type_from_type_elem t)
+  }.
+
+Fixpoint code_extraction {T : Type} (t : code fset.fset0 [interface] (choice_type_from_type T)) : T.
+Admitted.
+  (* destruct t.   *)
+  (* induction prog.   *)
+  (* - apply (type_from_choice_type_elem x). *)
+  (* - inversion prog_valid. *)
+
+  (* (* Inductive raw_code (A : choiceType) : Type := *) *)
+  (* (* | ret (x : A) *) *)
+  (* (* | opr (o : opsig) (x : src o) (k : tgt o → raw_code A) *) *)
+  (* (* | getr (l : Location) (k : l → raw_code A) *) *)
+  (* (* | putr (l : Location) (v : l) (k : raw_code A) *) *)
+  (* (* | sampler (op : Op) (k : Arit op → raw_code A). *) *)
+
+
+  (* apply T. *)
 
 (*** Integers *)
 From Coq Require Import ZArith List.
@@ -838,7 +862,7 @@ Definition nat_mod_get_bit {p} (a : nat_mod p) n :=
   if (nat_mod_bit a n)
   then @nat_mod_one p
   else @nat_mod_zero p.
-  
+
 (*
 Definition nat_mod_to_public_byte_seq_le (n: pos)  (len: uint_size) (x: nat_mod_mod n) : lseq pub_uint8 len =
   Definition n' := n % (pow2 (8 * len)) in
