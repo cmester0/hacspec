@@ -21,7 +21,7 @@ From Coqprime Require GZnZ.
 
 Declare Scope hacspec_scope.
 
-Axiom secret : forall {WS : WORDSIZE},  (@int WS) -> (@int WS).
+Axiom secret : forall {WS : WORDSIZE},  (@int WS) -> code fset.fset0 [interface] (choice_type_from_type (@int WS)).
 
 Require Import Eqdep_dec Zquot Zwf.
 From compcert Require Import Coqlib Zbits.
@@ -248,7 +248,7 @@ Fixpoint foldi_
   | S n' => foldi_ n' (add i one) f (f i cur)
   end.
 Close Scope nat_scope.
-Definition foldi
+Definition foldi_pre
   {acc: Type}
   (lo: uint_size)
   (hi: uint_size) (* {lo <= hi} *)
@@ -259,7 +259,14 @@ Definition foldi
   | Zneg p => init
   | Zpos p => foldi_ (Pos.to_nat p) lo f init
   end.
-
+Definition foldi
+  {acc: Type}
+  (lo: uint_size)
+  (hi: uint_size) (* {lo <= hi} *)
+  (f: (uint_size) -> acc -> code fset.fset0 [interface] (choice_type_from_type acc)) (* {i < hi} *)
+  (init: acc) : _ :=
+  code_injection (foldi_pre lo hi (fun x y => code_extraction (f x y)) init).
+  
 (* Typeclass handling of default elements, for use in sequences/arrays.
    We provide instances for the library integer types *)
 Class Default (A : Type) := {
@@ -654,7 +661,7 @@ Definition seq_slice_range
   (input: seq a)
   (start_fin:(uint_size * uint_size))
     : nseq a _ :=
-  seq_slice input (from_uint_size (fst start_fin)) (from_uint_size (snd start_fin)).
+  seq_slice_pre input (from_uint_size (fst start_fin)) (from_uint_size (snd start_fin)).
 
 (* updating a subsequence in a sequence *)
 Definition seq_update
@@ -975,9 +982,12 @@ Definition nat_mod (p : Z) : Set := GZnZ.znz p.
 Definition nat_mod_equal {p} (a b : nat_mod p) : bool :=
   Z.eqb (GZnZ.val p a) (GZnZ.val p b).
 
-Definition nat_mod_zero {p} : nat_mod p := GZnZ.zero p.
-Definition nat_mod_one {p} : nat_mod p := GZnZ.one p.
-Definition nat_mod_two {p} : nat_mod p := GZnZ.mkznz p _ (GZnZ.modz p 2).
+Definition nat_mod_zero_pre {p} : nat_mod p := GZnZ.zero p.
+Definition nat_mod_zero {p} : code fset.fset0 [interface] (choice_type_from_type (nat_mod p)) := code_injection (nat_mod_zero_pre).
+Definition nat_mod_one_pre {p} : nat_mod p := GZnZ.one p.
+Definition nat_mod_one {p} : code fset.fset0 [interface] (choice_type_from_type (nat_mod p)) := code_injection (nat_mod_one_pre).
+Definition nat_mod_two_pre {p} : nat_mod p := GZnZ.mkznz p _ (GZnZ.modz p 2).
+Definition nat_mod_two {p} : code fset.fset0 [interface] (choice_type_from_type (nat_mod p)) := code_injection (nat_mod_two_pre).
 
 Definition nat_mod_add {n : Z} (a : nat_mod n) (b : nat_mod n) : nat_mod n := GZnZ.add n a b.
 
@@ -998,23 +1008,23 @@ Definition nat_mod_neg {n : Z} (a:nat_mod n) : nat_mod n := GZnZ.opp n a.
 
 Definition nat_mod_inv {n : Z} (a:nat_mod n) : nat_mod n := GZnZ.inv n a.
 
-Definition nat_mod_exp_def {p : Z} (a:nat_mod p) (n : nat) : nat_mod p :=
+Definition nat_mod_exp_def_pre {p : Z} (a:nat_mod p) (n : nat) : nat_mod p :=
   let fix exp_ (e : nat_mod p) (n : nat) :=
     match n with
-    | 0%nat => nat_mod_one
+    | 0%nat => nat_mod_one_pre
     | S n => nat_mod_mul a (exp_ a n)
     end in
   exp_ a n.
 
-Definition nat_mod_exp {WS} {p} a n := @nat_mod_exp_def p a (Z.to_nat (@unsigned WS n)).
-Definition nat_mod_pow {WS} {p} a n := @nat_mod_exp_def p a (Z.to_nat (@unsigned WS n)).
-Definition nat_mod_pow_self {p} a n := @nat_mod_exp_def p a (Z.to_nat (from_uint_size n)).
+Definition nat_mod_exp_pre {WS} {p} a n := @nat_mod_exp_def_pre p a (Z.to_nat (@unsigned WS n)).
+Definition nat_mod_pow_pre {WS} {p} a n := @nat_mod_exp_def_pre p a (Z.to_nat (@unsigned WS n)).
+Definition nat_mod_pow_self_pre {p} a n := @nat_mod_exp_def_pre p a (Z.to_nat (from_uint_size n)).
 
 Close Scope nat_scope.
 Open Scope Z_scope.
 
 (* We assume x < m *)
-Definition nat_mod_from_secret_literal {m : Z} (x:int128) : nat_mod m.
+Definition nat_mod_from_secret_literal_pre {m : Z} (x:int128) : nat_mod m.
 Proof.
   unfold nat_mod.
   (* since we assume x < m, it will be true that (unsigned x) = (unsigned x) mod m  *)
@@ -1024,8 +1034,10 @@ Proof.
   rewrite Zmod_mod.
   reflexivity.
 Defined.
+Definition nat_mod_from_secret_literal {m : Z} (x:int128) : code fset.fset0 [interface] (choice_type_from_type (nat_mod m)) :=
+ (@code_injection (nat_mod m) (@nat_mod_from_secret_literal_pre m x)).  
 
-Definition nat_mod_from_literal (m : Z) (x:int128) : nat_mod m := nat_mod_from_secret_literal x.
+Definition nat_mod_from_literal_pre (m : Z) (x:int128) : nat_mod m := nat_mod_from_secret_literal_pre x.
 
 Axiom nat_mod_to_byte_seq_le : forall {n : Z}, nat_mod n -> seq int8_choice.
 Axiom nat_mod_to_byte_seq_be : forall {n : Z}, nat_mod n -> seq int8_choice.
@@ -1061,7 +1073,7 @@ Axiom most_significant_bit : forall {m}, nat_mod m -> uint_size -> uint_size.
 
 
 (* We assume 2^x < m *)
-Definition nat_mod_pow2 (m : Z) (x : N) : nat_mod m.
+Definition nat_mod_pow2_pre (m : Z) (x : N) : nat_mod m.
 Proof.
   remember (Z.pow 2 (Z.of_N x) mod m) as y.
   apply (GZnZ.mkznz m y).
@@ -1069,7 +1081,7 @@ Proof.
   rewrite Zmod_mod.
   reflexivity.
 Defined.
-
+Definition nat_mod_pow2 (m : Z) (x : N) : code fset.fset0 [interface] (choice_type_from_type (nat_mod m)) := code_injection (nat_mod_pow2_pre m x).
 
 Section Casting.
 
@@ -1592,8 +1604,8 @@ Definition option_is_none {A} (x : option A) : bool :=
   | _ => false
   end.
 
-Definition foldi_bind {A : Type} {M : Type -> Type} `{Monad M} (a : uint_size) (b : uint_size) (f : uint_size -> A -> M A) (init : M A) : M A :=
-  @foldi (M A) a b (fun x y => bind y (f x)) init.
+Definition foldi_bind {A : Type} {M : Type -> Type} `{Monad M} (a : uint_size) (b : uint_size) (f : uint_size -> A -> M A) (init : M A) : code fset.fset0 [interface] (choice_type_from_type (M A)) :=
+  @foldi (M A) a b (fun x y => code_injection (bind y (f x))) init.
 
 Definition lift_to_result {A B C} (r : result A C) (f : A -> B) : result B C :=
   result_bind r (fun x => result_ret (f x)).
@@ -1643,7 +1655,7 @@ Global Instance int_default {WS : WORDSIZE} : Default int := {
 }.
 Global Instance uint8_default : Default uint8 := _.
 Global Instance nat_mod_default {p : Z} : Default (nat_mod p) := {
-  default := nat_mod_zero
+  default := nat_mod_zero_pre
 }.
 Global Instance prod_default {A B} `{Default A} `{Default B} : Default (A '× B) := {
   default := (default, default)
