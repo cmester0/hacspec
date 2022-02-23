@@ -10,7 +10,7 @@ From Crypt Require Import choice_type Package Prelude.
 Import PackageNotation.
 
 From extructures Require Import ord fset fmap.
-
+    
 (*** Integers *)
 From Coq Require Import ZArith List.
 Import ListNotations.
@@ -23,7 +23,7 @@ From Coqprime Require GZnZ.
 
 Declare Scope hacspec_scope.
 
-Definition secret : forall {WS : WORDSIZE},  @T (@int WS) -> @T (@int WS) := fun=> id.
+Axiom secret : forall {WS : WORDSIZE},  @T (@int WS) -> code fset.fset0 [interface] (@ct (@int WS)).
 
 Require Import Eqdep_dec Zquot Zwf.
 From compcert Require Import Coqlib Zbits.
@@ -34,6 +34,8 @@ Section Uint.
   
 Local Coercion T : ChoiceEquality >-> Sortclass.
 Local Coercion ct : ChoiceEquality >-> choice_type.
+
+
 
 Axiom uint8_declassify : int8 -> int8.
 Axiom int8_declassify : int8 -> int8.
@@ -223,7 +225,15 @@ Global Infix ".|" := (MachineIntegers.or) (at level 77) : hacspec_scope.
 (* Definition one := (@one WORDSIZE32). *)
 (* Definition zero := (@zero WORDSIZE32). *)
 
-Notation "A '× B" := (prod A B) (at level 79, left associativity) : hacspec_scope.
+Program Instance prod_ChoiceEquality (a b : ChoiceEquality) : ChoiceEquality :=
+  {| T := (@T a) * (@T b) ; ct := (@ct a) × (@ct b); |}.
+Next Obligation.
+  intros.
+  do 2 rewrite ChoiceEq.
+  reflexivity.
+Defined.
+  
+Notation "A '× B" := (prod_ChoiceEquality A B) (at level 79, left associativity) : hacspec_scope.
 
 (*** Loops *)
 
@@ -235,7 +245,7 @@ Local Coercion ct : ChoiceEquality >-> choice_type.
 
 Open Scope nat_scope.
 Fixpoint foldi_
-  {acc : Type}
+  {acc : ChoiceEquality}
   (fuel : nat)
   (i : uint_size)
   (f : uint_size -> acc -> acc)
@@ -245,8 +255,8 @@ Fixpoint foldi_
   | S n' => foldi_ n' (add i one) f (f i cur)
   end.
 Close Scope nat_scope.
-Definition foldi
-  {acc: Type}
+Definition foldi_pre
+  {acc: ChoiceEquality}
   (lo: uint_size)
   (hi: uint_size) (* {lo <= hi} *)
   (f: (uint_size) -> acc -> acc) (* {i < hi} *)
@@ -256,7 +266,14 @@ Definition foldi
   | Zneg p => init
   | Zpos p => foldi_ (Pos.to_nat p) lo f init
   end.
-
+Definition foldi
+  {acc: ChoiceEquality}
+  (lo: uint_size)
+  (hi: uint_size) (* {lo <= hi} *)
+  (f: (uint_size) -> acc -> (@T acc)) (* {i < hi} *)
+  (init: acc) : _ :=
+  (foldi_pre lo hi f init).
+  
 (* Typeclass handling of default elements, for use in sequences/arrays.
    We provide instances for the library integer types *)
 Class Default (A : Type) := {
@@ -417,17 +434,18 @@ Proof.
   - exact default.
 Defined.
 
-Definition array_upd {A: ChoiceEquality} {len : nat} (s: @T (nseq A len)) (i: nat) (new_v: @T A) : @T (nseq A len).
+Definition array_upd_pre {A: ChoiceEquality} {len : nat} (s: @T (nseq A len)) (i: nat) (new_v: @T A) : @T (nseq A len).
 Proof.
+  rewrite <- ChoiceEq in s.
+  rewrite <- ChoiceEq.
+  
   destruct (i < len) eqn:v.
   (* If i < len, update normally *)
   - (* apply Nat.ltb_lt in H. *)
     destruct len. { inversion v. }
-    rewrite <- ChoiceEq in s.
     cbn in s. 
     rewrite -> ChoiceEq in s.
-    rewrite <- ChoiceEq.
-    cbn. 
+    cbn.
     rewrite -> ChoiceEq.
     apply (setm s (Ordinal (m := i) v) new_v).
 
@@ -436,33 +454,56 @@ Proof.
   - exact s.
 Defined.
 
+Definition array_upd {A: ChoiceEquality} {len : nat} (s: @T (nseq A len)) (i: nat) (new_v: @T A) : code fset.fset0 [interface] (@ct (nseq A len)).
+Proof.
+  refine {code ret _}.
+  rewrite ChoiceEq.
+  apply (array_upd_pre s i new_v).
+Defined.
+
 (* Definition array_upd {A: Type} {len : uint_size} (s: lseq A len) (i: uint_size) (new_v: A) : lseq A len := List.upd s i new_v. *)
 
 (* substitutes a sequence (seq) into an array (nseq), given index interval  *)
 (* Axiom update_sub : forall {A len }, nseq A len -> nat -> nat -> seq A -> t A len. *)
+
 Definition update_sub {A : ChoiceEquality} {len slen} `{Default (@T A)} (v : @T (nseq A len)) (i : nat) (n : nat) (sub : @T (nseq A slen)) : @T (nseq A len) :=
   let fix rec x acc :=
     match x with
     | 0 => acc
     (* | 0 => array_upd acc 0 (array_index sub 0) *)
-    | S x => rec x (array_upd acc (i+x) (array_index sub x))
+    | S x =>
+        rec x (array_upd_pre acc (i+x) (array_index sub x))
     end in
   rec (n - i + 1) v.
 
 (* Sanity check *)
 (* Compute (to_list (update_sub [1;2;3;4;5] 0 4 (of_list [9;8;7;6;12]))). *)
 
-Definition array_from_seq
+Definition array_from_seq_pre
   {a: ChoiceEquality}
   `{Default (@T a)}
   (out_len:nat)
-  (input: @T (seq a))
-  : @T (nseq a out_len) :=
+  (input: seq_type a)
+  : nseq_type a out_len :=
   let out := array_new_ default out_len in
   update_sub out 0 (out_len - 1) (@array_from_list a (@seq_to_list a input)).
 (* Global Coercion array_from_seq : seq_type >-> nseq_type. *)
 
-Definition slice {A} (l : list A) (i j : nat) : list A :=
+Definition array_from_seq {a: ChoiceEquality}
+ `{Default (@T a)}
+  (out_len:nat)
+  (input: @T (seq a))
+  (* {H : List.length input = out_len} *)
+    : code fset.fset0 [interface] (@ct (nseq a out_len)).
+Proof.
+  refine {code ret _}.
+  rewrite ChoiceEq.
+  apply (array_from_seq_pre out_len input).
+Defined.
+
+Global Coercion array_from_seq_pre : seq_type >-> nseq_type.
+
+Definition slice {A} (l : seq.seq A) (i j : nat) : seq.seq A :=
   if j <=? i then [] else firstn (j-i+1) (skipn i l).
 (* Automatic conversion from nseq/vector/array to seq/list *)
 
@@ -522,7 +563,7 @@ Qed.
 Definition lseq_slice {A : ChoiceEquality} {n} (l : @T (nseq A n)) (i j : nat) : @T (@nseq A (length (slice (array_to_list l) i j))) :=
   array_from_list _ (slice (array_to_list l) i j).
 
-Definition array_from_slice
+Definition array_from_slice_pre
   {a: ChoiceEquality}
  `{Default (@T a)}
   (default_value: (@T a))
@@ -532,9 +573,23 @@ Definition array_from_slice
   (slice_len: nat)
   : @T (nseq a out_len).
   pose (out := array_new_ default out_len).
-  apply (@array_from_seq _ _ out_len input (* H1 *)).
+  apply (@array_from_seq_pre _ _ out_len input (* H1 *)).
 Defined.
-                  
+
+Definition array_from_slice
+  {a: ChoiceEquality}
+ `{Default (@T a)}
+  (default_value: (@T a))
+  (out_len: nat)
+  (input: @T (seq a))
+  (start: nat)
+  (slice_len: nat)
+  : code fset.fset0 [interface] (@ct (nseq a out_len)).
+  refine {code ret _}.
+  rewrite ChoiceEq.
+  apply (@array_from_slice_pre a H default_value out_len input start slice_len).
+Defined.
+
 Definition array_slice
   {a: ChoiceEquality}
  `{Default (@T a)}
@@ -543,9 +598,9 @@ Definition array_slice
   (slice_len: nat)
   : @T (nseq a slice_len).
 Proof.
-  refine (array_from_seq slice_len _).
+  refine (array_from_seq_pre slice_len _).
   refine (array_to_seq _).
-  apply (@lseq_slice a slice_len (array_from_seq slice_len input) start (start + slice_len)).
+  apply (@lseq_slice a slice_len (array_from_seq_pre slice_len input) start (start + slice_len)).
 Qed.
 
 (* Definition array_slice *)
@@ -571,14 +626,12 @@ Proof.
   pose (out := array_new_ default_value out_len).
   destruct start_fin as [start fin].
   refine (update_sub out 0 ((from_uint_size fin) - (from_uint_size start)) _).
-  apply (@lseq_slice a ((from_uint_size fin) - (from_uint_size start)) (array_from_seq ((from_uint_size fin) - (from_uint_size start)) input) (from_uint_size start) (from_uint_size fin)).
+  apply (@lseq_slice a ((from_uint_size fin) - (from_uint_size start)) (array_from_seq_pre ((from_uint_size fin) - (from_uint_size start)) input) (from_uint_size start) (from_uint_size fin)).
 Defined.  
     (* let out := array_new_ default_value out_len in *)
     (* let (start, fin) := start_fin in *)
     (* update_sub out 0 ((from_uint_size fin) - (from_uint_size start))  *)
     (*            (VectorDef.of_list (slice input (from_uint_size start) (from_uint_size fin))). *)
-
-
 
 Definition array_slice_range'
   {a: ChoiceEquality}
@@ -601,7 +654,7 @@ Definition array_slice_range
 
 (* Definition update_sub {A : choice_type} {len slen} `{Default A} (v : nseq (A) len) (i : nat) (n : nat) (sub : nseq ( A) slen) : nseq ( A) len := *)
 
-Definition array_update
+Definition array_update_pre
   {a: ChoiceEquality}
  `{Default (@T a)}
   {len: nat}
@@ -609,7 +662,7 @@ Definition array_update
   (start : nat)
   (start_s: @T (seq a))
   : @T (nseq a len) :=
-  update_sub s start (seq_len start_s) (array_from_seq (seq_len start_s) (start_s)).
+  update_sub s start (seq_len start_s) (array_from_seq_pre (seq_len start_s) (start_s)).
 
 Definition array_update_start
   {a: ChoiceEquality}
@@ -618,7 +671,7 @@ Definition array_update_start
   (s: @T (nseq a len))
   (start_s: @T (seq a))
     : @T (nseq a len) :=
-    update_sub s 0 (seq_len start_s) (array_from_seq (seq_len start_s) start_s).
+    update_sub s 0 (seq_len start_s) (array_from_seq_pre (seq_len start_s) start_s).
 
 
 Definition array_len  {a: ChoiceEquality} {len: nat} (s: @T (nseq a len)) := len.
@@ -634,7 +687,7 @@ Definition seq_slice
   (start: nat)
   (len: nat)
     : (@T (nseq a _)) :=
-  lseq_slice (array_from_seq (seq_len s) s) start (start + len).
+  lseq_slice (array_from_seq_pre (seq_len s) s) start (start + len).
 
 Definition seq_slice_range
   {a: ChoiceEquality}
@@ -652,7 +705,7 @@ Definition seq_update
   (start: nat)
   (input: (@T (seq a)))
   : (@T (seq a)) :=
-  array_to_seq (update_sub (array_from_seq (seq_len s) s) start (seq_len input) (array_from_seq (seq_len input) input)).
+  array_to_seq (update_sub (array_from_seq_pre (seq_len s) s) start (seq_len input) (array_from_seq_pre (seq_len input) input)).
 
 (* updating only a single value in a sequence*)
 Definition seq_upd
@@ -665,17 +718,17 @@ Definition seq_upd
   seq_update s start (setm emptym 0 v).
 
 Definition seq_sub {a : ChoiceEquality} `{Default (@T (a))} (s : (@T (seq a))) start n :=
-  lseq_slice (array_from_seq (seq_len s) s) start (start + n).
+  lseq_slice (array_from_seq_pre (seq_len s) s) start (start + n).
 
-Definition seq_update_start
+Definition seq_update_start_pre
   {a: ChoiceEquality}
  `{Default (@T (a))}
   (s: (@T (seq a)))
   (start_s: (@T (seq a)))
     : (@T (seq a)) :=
-    array_to_seq (update_sub (array_from_seq (seq_len s) s) 0 (seq_len start_s) (array_from_seq (seq_len start_s) start_s)).
+    array_to_seq (update_sub (array_from_seq_pre (seq_len s) s) 0 (seq_len start_s) (array_from_seq_pre (seq_len start_s) start_s)).
 
-Definition array_update_slice
+Definition array_update_slice_pre
   {a : ChoiceEquality}
  `{Default (@T (a))}
   {l : nat}
@@ -685,7 +738,7 @@ Definition array_update_slice
   (start_in: nat)
   (len: nat)
   : (@T (nseq a (seq_len out))) :=
-  update_sub (array_from_seq (seq_len out) out) start_out len (seq_sub input start_in len).
+  update_sub (array_from_seq_pre (seq_len out) out) start_out len (seq_sub input start_in len).
   
 Definition seq_update_slice
   {a : ChoiceEquality}
@@ -697,7 +750,7 @@ Definition seq_update_slice
   (len: nat)
     : (@T (nseq a (seq_len out)))
   :=
-  update_sub (array_from_seq (seq_len out) out) start_out len (seq_sub input start_in len).
+  update_sub (array_from_seq_pre (seq_len out) out) start_out len (seq_sub input start_in len).
 
 Definition seq_concat
   {a : ChoiceEquality}
@@ -713,7 +766,7 @@ Definition seq_push
   : (@T (seq a)) :=
   seq_from_list _ ((seq_to_list _ s1) ++ [s2]).
 
-Definition seq_from_slice_range
+Definition seq_from_slice_range_pre
   {a: ChoiceEquality}
  `{Default (@T (a))}
   (input: (@T (seq a)))
@@ -721,7 +774,7 @@ Definition seq_from_slice_range
   : (@T (seq a)) :=
   let out := array_new_ (default) (seq_len input) in
   let (start, fin) := start_fin in
-    array_to_seq (update_sub out 0 ((from_uint_size fin) - (from_uint_size start)) ((lseq_slice (array_from_seq (seq_len input) input) (from_uint_size start) (from_uint_size fin)))).
+    array_to_seq (update_sub out 0 ((from_uint_size fin) - (from_uint_size start)) ((lseq_slice (array_from_seq_pre (seq_len input) input) (from_uint_size start) (from_uint_size fin)))).
 
 (**** Chunking *)
 
@@ -763,9 +816,9 @@ Definition seq_get_chunk
  :=
   let idx_start := chunk_len * chunk_num in
   let out_len := seq_chunk_len s chunk_len chunk_num in
-  (usize out_len, array_to_seq (lseq_slice (array_from_seq (seq_len s) s) idx_start (idx_start + seq_chunk_len s chunk_len chunk_num))).
+  (usize out_len, array_to_seq (lseq_slice (array_from_seq_pre (seq_len s) s) idx_start (idx_start + seq_chunk_len s chunk_len chunk_num))).
 
-Definition seq_set_chunk
+Definition seq_set_chunk_pre
   {a: ChoiceEquality}
  `{Default (@T (a))}
   (s: (@T (seq a)))
@@ -774,7 +827,7 @@ Definition seq_set_chunk
   (chunk: (@T (seq a)) ) : (@T (seq a)) :=
  let idx_start := chunk_len * chunk_num in
  let out_len := seq_chunk_len s chunk_len chunk_num in
-  array_to_seq (update_sub (array_from_seq (seq_len s) s) idx_start out_len (array_from_seq (seq_len chunk) chunk)).
+  array_to_seq (update_sub (array_from_seq_pre (seq_len s) s) idx_start out_len (array_from_seq_pre (seq_len chunk) chunk)).
 
 
 Definition seq_num_exact_chunks {a} (l : (@T (seq a))) (chunk_size : (@T (uint_size))) : (@T (uint_size)) :=
@@ -785,7 +838,7 @@ Definition seq_get_exact_chunk {a : ChoiceEquality} `{Default (@T (a))} (l : (@T
   let '(len, chunk) := seq_get_chunk l (from_uint_size chunk_size) (from_uint_size chunk_num) in
   if eq len chunk_size then emptym else chunk.
 
-Definition seq_set_exact_chunk {a : ChoiceEquality} `{H : Default (@T (a))} := @seq_set_chunk a H.
+Definition seq_set_exact_chunk_pre {a : ChoiceEquality} `{H : Default (@T (a))} := @seq_set_chunk_pre a H.
 
 Definition seq_get_remainder_chunk : forall {a : ChoiceEquality} `{Default (@T (a))},  (@T (seq a)) -> (@T (uint_size)) -> (@T (seq a)) :=
   fun _ _ l chunk_size =>
@@ -818,7 +871,7 @@ Definition seq_get_remainder_chunk : forall {a : ChoiceEquality} `{Default (@T (
 (**** Numeric operations *)
 
 (* takes two nseq's and joins them using a function op : a -> a -> a *)
-Definition array_join_map
+Definition array_join_map_pre
   {a: ChoiceEquality}
  `{Default (@T (a))}
   {len: nat}
@@ -828,16 +881,16 @@ Definition array_join_map
   let out := s1 in
   foldi (usize 0) (usize len) (fun i out =>
     let i := from_uint_size i in
-    array_upd out i (op (array_index s1 i) (array_index s2 i))
+    array_upd_pre out i (op (array_index s1 i) (array_index s2 i))
   ) out.
 
-Global Infix "array_xor" := (array_join_map xor) (at level 33) : hacspec_scope.
-Global Infix "array_add" := (array_join_map add) (at level 33) : hacspec_scope.
-Global Infix "array_minus" := (array_join_map sub) (at level 33) : hacspec_scope.
-Global Infix "array_mul" := (array_join_map mul) (at level 33) : hacspec_scope.
-Global Infix "array_div" := (array_join_map divs) (at level 33) : hacspec_scope.
-Global Infix "array_or" := (array_join_map or) (at level 33) : hacspec_scope.
-Global Infix "array_and" := (array_join_map and) (at level 33) : hacspec_scope.  
+Global Infix "array_xor" := (array_join_map_pre xor) (at level 33) : hacspec_scope.
+Global Infix "array_add" := (array_join_map_pre add) (at level 33) : hacspec_scope.
+Global Infix "array_minus" := (array_join_map_pre sub) (at level 33) : hacspec_scope.
+Global Infix "array_mul" := (array_join_map_pre mul) (at level 33) : hacspec_scope.
+Global Infix "array_div" := (array_join_map_pre divs) (at level 33) : hacspec_scope.
+Global Infix "array_or" := (array_join_map_pre or) (at level 33) : hacspec_scope.
+Global Infix "array_and" := (array_join_map_pre and) (at level 33) : hacspec_scope.  
 
 Fixpoint array_eq_
   {a: ChoiceEquality}
@@ -866,91 +919,91 @@ Local Coercion T : ChoiceEquality >-> Sortclass.
 Local Coercion ct : ChoiceEquality >-> choice_type.
 
 (**** Integers to arrays *)
-Axiom uint32_to_le_bytes : @T int32 -> nseq int8 4.
+Axiom uint32_to_le_bytes : int32 -> code fset.fset0 [interface] (nseq int8 4).
 (* Definition uint32_to_le_bytes (x: uint32) : nseq uint8 4 :=
   LBSeq.uint_to_bytes_le x. *)
 
-Axiom uint32_to_be_bytes : int32 -> nseq int8 4.
+Axiom uint32_to_be_bytes : int32 -> code fset.fset0 [interface] (nseq int8 4).
 (* Definition uint32_to_be_bytes (x: uint32) : nseq uint8 4 :=
   LBSeq.uint_to_bytes_be x *)
 
-Axiom uint32_from_le_bytes : nseq int8 4 -> int32.
+Axiom uint32_from_le_bytes : nseq int8 4 -> code fset.fset0 [interface] (int32).
 (* Definition uint32_from_le_bytes (s: nseq uint8 4) : uint32 :=
   LBSeq.uint_from_bytes_le s *)
 
-Axiom uint32_from_be_bytes : nseq int8 4 -> int32.
+Axiom uint32_from_be_bytes : nseq int8 4 -> code fset.fset0 [interface] (int32).
 (* Definition uint32_from_be_bytes (s: nseq uint8 4) : uint32 :=
   LBSeq.uint_from_bytes_be s *)
 
-Axiom uint64_to_le_bytes : int64 -> nseq int8 8.
+Axiom uint64_to_le_bytes : int64 -> code fset.fset0 [interface] (nseq int8 8).
 (* Definition uint64_to_le_bytes (x: uint64) : nseq uint8 8 :=
   LBSeq.uint_to_bytes_le x *)
 
-Axiom uint64_to_be_bytes : int64 -> nseq int8 8.
+Axiom uint64_to_be_bytes : int64 -> code fset.fset0 [interface] (nseq int8 8).
 (* Definition uint64_to_be_bytes (x: uint64) : nseq uint8 8 :=
   LBSeq.uint_to_bytes_be x *)
 
-Axiom uint64_from_le_bytes : nseq int8 8 -> int64.
+Axiom uint64_from_le_bytes : nseq int8 8 -> code fset.fset0 [interface] (int64).
 (* Definition uint64_from_le_bytes (s: nseq uint8 8) : uint64 :=
   LBSeq.uint_from_bytes_le s *)
 
-Axiom uint64_from_be_bytes : nseq int8 8 -> int64.
+Axiom uint64_from_be_bytes : nseq int8 8 -> code fset.fset0 [interface] (int64).
 (* Definition uint64_from_be_bytes (s: nseq uint8 8) : uint64 :=
   LBSeq.uint_from_bytes_be s *)
 
-Axiom uint128_to_le_bytes : int128 -> nseq int8 16.
+Axiom uint128_to_le_bytes : int128 -> code fset.fset0 [interface] (nseq int8 16).
 (* Definition uint128_to_le_bytes (x: uint128) : nseq uint8 16 :=
   LBSeq.uint_to_bytes_le x *)
 
-Axiom uint128_to_be_bytes : int128 -> nseq int8 16.
+Axiom uint128_to_be_bytes : int128 -> code fset.fset0 [interface] (nseq int8 16).
 (* Definition uint128_to_be_bytes (x: uint128) : nseq uint8 16 :=
   LBSeq.uint_to_bytes_be x *)
 
-Axiom uint128_from_le_bytes : nseq int8 16 -> int128.
+Axiom uint128_from_le_bytes : nseq int8 16 -> code fset.fset0 [interface] (int128).
 (* Definition uint128_from_le_bytes (input: nseq uint8 16) : uint128 :=
   LBSeq.uint_from_bytes_le input *)
 
-Axiom uint128_from_be_bytes : nseq int8 16 -> int128.
+Axiom uint128_from_be_bytes : nseq int8 16 -> code fset.fset0 [interface] (int128).
 (* Definition uint128_from_be_bytes (s: nseq uint8 16) : uint128 :=
   LBSeq.uint_from_bytes_be s *)
 
-Axiom u32_to_le_bytes : int32 -> nseq int8 4.
+Axiom u32_to_le_bytes : int32 -> code fset.fset0 [interface] (nseq int8 4).
 (* Definition u32_to_le_bytes (x: pub_uint32) : nseq pub_uint8 4 :=
   LBSeq.uint_to_bytes_le x *)
 
-Axiom u32_to_be_bytes : int32 -> nseq int8 4.
+Axiom u32_to_be_bytes : int32 -> code fset.fset0 [interface] (nseq int8 4).
 (* Definition u32_to_be_bytes (x: pub_uint32) : nseq pub_uint8 4 :=
   LBSeq.uint_to_bytes_be x *)
 
-Axiom u32_from_le_bytes : nseq int8 4 -> int32.
+Axiom u32_from_le_bytes : nseq int8 4 -> code fset.fset0 [interface] (int32).
 (* Definition u32_from_le_bytes (s: nseq pub_uint8 4) : pub_uint32 :=
   LBSeq.uint_from_bytes_le s *)
 
-Axiom u32_from_be_bytes : nseq int8 4 -> int32.
+Axiom u32_from_be_bytes : nseq int8 4 -> code fset.fset0 [interface] (int32).
 (* Definition u32_from_be_bytes (s: nseq pub_uint8 4) : pub_uint32 :=
   LBSeq.uint_from_bytes_be s *)
 
-Axiom u64_to_le_bytes : int64 -> nseq int8 8.
+Axiom u64_to_le_bytes : int64 -> code fset.fset0 [interface] (nseq int8 8).
 (* Definition u64_to_le_bytes (x: int64) : nseq int8 8 :=
   LBSeq.uint_to_bytes_le x *)
 
-Axiom u64_from_le_bytes : nseq int8 8 -> int64.
+Axiom u64_from_le_bytes : nseq int8 8 -> code fset.fset0 [interface] (int64).
 (* Definition u64_from_le_bytes (s: nseq int8 8) : int64 :=
   LBSeq.uint_from_bytes_le s *)
 
-Axiom u128_to_le_bytes : int128 -> nseq int8 16.
+Axiom u128_to_le_bytes : int128 -> code fset.fset0 [interface] (nseq int8 16).
 (* Definition u128_to_le_bytes (x: int128) : nseq int8 16 :=
   LBSeq.uint_to_bytes_le x *)
 
-Axiom u128_to_be_bytes : int128 -> nseq int8 16.
+Axiom u128_to_be_bytes : int128 -> code fset.fset0 [interface] (nseq int8 16).
 (* Definition u128_to_be_bytes (x: int128) : nseq int8 16 :=
   LBSeq.uint_to_bytes_be x *)
 
-Axiom u128_from_le_bytes : nseq int8 16 -> int128.
+Axiom u128_from_le_bytes : nseq int8 16 -> code fset.fset0 [interface] (int128).
 (* Definition u128_from_le_bytes (input: nseq int8 16) : int128 :=
   LBSeq.uint_from_bytes_le input *)
 
-Axiom u128_from_be_bytes : nseq int8 16 -> int128.
+Axiom u128_from_be_bytes : nseq int8 16 -> code fset.fset0 [interface] (int128).
 (* Definition u128_from_be_bytes (s: nseq int8 16) : pub_uint128 :=
   LBSeq.uint_from_bytes_be s *)
 
@@ -986,7 +1039,7 @@ Definition nat_mod_sub {n : Z} (a:nat_mod n) (b:nat_mod n) : nat_mod n := Machin
 
 (* Definition nat_mod_inv {n : Z} (a:nat_mod n) : nat_mod n := GZnZ.inv n a. *)
 
-Definition nat_mod_exp_def {p : Z} (a:nat_mod p) (n : nat) : nat_mod p :=
+Definition nat_mod_exp_def_pre {p : Z} (a:nat_mod p) (n : nat) : nat_mod p :=
   let fix exp_ (e : nat_mod p) (n : nat) :=
     match n with
     | 0%nat => nat_mod_one
@@ -994,15 +1047,15 @@ Definition nat_mod_exp_def {p : Z} (a:nat_mod p) (n : nat) : nat_mod p :=
     end in
   exp_ a n.
 
-Definition nat_mod_exp {WS} {p} a n := @nat_mod_exp_def p a (Z.to_nat (@unsigned WS n)).
-Definition nat_mod_pow {WS} {p} a n := @nat_mod_exp_def p a (Z.to_nat (@unsigned WS n)).
-Definition nat_mod_pow_self {p} a n := @nat_mod_exp_def p a (Z.to_nat (from_uint_size n)).
+Definition nat_mod_exp_pre {WS} {p} a n := @nat_mod_exp_def_pre p a (Z.to_nat (@unsigned WS n)).
+Definition nat_mod_pow_pre {WS} {p} a n := @nat_mod_exp_def_pre p a (Z.to_nat (@unsigned WS n)).
+Definition nat_mod_pow_self_pre {p} a n := @nat_mod_exp_def_pre p a (Z.to_nat (from_uint_size n)).
 
 Close Scope nat_scope.
 Open Scope Z_scope.
 
 (* We assume x < m *)
-Definition nat_mod_from_secret_literal {m : Z} (x:int128) : nat_mod m := repr (unsigned x).
+Definition nat_mod_from_secret_literal_pre {m : Z} (x:int128) : nat_mod m := repr (unsigned x).
 (* Proof. *)
 (*   unfold nat_mod. *)
 (*   (* since we assume x < m, it will be true that (unsigned x) = (unsigned x) mod m  *) *)
@@ -1012,8 +1065,10 @@ Definition nat_mod_from_secret_literal {m : Z} (x:int128) : nat_mod m := repr (u
 (*   rewrite Zmod_mod. *)
 (*   reflexivity. *)
 (* Defined. *)
+Definition nat_mod_from_secret_literal {m : Z} (x:int128) : code fset.fset0 [interface] ((nat_mod m)) :=
+ ({code ret (@nat_mod_from_secret_literal_pre m x)}).  
 
-Definition nat_mod_from_literal (m : Z) (x:int128) : nat_mod m := nat_mod_from_secret_literal x.
+Definition nat_mod_from_literal_pre (m : Z) (x:int128) : nat_mod m := nat_mod_from_secret_literal_pre x.
 
 Axiom nat_mod_to_byte_seq_le : forall {n : Z}, nat_mod n -> seq int8.
 Axiom nat_mod_to_byte_seq_be : forall {n : Z}, nat_mod n -> seq int8.
@@ -1049,7 +1104,7 @@ Axiom most_significant_bit : forall {m}, nat_mod m -> uint_size -> uint_size.
 
 
 (* We assume 2^x < m *)
-Definition nat_mod_pow2 (m : Z) (x : N) : nat_mod m := repr (Z.pow 2 (Z.of_N x)).
+Definition nat_mod_pow2_pre (m : Z) (x : N) : nat_mod m := repr (Z.pow 2 (Z.of_N x)).
 (* Proof. *)
 (*   remember (Z.pow 2 (Z.of_N x) mod m) as y. *)
 (*   apply (GZnZ.mkznz m y). *)
@@ -1057,7 +1112,7 @@ Definition nat_mod_pow2 (m : Z) (x : N) : nat_mod m := repr (Z.pow 2 (Z.of_N x))
 (*   rewrite Zmod_mod. *)
 (*   reflexivity. *)
 (* Defined. *)
-
+Definition nat_mod_pow2 (m : Z) (x : N) : code fset.fset0 [interface] ((nat_mod m)) := {code ret (nat_mod_pow2_pre m x)}.
 End Todosection.
 
 Section Casting.
@@ -1565,62 +1620,63 @@ Open Scope hacspec_scope.
 
 (*** Monad / Bind *)
 
-Class Monad (M : Type -> Type) :=
-  { bind {A B} (x : M A) (f : A -> M B) : M B ;
-    ret {A} (x : A) : M A ;
-  }.
+(* TODO: FIX *)
+(* Class Monad (M : ChoiceEquality -> ChoiceEquality) := *)
+(*   { bind {A B : ChoiceEquality} (x : M A) (f : A -> M B) : M B ; *)
+(*     ret {A : ChoiceEquality} (x : A) : M A ; *)
+(*   }. *)
 
-Definition result2 (b: Type) (a: Type) := result a b.
+(* Definition result2 (b: ChoiceEquality) (a: ChoiceEquality) := result a b. *)
 
-Definition result_bind {A B C} (r : result2 C A) (f : A -> result2 C B) : result2 C B :=
-  match r with
-    Ok a => f a
-  | Err e => Err e
-  end.
+(* Definition result_bind {A B C} (r : result2 C A) (f : A -> result2 C B) : result2 C B := *)
+(*   match r with *)
+(*     Ok a => f a *)
+(*   | Err e => Err e *)
+(*   end. *)
 
-Definition result_ret {A C} (a : A) : result2 C A := Ok a.
+(* Definition result_ret {A C : ChoiceEquality} (a : A) : result2 C A := Ok a. *)
 
-Global Instance result_monad {C} : Monad (result2 C) :=
-  Build_Monad (result2 C) (fun A B => @result_bind A B C) (fun A => @result_ret A C).
+(* Global Instance result_monad {C : ChoiceEquality} : Monad (result2 C) := *)
+(*   Build_Monad (result2 C) (fun A B => @result_bind A B C) (fun A => @result_ret A C). *)
 
-Definition option_bind {A B} (r : option A) (f : A -> option B) : option B :=
-  match r with
-    Some (a) => f a
-  | None => None
-  end.
+(* Definition option_bind {A B} (r : option A) (f : A -> option B) : option B := *)
+(*   match r with *)
+(*     Some (a) => f a *)
+(*   | None => None *)
+(*   end. *)
 
 
 
-Definition option_ret {A} (a : A) : option A := Some a.
+(* Definition option_ret {A} (a : A) : option A := Some a. *)
 
-Global Instance option_monad : Monad option :=
-  Build_Monad option (@option_bind) (@option_ret).
+(* Global Instance option_monad : Monad option := *)
+(*   Build_Monad option (@option_bind) (@option_ret). *)
 
-Definition option_is_none {A} (x : option A) : bool :=
-  match x with
-  | None => true
-  | _ => false
-  end.
+(* Definition option_is_none {A} (x : option A) : bool := *)
+(*   match x with *)
+(*   | None => true *)
+(*   | _ => false *)
+(*   end. *)
 
-Definition foldi_bind {A : Type} {M : Type -> Type} `{Monad M} (a : uint_size) (b : uint_size) (f : uint_size -> A -> M A) (init : M A) : M A :=
-  @foldi (M A) a b (fun x y => bind y (f x)) init.
+(* Definition foldi_bind {A : Type} {M : Type -> Type} `{Monad M} (a : uint_size) (b : uint_size) (f : uint_size -> A -> M A) (init : M A) : code fset.fset0 [interface] (@ct (M A)) := *)
+(*   @foldi (M A) a b (fun x y => code_injection (bind y (f x))) init. *)
 
-Definition lift_to_result {A B C} (r : result A C) (f : A -> B) : result B C :=
-  result_bind r (fun x => result_ret (f x)).
+(* Definition lift_to_result {A B C} (r : result A C) (f : A -> B) : result B C := *)
+(*   result_bind r (fun x => result_ret (f x)). *)
 
-(* TODO: fix *)
-(* Definition result_uint_size_to_result_int64 {C} (r : result uint_size C) := lift_to_result r uint_size_to_int64. *)
+(* (* TODO: fix *) *)
+(* (* Definition result_uint_size_to_result_int64 {C} (r : result uint_size C) := lift_to_result r uint_size_to_int64. *) *)
 
-Definition result_uint_size_unit := (result uint_size unit).
-Definition result_int64_unit := (result int64 unit).
+(* Definition result_uint_size_unit := (result uint_size unit). *)
+(* Definition result_int64_unit := (result int64 unit). *)
 
-(* TODO: fix *)
-  (* Definition result_uint_size_unit_to_result_int64_unit (r : result_uint_size_unit) : result_int64_unit := result_uint_size_to_result_int64 r. *)
+(* (* TODO: fix *) *)
+(*   (* Definition result_uint_size_unit_to_result_int64_unit (r : result_uint_size_unit) : result_int64_unit := result_uint_size_to_result_int64 r. *) *)
 
-Global Coercion lift_to_result_coerce {A B C} (f : A -> B) := (fun (r : result A C) => lift_to_result r f).
+(* Global Coercion lift_to_result_coerce {A B C} (f : A -> B) := (fun (r : result A C) => lift_to_result r f). *)
 
-(* TODO: fix *)
-  (* Global Coercion result_uint_size_unit_to_result_int64_unit : result_uint_size_unit >-> result_int64_unit. *)
+(* (* TODO: fix *) *)
+(*   (* Global Coercion result_uint_size_unit_to_result_int64_unit : result_uint_size_unit >-> result_int64_unit. *) *)
 
 (*** Notation *)
 
