@@ -1454,13 +1454,6 @@ fn translate_expr(
             sess.span_rustspec_err(e.span.clone(), "inline assembly is not allowed in Hacspec");
             Err(())
         }
-        ExprKind::LlvmInlineAsm(_) => {
-            sess.span_rustspec_err(
-                e.span.clone(),
-                "inline LLVM assembly is not allowed in hacspec",
-            );
-            Err(())
-        }
         ExprKind::MacCall(call) => {
             if call.path.segments.len() > 1 {
                 sess.span_rustspec_err(

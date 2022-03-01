@@ -128,7 +128,7 @@ fn construct_handle_crate_queue<'tcx>(
     let mut krates = Vec::new();
 
     let krate = match krate {
-        rustc_ast::ast::Crate { attrs, items, span } => {
+        rustc_ast::ast::Crate { items, .. } => {
             // Parse over the crate, loading modules and filling top_level_ctx
             for x in items.clone().into_iter() {
                 match x.kind {
@@ -158,7 +158,6 @@ fn construct_handle_crate_queue<'tcx>(
 
             // Remove the modules statements from the crate
             rustc_ast::ast::Crate {
-                attrs,
                 items: items
                     .clone()
                     .into_iter()
@@ -170,7 +169,7 @@ fn construct_handle_crate_queue<'tcx>(
                         _ => true,
                     })
                     .collect(),
-                span,
+                ..krate
             }
         }
     };
@@ -224,7 +223,7 @@ fn handle_crate<'tcx>(
         krate_use_paths.insert(krate_path.clone(), Vec::new());
 
         match krate {
-            rustc_ast::ast::Crate { attrs, items, span } => {
+            rustc_ast::ast::Crate { items, .. } => {
                 // Parse over the crate, loading modules and filling top_level_ctx
                 for x in items.clone().into_iter() {
                     match x.kind {
@@ -253,7 +252,6 @@ fn handle_crate<'tcx>(
                 krate_queue_no_module_statements.push((
                     (krate_path, krate_dir, krate_module_string),
                     rustc_ast::ast::Crate {
-                        attrs,
                         items: items
                             .clone()
                             .into_iter()
@@ -265,7 +263,7 @@ fn handle_crate<'tcx>(
                                 _ => true,
                             })
                             .collect(),
-                        span,
+                        ..krate
                     },
                 ))
             }
@@ -651,6 +649,8 @@ impl Callbacks for HacspecCallbacks {
                             attrs: vec![],
                             items: parse_mod_krate_items,
                             span: rustc_span::DUMMY_SP,
+                            id: rustc_ast::DUMMY_NODE_ID,
+                            is_placeholder: false,
                         };
 
                         // Calculate the local path from the crate root file
