@@ -36,6 +36,7 @@ impl From<Span> for RustspecSpan {
 pub struct LocalIdent {
     pub id: usize,
     pub name: String,
+    pub mutable: bool,
 }
 
 impl fmt::Display for LocalIdent {
@@ -378,7 +379,7 @@ pub enum Expression {
 
 #[derive(Clone, Serialize, Debug)]
 pub enum Pattern {
-    IdentPat(Ident),
+    IdentPat(Ident, bool),
     WildCard,
     Tuple(Vec<Spanned<Pattern>>),
     SingleCaseEnum(Spanned<TopLevelIdent>, Box<Spanned<Pattern>>),

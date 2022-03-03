@@ -623,20 +623,20 @@ fn find_typ(
                 (t.clone(), span.clone()),
             )
         }),
-        Ident::Local(LocalIdent { name: _, id }) => var_context.get(id).map(|x| x.0.clone()),
+        Ident::Local(LocalIdent { name: _, id, mutable: _ }) => var_context.get(id).map(|x| x.0.clone()),
     }
 }
 
 fn remove_var(x: &Ident, var_context: &VarContext) -> VarContext {
     match x {
-        Ident::Local(LocalIdent { id, name: _ }) => var_context.without(id),
+        Ident::Local(LocalIdent { id, name: _, mutable: _ }) => var_context.without(id),
         _ => panic!("trying to lookup in the var context a non-local id"),
     }
 }
 
 fn add_var(x: &Ident, typ: &Typ, var_context: &VarContext) -> VarContext {
     match x {
-        Ident::Local(LocalIdent { id, name }) => {
+        Ident::Local(LocalIdent { id, name, mutable: _ }) => {
             var_context.update(id.clone(), (typ.clone(), name.clone()))
         }
         _ => panic!("trying to lookup in the var context a non-local id"),
@@ -2019,9 +2019,9 @@ fn typecheck_pattern(
             Err(())
         }
         (Pattern::WildCard, _) => Ok(HashMap::new()),
-        (Pattern::IdentPat(x), _) => {
+        (Pattern::IdentPat(x, _m), _) => {
             let (id, name) = match &x {
-                Ident::Local(LocalIdent { id, name }) => (id.clone(), name.clone()),
+                Ident::Local(LocalIdent { id, name, mutable: _ }) => (id.clone(), name.clone()),
                 _ => panic!("should not happen"),
             };
             Ok(HashMap::unit(

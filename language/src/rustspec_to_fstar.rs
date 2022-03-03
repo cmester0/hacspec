@@ -197,7 +197,7 @@ fn translate_ident<'a>(x: Ident) -> RcDoc<'a, ()> {
     match x {
         Ident::Unresolved(s) => translate_ident_str(s.clone()),
         Ident::TopLevel(s) => translate_toplevel_ident(s),
-        Ident::Local(LocalIdent { id, name: s }) => {
+        Ident::Local(LocalIdent { id, name: s , .. }) => {
             let mut id_map = ID_MAP.lock().unwrap();
             let codegen_id: usize = match id_map.get(&id) {
                 Some(c_id) => *c_id,
@@ -461,7 +461,7 @@ fn translate_pattern<'a>(p: Pattern) -> RcDoc<'a, ()> {
                 .append(RcDoc::space())
                 .append(make_paren(translate_pattern(inner_pat.0)))
         }
-        Pattern::IdentPat(x) => translate_ident(x.clone()),
+        Pattern::IdentPat(x,_) => translate_ident(x.clone()),
         Pattern::WildCard => RcDoc::as_string("_"),
         Pattern::Tuple(pats) => make_tuple(pats.into_iter().map(|(pat, _)| translate_pattern(pat))),
     }
@@ -1142,6 +1142,7 @@ fn translate_statements<'a>(
                 let tmp_ident = Ident::Local(LocalIdent {
                     name: "tmp".to_string(),
                     id: fresh_codegen_id(),
+                    mutable: false,
                 });
                 let array_upd_payload = array_or_seq
                     .append(RcDoc::as_string("_upd"))

@@ -16,10 +16,11 @@ fn fresh_hacspec_id() -> usize {
     ID_COUNTER.fetch_add(1, Ordering::SeqCst)
 }
 
-pub(crate) fn to_fresh_ident(x: &String) -> Ident {
+pub(crate) fn to_fresh_ident(x: &String, m: bool) -> Ident {
     Ident::Local(LocalIdent {
         id: fresh_hacspec_id(),
         name: x.clone(),
+        mutable: m,
     })
 }
 
@@ -284,13 +285,13 @@ fn resolve_pattern(
             Ok((Pattern::Tuple(tup_args), acc_name))
         }
         Pattern::WildCard => Ok((Pattern::WildCard, HashMap::new())),
-        Pattern::IdentPat(x) => {
+        Pattern::IdentPat(x, m) => {
             let (x_new, s) = match x {
-                Ident::Unresolved(s) => (to_fresh_ident(s), s.clone()),
+                Ident::Unresolved(s) => (to_fresh_ident(s, m.clone()), s.clone()),
                 _ => panic!("should not happen"),
             };
             Ok((
-                Pattern::IdentPat(x_new.clone()),
+                Pattern::IdentPat(x_new.clone(), m.clone()),
                 HashMap::unit(s.clone(), x_new.clone()),
             ))
         }
@@ -338,7 +339,7 @@ fn resolve_statement(
             let new_lower = resolve_expression(sess, lower, &name_context, top_level_ctx)?;
             let new_upper = resolve_expression(sess, upper, &name_context, top_level_ctx)?;
             let new_var = match &var {
-                Ident::Unresolved(s) => to_fresh_ident(s),
+                Ident::Unresolved(s) => to_fresh_ident(s, false),
                 _ => panic!("should not happen"),
             };
             let name_context = add_name(&var, &new_var, name_context);
@@ -454,7 +455,7 @@ fn resolve_item(
                 (Vec::new(), name_context),
                 |(mut new_sig_acc, name_context), ((x, x_span), (t, t_span))| {
                     let new_x = match x {
-                        Ident::Unresolved(s) => to_fresh_ident(s),
+                        Ident::Unresolved(s) => to_fresh_ident(s, false),
                         _ => panic!("should not happen"),
                     };
                     let name_context = add_name(x, &new_x, name_context);

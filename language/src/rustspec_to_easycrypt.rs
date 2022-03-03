@@ -158,7 +158,7 @@ fn make_begin_paren<'a>(e: RcDoc<'a, ()>) -> RcDoc<'a, ()> {
 fn translate_ident<'a>(x: Ident) -> RcDoc<'a, ()> {
     let ident_str = match x {
         Ident::TopLevel(s) => s.string.clone(),
-        Ident::Local(LocalIdent { id, name: s }) => {
+        Ident::Local(LocalIdent { id, name: s, .. }) => {
             let mut id_map = ID_MAP.lock().unwrap();
             let codegen_id: usize = match id_map.get(&id) {
                 Some(c_id) => *c_id,
@@ -393,7 +393,7 @@ fn translate_pattern(p: &Pattern) -> RcDoc<()> {
                 .append(RcDoc::space())
                 .append(make_paren(translate_pattern(&inner_pat.0)))
         }
-        Pattern::IdentPat(x) => translate_ident(x.clone()),
+        Pattern::IdentPat(x,_) => translate_ident(x.clone()),
         Pattern::WildCard => RcDoc::as_string("_"),
         Pattern::Tuple(pats) => make_tuple(pats.iter().map(|(pat, _)| translate_pattern(pat))),
     }
