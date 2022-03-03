@@ -192,7 +192,7 @@ fn resolve_expression(
             )?;
             Ok((Expression::Named(new_i), e_span))
         }
-        Expression::FuncCall(ty, f, args) => {
+        Expression::FuncCall(ty, f, args, mut_vars) => {
             let new_args = check_vec(
                 args.into_iter()
                     .map(|arg| {
@@ -202,9 +202,14 @@ fn resolve_expression(
                     })
                     .collect(),
             )?;
-            Ok((Expression::FuncCall(ty, f, new_args), e_span))
+            let mut new_mut_vars = Vec::new();
+            for (mut_var, typ) in mut_vars {
+                let new_mut_var = find_ident(sess, &mut_var.clone(), &name_context, top_level_ctx)?;
+                new_mut_vars.push(((new_mut_var, mut_var.1.clone()), typ));
+            }
+            Ok((Expression::FuncCall(ty, f, new_args, new_mut_vars), e_span))
         }
-        Expression::MethodCall(self_, ty, f, args) => {
+        Expression::MethodCall(self_, ty, f, args, mut_vars) => {
             let (self_, self_borrow) = *self_;
             let new_self = resolve_expression(sess, self_, name_context, top_level_ctx)?;
             let new_args = check_vec(
@@ -216,8 +221,19 @@ fn resolve_expression(
                     })
                     .collect(),
             )?;
+            let mut new_mut_vars = Vec::new();
+            for (mut_var, typ) in mut_vars {
+                let new_mut_var = find_ident(sess, &mut_var.clone(), &name_context, top_level_ctx)?;
+                new_mut_vars.push(((new_mut_var, mut_var.1.clone()), typ));
+            }
             Ok((
-                Expression::MethodCall(Box::new((new_self, self_borrow)), ty, f, new_args),
+                Expression::MethodCall(
+                    Box::new((new_self, self_borrow)),
+                    ty,
+                    f,
+                    new_args,
+                    new_mut_vars,
+                ),
                 e_span,
             ))
         }
@@ -450,7 +466,7 @@ fn resolve_item(
             ))
         }
         Item::FnDecl((f, f_span), mut sig, (b, b_span)) => {
-            let name_context = HashMap::new();
+            let name_context = sig.name_context; // HashMap::new();
             let (new_sig_args, name_context) = sig.args.iter().fold(
                 (Vec::new(), name_context),
                 |(mut new_sig_acc, name_context), ((x, x_span), (t, t_span))| {
@@ -463,8 +479,24 @@ fn resolve_item(
                     (new_sig_acc, name_context)
                 },
             );
+            sig.name_context = name_context;
+            println!("Sig name_context 2: {:?}", sig.name_context.clone());
             sig.args = new_sig_args;
-            let new_b = resolve_block(sess, (b, b_span), &name_context, top_level_ctx)?;
+            // {
+            //     let mut new_mut_vars = Vec::new();
+            //     let mut name_context = name_context.clone();
+            //     for (mut_var, typ) in sig.mutable_vars {
+            //         let new_x = match &mut_var.0 {
+            //             Ident::Unresolved(s) => to_fresh_ident(s, false),
+            //             _ => panic!("should not happen"),
+            //         };
+            //         name_context = add_name(&mut_var.0, &new_x, name_context);
+            //         let new_mut_var = find_ident(sess, &mut_var.clone(), &name_context, top_level_ctx)?;
+            //         new_mut_vars.push(((new_mut_var, mut_var.1.clone()), typ));
+            //     }
+            //     sig.mutable_vars = new_mut_vars;
+            // }
+            let new_b = resolve_block(sess, (b, b_span), &sig.name_context, top_level_ctx)?;
             Ok((Item::FnDecl((f, f_span), sig, new_b), i_span))
         }
     };
@@ -482,10 +514,10 @@ fn resolve_item(
 
 fn process_decl_item(
     sess: &Session,
-    (i, i_span): &Spanned<DecoratedItem>,
+    (i, i_span): &mut Spanned<DecoratedItem>,
     top_level_context: &mut TopLevelContext,
 ) -> ResolutionResult<()> {
-    match &i.item {
+    match &mut i.item {
         Item::ConstDecl(id, typ, _e) => {
             top_level_context.consts.insert(id.0.clone(), typ.clone());
             Ok(())
@@ -553,7 +585,7 @@ fn process_decl_item(
                 Some((canvas_typ_ident, mod_string)) => {
                     process_decl_item(
                         sess,
-                        &(
+                        &mut (
                             DecoratedItem {
                                 item: Item::ArrayDecl(
                                     canvas_typ_ident.clone(),
@@ -627,7 +659,23 @@ fn process_decl_item(
             // Foreign items already imported at this point
             Ok(())
         }
-        Item::FnDecl((f, _f_span), sig, _b) => {
+        Item::FnDecl((f, _f_span), ref mut sig, _b) => {
+            {
+                let mut new_mut_vars = Vec::new();
+                for (mut_var, typ) in sig.mutable_vars.clone() {
+                    let new_mut_var = match &mut_var.0 {
+                        Ident::Unresolved(s) => to_fresh_ident(s, false),
+                        _ => panic!("should not happen"),
+                    };
+                    let new_name_context = add_name(&mut_var.0, &new_mut_var, sig.name_context.clone());
+                    sig.name_context = new_name_context;
+                    new_mut_vars.push(((new_mut_var, mut_var.1.clone()), typ));
+                }
+                sig.mutable_vars = new_mut_vars;
+            }
+
+            println!("Sig name_context: {:?}", sig.name_context.clone());
+            
             top_level_context
                 .functions
                 .insert(FnKey::Independent(f.clone()), FnValue::Local(sig.clone()));
@@ -756,24 +804,25 @@ pub fn resolve_crate<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
     sess: &Session,
     p: Program,
     external_data: &F,
-    top_level_ctx : &mut TopLevelContext,
+    top_level_ctx: &mut TopLevelContext,
 ) -> ResolutionResult<Program> {
     // First we fill the context with external symbols
     enrich_with_external_crates_symbols(sess, &p, top_level_ctx, external_data)?;
     // Then we do a first pass that collects types and signatures of top-level
     // items
-    for item in p.items.iter() {
+
+    let mut items = p.items;
+    
+    for item in items.iter_mut() {
         process_decl_item(sess, item, top_level_ctx)?;
     }
     // And finally a second pass that performs the actual name resolution
-    Ok(
-        Program {
-            items: check_vec(
-                p.items
-                    .into_iter()
-                    .map(|i| resolve_item(sess, i, &top_level_ctx))
-                    .collect(),
-            )?,
-        }
-    )
+    Ok(Program {
+        items: check_vec(
+            items
+                .into_iter()
+                .map(|i| resolve_item(sess, i, &top_level_ctx))
+                .collect(),
+        )?,
+    })
 }
