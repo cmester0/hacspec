@@ -1,9 +1,9 @@
 use core::cmp::PartialEq;
 use core::hash::Hash;
-use im::HashSet;
+use im::{HashMap, HashSet};
 use itertools::Itertools;
 use rustc_span::{MultiSpan, Span};
-use serde::{ser::SerializeSeq, Serialize, Serializer};
+use serde::{ser::SerializeSeq, Serialize, Serializer, ser::SerializeMap};
 use std::fmt;
 
 #[derive(Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Debug, Copy)]
@@ -335,12 +335,14 @@ pub enum Expression {
         Option<Spanned<BaseTyp>>,
         Spanned<TopLevelIdent>,
         Vec<(Spanned<Expression>, Spanned<Borrowing>)>,
+        Vec<(Spanned<Ident>, Option<Typ>)>,
     ),
     MethodCall(
         Box<(Spanned<Expression>, Spanned<Borrowing>)>,
         Option<Typ>, // Type of self, to be filled by the typechecker
         Spanned<TopLevelIdent>,
         Vec<(Spanned<Expression>, Spanned<Borrowing>)>,
+        Vec<(Spanned<Ident>, Option<Typ>)>,
     ),
     EnumInject(
         BaseTyp,                          // Type of enum
@@ -441,10 +443,26 @@ pub struct Block {
     pub contains_question_mark: Fillable<bool>,
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug)]
 pub struct FuncSig {
     pub args: Vec<(Spanned<Ident>, Spanned<Typ>)>,
     pub ret: Spanned<BaseTyp>,
+    pub mutable_vars: Vec<(Spanned<Ident>, Option<Typ>)>,
+    pub name_context: HashMap<String, Ident>,
+}
+
+impl Serialize for FuncSig {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        // TODO: Serialize the remaining fields
+        let mut map = serializer.serialize_map(Some(self.name_context.len()))?;
+        for (k, v) in &self.name_context {
+            map.serialize_entry(&k.to_string(), &v)?;
+        }
+        map.end()
+    }
 }
 
 #[derive(Clone, Debug, Serialize)]

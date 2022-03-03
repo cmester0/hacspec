@@ -518,6 +518,15 @@ fn sig_ret(sig: &FnValue) -> BaseTyp {
     }
 }
 
+fn sig_mut_vars(sig: &FnValue) -> Vec<(Spanned<Ident>, Option<Typ>)> {
+    match sig {
+        FnValue::Local(sig) => sig.mutable_vars.clone(),
+        FnValue::External(sig) => vec![],
+        FnValue::ExternalNotInHacspec(_) => panic!("should not happen"),
+    }
+}
+
+
 fn find_func(
     sess: &Session,
     key1: &FnKey,
@@ -1571,7 +1580,7 @@ fn typecheck_expression(
                 Err(())
             }
         }
-        Expression::FuncCall(prefix, name, args) => {
+        Expression::FuncCall(prefix, name, args, mut_vars) => {
             let (f_sig, typ_var_ctx) = find_func(
                 sess,
                 &match prefix {
@@ -1686,8 +1695,14 @@ fn typecheck_expression(
                         return Err(());
                     }
                 };
+
+            println!("SigMut: {:?}", sig_mut_vars(&f_sig));
+            
+            let mut new_mut_vars = sig_mut_vars(&f_sig);
+            new_mut_vars.extend(mut_vars.clone());
+            
             Ok((
-                Expression::FuncCall(prefix.clone(), name.clone(), new_args),
+                Expression::FuncCall(prefix.clone(), name.clone(), new_args, new_mut_vars),
                 (
                     (Borrowing::Consumed, name.1.clone()),
                     (ret_ty, name.1.clone()),
@@ -1695,7 +1710,7 @@ fn typecheck_expression(
                 var_context,
             ))
         }
-        Expression::MethodCall(sel, _, (f, f_span), orig_args) => {
+        Expression::MethodCall(sel, _, (f, f_span), orig_args, mut_vars) => {
             let (sel, sel_borrow) = sel.as_ref();
             let mut var_context = var_context.clone();
             // We omit to take the new var context because it will be retypechecked later, this
@@ -1816,12 +1831,19 @@ fn typecheck_expression(
             new_args = new_args[1..].to_vec();
             let ret_ty = sig_ret(&f_sig);
             let ret_ty = bind_variable_type(sess, &(ret_ty.clone(), span.clone()), &typ_var_ctx)?;
+
+            println!("SigMutm: {:?}", sig_mut_vars(&f_sig));
+
+            let mut new_mut_vars = sig_mut_vars(&f_sig);
+            new_mut_vars.extend(mut_vars.clone());
+            
             Ok((
                 Expression::MethodCall(
                     Box::new(new_sel),
                     Some(sel_typ),
                     (f.clone(), f_span.clone()),
                     new_args,
+                    new_mut_vars,
                 ),
                 (
                     (Borrowing::Consumed, f_span.clone()),
