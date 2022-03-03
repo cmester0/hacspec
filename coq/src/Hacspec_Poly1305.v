@@ -1,6 +1,7 @@
 (** This file was automatically generated using Hacspec **)
 From Crypt Require Import choice_type Package Prelude.
 Import PackageNotation.
+From extructures Require Import ord fset.
 
 Require Import Hacspec_Lib MachineIntegers.
 From Coq Require Import ZArith.
@@ -78,8 +79,8 @@ Definition poly1305_encode_block
     pkg_core_definition.ret ( ((f_18) +% (temp_19)))
     }).
 
-Definition poly1305_encode_last
-  (pad_len_21 : block_index_t)
+Program Definition poly1305_encode_last
+  (pad_len_31 : block_index_t)
   (b_22 : sub_block_t)
   : code fset.fset0 [interface] ( (field_element_t)) :=
   ({code

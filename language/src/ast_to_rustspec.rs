@@ -1610,8 +1610,8 @@ fn translate_expr_accepts_question_mark(
 
 fn translate_pattern(sess: &Session, pat: &Pat) -> TranslationResult<Spanned<Pattern>> {
     match &pat.kind {
-        PatKind::Ident(BindingMode::ByValue(_), id, None) => {
-            Ok((Pattern::IdentPat(translate_ident(id).0), pat.span.into()))
+        PatKind::Ident(BindingMode::ByValue(m), id, None) => {
+            Ok((Pattern::IdentPat(translate_ident(id).0, m.clone() == Mutability::Mut), pat.span.into()))
         }
         PatKind::TupleStruct(None, path, args) => {
             let struct_name = translate_struct_name(sess, path)?;
