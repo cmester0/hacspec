@@ -298,6 +298,7 @@ fn get_type_default(t: &BaseTyp) -> Expression {
                     (Borrowing::Consumed, i_s.clone()),
                 )],
                 None,
+                vec![],
             ),
             "I8" => Expression::FuncCall(
                 None,
@@ -307,6 +308,7 @@ fn get_type_default(t: &BaseTyp) -> Expression {
                     (Borrowing::Consumed, i_s.clone()),
                 )],
                 None,
+                vec![],
             ),
             "U16" => Expression::FuncCall(
                 None,
@@ -316,6 +318,7 @@ fn get_type_default(t: &BaseTyp) -> Expression {
                     (Borrowing::Consumed, i_s.clone()),
                 )],
                 None,
+                vec![],
             ),
             "I16" => Expression::FuncCall(
                 None,
@@ -325,6 +328,7 @@ fn get_type_default(t: &BaseTyp) -> Expression {
                     (Borrowing::Consumed, i_s.clone()),
                 )],
                 None,
+                vec![],
             ),
             "U32" => Expression::FuncCall(
                 None,
@@ -334,6 +338,7 @@ fn get_type_default(t: &BaseTyp) -> Expression {
                     (Borrowing::Consumed, i_s.clone()),
                 )],
                 None,
+                vec![],
             ),
             "I32" => Expression::FuncCall(
                 None,
@@ -343,6 +348,7 @@ fn get_type_default(t: &BaseTyp) -> Expression {
                     (Borrowing::Consumed, i_s.clone()),
                 )],
                 None,
+                vec![],
             ),
             "U64" => Expression::FuncCall(
                 None,
@@ -352,6 +358,7 @@ fn get_type_default(t: &BaseTyp) -> Expression {
                     (Borrowing::Consumed, i_s.clone()),
                 )],
                 None,
+                vec![],
             ),
             "I64" => Expression::FuncCall(
                 None,
@@ -361,6 +368,7 @@ fn get_type_default(t: &BaseTyp) -> Expression {
                     (Borrowing::Consumed, i_s.clone()),
                 )],
                 None,
+                vec![],
             ),
             "U128" => Expression::FuncCall(
                 None,
@@ -370,6 +378,7 @@ fn get_type_default(t: &BaseTyp) -> Expression {
                     (Borrowing::Consumed, i_s.clone()),
                 )],
                 None,
+                vec![],
             ),
             "I128" => Expression::FuncCall(
                 None,
@@ -379,6 +388,7 @@ fn get_type_default(t: &BaseTyp) -> Expression {
                     (Borrowing::Consumed, i_s.clone()),
                 )],
                 None,
+                vec![],
             ),
             _ => panic!("Trying to get default for {}", t),
         },
@@ -725,7 +735,7 @@ fn translate_expression<'a>(e: Expression, top_ctx: &'a TopLevelContext) -> RcDo
                 .map(|(e, _)| translate_expression(e, top_ctx)),
         ),
         Expression::Named(p) => translate_ident(p.clone()),
-        Expression::FuncCall(prefix, name, args, _arg_types) => {
+        Expression::FuncCall(prefix, name, args, _arg_types, mut_vars) => {
             let (func_name, additional_args) =
                 translate_func_name(prefix.clone(), Ident::TopLevel(name.0), top_ctx);
             let total_args = args.len() + additional_args.len();
@@ -746,7 +756,7 @@ fn translate_expression<'a>(e: Expression, top_ctx: &'a TopLevelContext) -> RcDo
                     RcDoc::nil()
                 })
         }
-        Expression::MethodCall(sel_arg, sel_typ, (f, _), args, _arg_types) => {
+        Expression::MethodCall(sel_arg, sel_typ, (f, _), args, _arg_types, mut_vars) => {
             let (func_name, additional_args) =
                 translate_func_name(sel_typ.clone().map(|x| x.1), Ident::TopLevel(f), top_ctx);
             func_name // We append implicit arguments first
