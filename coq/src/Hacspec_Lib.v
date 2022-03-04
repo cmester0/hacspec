@@ -1017,9 +1017,12 @@ Definition nat_mod (p : Z) : ChoiceEquality := @int (WORDSIZE_p p). (* GZnZ.znz 
 Definition nat_mod_equal {p} (a b : nat_mod p) : bool :=
   Z.eqb (unsigned a) (unsigned b).
 
-Definition nat_mod_zero {p} : nat_mod p := @zero (WORDSIZE_p p).
-Definition nat_mod_one {p} : nat_mod p := @one (WORDSIZE_p p).
-Definition nat_mod_two {p} : nat_mod p := repr 2.
+Definition nat_mod_zero_pre {p} : nat_mod p := @zero (WORDSIZE_p p).
+Definition nat_mod_zero {p} : code fset0 [interface] (nat_mod p) := {code ret nat_mod_zero_pre}.
+Definition nat_mod_one_pre {p} : nat_mod p := @one (WORDSIZE_p p).
+Definition nat_mod_one {p} : code fset0 [interface] (nat_mod p) := {code ret nat_mod_one_pre}.
+Definition nat_mod_two_pre {p} : nat_mod p := repr 2.
+Definition nat_mod_two {p} : code fset0 [interface] (nat_mod p) := {code ret nat_mod_two_pre}.
 
 Definition nat_mod_add {n : Z} (a : nat_mod n) (b : nat_mod n) : nat_mod n := MachineIntegers.add a b.
 
@@ -1042,7 +1045,7 @@ Definition nat_mod_sub {n : Z} (a:nat_mod n) (b:nat_mod n) : nat_mod n := Machin
 Definition nat_mod_exp_def_pre {p : Z} (a:nat_mod p) (n : nat) : nat_mod p :=
   let fix exp_ (e : nat_mod p) (n : nat) :=
     match n with
-    | 0%nat => nat_mod_one
+    | 0%nat => nat_mod_one_pre
     | S n => nat_mod_mul a (exp_ a n)
     end in
   exp_ a n.
@@ -1712,7 +1715,7 @@ Global Instance int_default {WS : WORDSIZE} : Default int := {
 }.
 Global Instance uint8_default : Default uint8 := _.
 Global Instance nat_mod_default {p : Z} : Default (nat_mod p) := {
-  default := nat_mod_zero
+  default := nat_mod_zero_pre
 }.
 Global Instance prod_default {A B} `{Default A} `{Default B} : Default (prod A B) := {
   default := (default, default)
