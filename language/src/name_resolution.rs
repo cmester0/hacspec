@@ -120,23 +120,38 @@ fn resolve_expression(
     (e, e_span): Spanned<Expression>,
     name_context: &NameContext,
     top_level_ctx: &TopLevelContext,
-) -> ResolutionResult<Spanned<Expression>> {
+) -> ResolutionResult<(ScopeMutableVars, Spanned<Expression>)> {
     match e {
         Expression::Unary(op, e1, ty) => {
-            let new_e1 = resolve_expression(sess, *e1, name_context, top_level_ctx)?;
-            Ok((Expression::Unary(op, Box::new(new_e1), ty), e_span))
+            let (mut_vars_new_e1, new_e1) =
+                resolve_expression(sess, *e1, name_context, top_level_ctx)?;
+            Ok((
+                mut_vars_new_e1,
+                (Expression::Unary(op, Box::new(new_e1), ty), e_span),
+            ))
         }
         Expression::Binary(op, e1, e2, ty) => {
-            let new_e1 = resolve_expression(sess, *e1, name_context, top_level_ctx)?;
-            let new_e2 = resolve_expression(sess, *e2, name_context, top_level_ctx)?;
+            let (mut_vars_new_e1, new_e1) =
+                resolve_expression(sess, *e1, name_context, top_level_ctx)?;
+            let (mut_vars_new_e2, new_e2) =
+                resolve_expression(sess, *e2, name_context, top_level_ctx)?;
+
+            let mut mut_vars = Vec::new();
+            mut_vars.extend(mut_vars_new_e1);
+            mut_vars.extend(mut_vars_new_e2);
+
             Ok((
-                Expression::Binary(op, Box::new(new_e1), Box::new(new_e2), ty),
-                e_span,
+                mut_vars,
+                (
+                    Expression::Binary(op, Box::new(new_e1), Box::new(new_e2), ty),
+                    e_span,
+                ),
             ))
         }
         Expression::MatchWith(arg, arms) => {
-            let new_arg = resolve_expression(sess, *arg, name_context, top_level_ctx)?;
-            let new_arms = check_vec(
+            let (mut_vars_new_arg, new_arg) =
+                resolve_expression(sess, *arg, name_context, top_level_ctx)?;
+            let (mut_vars_new_arms, new_arms): (Vec<_>, Vec<_>) = check_vec(
                 arms.into_iter()
                     .map(|(enum_name, case_name, payload, arm)| {
                         let (new_payload, new_name_context) = match payload {
@@ -148,39 +163,77 @@ fn resolve_expression(
                             }
                         };
                         let name_context = new_name_context.union(name_context.clone());
-                        let new_arm = resolve_expression(sess, arm, &name_context, top_level_ctx)?;
-                        Ok((enum_name, case_name, new_payload, new_arm))
+                        let (mut_vars_new_arm, new_arm) =
+                            resolve_expression(sess, arm, &name_context, top_level_ctx)?;
+                        Ok((
+                            mut_vars_new_arm,
+                            (enum_name, case_name, new_payload, new_arm),
+                        ))
                     })
                     .collect(),
-            )?;
-            Ok((Expression::MatchWith(Box::new(new_arg), new_arms), e_span))
-        }
-        Expression::EnumInject(enum_name, case_name, payload) => Ok((
-            Expression::EnumInject(
-                enum_name,
-                case_name,
-                match payload {
-                    None => None,
-                    Some(payload) => {
-                        let (new_payload, new_payload_span) = resolve_expression(
-                            sess,
-                            (*payload.0, payload.1),
-                            &name_context,
-                            top_level_ctx,
-                        )?;
-                        Some((Box::new(new_payload), new_payload_span))
-                    }
-                },
-            ),
-            e_span,
-        )),
-        Expression::InlineConditional(e1, e2, e3) => {
-            let new_e1 = resolve_expression(sess, *e1, name_context, top_level_ctx)?;
-            let new_e2 = resolve_expression(sess, *e2, name_context, top_level_ctx)?;
-            let new_e3 = resolve_expression(sess, *e3, name_context, top_level_ctx)?;
+            )?
+            .into_iter()
+            .unzip();
+            let mut_vars_new_arms: ScopeMutableVars =
+                mut_vars_new_arms.into_iter().flatten().collect();
+
+            let mut mut_vars = Vec::new();
+            mut_vars.extend(mut_vars_new_arg);
+            mut_vars.extend(mut_vars_new_arms);
+
             Ok((
-                Expression::InlineConditional(Box::new(new_e1), Box::new(new_e2), Box::new(new_e3)),
-                e_span,
+                mut_vars,
+                (Expression::MatchWith(Box::new(new_arg), new_arms), e_span),
+            ))
+        }
+        Expression::EnumInject(enum_name, case_name, payload) => {
+            let (mut_vars_payload, payload) = match payload {
+                None => (Vec::new(), None),
+                Some(payload) => {
+                    let (mut_vars_payload, (new_payload, new_payload_span)) = resolve_expression(
+                        sess,
+                        (*payload.0, payload.1),
+                        &name_context,
+                        top_level_ctx,
+                    )?;
+                    (
+                        mut_vars_payload,
+                        Some((Box::new(new_payload), new_payload_span)),
+                    )
+                }
+            };
+
+            Ok((
+                mut_vars_payload,
+                (
+                    Expression::EnumInject(enum_name, case_name, payload),
+                    e_span,
+                ),
+            ))
+        }
+        Expression::InlineConditional(e1, e2, e3) => {
+            let (mut_vars_new_e1, new_e1) =
+                resolve_expression(sess, *e1, name_context, top_level_ctx)?;
+            let (mut_vars_new_e2, new_e2) =
+                resolve_expression(sess, *e2, name_context, top_level_ctx)?;
+            let (mut_vars_new_e3, new_e3) =
+                resolve_expression(sess, *e3, name_context, top_level_ctx)?;
+
+            let mut mut_vars = Vec::new();
+            mut_vars.extend(mut_vars_new_e1);
+            mut_vars.extend(mut_vars_new_e2);
+            mut_vars.extend(mut_vars_new_e3);
+
+            Ok((
+                mut_vars,
+                (
+                    Expression::InlineConditional(
+                        Box::new(new_e1),
+                        Box::new(new_e2),
+                        Box::new(new_e3),
+                    ),
+                    e_span,
+                ),
             ))
         }
         Expression::Named(i) => {
@@ -190,83 +243,130 @@ fn resolve_expression(
                 name_context,
                 top_level_ctx,
             )?;
-            Ok((Expression::Named(new_i), e_span))
+            Ok((Vec::new(), (Expression::Named(new_i), e_span)))
         }
         Expression::FuncCall(ty, f, args, mut_vars) => {
-            let new_args = check_vec(
+            let (mut_vars_new_args, new_args): (Vec<_>, Vec<_>) = check_vec(
                 args.into_iter()
                     .map(|arg| {
-                        let new_arg0 =
+                        let (mut_vars_new_arg0, new_arg0) =
                             resolve_expression(sess, arg.0, name_context, top_level_ctx)?;
-                        Ok((new_arg0, arg.1))
+                        Ok((mut_vars_new_arg0, (new_arg0, arg.1)))
                     })
                     .collect(),
-            )?;
+            )?
+            .into_iter()
+            .unzip();
+            let mut_vars_new_args: ScopeMutableVars =
+                mut_vars_new_args.into_iter().flatten().collect();
+
             let mut new_mut_vars = Vec::new();
             for (mut_var, typ) in mut_vars {
                 let new_mut_var = find_ident(sess, &mut_var.clone(), &name_context, top_level_ctx)?;
                 new_mut_vars.push(((new_mut_var, mut_var.1.clone()), typ));
             }
-            Ok((Expression::FuncCall(ty, f, new_args, new_mut_vars), e_span))
+
+            let mut mut_vars_fun = Vec::new();
+            mut_vars_fun.extend(mut_vars_new_args);
+            mut_vars_fun.extend(new_mut_vars.clone());
+
+            Ok((
+                mut_vars_fun,
+                (Expression::FuncCall(ty, f, new_args, new_mut_vars), e_span),
+            ))
         }
         Expression::MethodCall(self_, ty, f, args, mut_vars) => {
             let (self_, self_borrow) = *self_;
-            let new_self = resolve_expression(sess, self_, name_context, top_level_ctx)?;
-            let new_args = check_vec(
+            let (mut_vars_new_self, new_self) =
+                resolve_expression(sess, self_, name_context, top_level_ctx)?;
+            let (mut_vars_new_args, new_args): (Vec<_>, Vec<_>) = check_vec(
                 args.into_iter()
                     .map(|arg| {
-                        let new_arg0 =
+                        let (mut_vars_new_arg0, new_arg0) =
                             resolve_expression(sess, arg.0, name_context, top_level_ctx)?;
-                        Ok((new_arg0, arg.1))
+                        Ok((mut_vars_new_arg0, (new_arg0, arg.1)))
                     })
                     .collect(),
-            )?;
+            )?
+            .into_iter()
+            .unzip();
+            let mut_vars_new_args: ScopeMutableVars =
+                mut_vars_new_args.into_iter().flatten().collect();
+
             let mut new_mut_vars = Vec::new();
             for (mut_var, typ) in mut_vars {
                 let new_mut_var = find_ident(sess, &mut_var.clone(), &name_context, top_level_ctx)?;
                 new_mut_vars.push(((new_mut_var, mut_var.1.clone()), typ));
             }
+
+            let mut mut_vars_method = Vec::new();
+            mut_vars_method.extend(mut_vars_new_self);
+            mut_vars_method.extend(mut_vars_new_args);
+            mut_vars_method.extend(new_mut_vars.clone());
+
             Ok((
-                Expression::MethodCall(
-                    Box::new((new_self, self_borrow)),
-                    ty,
-                    f,
-                    new_args,
-                    new_mut_vars,
+                mut_vars_method,
+                (
+                    Expression::MethodCall(
+                        Box::new((new_self, self_borrow)),
+                        ty,
+                        f,
+                        new_args,
+                        new_mut_vars,
+                    ),
+                    e_span,
                 ),
-                e_span,
             ))
         }
-        Expression::Lit(_) => Ok((e, e_span)),
+        Expression::Lit(_) => Ok((Vec::new(), (e, e_span))),
         Expression::ArrayIndex(x, e1, typ) => {
             let new_x = find_ident(sess, &x, name_context, top_level_ctx)?;
-            let new_e1 = resolve_expression(sess, *e1, name_context, top_level_ctx)?;
+            let (mut_vars_new_e1, new_e1) =
+                resolve_expression(sess, *e1, name_context, top_level_ctx)?;
             Ok((
-                Expression::ArrayIndex((new_x, x.1), Box::new(new_e1), typ),
-                e_span,
+                mut_vars_new_e1,
+                (
+                    Expression::ArrayIndex((new_x, x.1), Box::new(new_e1), typ),
+                    e_span,
+                ),
             ))
         }
         Expression::NewArray(x, ty, args) => {
-            let new_args = check_vec(
+            let (mut_vars_new_args, new_args): (Vec<_>, Vec<_>) = check_vec(
                 args.into_iter()
                     .map(|arg| resolve_expression(sess, arg, name_context, top_level_ctx))
                     .collect(),
-            )?;
-            Ok((Expression::NewArray(x, ty, new_args), e_span))
+            )?
+            .into_iter()
+            .unzip();
+            let mut_vars_new_args: ScopeMutableVars =
+                mut_vars_new_args.into_iter().flatten().collect();
+            Ok((
+                mut_vars_new_args,
+                (Expression::NewArray(x, ty, new_args), e_span),
+            ))
         }
         Expression::Tuple(args) => {
-            let new_args = check_vec(
+            let (mut_vars_new_args, new_args): (Vec<_>, Vec<_>) = check_vec(
                 args.into_iter()
                     .map(|arg| resolve_expression(sess, arg, name_context, top_level_ctx))
                     .collect(),
-            )?;
-            Ok((Expression::Tuple(new_args), e_span))
+            )?
+            .into_iter()
+            .unzip();
+            let mut_vars_new_args: ScopeMutableVars =
+                mut_vars_new_args.into_iter().flatten().collect();
+            Ok((mut_vars_new_args, (Expression::Tuple(new_args), e_span)))
         }
         Expression::IntegerCasting(e1, from, to) => {
-            let new_e1 = resolve_expression(sess, *e1, name_context, top_level_ctx)?;
+            let (mut_vars_new_e1, new_e1) =
+                resolve_expression(sess, *e1, name_context, top_level_ctx)?;
             Ok((
-                Expression::IntegerCasting(Box::new(new_e1), from, to),
-                e_span,
+                mut_vars_new_e1,
+                (
+                    Expression::IntegerCasting(Box::new(new_e1), from, to),
+                    e_span,
+                ),
             ))
         }
     }
@@ -319,19 +419,27 @@ fn resolve_statement(
     (s, s_span): Spanned<Statement>,
     name_context: NameContext,
     top_level_ctx: &TopLevelContext,
-) -> ResolutionResult<(Spanned<Statement>, NameContext)> {
+) -> ResolutionResult<(ScopeMutableVars, Spanned<Statement>, NameContext)> {
     match s {
         Statement::Conditional(cond, then_b, else_b, info) => {
-            let new_cond = resolve_expression(sess, cond, &name_context, top_level_ctx)?;
+            let (mut_vars_new_cond, new_cond) =
+                resolve_expression(sess, cond, &name_context, top_level_ctx)?;
             let new_then_b = resolve_block(sess, then_b, &name_context, top_level_ctx)?;
-            let new_else_b = match else_b {
-                None => None,
+            let (mut_vars_new_else_b, new_else_b) = match else_b {
+                None => (Vec::new(), None),
                 Some(else_b) => {
                     let new_else_b = resolve_block(sess, else_b, &name_context, top_level_ctx)?;
-                    Some(new_else_b)
+                    (new_else_b.clone().0.mutable_vars, Some(new_else_b))
                 }
             };
+
+            let mut mut_vars = Vec::new();
+            mut_vars.extend(mut_vars_new_cond);
+            mut_vars.extend(new_then_b.clone().0.mutable_vars);
+            mut_vars.extend(mut_vars_new_else_b);
+
             Ok((
+                mut_vars,
                 (
                     Statement::Conditional(new_cond, new_then_b, new_else_b, info),
                     s_span,
@@ -340,10 +448,19 @@ fn resolve_statement(
             ))
         }
         Statement::ForLoop(None, lower, upper, body) => {
-            let new_lower = resolve_expression(sess, lower, &name_context, top_level_ctx)?;
-            let new_upper = resolve_expression(sess, upper, &name_context, top_level_ctx)?;
+            let (mut_vars_new_lower, new_lower) =
+                resolve_expression(sess, lower, &name_context, top_level_ctx)?;
+            let (mut_vars_new_upper, new_upper) =
+                resolve_expression(sess, upper, &name_context, top_level_ctx)?;
             let new_body = resolve_block(sess, body, &name_context, top_level_ctx)?;
+
+            let mut mut_vars = Vec::new();
+            mut_vars.extend(mut_vars_new_lower);
+            mut_vars.extend(mut_vars_new_upper);
+            mut_vars.extend(new_body.clone().0.mutable_vars);
+
             Ok((
+                mut_vars,
                 (
                     Statement::ForLoop(None, new_lower, new_upper, new_body),
                     s_span,
@@ -352,15 +469,24 @@ fn resolve_statement(
             ))
         }
         Statement::ForLoop(Some((var, var_span)), lower, upper, body) => {
-            let new_lower = resolve_expression(sess, lower, &name_context, top_level_ctx)?;
-            let new_upper = resolve_expression(sess, upper, &name_context, top_level_ctx)?;
+            let (mut_vars_new_lower, new_lower) =
+                resolve_expression(sess, lower, &name_context, top_level_ctx)?;
+            let (mut_vars_new_upper, new_upper) =
+                resolve_expression(sess, upper, &name_context, top_level_ctx)?;
             let new_var = match &var {
                 Ident::Unresolved(s) => to_fresh_ident(s, false),
                 _ => panic!("should not happen"),
             };
             let name_context = add_name(&var, &new_var, name_context);
             let new_body = resolve_block(sess, body, &name_context, top_level_ctx)?;
+
+            let mut mut_vars = Vec::new();
+            mut_vars.extend(mut_vars_new_lower);
+            mut_vars.extend(mut_vars_new_upper);
+            mut_vars.extend(new_body.clone().0.mutable_vars);
+
             Ok((
+                mut_vars,
                 (
                     Statement::ForLoop(Some((new_var, var_span)), new_lower, new_upper, new_body),
                     s_span,
@@ -369,15 +495,27 @@ fn resolve_statement(
             ))
         }
         Statement::ReturnExp(e) => {
-            let new_e =
+            let (mut_vars_new_e, new_e) =
                 resolve_expression(sess, (e, s_span.clone()), &name_context, top_level_ctx)?;
-            Ok(((Statement::ReturnExp(new_e.0), s_span), name_context))
+            Ok((
+                mut_vars_new_e,
+                (Statement::ReturnExp(new_e.0), s_span),
+                name_context,
+            ))
         }
         Statement::ArrayUpdate(var, index, e, question_mark, typ) => {
             let new_var = find_ident(sess, &var, &name_context, top_level_ctx)?;
-            let new_index = resolve_expression(sess, index, &name_context, top_level_ctx)?;
-            let new_e = resolve_expression(sess, e, &name_context, top_level_ctx)?;
+            let (mut_vars_new_index, new_index) =
+                resolve_expression(sess, index, &name_context, top_level_ctx)?;
+            let (mut_vars_new_e, new_e) =
+                resolve_expression(sess, e, &name_context, top_level_ctx)?;
+
+            let mut mut_vars = Vec::new();
+            mut_vars.extend(mut_vars_new_index);
+            mut_vars.extend(mut_vars_new_e);
+
             Ok((
+                mut_vars,
                 (
                     Statement::ArrayUpdate(
                         (new_var, var.1.clone()),
@@ -393,8 +531,10 @@ fn resolve_statement(
         }
         Statement::Reassignment(var, e, question_mark) => {
             let new_var = find_ident(sess, &var, &name_context, top_level_ctx)?;
-            let new_e = resolve_expression(sess, e, &name_context, top_level_ctx)?;
+            let (mut_vars_new_e, new_e) =
+                resolve_expression(sess, e, &name_context, top_level_ctx)?;
             Ok((
+                mut_vars_new_e,
                 (
                     Statement::Reassignment((new_var, var.1.clone()), new_e, question_mark),
                     s_span,
@@ -403,10 +543,22 @@ fn resolve_statement(
             ))
         }
         Statement::LetBinding(pat, typ, e, question_mark) => {
-            let new_e = resolve_expression(sess, e, &name_context, top_level_ctx)?;
+            let (mut_vars_new_e, new_e) =
+                resolve_expression(sess, e, &name_context, top_level_ctx)?;
             let (new_pat, new_name_context) = resolve_pattern(sess, &pat, top_level_ctx)?;
+
+            let mut mut_vars = Vec::new();
+            mut_vars.extend(mut_vars_new_e);
+
+            if let Pattern::IdentPat(x, true) = new_pat.clone() {
+                println!("Mutable vars {:?}", (x.clone(), pat.1.clone()));
+
+                mut_vars.push(((x, pat.1.clone()), typ.clone()));
+            };
+
             let name_context = new_name_context.union(name_context);
             Ok((
+                mut_vars,
                 (
                     Statement::LetBinding((new_pat, pat.1.clone()), typ, new_e, question_mark),
                     s_span,
@@ -425,9 +577,12 @@ fn resolve_block(
 ) -> ResolutionResult<Spanned<Block>> {
     let mut new_stmts = Vec::new();
     let mut name_context = name_context.clone();
+    let mut mut_vars = Vec::new();
     for s in b.stmts.into_iter() {
-        let (new_stmt, new_name_context) = resolve_statement(sess, s, name_context, top_level_ctx)?;
+        let (mut_vars_stmt, new_stmt, new_name_context) =
+            resolve_statement(sess, s, name_context, top_level_ctx)?;
         new_stmts.push(new_stmt);
+        mut_vars.extend(mut_vars_stmt);
         name_context = new_name_context;
     }
     Ok((
@@ -436,6 +591,7 @@ fn resolve_block(
             mutated: None,
             return_typ: None,
             contains_question_mark: None,
+            mutable_vars: mut_vars,
         },
         b_span,
     ))
@@ -449,16 +605,18 @@ fn resolve_item(
     let i = item.clone().item;
     let i = match i {
         Item::ConstDecl(id, typ, e) => {
-            let new_e = resolve_expression(sess, e, &HashMap::new(), top_level_ctx)?;
+            let (mut_vars_new_e, new_e) =
+                resolve_expression(sess, e, &HashMap::new(), top_level_ctx)?;
             Ok((Item::ConstDecl(id, typ, new_e), i_span))
         }
         Item::ArrayDecl(id, size, cell_t, index_typ) => {
-            let new_size = resolve_expression(sess, size, &HashMap::new(), top_level_ctx)?;
+            let (mut_vars_new_size, new_size) =
+                resolve_expression(sess, size, &HashMap::new(), top_level_ctx)?;
             Ok((Item::ArrayDecl(id, new_size, cell_t, index_typ), i_span))
         }
         Item::EnumDecl(_, _) | Item::AliasDecl(_, _) | Item::ImportedCrate(_) => Ok((i, i_span)),
         Item::NaturalIntegerDecl(typ_ident, secrecy, canvas_size, info) => {
-            let new_canvas_size =
+            let (mut_vars_new_canvas_size, new_canvas_size) =
                 resolve_expression(sess, canvas_size, &HashMap::new(), top_level_ctx)?;
             Ok((
                 Item::NaturalIntegerDecl(typ_ident, secrecy, new_canvas_size, info),
@@ -481,6 +639,7 @@ fn resolve_item(
             );
             sig.name_context = name_context;
             println!("Sig name_context 2: {:?}", sig.name_context.clone());
+
             sig.args = new_sig_args;
             // {
             //     let mut new_mut_vars = Vec::new();
@@ -496,7 +655,12 @@ fn resolve_item(
             //     }
             //     sig.mutable_vars = new_mut_vars;
             // }
+
             let new_b = resolve_block(sess, (b, b_span), &sig.name_context, top_level_ctx)?;
+            sig.mutable_vars = new_b.clone().0.mutable_vars;
+
+            println!("SIG MUTS: {:?}", sig.mutable_vars);
+
             Ok((Item::FnDecl((f, f_span), sig, new_b), i_span))
         }
     };
@@ -514,10 +678,10 @@ fn resolve_item(
 
 fn process_decl_item(
     sess: &Session,
-    (i, i_span): &mut Spanned<DecoratedItem>,
+    (i, i_span): &Spanned<DecoratedItem>,
     top_level_context: &mut TopLevelContext,
 ) -> ResolutionResult<()> {
-    match &mut i.item {
+    match &i.item {
         Item::ConstDecl(id, typ, _e) => {
             top_level_context.consts.insert(id.0.clone(), typ.clone());
             Ok(())
@@ -659,23 +823,7 @@ fn process_decl_item(
             // Foreign items already imported at this point
             Ok(())
         }
-        Item::FnDecl((f, _f_span), ref mut sig, _b) => {
-            {
-                let mut new_mut_vars = Vec::new();
-                for (mut_var, typ) in sig.mutable_vars.clone() {
-                    let new_mut_var = match &mut_var.0 {
-                        Ident::Unresolved(s) => to_fresh_ident(s, false),
-                        _ => panic!("should not happen"),
-                    };
-                    let new_name_context = add_name(&mut_var.0, &new_mut_var, sig.name_context.clone());
-                    sig.name_context = new_name_context;
-                    new_mut_vars.push(((new_mut_var, mut_var.1.clone()), typ));
-                }
-                sig.mutable_vars = new_mut_vars;
-            }
-
-            println!("Sig name_context: {:?}", sig.name_context.clone());
-            
+        Item::FnDecl((f, _f_span), sig, _b) => {
             top_level_context
                 .functions
                 .insert(FnKey::Independent(f.clone()), FnValue::Local(sig.clone()));
@@ -812,17 +960,28 @@ pub fn resolve_crate<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
     // items
 
     let mut items = p.items;
-    
-    for item in items.iter_mut() {
+
+    for item in &items {
         process_decl_item(sess, item, top_level_ctx)?;
     }
     // And finally a second pass that performs the actual name resolution
-    Ok(Program {
-        items: check_vec(
-            items
-                .into_iter()
-                .map(|i| resolve_item(sess, i, &top_level_ctx))
-                .collect(),
-        )?,
-    })
+    items = check_vec(
+        items
+            .into_iter()
+            .map(|i| resolve_item(sess, i, &top_level_ctx))
+            .collect(),
+    )?;
+
+    for x in items.clone().into_iter() {
+        match x.0.item {
+            Item::FnDecl((f, _f_span), sig, _b) => {
+                top_level_ctx
+                    .functions
+                    .insert(FnKey::Independent(f.clone()), FnValue::Local(sig.clone()));
+            }
+            _ => (),
+        }
+    }
+
+    Ok(Program { items })
 }
