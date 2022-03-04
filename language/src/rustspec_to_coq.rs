@@ -1983,8 +1983,9 @@ fn translate_item<'a>(
             //     b.clone().stmts.iter().filter_map(|(x, _)| if let Statement::Reassignment((i,_),(e,_), b) = x { Some (i.clone()) } else { None }).collect();
 
             let (local_vars_and_typs, block_exprs) = translate_block(b.clone(), false, top_ctx);
-            // let (block_vars, block_var_loc_defs) = fset_and_locations(local_vars_and_typs.clone());
-            let (block_vars, block_var_loc_defs) =  fset_and_locations(b.mutable_vars.clone().into_iter().map(|((x,_),t)| (x,t.map(|(t,_)| t))).collect());
+            let (block_vars, _) = fset_and_locations(local_vars_and_typs.clone());
+            let (_, block_var_loc_defs) =
+                fset_and_locations(b.mutable_vars.clone().into_iter().map(|((x,_),t)| (x,t.map(|(t,_)| t))).collect());
 
             block_var_loc_defs
                 .append(RcDoc::line())

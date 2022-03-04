@@ -3,7 +3,7 @@ use core::hash::Hash;
 use im::{HashMap, HashSet};
 use itertools::Itertools;
 use rustc_span::{MultiSpan, Span};
-use serde::{ser::SerializeSeq, Serialize, Serializer, ser::SerializeMap};
+use serde::{ser::SerializeMap, ser::SerializeSeq, Serialize, Serializer};
 use std::fmt;
 
 #[derive(Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Debug, Copy)]
@@ -336,7 +336,7 @@ pub enum Expression {
         Spanned<TopLevelIdent>,
         Vec<(Spanned<Expression>, Spanned<Borrowing>)>,
         Fillable<Vec<BaseTyp>>,
-        ScopeMutableVars,
+        Vec<ScopeMutableVar>,
     ),
     MethodCall(
         Box<(Spanned<Expression>, Spanned<Borrowing>)>,
@@ -344,7 +344,7 @@ pub enum Expression {
         Spanned<TopLevelIdent>,
         Vec<(Spanned<Expression>, Spanned<Borrowing>)>,
         Fillable<Vec<BaseTyp>>,
-        ScopeMutableVars,
+        Vec<ScopeMutableVar>,
     ),
     EnumInject(
         BaseTyp,                          // Type of enum
@@ -437,7 +437,8 @@ pub enum Statement {
     ReturnExp(Expression),
 }
 
-pub type ScopeMutableVars = Vec<(Spanned<Ident>, Fillable<Spanned<Typ>>)>;
+pub type ScopeMutableVar = (Spanned<Ident>, Fillable<Spanned<Typ>>);
+pub type FunctionDependency = Spanned<TopLevelIdent>;
 
 #[derive(Clone, Serialize, Debug)]
 pub struct Block {
@@ -445,29 +446,16 @@ pub struct Block {
     pub mutated: Fillable<Box<MutatedInfo>>,
     pub return_typ: Fillable<Typ>,
     pub contains_question_mark: Fillable<bool>,
-    pub mutable_vars: ScopeMutableVars,
+    pub mutable_vars: Vec<ScopeMutableVar>,
+    pub function_dependencies: Vec<FunctionDependency>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct FuncSig {
     pub args: Vec<(Spanned<Ident>, Spanned<Typ>)>,
     pub ret: Spanned<BaseTyp>,
-    pub mutable_vars: ScopeMutableVars,
-    pub name_context: HashMap<String, Ident>,
-}
-
-impl Serialize for FuncSig {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        // TODO: Serialize the remaining fields
-        let mut map = serializer.serialize_map(Some(self.name_context.len()))?;
-        for (k, v) in &self.name_context {
-            map.serialize_entry(&k.to_string(), &v)?;
-        }
-        map.end()
-    }
+    pub mutable_vars: Vec<ScopeMutableVar>,
+    pub function_dependencies: Vec<FunctionDependency>,
 }
 
 #[derive(Clone, Debug, Serialize)]

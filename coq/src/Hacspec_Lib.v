@@ -13,6 +13,8 @@ Axiom type_from_choice_type_elem : forall {T : Type}, choice_type_from_type T ->
 
 Axiom choice_type_from_type_id :
   forall T (x : T), type_from_choice_type_elem (choice_type_from_type_elem x) = x.
+Axiom type_from_choice_type_id :
+  forall T (x : choice_type_from_type T), choice_type_from_type_elem (type_from_choice_type_elem x) = x.
 
 Definition code_injection {T : Type} (t : T) : code fset.fset0 [interface] (choice_type_from_type T) :=
   {code

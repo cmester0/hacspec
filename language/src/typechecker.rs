@@ -519,7 +519,7 @@ fn sig_ret(sig: &FnValue) -> BaseTyp {
     }
 }
 
-fn sig_mut_vars(sig: &FnValue) -> ScopeMutableVars {
+fn sig_mut_vars(sig: &FnValue) -> Vec<ScopeMutableVar> {
     match sig {
         FnValue::Local(sig) => sig.mutable_vars.clone(),
         FnValue::External(sig) => vec![],
@@ -1711,11 +1711,6 @@ fn typecheck_expression(
                 };
 
             let mut new_mut_vars = Vec::new();
-            // for (var, typ) in sig_mut_vars(&f_sig) {
-            //     new_mut_vars.push((var, Some(typ.unwrap())))
-            // }
-            // new_mut_vars.extend(mut_vars.clone());
-
             new_mut_vars.extend(sig_mut_vars(&f_sig));
             new_mut_vars.extend(mut_vars.clone());
 
@@ -1853,7 +1848,8 @@ fn typecheck_expression(
             let ret_ty = sig_ret(&f_sig);
             let ret_ty = bind_variable_type(sess, &(ret_ty.clone(), span.clone()), &typ_var_ctx)?;
 
-            let mut new_mut_vars = sig_mut_vars(&f_sig);
+            let mut new_mut_vars = Vec::new();
+            new_mut_vars.extend(sig_mut_vars(&f_sig));
             new_mut_vars.extend(mut_vars.clone());
 
             Ok((
@@ -2697,6 +2693,7 @@ fn typecheck_block(
             return_typ,
             contains_question_mark,
             mutable_vars: b.mutable_vars, // TODO: Typecheck mutable_vars?
+            function_dependencies: b.function_dependencies, // TODO: Typecheck mutable_vars?
         },
         var_context.intersection(original_var_context.clone()),
     ))
