@@ -1092,7 +1092,7 @@ fn translate_expression<'a>(
                 v
             }));
             for ((x, _), y) in mut_vars {
-                var_locs.push((x, y));
+                var_locs.push((x, y.map(|(y, _)| y)));
             }
 
             let mut ass: Vec<RcDoc<'a, ()>> = Vec::new();
@@ -1180,8 +1180,9 @@ fn translate_expression<'a>(
             let mut var_locs = Vec::new();
             var_locs.extend(var_locs_sel_arg_0_0);
             var_locs.extend(var_locs_arg);
+
             for ((x, _), y) in mut_vars {
-                var_locs.push((x, y));
+                var_locs.push((x, y.map(|(y, _)| y)));
             }
 
             let mut ass = Vec::new();
@@ -1982,7 +1983,8 @@ fn translate_item<'a>(
             //     b.clone().stmts.iter().filter_map(|(x, _)| if let Statement::Reassignment((i,_),(e,_), b) = x { Some (i.clone()) } else { None }).collect();
 
             let (local_vars_and_typs, block_exprs) = translate_block(b.clone(), false, top_ctx);
-            let (block_vars, block_var_loc_defs) = fset_and_locations(local_vars_and_typs.clone());
+            // let (block_vars, block_var_loc_defs) = fset_and_locations(local_vars_and_typs.clone());
+            let (block_vars, block_var_loc_defs) =  fset_and_locations(b.mutable_vars.clone().into_iter().map(|((x,_),t)| (x,t.map(|(t,_)| t))).collect());
 
             block_var_loc_defs
                 .append(RcDoc::line())

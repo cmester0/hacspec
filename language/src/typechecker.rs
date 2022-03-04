@@ -519,14 +519,13 @@ fn sig_ret(sig: &FnValue) -> BaseTyp {
     }
 }
 
-fn sig_mut_vars(sig: &FnValue) -> Vec<(Spanned<Ident>, Option<Typ>)> {
+fn sig_mut_vars(sig: &FnValue) -> ScopeMutableVars {
     match sig {
         FnValue::Local(sig) => sig.mutable_vars.clone(),
         FnValue::External(sig) => vec![],
         FnValue::ExternalNotInHacspec(_) => panic!("should not happen"),
     }
 }
-
 
 fn find_func(
     sess: &Session,
@@ -632,22 +631,32 @@ fn find_typ(
                 (t.clone(), span.clone()),
             )
         }),
-        Ident::Local(LocalIdent { name: _, id, mutable: _ }) => var_context.get(id).map(|x| x.0.clone()),
+        Ident::Local(LocalIdent {
+            name: _,
+            id,
+            mutable: _,
+        }) => var_context.get(id).map(|x| x.0.clone()),
     }
 }
 
 fn remove_var(x: &Ident, var_context: &VarContext) -> VarContext {
     match x {
-        Ident::Local(LocalIdent { id, name: _, mutable: _ }) => var_context.without(id),
+        Ident::Local(LocalIdent {
+            id,
+            name: _,
+            mutable: _,
+        }) => var_context.without(id),
         _ => panic!("trying to lookup in the var context a non-local id"),
     }
 }
 
 fn add_var(x: &Ident, typ: &Typ, var_context: &VarContext) -> VarContext {
     match x {
-        Ident::Local(LocalIdent { id, name, mutable: _ }) => {
-            var_context.update(id.clone(), (typ.clone(), name.clone()))
-        }
+        Ident::Local(LocalIdent {
+            id,
+            name,
+            mutable: _,
+        }) => var_context.update(id.clone(), (typ.clone(), name.clone())),
         _ => panic!("trying to lookup in the var context a non-local id"),
     }
 }
@@ -1701,11 +1710,15 @@ fn typecheck_expression(
                     }
                 };
 
-            println!("SigMut: {:?}", sig_mut_vars(&f_sig));
-            
-            let mut new_mut_vars = sig_mut_vars(&f_sig);
+            let mut new_mut_vars = Vec::new();
+            // for (var, typ) in sig_mut_vars(&f_sig) {
+            //     new_mut_vars.push((var, Some(typ.unwrap())))
+            // }
+            // new_mut_vars.extend(mut_vars.clone());
+
+            new_mut_vars.extend(sig_mut_vars(&f_sig));
             new_mut_vars.extend(mut_vars.clone());
-            
+
             Ok((
                 Expression::FuncCall(prefix.clone(), name.clone(), new_args, Some(new_arg_types), new_mut_vars),
                 (
@@ -1840,11 +1853,9 @@ fn typecheck_expression(
             let ret_ty = sig_ret(&f_sig);
             let ret_ty = bind_variable_type(sess, &(ret_ty.clone(), span.clone()), &typ_var_ctx)?;
 
-            println!("SigMutm: {:?}", sig_mut_vars(&f_sig));
-
             let mut new_mut_vars = sig_mut_vars(&f_sig);
             new_mut_vars.extend(mut_vars.clone());
-            
+
             Ok((
                 Expression::MethodCall(
                     Box::new(new_sel),
@@ -2043,7 +2054,11 @@ fn typecheck_pattern(
         (Pattern::WildCard, _) => Ok(HashMap::new()),
         (Pattern::IdentPat(x, _m), _) => {
             let (id, name) = match &x {
-                Ident::Local(LocalIdent { id, name, mutable: _ }) => (id.clone(), name.clone()),
+                Ident::Local(LocalIdent {
+                    id,
+                    name,
+                    mutable: _,
+                }) => (id.clone(), name.clone()),
                 _ => panic!("should not happen"),
             };
             Ok(HashMap::unit(
@@ -2507,7 +2522,10 @@ fn typecheck_statement(
                     new_b2,
                     Some(Box::new(MutatedInfo {
                         vars: new_mutated.clone(),
-                        early_return_type: early_return_type_from_return_type(top_level_context, return_typ.0.clone()),
+                        early_return_type: early_return_type_from_return_type(
+                            top_level_context,
+                            return_typ.0.clone(),
+                        ),
 
                         stmt: mut_tuple,
                     })),
@@ -2670,11 +2688,15 @@ fn typecheck_block(
             stmts: new_stmts,
             mutated: Some(Box::new(MutatedInfo {
                 vars: mutated_vars,
-                early_return_type: early_return_type_from_return_type(top_level_context, function_return_typ.0.clone()),
+                early_return_type: early_return_type_from_return_type(
+                    top_level_context,
+                    function_return_typ.0.clone(),
+                ),
                 stmt: mut_tuple,
             })),
             return_typ,
             contains_question_mark,
+            mutable_vars: b.mutable_vars, // TODO: Typecheck mutable_vars?
         },
         var_context.intersection(original_var_context.clone()),
     ))

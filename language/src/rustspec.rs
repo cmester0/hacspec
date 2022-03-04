@@ -336,7 +336,7 @@ pub enum Expression {
         Spanned<TopLevelIdent>,
         Vec<(Spanned<Expression>, Spanned<Borrowing>)>,
         Fillable<Vec<BaseTyp>>,
-        Vec<(Spanned<Ident>, Option<Typ>)>,
+        ScopeMutableVars,
     ),
     MethodCall(
         Box<(Spanned<Expression>, Spanned<Borrowing>)>,
@@ -344,7 +344,7 @@ pub enum Expression {
         Spanned<TopLevelIdent>,
         Vec<(Spanned<Expression>, Spanned<Borrowing>)>,
         Fillable<Vec<BaseTyp>>,
-        Vec<(Spanned<Ident>, Option<Typ>)>,
+        ScopeMutableVars,
     ),
     EnumInject(
         BaseTyp,                          // Type of enum
@@ -437,19 +437,22 @@ pub enum Statement {
     ReturnExp(Expression),
 }
 
+pub type ScopeMutableVars = Vec<(Spanned<Ident>, Fillable<Spanned<Typ>>)>;
+
 #[derive(Clone, Serialize, Debug)]
 pub struct Block {
     pub stmts: Vec<Spanned<Statement>>,
     pub mutated: Fillable<Box<MutatedInfo>>,
     pub return_typ: Fillable<Typ>,
     pub contains_question_mark: Fillable<bool>,
+    pub mutable_vars: ScopeMutableVars,
 }
 
 #[derive(Clone, Debug)]
 pub struct FuncSig {
     pub args: Vec<(Spanned<Ident>, Spanned<Typ>)>,
     pub ret: Spanned<BaseTyp>,
-    pub mutable_vars: Vec<(Spanned<Ident>, Option<Typ>)>,
+    pub mutable_vars: ScopeMutableVars,
     pub name_context: HashMap<String, Ident>,
 }
 
