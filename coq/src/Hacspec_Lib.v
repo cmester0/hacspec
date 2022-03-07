@@ -1719,7 +1719,7 @@ Global Instance nat_mod_default {p : Z} : Default (nat_mod p) := {
 }.
 Global Instance prod_default {A B} `{Default A} `{Default B} : Default (prod A B) := {
   default := (default, default)
-  }.
+}.
 
 End TodoSection2.
 
@@ -1738,3 +1738,12 @@ Global Infix ">=.?" := geb (at level 42) : hacspec_scope.
 Global Infix "+%" := nat_mod_add (at level 33) : hacspec_scope.
 Global Infix "*%" := nat_mod_mul (at level 33) : hacspec_scope.
 Global Infix "-%" := nat_mod_sub (at level 33) : hacspec_scope.
+
+Ltac ssprove_valid_2 :=
+  repeat match goal with
+         | H : prod _ _ |- _ => destruct H
+         end ;
+  ssprove_valid ;
+  try (apply prog_valid) ;
+  try (apply valid_scheme ; apply prog_valid) ;
+  try repeat (try (apply eqtype.predU1l ; reflexivity) ; try apply eqtype.predU1r).
