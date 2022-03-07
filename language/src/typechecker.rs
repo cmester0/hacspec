@@ -2265,12 +2265,6 @@ fn typecheck_statement(
             )?;
 
             if let Pattern::IdentPat(x, true) = pat.clone() {
-                println!(
-                    "TYP __ Mutable vars {:?} of type {:?}",
-                    x.clone(),
-                    typ.clone().map(|t| t.0 .1 .0)
-                );
-
                 mut_vars.push(((x, pat_span.clone()), typ.clone()));
             };
 
@@ -2767,8 +2761,6 @@ fn typecheck_item(
 
             let mut new_sig = sig.clone();
             new_sig.mutable_vars = new_b.clone().mutable_vars;
-
-            println!("FSIG: {:?}", new_sig.mutable_vars);
 
             top_level_context.functions.insert(
                 FnKey::Independent(f.clone()),
