@@ -764,7 +764,6 @@ fn translate_expr(
                                                                 i.clone(),
                                                                 (Borrowing::Consumed, i.1.clone()),
                                                             )],
-                                                            vec![],
                                                         ),
                                                         i.1.clone(),
                                                     )
@@ -805,7 +804,6 @@ fn translate_expr(
                                                                 i.clone(),
                                                                 (Borrowing::Consumed, i.1.clone()),
                                                             )],
-                                                            vec![],
                                                         ),
                                                         i.1.clone(),
                                                     )
@@ -860,7 +858,6 @@ fn translate_expr(
                             func_prefix,
                             func_name,
                             func_args,
-                            vec![],
                         )),
                         e.span.into(),
                     ))
@@ -917,7 +914,6 @@ fn translate_expr(
                     None,
                     method_name,
                     rest_args_final,
-                    vec![],
                 )),
                 e.span.into(),
             ))
@@ -1500,32 +1496,29 @@ fn translate_expr(
                 ("byte_seq", None) => match &*call.args {
                     MacArgs::Delimited(_, _, tokens) => {
                         let array = check_for_literal_array_from_macro_args(sess, &tokens)?;
-                        return Ok(
-                            (
-                                (ExprTranslationResult::TransExpr(Expression::NewArray(
-                                    None,
-                                    None,
-                                    array
-                                        .into_iter()
-                                        .map(|i| {
-                                            (
-                                                Expression::FuncCall(
-                                                    None,
-                                                    (U8_TYP(), e.span.into()),
-                                                    vec![(
-                                                        i.clone(),
-                                                        (Borrowing::Consumed, i.1.clone()),
-                                                    )],
-                                                    vec![],
-                                                ),
-                                                i.1.clone(),
-                                            )
-                                        })
-                                        .collect(),
-                                ))),
-                                e.span.into(),
-                            ),
-                        );
+                        return Ok((
+                            (ExprTranslationResult::TransExpr(Expression::NewArray(
+                                None,
+                                None,
+                                array
+                                    .into_iter()
+                                    .map(|i| {
+                                        (
+                                            Expression::FuncCall(
+                                                None,
+                                                (U8_TYP(), e.span.into()),
+                                                vec![(
+                                                    i.clone(),
+                                                    (Borrowing::Consumed, i.1.clone()),
+                                                )],
+                                            ),
+                                            i.1.clone(),
+                                        )
+                                    })
+                                    .collect(),
+                            ))),
+                            e.span.into(),
+                        ));
                     }
                     _ => {
                         sess.span_rustspec_err(
@@ -1538,14 +1531,12 @@ fn translate_expr(
                 ("public_byte_seq", None) => match &*call.args {
                     MacArgs::Delimited(_, _, tokens) => {
                         let array = check_for_literal_array_from_macro_args(sess, &tokens)?;
-                        return Ok(
-                            (
-                                (ExprTranslationResult::TransExpr(Expression::NewArray(
-                                    None, None, array,
-                                ))),
-                                e.span.into(),
-                            ),
-                        );
+                        return Ok((
+                            (ExprTranslationResult::TransExpr(Expression::NewArray(
+                                None, None, array,
+                            ))),
+                            e.span.into(),
+                        ));
                     }
                     _ => {
                         sess.span_rustspec_err(
@@ -1798,7 +1789,7 @@ fn translate_block(
             contains_question_mark: None,
             // We initialize these fields to None as they are
             // to be filled by the typechecker
-            mutable_vars: vec![],
+            mutable_vars: ScopeMutableVars::new(),
             function_dependencies: vec![],
         },
         b.span.into(),
@@ -2562,7 +2553,7 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
                         return_typ: None,
                         mutated: None,
                         contains_question_mark: None,
-                        mutable_vars: Vec::new(),
+                        mutable_vars: ScopeMutableVars::new(),
                         function_dependencies: Vec::new(),
                     },
                     i.span.into(),
@@ -2573,7 +2564,7 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
             let fn_sig = FuncSig {
                 args: fn_inputs,
                 ret: fn_output,
-                mutable_vars: Vec::new(),
+                mutable_vars: ScopeMutableVars::new(),
                 function_dependencies: Vec::new(),
             };
             let fn_item = Item::FnDecl(

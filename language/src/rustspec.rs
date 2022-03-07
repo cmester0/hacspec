@@ -335,14 +335,12 @@ pub enum Expression {
         Option<Spanned<BaseTyp>>,
         Spanned<TopLevelIdent>,
         Vec<(Spanned<Expression>, Spanned<Borrowing>)>,
-        Vec<ScopeMutableVar>,
     ),
     MethodCall(
         Box<(Spanned<Expression>, Spanned<Borrowing>)>,
         Option<Typ>, // Type of self, to be filled by the typechecker
         Spanned<TopLevelIdent>,
         Vec<(Spanned<Expression>, Spanned<Borrowing>)>,
-        Vec<ScopeMutableVar>,
     ),
     EnumInject(
         BaseTyp,                          // Type of enum
@@ -435,7 +433,33 @@ pub enum Statement {
     ReturnExp(Expression),
 }
 
-pub type ScopeMutableVar = (Spanned<Ident>, Fillable<Spanned<Typ>>);
+pub type MutableVar = (Spanned<Ident>, Fillable<Spanned<Typ>>);
+#[derive(Clone, Serialize, Debug)]
+pub struct ScopeMutableVars {
+    pub external_vars: Vec<MutableVar>,
+    pub local_vars: Vec<MutableVar>,
+}
+
+impl ScopeMutableVars {
+    pub fn new() -> Self {
+        ScopeMutableVars { external_vars: Vec::new(), local_vars: Vec::new() }
+    }
+
+    pub fn push(&mut self, value: MutableVar) {
+        self.local_vars.push(value);
+    }
+    
+    pub fn extend(&mut self, other: ScopeMutableVars) {
+        self.external_vars.extend(other.external_vars);
+        self.local_vars.extend(other.local_vars);
+    }
+    
+    pub fn extend_external(&mut self, other: ScopeMutableVars) {
+        self.external_vars.extend(other.external_vars);
+        self.external_vars.extend(other.local_vars);
+    }
+}
+
 pub type FunctionDependency = Spanned<TopLevelIdent>;
 
 #[derive(Clone, Serialize, Debug)]
@@ -444,7 +468,7 @@ pub struct Block {
     pub mutated: Fillable<Box<MutatedInfo>>,
     pub return_typ: Fillable<Typ>,
     pub contains_question_mark: Fillable<bool>,
-    pub mutable_vars: Vec<ScopeMutableVar>,
+    pub mutable_vars: ScopeMutableVars,
     pub function_dependencies: Vec<FunctionDependency>,
 }
 
@@ -452,7 +476,7 @@ pub struct Block {
 pub struct FuncSig {
     pub args: Vec<(Spanned<Ident>, Spanned<Typ>)>,
     pub ret: Spanned<BaseTyp>,
-    pub mutable_vars: Vec<ScopeMutableVar>,
+    pub mutable_vars: ScopeMutableVars,
     pub function_dependencies: Vec<FunctionDependency>,
 }
 
