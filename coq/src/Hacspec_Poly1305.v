@@ -154,7 +154,8 @@ Program Definition poly1305_update_block
     } : code (fset.fset0) [interface] _).
 
 Definition st_57_loc : Location :=
-  (choice_type_from_type poly_state_t ; 62%nat).
+  (choice_type_from_type (field_element_t '× field_element_t '× poly_key_t
+    ) ; 62%nat).
 Program Definition poly1305_update_blocks
   (m_51 : byte_seq)
   (st_50 : poly_state_t)
@@ -189,7 +190,8 @@ Program Definition poly1305_update_blocks
     } : code ((fset [ st_57_loc])) [interface] _).
 
 Definition st_64_loc : Location :=
-  (choice_type_from_type poly_state_t ; 74%nat).
+  (choice_type_from_type (field_element_t '× field_element_t '× poly_key_t
+    ) ; 74%nat).
 Program Definition poly1305_update_last
   (pad_len_66 : uint_size)
   (b_65 : sub_block_t)
@@ -273,7 +275,8 @@ Program Definition poly1305_finish
     } : code (fset.fset0) [interface] _).
 
 Definition st_105_loc : Location :=
-  (choice_type_from_type poly_state_t ; 111%nat).
+  (choice_type_from_type (field_element_t '× field_element_t '× poly_key_t
+    ) ; 111%nat).
 Program Definition poly1305
   (m_104 : byte_seq)
   (key_101 : poly_key_t)

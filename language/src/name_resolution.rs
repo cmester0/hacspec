@@ -565,8 +565,6 @@ fn resolve_statement(
             smi.extend(smi_new_e);
 
             if let Pattern::IdentPat(x, true) = new_pat.clone() {
-                println!("Mutable vars {:?} of type {:?}", (x.clone(), pat.1.clone()), typ.clone().map(|t| t.0.1.0));
-
                 smi.vars.push(((x, pat.1.clone()), typ.clone()));
             };
 
