@@ -1066,7 +1066,7 @@ fn translate_expression<'a>(
             )
         }
         Expression::Named(p) => (Vec::new(), Vec::new(), translate_ident(p.clone())),
-        Expression::FuncCall(prefix, name, args, arg_types, mut_vars) => {
+        Expression::FuncCall(prefix, name, args, arg_types) => {
             let (func_name, additional_args, func_ret_ty, extra_info) = translate_func_name(
                 prefix.clone(),
                 Ident::TopLevel(name.0.clone()),
@@ -1090,9 +1090,6 @@ fn translate_expression<'a>(
                 v.extend(x);
                 v
             }));
-            for ((x, _), y) in mut_vars {
-                var_locs.push((x, y.map(|(y, _)| y)));
-            }
 
             let mut ass: Vec<RcDoc<'a, ()>> = Vec::new();
             ass.extend(ass_arg_iter.into_iter().fold(Vec::new(), |mut v, x| {
@@ -1146,7 +1143,7 @@ fn translate_expression<'a>(
             // TODO: move function to assignments?
             (var_locs, ass, temp_name)
         }
-        Expression::MethodCall(sel_arg, sel_typ, (f, _), args, arg_types, mut_vars) => {
+        Expression::MethodCall(sel_arg, sel_typ, (f, _), args, arg_types) => {
             let (var_locs_sel_arg_0_0, ass_sel_arg_0_0, trans_sel_arg_0_0) =
                 translate_expression((sel_arg.0).0, top_ctx);
 
@@ -1179,10 +1176,6 @@ fn translate_expression<'a>(
             let mut var_locs = Vec::new();
             var_locs.extend(var_locs_sel_arg_0_0);
             var_locs.extend(var_locs_arg);
-
-            for ((x, _), y) in mut_vars {
-                var_locs.push((x, y.map(|(y, _)| y)));
-            }
 
             let mut ass = Vec::new();
             ass.extend(ass_sel_arg_0_0);
@@ -1887,10 +1880,12 @@ fn translate_statements<'a>(
     // .group()
 }
 
-fn fset_and_locations<'a>(
-    local_vars_and_typs: Vec<(Ident, Option<Typ>)>,
-) -> (RcDoc<'a, ()>, RcDoc<'a, ()>) {
-    if local_vars_and_typs.len() == 0 {
+fn fset_and_locations<'a>(smvars: ScopeMutableVars) -> (RcDoc<'a, ()>, RcDoc<'a, ()>) {
+    let locals = smvars.local_vars.clone();
+    let mut all = smvars.external_vars.clone();
+    all.extend(locals.clone());
+
+    if all.len() == 0 {
         (RcDoc::as_string("fset.fset0"), RcDoc::nil())
     } else {
         (
@@ -1898,9 +1893,8 @@ fn fset_and_locations<'a>(
                 RcDoc::as_string("fset [")
                     .append(RcDoc::space())
                     .append(RcDoc::intersperse(
-                        local_vars_and_typs
-                            .iter()
-                            .map(|(i, _)| translate_ident(i.clone()).append("_loc")),
+                        all.iter()
+                            .map(|((i, _), _)| translate_ident(i.clone()).append("_loc")),
                         RcDoc::space()
                             .append(RcDoc::as_string(";"))
                             .append(RcDoc::space()),
@@ -1908,14 +1902,14 @@ fn fset_and_locations<'a>(
                     .append(RcDoc::as_string("]")),
             ),
             RcDoc::intersperse(
-                local_vars_and_typs.into_iter().map(|(i, typ)| {
+                locals.into_iter().map(|((i, _), typ)| {
                     make_let_binding(
                         translate_ident(i.clone()).append("_loc"),
                         Some(RcDoc::as_string("Location")),
                         RcDoc::as_string("choice_type_from_type")
                             .append(RcDoc::space())
                             .append(match typ {
-                                Some(typ) => translate_typ(typ),
+                                Some((typ, _)) => translate_typ(typ),
                                 None => RcDoc::as_string("_"),
                             })
                             .append(RcDoc::space())
@@ -1952,7 +1946,7 @@ fn translate_block<'a>(
     }
 
     let (local_vars_and_typs, trans_stmt) = translate_statements(statements.iter(), top_ctx);
-    let (local_vars, _location_definitions) = fset_and_locations(local_vars_and_typs.clone());
+    let (local_vars, _location_definitions) = fset_and_locations(b.mutable_vars);
 
     (
         local_vars_and_typs,
@@ -1982,9 +1976,8 @@ fn translate_item<'a>(
             //     b.clone().stmts.iter().filter_map(|(x, _)| if let Statement::Reassignment((i,_),(e,_), b) = x { Some (i.clone()) } else { None }).collect();
 
             let (local_vars_and_typs, block_exprs) = translate_block(b.clone(), false, top_ctx);
-            let (block_vars, _) = fset_and_locations(local_vars_and_typs.clone());
-            let (_, block_var_loc_defs) =
-                fset_and_locations(b.mutable_vars.clone().into_iter().map(|((x,_),t)| (x,t.map(|(t,_)| t))).collect());
+
+            let (block_vars, block_var_loc_defs) = fset_and_locations(sig.mutable_vars.clone());
 
             block_var_loc_defs
                 .append(RcDoc::line())

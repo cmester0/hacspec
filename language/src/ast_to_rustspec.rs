@@ -765,7 +765,6 @@ fn translate_expr(
                                                                 (Borrowing::Consumed, i.1.clone()),
                                                             )],
                                                             None,
-                                                            vec![],
                                                         ),
                                                         i.1.clone(),
                                                     )
@@ -807,7 +806,6 @@ fn translate_expr(
                                                                 (Borrowing::Consumed, i.1.clone()),
                                                             )],
                                                             None,
-                                                            vec![],
                                                         ),
                                                         i.1.clone(),
                                                     )
@@ -863,7 +861,6 @@ fn translate_expr(
                             func_name,
                             func_args,
                             None,
-                            vec![],
                         )),
                         e.span.into(),
                     ))
@@ -921,7 +918,6 @@ fn translate_expr(
                     method_name,
                     rest_args_final,
                     None,
-                    vec![],
                 )),
                 e.span.into(),
             ))
@@ -1520,7 +1516,6 @@ fn translate_expr(
                                                     (Borrowing::Consumed, i.1.clone()),
                                                 )],
                                                 Some(vec![BaseTyp::UInt8]),
-                                                vec![],
                                             ),
                                             i.1.clone(),
                                         )
@@ -1799,7 +1794,7 @@ fn translate_block(
             contains_question_mark: None,
             // We initialize these fields to None as they are
             // to be filled by the typechecker
-            mutable_vars: vec![],
+            mutable_vars: ScopeMutableVars::new(),
             function_dependencies: vec![],
         },
         b.span.into(),
@@ -2563,7 +2558,7 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
                         return_typ: None,
                         mutated: None,
                         contains_question_mark: None,
-                        mutable_vars: Vec::new(),
+                        mutable_vars: ScopeMutableVars::new(),
                         function_dependencies: Vec::new(),
                     },
                     i.span.into(),
@@ -2574,7 +2569,7 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
             let fn_sig = FuncSig {
                 args: fn_inputs,
                 ret: fn_output,
-                mutable_vars: Vec::new(),
+                mutable_vars: ScopeMutableVars::new(),
                 function_dependencies: Vec::new(),
             };
             let fn_item = Item::FnDecl(

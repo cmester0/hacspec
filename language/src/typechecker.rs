@@ -519,10 +519,10 @@ fn sig_ret(sig: &FnValue) -> BaseTyp {
     }
 }
 
-fn sig_mut_vars(sig: &FnValue) -> Vec<ScopeMutableVar> {
+fn sig_mut_vars(sig: &FnValue) -> ScopeMutableVars {
     match sig {
         FnValue::Local(sig) => sig.mutable_vars.clone(),
-        FnValue::External(sig) => vec![],
+        FnValue::External(sig) => ScopeMutableVars::new(),
         FnValue::ExternalNotInHacspec(_) => panic!("should not happen"),
     }
 }
@@ -668,31 +668,38 @@ fn typecheck_expression(
     (e, span): &Spanned<Expression>,
     top_level_context: &TopLevelContext,
     var_context: &VarContext,
-) -> TypecheckingResult<(Expression, Typ, VarContext)> {
+) -> TypecheckingResult<(ScopeMutableVars, Expression, Typ, VarContext)> {
     match e {
         Expression::Tuple(args) => {
             let mut var_context = var_context.clone();
-            let new_and_typ_args = args
-                .iter()
-                .map(|arg| {
-                    let (new_arg, ((arg_typ_borrowing, _), arg_typ), new_var_context) =
-                        typecheck_expression(sess, arg, top_level_context, &var_context)?;
-                    var_context = new_var_context;
-                    match arg_typ_borrowing {
-                        Borrowing::Borrowed => {
-                            sess.span_rustspec_err(
-                                arg.1,
-                                "borrowed values are forbidden in Hacspec tuples",
-                            );
-                            Err(())
+            let mut mut_vars = ScopeMutableVars::new();
+            let new_arg_and_typ =
+                args.iter()
+                    .map(|arg| {
+                        let (
+                            new_mut_vars,
+                            new_arg,
+                            ((arg_typ_borrowing, _), arg_typ),
+                            new_var_context,
+                        ) = typecheck_expression(sess, arg, top_level_context, &var_context)?;
+                        mut_vars.extend(new_mut_vars);
+                        var_context = new_var_context;
+                        match arg_typ_borrowing {
+                            Borrowing::Borrowed => {
+                                sess.span_rustspec_err(
+                                    arg.1,
+                                    "borrowed values are forbidden in Hacspec tuples",
+                                );
+                                Err(())
+                            }
+                            Borrowing::Consumed => Ok(((new_arg, arg.1.clone()), arg_typ)),
                         }
-                        Borrowing::Consumed => Ok(((new_arg, arg.1.clone()), arg_typ)),
-                    }
-                })
-                .collect();
-            let new_and_typ_args = check_vec(new_and_typ_args)?;
-            let (new_args, typ_args): (Vec<_>, Vec<_>) = new_and_typ_args.into_iter().unzip();
+                    })
+                    .collect();
+            let new_arg_and_typ = check_vec(new_arg_and_typ)?;
+            let (new_args, typ_args): (Vec<_>, Vec<_>) = new_arg_and_typ.into_iter().unzip();
             Ok((
+                mut_vars,
                 Expression::Tuple(new_args),
                 (
                     (Borrowing::Consumed, span.clone()),
@@ -712,23 +719,28 @@ fn typecheck_expression(
                     Err(())
                 }
                 Some(t) => {
-                    // This is where linearity kicks in
-                    if let Borrowing::Consumed = (t.0).0 {
+                    let (new_path, typ, new_var_context) = if let Borrowing::Consumed = (t.0).0 {
                         if is_copy(&(t.1).0, top_level_context) {
-                            Ok((new_path, t.clone(), var_context.clone()))
+                            (new_path, t.clone(), var_context.clone())
                         } else {
                             let new_var_context = remove_var(&id, var_context);
-                            Ok((new_path, t.clone(), new_var_context))
+                            (new_path, t.clone(), new_var_context)
                         }
                     } else {
-                        Ok((new_path, t.clone(), var_context.clone()))
-                    }
+                        (new_path, t.clone(), var_context.clone())
+                    };
+
+                    // This is where linearity kicks in
+                    Ok((ScopeMutableVars::new(), new_path, typ, new_var_context))
                 }
             }
         }
         Expression::MatchWith(arg, arms) => {
-            let (new_arg, t_arg, intermediate_var_context) =
+            let mut mut_vars = ScopeMutableVars::new();
+            let (mut_vars_arg, new_arg, t_arg, intermediate_var_context) =
                 typecheck_expression(sess, arg, top_level_context, &var_context)?;
+            mut_vars.extend(mut_vars_arg);
+
             let mut acc_var_context = intermediate_var_context.clone();
             // First we retrieve the enum type that's being matched on as well
             // as diverse infos related to it
@@ -930,12 +942,14 @@ fn typecheck_expression(
                                 return Err(());
                             }
                         };
-                        let (new_arm_exp, arm_typ, new_var_context) = typecheck_expression(
-                            sess,
-                            arm_exp,
-                            top_level_context,
-                            &intermediate_var_context.clone().union(new_var_context),
-                        )?;
+                        let (mut_var_new_arm, new_arm_exp, arm_typ, new_var_context) =
+                            typecheck_expression(
+                                sess,
+                                arm_exp,
+                                top_level_context,
+                                &intermediate_var_context.clone().union(new_var_context),
+                            )?;
+                        mut_vars.extend(mut_var_new_arm);
                         acc_var_context = acc_var_context.clone().intersection(new_var_context);
                         match &out_typ {
                             None => out_typ = Some(arm_typ),
@@ -974,6 +988,7 @@ fn typecheck_expression(
                 return Err(());
             }
             Ok((
+                mut_vars,
                 Expression::MatchWith(Box::new((new_arg, arg.1.clone())), new_arms),
                 out_typ.unwrap(),
                 acc_var_context,
@@ -1026,16 +1041,20 @@ fn typecheck_expression(
                 }
             };
             let mut var_context = var_context.clone();
+            let mut mut_vars = ScopeMutableVars::new();
             let new_payload = match (case_typ, payload) {
                 (None, None) => None,
                 (Some(case_typ), Some((payload, payload_span))) => {
-                    let (new_payload, payload_type, new_var_context) = typecheck_expression(
-                        sess,
-                        &(*payload.clone(), payload_span.clone()),
-                        top_level_context,
-                        &var_context,
-                    )?;
+                    let (mut_vars_payload, new_payload, payload_type, new_var_context) =
+                        typecheck_expression(
+                            sess,
+                            &(*payload.clone(), payload_span.clone()),
+                            top_level_context,
+                            &var_context,
+                        )?;
                     var_context = new_var_context;
+                    mut_vars.extend(mut_vars_payload);
+
                     unify_types_default_error_message(
                         sess,
                         &((Borrowing::Consumed, case_name.1.clone()), case_typ.clone()),
@@ -1051,6 +1070,7 @@ fn typecheck_expression(
                 }
             };
             Ok((
+                mut_vars,
                 Expression::EnumInject(enum_ty.clone(), case_name.clone(), new_payload),
                 (
                     (Borrowing::Consumed, span.clone()),
@@ -1063,8 +1083,11 @@ fn typecheck_expression(
             ))
         }
         Expression::InlineConditional(cond, e_t, e_f) => {
-            let (new_cond, t_cond, var_context) =
+            let mut mut_vars = ScopeMutableVars::new();
+            let (mut_vars_cond, new_cond, t_cond, var_context) =
                 typecheck_expression(sess, cond, top_level_context, &var_context)?;
+            mut_vars.extend(mut_vars_cond);
+
             unify_types_default_error_message(
                 sess,
                 &t_cond,
@@ -1075,10 +1098,15 @@ fn typecheck_expression(
                 &HashMap::new(),
                 top_level_context,
             )?;
-            let (new_e_t, t_e_t, var_context_true_branch) =
+
+            let (mut_vars_e_t, new_e_t, t_e_t, var_context_true_branch) =
                 typecheck_expression(sess, e_t, top_level_context, &var_context)?;
-            let (new_e_f, t_e_f, var_context_false_branch) =
+            mut_vars.extend(mut_vars_e_t);
+
+            let (mut_vars_e_f, new_e_f, t_e_f, var_context_false_branch) =
                 typecheck_expression(sess, e_f, top_level_context, &var_context)?;
+            mut_vars.extend(mut_vars_e_f);
+
             let final_var_context = var_context
                 .clone()
                 .intersection(var_context_true_branch)
@@ -1090,7 +1118,9 @@ fn typecheck_expression(
                 &HashMap::new(),
                 top_level_context,
             )?;
+
             Ok((
+                mut_vars,
                 Expression::InlineConditional(
                     Box::new((new_cond, cond.1.clone())),
                     Box::new((new_e_t, e_t.1.clone())),
@@ -1101,15 +1131,21 @@ fn typecheck_expression(
             ))
         }
         Expression::Binary((op, op_span), e1, e2, _) => {
-            let (new_e1, t1, var_context) =
+            let mut mut_vars = ScopeMutableVars::new();
+            let (mut_vars_e1, new_e1, t1, var_context) =
                 typecheck_expression(sess, e1, top_level_context, var_context)?;
-            let (new_e2, t2, var_context) =
+            mut_vars.extend(mut_vars_e1);
+
+            let (mut_vars_e2, new_e2, t2, var_context) =
                 typecheck_expression(sess, e2, top_level_context, &var_context)?;
+            mut_vars.extend(mut_vars_e2);
+
             match op {
                 BinOpKind::Shl | BinOpKind::Shr => match &(t2.1).0 {
                     BaseTyp::UInt32 | BaseTyp::Usize => {
                         if is_numeric(&t1, top_level_context) {
                             Ok((
+                                mut_vars,
                                 Expression::Binary(
                                     (op.clone(), op_span.clone()),
                                     Box::new((new_e1, e1.1.clone())),
@@ -1167,6 +1203,7 @@ fn typecheck_expression(
                             })
                         {
                             Ok((
+                                mut_vars,
                                 Expression::Binary(
                                     (op.clone(), op_span.clone()),
                                     Box::new((new_e1, e1.1.clone())),
@@ -1194,6 +1231,7 @@ fn typecheck_expression(
                                 })
                             {
                                 Ok((
+                                    mut_vars,
                                     Expression::Binary(
                                         (op.clone(), op_span.clone()),
                                         Box::new((new_e1, e1.1.clone())),
@@ -1221,9 +1259,13 @@ fn typecheck_expression(
             }
         }
         Expression::Unary(op, e1, _) => {
-            let (new_e1, e1_typ, new_var_context) =
+            let mut mut_vars = ScopeMutableVars::new();
+            let (mut_vars_e1, new_e1, e1_typ, new_var_context) =
                 typecheck_expression(sess, e1, top_level_context, var_context)?;
+            mut_vars.extend(mut_vars_e1);
+
             Ok((
+                mut_vars,
                 Expression::Unary(
                     op.clone(),
                     Box::new((new_e1, e1.1.clone())),
@@ -1233,128 +1275,34 @@ fn typecheck_expression(
                 new_var_context,
             ))
         }
-        Expression::Lit(lit) => match lit {
-            Literal::Unit => Ok((
-                e.clone(),
+        Expression::Lit(lit) => Ok((
+            ScopeMutableVars::new(),
+            e.clone(),
+            (
+                (Borrowing::Consumed, span.clone()),
                 (
-                    (Borrowing::Consumed, span.clone()),
-                    (BaseTyp::Unit, span.clone()),
+                    match lit {
+                        Literal::Unit => BaseTyp::Unit,
+                        Literal::Bool(_) => BaseTyp::Bool,
+                        Literal::Int128(_) => BaseTyp::Int128,
+                        Literal::UInt128(_) => BaseTyp::UInt128,
+                        Literal::Int64(_) => BaseTyp::Int64,
+                        Literal::UInt64(_) => BaseTyp::UInt64,
+                        Literal::Int32(_) => BaseTyp::Int32,
+                        Literal::UInt32(_) => BaseTyp::UInt32,
+                        Literal::Int16(_) => BaseTyp::Int16,
+                        Literal::UInt16(_) => BaseTyp::UInt16,
+                        Literal::Int8(_) => BaseTyp::Int8,
+                        Literal::UInt8(_) => BaseTyp::UInt8,
+                        Literal::Usize(_) => BaseTyp::Usize,
+                        Literal::Isize(_) => BaseTyp::Isize,
+                        Literal::Str(_) => BaseTyp::Str,
+                    },
+                    span.clone(),
                 ),
-                var_context.clone(),
-            )),
-            Literal::Bool(_) => Ok((
-                e.clone(),
-                (
-                    (Borrowing::Consumed, span.clone()),
-                    (BaseTyp::Bool, span.clone()),
-                ),
-                var_context.clone(),
-            )),
-            Literal::Int128(_) => Ok((
-                e.clone(),
-                (
-                    (Borrowing::Consumed, span.clone()),
-                    (BaseTyp::Int128, span.clone()),
-                ),
-                var_context.clone(),
-            )),
-            Literal::UInt128(_) => Ok((
-                e.clone(),
-                (
-                    (Borrowing::Consumed, span.clone()),
-                    (BaseTyp::UInt128, span.clone()),
-                ),
-                var_context.clone(),
-            )),
-            Literal::Int64(_) => Ok((
-                e.clone(),
-                (
-                    (Borrowing::Consumed, span.clone()),
-                    (BaseTyp::Int64, span.clone()),
-                ),
-                var_context.clone(),
-            )),
-            Literal::UInt64(_) => Ok((
-                e.clone(),
-                (
-                    (Borrowing::Consumed, span.clone()),
-                    (BaseTyp::UInt64, span.clone()),
-                ),
-                var_context.clone(),
-            )),
-            Literal::Int32(_) => Ok((
-                e.clone(),
-                (
-                    (Borrowing::Consumed, span.clone()),
-                    (BaseTyp::Int32, span.clone()),
-                ),
-                var_context.clone(),
-            )),
-            Literal::UInt32(_) => Ok((
-                e.clone(),
-                (
-                    (Borrowing::Consumed, span.clone()),
-                    (BaseTyp::UInt32, span.clone()),
-                ),
-                var_context.clone(),
-            )),
-            Literal::Int16(_) => Ok((
-                e.clone(),
-                (
-                    (Borrowing::Consumed, span.clone()),
-                    (BaseTyp::Int16, span.clone()),
-                ),
-                var_context.clone(),
-            )),
-            Literal::UInt16(_) => Ok((
-                e.clone(),
-                (
-                    (Borrowing::Consumed, span.clone()),
-                    (BaseTyp::UInt16, span.clone()),
-                ),
-                var_context.clone(),
-            )),
-            Literal::Int8(_) => Ok((
-                e.clone(),
-                (
-                    (Borrowing::Consumed, span.clone()),
-                    (BaseTyp::Int8, span.clone()),
-                ),
-                var_context.clone(),
-            )),
-            Literal::UInt8(_) => Ok((
-                e.clone(),
-                (
-                    (Borrowing::Consumed, span.clone()),
-                    (BaseTyp::UInt8, span.clone()),
-                ),
-                var_context.clone(),
-            )),
-            Literal::Usize(_) => Ok((
-                e.clone(),
-                (
-                    (Borrowing::Consumed, span.clone()),
-                    (BaseTyp::Usize, span.clone()),
-                ),
-                var_context.clone(),
-            )),
-            Literal::Isize(_) => Ok((
-                e.clone(),
-                (
-                    (Borrowing::Consumed, span.clone()),
-                    (BaseTyp::Isize, span.clone()),
-                ),
-                var_context.clone(),
-            )),
-            Literal::Str(_) => Ok((
-                e.clone(),
-                (
-                    (Borrowing::Consumed, span.clone()),
-                    (BaseTyp::Str, span.clone()),
-                ),
-                var_context.clone(),
-            )),
-        },
+            ),
+            var_context.clone(),
+        )),
         Expression::NewArray(array_type, _, elements) => {
             match array_type {
                 Some(array_type) => {
@@ -1399,11 +1347,12 @@ fn typecheck_expression(
                                                    // in order to avoid redoing here a const computation engine
                     };
                     let mut var_context = var_context.clone();
+                    let mut mut_vars = ScopeMutableVars::new();
                     let new_elements = check_vec(
                         elements
                             .iter()
                             .map(|element| {
-                                let (new_element, element_typ, new_var_context) =
+                                let (mut_vars_element, new_element, element_typ, new_var_context) =
                                     typecheck_expression(
                                         sess,
                                         element,
@@ -1411,6 +1360,8 @@ fn typecheck_expression(
                                         &var_context,
                                     )?;
                                 var_context = new_var_context;
+                                mut_vars.extend(mut_vars_element);
+
                                 match unify_types(
                                     sess,
                                     &(
@@ -1451,6 +1402,7 @@ fn typecheck_expression(
                         ),
                     );
                     Ok((
+                        mut_vars,
                         Expression::NewArray(
                             Some(array_type.clone()),
                             Some(cell_type),
@@ -1463,11 +1415,12 @@ fn typecheck_expression(
                 None => {
                     let mut cell_type: Option<(BaseTyp, RustspecSpan)> = None;
                     let mut var_context = var_context.clone();
+                    let mut mut_vars = ScopeMutableVars::new();
                     let new_elements = check_vec(
                         elements
                             .iter()
                             .map(|element| {
-                                let (new_element, element_typ, new_var_context) =
+                                let (mut_vars_element, new_element, element_typ, new_var_context) =
                                     typecheck_expression(
                                         sess,
                                         element,
@@ -1475,6 +1428,7 @@ fn typecheck_expression(
                                         &var_context,
                                     )?;
                                 var_context = new_var_context;
+                                mut_vars.extend(mut_vars_element);
                                 match &cell_type {
                                     Some((cell_type, cell_type_span)) => {
                                         match unify_types(
@@ -1535,6 +1489,7 @@ fn typecheck_expression(
                         }
                     };
                     Ok((
+                        mut_vars,
                         Expression::NewArray(None, Some(cell_type.0.clone()), new_elements),
                         (
                             (Borrowing::Consumed, span.clone()),
@@ -1556,8 +1511,11 @@ fn typecheck_expression(
                 }
                 Some(t) => t,
             };
-            let (new_e2, t2, var_context) =
+            let mut mut_vars = ScopeMutableVars::new();
+            let (mut_vars_e2, new_e2, t2, var_context) =
                 typecheck_expression(sess, e2, top_level_context, &var_context)?;
+            mut_vars.extend(mut_vars_e2);
+            
             let (_, (cell_t, cell_t_span)) = is_array(sess, &t1, top_level_context, x_span)?;
             // We ignore t1.0 because we can read from both consumed and borrowed array types
             if let Borrowing::Borrowed = (t2.0).0 {
@@ -1565,7 +1523,7 @@ fn typecheck_expression(
                 return Err(());
             }
             if is_index(&(t2.1).0, top_level_context) {
-                Ok((
+                Ok((mut_vars,
                     Expression::ArrayIndex(
                         (x.clone(), x_span.clone()),
                         Box::new((new_e2, e2.1.clone())),
@@ -1590,7 +1548,7 @@ fn typecheck_expression(
                 Err(())
             }
         }
-        Expression::FuncCall(prefix, name, args, _arg_types, mut_vars) => {
+        Expression::FuncCall(prefix, name, args, _arg_types) => {
             let (f_sig, typ_var_ctx) = find_func(
                 sess,
                 &match prefix {
@@ -1631,18 +1589,19 @@ fn typecheck_expression(
                 )
             }
             let mut var_context = var_context.clone();
+            let mut new_mut_vars = ScopeMutableVars::new();
             let mut new_args = Vec::new();
             let mut new_arg_types = Vec::new();
             for (sig_t, ((arg, arg_span), (arg_borrow, arg_borrow_span))) in
                 sig_args.iter().zip(args)
-            {   
-                let (new_arg, arg_t, new_var_context) = typecheck_expression(
+            {
+                let (mut_vars_arg, new_arg, arg_t, new_var_context) = typecheck_expression(
                     sess,
                     &(arg.clone(), arg_span.clone()),
                     top_level_context,
                     &var_context,
                 )?;
-                
+                new_mut_vars.extend(mut_vars_arg);
                 let new_arg_t = match (&(arg_t.0).0, &arg_borrow) {
                     (Borrowing::Borrowed, Borrowing::Borrowed) => {
                         sess.span_rustspec_err(
@@ -1710,12 +1669,10 @@ fn typecheck_expression(
                     }
                 };
 
-            let mut new_mut_vars = Vec::new();
-            new_mut_vars.extend(sig_mut_vars(&f_sig));
-            new_mut_vars.extend(mut_vars.clone());
+            new_mut_vars.extend_external(sig_mut_vars(&f_sig));
 
-            Ok((
-                Expression::FuncCall(prefix.clone(), name.clone(), new_args, Some(new_arg_types), new_mut_vars),
+            Ok((new_mut_vars.clone(),
+                Expression::FuncCall(prefix.clone(), name.clone(), new_args, Some(new_arg_types)),
                 (
                     (Borrowing::Consumed, name.1.clone()),
                     (ret_ty, name.1.clone()),
@@ -1723,12 +1680,12 @@ fn typecheck_expression(
                 var_context,
             ))
         }
-        Expression::MethodCall(sel, _, (f, f_span), orig_args, _args_types, mut_vars) => {
+        Expression::MethodCall(sel, _, (f, f_span), orig_args, _args_types) => {
             let (sel, sel_borrow) = sel.as_ref();
             let mut var_context = var_context.clone();
             // We omit to take the new var context because it will be retypechecked later, this
             // is just to determine wich type the method belongs to
-            let (_, sel_typ, _) =
+            let (_, _, sel_typ, _) =
                 typecheck_expression(sess, &sel, top_level_context, &var_context)?;
             let (f_sig, typ_var_ctx) = find_func(
                 sess,
@@ -1781,15 +1738,18 @@ fn typecheck_expression(
                     .as_str(),
                 )
             }
+
+            let mut new_mut_vars = ScopeMutableVars::new();
             for (sig_t, ((arg, arg_span), (arg_borrow, arg_borrow_span))) in
                 sig_args.iter().zip(args)
             {
-                let (new_arg, arg_t, new_var_context) = typecheck_expression(
+                let (mut_vars_arg, new_arg, arg_t, new_var_context) = typecheck_expression(
                     sess,
                     &(arg.clone(), arg_span.clone()),
                     top_level_context,
                     &var_context,
                 )?;
+                new_mut_vars.extend(mut_vars_arg);
                 let new_arg_t = match (&(arg_t.0).0, &arg_borrow) {
                     (Borrowing::Borrowed, Borrowing::Borrowed) => {
                         sess.span_rustspec_err(
@@ -1848,18 +1808,16 @@ fn typecheck_expression(
             let ret_ty = sig_ret(&f_sig);
             let ret_ty = bind_variable_type(sess, &(ret_ty.clone(), span.clone()), &typ_var_ctx)?;
 
-            let mut new_mut_vars = Vec::new();
+            // let mut new_mut_vars = ScopeMutableVars::new();
             new_mut_vars.extend(sig_mut_vars(&f_sig));
-            new_mut_vars.extend(mut_vars.clone());
 
-            Ok((
+            Ok((new_mut_vars.clone(),
                 Expression::MethodCall(
                     Box::new(new_sel),
                     Some(sel_typ),
                     (f.clone(), f_span.clone()),
                     new_args,
                     Some(new_arg_types),
-                    new_mut_vars,
                 ),
                 (
                     (Borrowing::Consumed, f_span.clone()),
@@ -1869,8 +1827,10 @@ fn typecheck_expression(
             ))
         }
         Expression::IntegerCasting(e1, t1, _) => {
-            let (new_e1, e1_typ, var_context) =
+            let mut mut_vars = ScopeMutableVars::new();
+            let (mut_vars_e1, new_e1, e1_typ, var_context) =
                 typecheck_expression(sess, e1, top_level_context, var_context)?;
+            mut_vars.extend(mut_vars_e1);
             if (e1_typ.0).0 == Borrowing::Borrowed {
                 sess.span_rustspec_err(e1.1.clone(), "cannot cast borrowed expression");
                 return Err(());
@@ -1901,7 +1861,7 @@ fn typecheck_expression(
                     .as_str(),
                 );
             }
-            Ok((
+            Ok((mut_vars,
                 Expression::IntegerCasting(
                     Box::new((new_e1, e1.1.clone())),
                     t1.clone(),
@@ -2250,11 +2210,16 @@ fn typecheck_statement(
     top_level_context: &TopLevelContext,
     var_context: &VarContext,
     return_typ: &Spanned<BaseTyp>,
-) -> TypecheckingResult<(Statement, Typ, VarContext, VarSet)> {
+) -> TypecheckingResult<(ScopeMutableVars, Statement, Typ, VarContext, VarSet)> {
     match &s {
         Statement::LetBinding((pat, pat_span), typ, ref expr, question_mark) => {
-            let (new_expr, expr_typ, new_var_context) =
+            let mut mut_vars = ScopeMutableVars::new();
+
+            let (mut_vars_expr, new_expr, expr_typ, new_var_context) =
                 typecheck_expression(sess, expr, top_level_context, var_context)?;
+
+            mut_vars.extend(mut_vars_expr);
+            
             let expr_typ = typecheck_question_mark(
                 sess,
                 *question_mark,
@@ -2298,7 +2263,18 @@ fn typecheck_statement(
                 &expr_typ,
                 top_level_context,
             )?;
-            Ok((
+
+            if let Pattern::IdentPat(x, true) = pat.clone() {
+                println!(
+                    "TYP __ Mutable vars {:?} of type {:?}",
+                    x.clone(),
+                    typ.clone().map(|t| t.0 .1 .0)
+                );
+
+                mut_vars.push(((x, pat_span.clone()), typ.clone()));
+            };
+
+            Ok((mut_vars,
                 Statement::LetBinding(
                     (pat.clone(), pat_span.clone()),
                     typ.clone(),
@@ -2311,8 +2287,10 @@ fn typecheck_statement(
             ))
         }
         Statement::Reassignment((x, x_span), e, question_mark) => {
-            let (new_e, e_typ, new_var_context) =
+            let mut mut_vars = ScopeMutableVars::new();
+            let (mut_vars_e, new_e, e_typ, new_var_context) =
                 typecheck_expression(sess, &e, top_level_context, var_context)?;
+            mut_vars.extend(mut_vars_e);
             let e_typ = typecheck_question_mark(
                 sess,
                 *question_mark,
@@ -2339,7 +2317,7 @@ fn typecheck_statement(
                 );
                 return Err(());
             };
-            Ok((
+            Ok((mut_vars,
                 Statement::Reassignment(
                     (x.clone(), x_span.clone()),
                     (new_e, e.1.clone()),
@@ -2354,10 +2332,13 @@ fn typecheck_statement(
             ))
         }
         Statement::ArrayUpdate((x, x_span), e1, e2, question_mark, _) => {
-            let (new_e1, e1_t, var_context) =
+            let mut mut_vars = ScopeMutableVars::new();
+            let (mut_vars_e1, new_e1, e1_t, var_context) =
                 typecheck_expression(sess, &e1, top_level_context, var_context)?;
-            let (new_e2, e2_t, var_context) =
+            mut_vars.extend(mut_vars_e1);
+            let (mut_vars_e2, new_e2, e2_t, var_context) =
                 typecheck_expression(sess, &e2, top_level_context, &var_context)?;
+            mut_vars.extend(mut_vars_e2);
             let e2_t = typecheck_question_mark(
                 sess,
                 *question_mark,
@@ -2405,7 +2386,7 @@ fn typecheck_statement(
                 );
                 return Err(());
             };
-            Ok((
+            Ok((mut_vars,
                 Statement::ArrayUpdate(
                     (x.clone(), x_span.clone()),
                     (new_e1, e1.1.clone()),
@@ -2422,9 +2403,9 @@ fn typecheck_statement(
             ))
         }
         Statement::ReturnExp(e) => {
-            let (new_e, e_t, var_context) =
+            let (mut_vars_e, new_e, e_t, var_context) =
                 typecheck_expression(sess, &(e.clone(), s_span), top_level_context, var_context)?;
-            Ok((
+            Ok((mut_vars_e,
                 Statement::ReturnExp(new_e),
                 e_t,
                 var_context,
@@ -2433,8 +2414,10 @@ fn typecheck_statement(
         }
         Statement::Conditional(cond, (b1, b1_span), b2, _) => {
             let original_var_context = var_context;
-            let (new_cond, cond_t, var_context) =
+            let mut mut_vars = ScopeMutableVars::new();
+            let (mut_vars_cond, new_cond, cond_t, var_context) =
                 typecheck_expression(sess, &cond, top_level_context, var_context)?;
+            mut_vars.extend(mut_vars_cond);
             unify_types_default_error_message(
                 sess,
                 &cond_t,
@@ -2452,6 +2435,7 @@ fn typecheck_statement(
                 &var_context,
                 return_typ,
             )?;
+            mut_vars.extend(new_b1.clone().mutable_vars);
             let (new_b2, var_context_b2) = match b2 {
                 None => (None, var_context.clone()),
                 Some((b2, b2_span)) => {
@@ -2462,6 +2446,7 @@ fn typecheck_statement(
                         &var_context,
                         return_typ,
                     )?;
+                    mut_vars.extend(new_b2.clone().mutable_vars);
                     (Some((new_b2, *b2_span)), var_context_b2)
                 }
             };
@@ -2511,7 +2496,7 @@ fn typecheck_statement(
                 }),
             );
             let mut_tuple = var_set_to_tuple(&new_mutated, &s_span);
-            Ok((
+            Ok((mut_vars,
                 Statement::Conditional(
                     (new_cond, cond.1.clone()),
                     (new_b1, *b1_span),
@@ -2536,10 +2521,13 @@ fn typecheck_statement(
         }
         Statement::ForLoop(x, e1, e2, (b, b_span)) => {
             let original_var_context = var_context;
-            let (new_e1, t_e1, var_context) =
+            let mut mut_vars = ScopeMutableVars::new();
+            let (mut_vars_e1, new_e1, t_e1, var_context) =
                 typecheck_expression(sess, e1, top_level_context, var_context)?;
-            let (new_e2, t_e2, var_context) =
+            mut_vars.extend(mut_vars_e1);
+            let (mut_vars_e2, new_e2, t_e2, var_context) =
                 typecheck_expression(sess, e2, top_level_context, &var_context)?;
+            mut_vars.extend(mut_vars_e2);
             match (
                 t_e1.0.clone(),
                 dealias_type(t_e1.1 .0.clone(), top_level_context),
@@ -2591,6 +2579,7 @@ fn typecheck_statement(
                 &var_context,
                 return_typ,
             )?;
+            mut_vars.extend(new_b.clone().mutable_vars);
             let mutated_vars = new_b.mutated.as_ref().unwrap().as_ref().vars.clone();
             // Linear variables cannot be consumed in the body of the loop, so we check that
             let var_diff = original_var_context.clone().difference(var_context.clone());
@@ -2603,7 +2592,7 @@ fn typecheck_statement(
                     return Err(());
                 }
             }
-            Ok((
+            Ok((mut_vars,
                 Statement::ForLoop(
                     x.clone(),
                     (new_e1, e1.1.clone()),
@@ -2632,17 +2621,20 @@ fn typecheck_block(
         (BaseTyp::Unit, DUMMY_SP.into()),
     ));
     let mut new_stmts = Vec::new();
+    let mut mut_vars = ScopeMutableVars::new();
     let n_stmts = b.stmts.len();
     for (i, s) in b.stmts.into_iter().enumerate() {
         let s_span = s.1.clone();
-        let (new_stmt, stmt_typ, new_var_context, new_mutated_vars) = typecheck_statement(
-            sess,
-            s,
-            top_level_context,
-            &var_context,
-            function_return_typ,
-        )?;
+        let (mut_vars_stmt, new_stmt, stmt_typ, new_var_context, new_mutated_vars) =
+            typecheck_statement(
+                sess,
+                s,
+                top_level_context,
+                &var_context,
+                function_return_typ,
+            )?;
         new_stmts.push((new_stmt, s_span));
+        mut_vars.extend(mut_vars_stmt);
         var_context = new_var_context;
         mutated_vars = VarSet(mutated_vars.0.clone().union(new_mutated_vars.0));
         if i + 1 < n_stmts {
@@ -2692,8 +2684,8 @@ fn typecheck_block(
             })),
             return_typ,
             contains_question_mark,
-            mutable_vars: b.mutable_vars, // TODO: Typecheck mutable_vars?
-            function_dependencies: b.function_dependencies, // TODO: Typecheck mutable_vars?
+            mutable_vars: mut_vars,
+            function_dependencies: b.function_dependencies,
         },
         var_context.intersection(original_var_context.clone()),
     ))
@@ -2702,13 +2694,13 @@ fn typecheck_block(
 fn typecheck_item(
     sess: &Session,
     item: &DecoratedItem,
-    top_level_context: &TopLevelContext,
+    top_level_context: &mut TopLevelContext,
 ) -> TypecheckingResult<DecoratedItem> {
     let i = &item.item;
     let i = match &i {
         Item::NaturalIntegerDecl(typ_ident, secrecy, canvas_size, info) => {
             let canvas_size_span = canvas_size.1.clone();
-            let (new_canvas_size, canvas_size_typ, _) =
+            let (mut_vars_canvas_size, new_canvas_size, canvas_size_typ, _) =
                 typecheck_expression(sess, canvas_size, top_level_context, &HashMap::new())?;
             if let None = unify_types(
                 sess,
@@ -2772,15 +2764,26 @@ fn typecheck_item(
                     .as_str(),
                 )
             }
+
+            let mut new_sig = sig.clone();
+            new_sig.mutable_vars = new_b.clone().mutable_vars;
+
+            println!("FSIG: {:?}", new_sig.mutable_vars);
+
+            top_level_context.functions.insert(
+                FnKey::Independent(f.clone()),
+                FnValue::Local(new_sig.clone()),
+            );
+
             let out = Item::FnDecl(
                 (f.clone(), f_span.clone()),
-                sig.clone(),
+                new_sig.clone(),
                 (new_b, b_span.clone()),
             );
             Ok(out)
         }
         Item::ArrayDecl(id, size, cell_t, index_typ) => {
-            let (new_size, size_typ, _) =
+            let (mut_vars_size, new_size, size_typ, _) =
                 typecheck_expression(sess, size, top_level_context, &HashMap::new())?;
             if let None = unify_types(
                 sess,
@@ -2810,7 +2813,7 @@ fn typecheck_item(
             ))
         }
         Item::ConstDecl(id, typ, e) => {
-            let (new_e, new_t, _) =
+            let (mut_vars_e, new_e, new_t, _) =
                 typecheck_expression(sess, e, top_level_context, &HashMap::new())?;
             if let None = unify_types(
                 sess,
@@ -2857,7 +2860,7 @@ pub fn typecheck_program(
             p.items
                 .iter()
                 .map(|(i, i_span)| {
-                    let new_i = typecheck_item(sess, i, &top_level_ctx)?;
+                    let new_i = typecheck_item(sess, i, top_level_ctx)?;
                     Ok((new_i, i_span.clone()))
                 })
                 .collect(),
