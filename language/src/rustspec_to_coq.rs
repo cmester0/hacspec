@@ -126,11 +126,10 @@ fn make_let_binding<'a>(
             } else {
                 RcDoc::as_string("in")
             })
-            .append(RcDoc::space())
+            .append(RcDoc::softline())
     })
     .append(if do_bind {
-        RcDoc::line()
-            .append(RcDoc::as_string("let "))
+        RcDoc::as_string("let ")
             .append(pat.clone())
             .append(RcDoc::as_string(" := type_from_choice_type_elem "))
             .append(
@@ -2029,8 +2028,6 @@ fn translate_item<'a>(
                     false,
                     )
                 )
-            .append(RcDoc::line())
-            .append(RcDoc::as_string("Admit Obligations."))
             .append({
                 if item.tags.0.contains(&"quickcheck".to_string()) {
                 RcDoc::hardline()
@@ -2690,7 +2687,11 @@ pub fn translate_and_write_to_file(
         Open Scope Z_scope.\n\
         Open Scope bool_scope.\n\
         Open Scope hacspec_scope.\n\
-        {}",
+        {}\n\n\
+        Obligation Tactic :=\n\
+          try (Tactics.program_simpl; fail); simpl ; (* Old Obligation Tactic *)\n\
+          intros ; repeat ssprove_valid_2.\n\
+        \n",
         if export_quick_check {
             "From QuickChick Require Import QuickChick.\n\
             Require Import QuickChickLib.\n"
