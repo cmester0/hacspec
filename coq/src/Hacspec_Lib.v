@@ -1660,3 +1660,24 @@ Global Instance nat_mod_default {p : Z} : Default (nat_mod p) := {
 Global Instance prod_default {A B} `{Default A} `{Default B} : Default (A '× B) := {
   default := (default, default)
   }.
+
+Ltac ssprove_valid_2 :=
+  try match goal with
+  | H : choice.Choice.sort (chElement (loc_type ?p)) |- _ =>
+      unfold p in H ;
+      unfold loc_type in H ;
+      unfold "_ .π1" in H
+  end ;
+  try match goal with
+  | H : choice.Choice.sort
+            (chElement
+               (choice_type_from_type (prod _ _))) |- _ =>
+      destruct (type_from_choice_type_elem H)
+  end ;
+  repeat match goal with
+         | H : prod _ _ |- _ => destruct H
+         end ;
+  ssprove_valid ;
+  try (apply prog_valid) ;
+  try (apply valid_scheme ; apply prog_valid) ;
+  try repeat (try (apply eqtype.predU1l ; reflexivity) ; try apply eqtype.predU1r).
