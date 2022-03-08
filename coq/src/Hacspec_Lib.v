@@ -6,6 +6,7 @@ Global Set Warnings "-disj-pattern-notation".
 From mathcomp Require Import choice (* all_ssreflect *) (* ssreflect *) (* seq tuple *).
 From Crypt Require Import choice_type Package Prelude.
 Import PackageNotation.
+From extructures Require Import ord fset.
 
 Axiom choice_type_from_type : Type -> choice_type.
 Axiom choice_type_from_type_elem : forall {T : Type}, T -> choice_type_from_type T.
@@ -16,12 +17,17 @@ Axiom choice_type_from_type_id :
 Axiom type_from_choice_type_id :
   forall T (x : choice_type_from_type T), choice_type_from_type_elem (type_from_choice_type_elem x) = x.
 
-Definition code_injection {T : Type} (t : T) : code fset.fset0 [interface] (choice_type_from_type T) :=
-  {code
+Notation "'code_injection'" (* {T : Type} {fset} (t : T) : code fset [interface] (choice_type_from_type T) *) :=
+  (fun (T : Type) (fset : @fset.FSet.Exports.fset_of
+            (@ord.tag_ordType choice_type_ordType (fun _ : choice_type => ord.nat_ordType))
+            (ssreflect.Phant Location)) (t : T) =>
+  ({code
      @pkg_core_definition.ret (choice_type_from_type T) (choice_type_from_type_elem t)
-  }.
+  })).
 
-Fixpoint code_extraction {T : Type} (t : code fset.fset0 [interface] (choice_type_from_type T)) : T.
+(* Check @fset.fset0 choice_ordType. *)
+
+Fixpoint code_extraction {T : Type} {fset} (t : code fset [interface] (choice_type_from_type T)) : T.
 Admitted.
   (* destruct t.   *)
   (* induction prog.   *)
@@ -38,18 +44,24 @@ Admitted.
 
   (* apply T. *)
 
-Theorem code_extraction_injection_id : forall T (t : T), code_extraction (code_injection t) = t.
+Theorem code_extraction_injection_id : forall (T : Type) (fset : @fset.FSet.Exports.fset_of
+            (@ord.tag_ordType choice_type_ordType (fun _ : choice_type => ord.nat_ordType))
+            (ssreflect.Phant Location)) (t : T),
+    @code_extraction T fset ({code
+     @pkg_core_definition.ret (choice_type_from_type T) (choice_type_from_type_elem t)
+  }) = t.
 Admitted.
 
 (*** Integers *)
 From Coq Require Import ZArith List.
-Import ListNotations.
+Import List.ListNotations.
 (* Require Import IntTypes. *)
 
 Require Import MachineIntegers.
 From Coqprime Require GZnZ.
 
 Require Import Lia.
+Require Import Coq.Logic.FunctionalExtensionality.
 
 Declare Scope hacspec_scope.
 
@@ -413,94 +425,138 @@ Ltac induction_uint_size_as_positive var :=
 
 (*** Loops *)
 
+Check raw_code.
+
 Open Scope nat_scope.
 Fixpoint foldi_
   {acc : Type}
   (fuel : nat)
   (i : uint_size)
-  (f : uint_size -> acc -> acc)
-  (cur : acc) : acc :=
+  (f: (uint_size) -> acc -> raw_code (choice_type_from_type acc))
+  (cur : acc) {struct fuel} : raw_code (choice_type_from_type acc) :=    
   match fuel with
-  | 0 => cur
-  | S n' => foldi_ n' (add i one) f (f i cur)
+  | O => pkg_core_definition.ret (choice_type_from_type_elem cur)
+  | S n' =>
+      cur' ← f i cur ;;
+      foldi_ n' (add i one) f (type_from_choice_type_elem cur')
   end.
-Close Scope nat_scope.
-Definition foldi_pre
-  {acc: Type}
-  (lo: uint_size)
-  (hi: uint_size) (* {lo <= hi} *)
-  (f: (uint_size) -> acc -> acc) (* {i < hi} *)
-  (init: acc) : acc :=
-  match Z.sub (unsigned hi) (unsigned lo) with
-  | Z0 => init
-  | Zneg p => init
-  | Zpos p => foldi_ (Pos.to_nat p) lo f init
-  end.
+
+Lemma valid_foldi_ :
+  forall {acc} L I n i (f : uint_size -> acc -> code L [interface] (choice_type_from_type acc)) init,
+    (forall i v, ValidCode L I (f i v)) ->
+    ValidCode L I (foldi_ n i f init).
+Proof.
+  induction n ; intros.
+  - cbn.
+    ssprove_valid.
+  - cbn.
+    ssprove_valid.
+Qed.
+  
 Definition foldi
   {acc: Type}
   (lo: uint_size)
   (hi: uint_size) (* {lo <= hi} *)
-  (f: (uint_size) -> acc -> code fset.fset0 [interface] (choice_type_from_type acc)) (* {i < hi} *)
-  (init: acc) : _ :=
-  code_injection (foldi_pre lo hi (fun x y => code_extraction (f x y)) init).
+  (f: (uint_size) -> acc -> raw_code (choice_type_from_type acc)) (* {i < hi} *)
+  (* {fset_init : _} *)
+  (init: acc) : raw_code (choice_type_from_type acc) :=
+  match Z.sub (unsigned hi) (unsigned lo) with
+  | Z0 => ret (choice_type_from_type_elem init)
+  | Zneg p => ret (choice_type_from_type_elem init)
+  | Zpos p => foldi_ (Pos.to_nat p) lo f init
+  end.
 
 (* Fold done using natural numbers for bounds *)
 Fixpoint foldi_nat_
   {acc : Type}
   (fuel : nat)
   (i : nat)
-  (f : nat -> acc -> acc)
-  (cur : acc) : acc :=
+  (f : nat -> acc -> raw_code (choice_type_from_type acc))
+  (cur : acc) : raw_code (choice_type_from_type acc) :=
   match fuel with
-  | O => cur
-  | S n' => foldi_nat_ n' (S i) f (f i cur)
+  | O => ret (choice_type_from_type_elem cur)
+  | S n' =>
+         cur' ← f i cur ;;
+         foldi_nat_ n' (S i) f (type_from_choice_type_elem cur')
   end.
 Definition foldi_nat
   {acc: Type}
   (lo: nat)
   (hi: nat) (* {lo <= hi} *)
-  (f: nat -> acc -> code fset.fset0 [interface] (choice_type_from_type acc)) (* {i < hi} *)
-  (init: acc) : code fset.fset0 [interface] (choice_type_from_type acc) :=
-  code_injection match Nat.sub hi lo with
-  | O => init
-  | S n' => foldi_nat_ (S n') lo (fun x y => code_extraction (f x y)) init
+  (f: nat -> acc -> raw_code (choice_type_from_type acc)) (* {i < hi} *)
+  (init: acc) : raw_code (choice_type_from_type acc) :=
+  match Nat.sub hi lo with
+  | O => ret (choice_type_from_type_elem init)
+  | S n' => foldi_nat_ (S n') lo f init
   end.
 
 Lemma foldi__move_S :
   forall {acc: Type}
   (fuel : nat)
   (i : uint_size)
-  (f : uint_size -> acc -> acc)
+  (f : uint_size -> acc -> raw_code (choice_type_from_type acc))
   (cur : acc),
-    foldi_ fuel (add i one) f (f i cur) = foldi_ (S fuel) i f cur.
+    (cur' ← f i cur ;; foldi_ fuel (add i one) f (type_from_choice_type_elem cur')) = foldi_ (S fuel) i f cur.
 Proof. reflexivity. Qed.
 
 Lemma foldi__nat_move_S :
   forall {acc: Type}
   (fuel : nat)
   (i : nat)
-  (f : nat -> acc -> acc)
+  (f : nat -> acc -> raw_code (choice_type_from_type acc))
   (cur : acc),
-    foldi_nat_ fuel (S i) f (f i cur) = foldi_nat_ (S fuel) i f cur.
+    (cur' ← f i cur ;; foldi_nat_ fuel (S i) f (type_from_choice_type_elem cur')) = foldi_nat_ (S fuel) i f cur.
 Proof. reflexivity. Qed.
 
+Lemma raw_code_type_from_choice_type_id :
+  forall acc (x : raw_code (choice_type_from_type acc)),
+  (cur' ← x ;;
+  ret (choice_type_from_type_elem (type_from_choice_type_elem cur')))
+  =
+  x.
+Proof.
+  intros.
+  rewrite @bind_cong with (v := x) (g := @ret (choice_type_from_type acc)).
+  rewrite bind_ret.
+  reflexivity.
+  reflexivity.
+
+  apply functional_extensionality.
+  intros.
+  rewrite type_from_choice_type_id.
+  reflexivity.
+Qed.
+  
 (* You can do one iteration of the fold by burning a unit of fuel *)
 Lemma foldi__move_S_fuel :
   forall {acc: Type}
   (fuel : nat)
-  (i : uint_size)
-  (f : uint_size -> acc -> acc)
+  (i : uint_size) 
+  (f : uint_size -> acc -> raw_code (choice_type_from_type acc))
   (cur : acc),
     (0 <= Z.of_nat fuel <= @max_unsigned WORDSIZE32)%Z ->
-    f (add (repr (Z.of_nat fuel)) i) (foldi_ (fuel) i f cur) = foldi_ (S (fuel)) i f cur.
+       (cur' ← foldi_ fuel i f cur ;;
+       f (add (repr (Z.of_nat fuel)) i) (type_from_choice_type_elem cur')
+    ) = foldi_ (S (fuel)) i f cur.
 Proof.
   intros acc fuel.
   induction fuel ; intros.
   - cbn.
     replace (repr 0) with (@zero WORDSIZE32) by reflexivity.
     rewrite add_zero_l.
+    rewrite choice_type_from_type_id.
+    rewrite raw_code_type_from_choice_type_id.
     reflexivity.
-  - do 2 rewrite <- foldi__move_S.
+  - unfold foldi_.
+    fold (@foldi_ acc fuel).
+    rewrite bind_assoc.
+
+    f_equal.
+    apply functional_extensionality.
+    intros.
+
+    specialize (IHfuel (add i one) f (type_from_choice_type_elem x)).
+
     replace (add (repr (Z.of_nat (S fuel))) i)
       with (add (repr (Z.of_nat fuel)) (add i one)).
     2 : {
@@ -516,8 +572,9 @@ Proof.
       apply unsigned_repr.
       lia.
     }
+
     rewrite IHfuel.
-    reflexivity.
+    reflexivity.    
     lia.
 Qed.
 
@@ -526,14 +583,22 @@ Lemma foldi__nat_move_S_fuel :
   forall {acc: Type}
   (fuel : nat)
   (i : nat)
-  (f : nat -> acc -> acc)
+  (f : nat -> acc -> raw_code (choice_type_from_type acc))
   (cur : acc),
     (0 <= Z.of_nat fuel <= @max_unsigned WORDSIZE32)%Z ->
-    f (fuel + i)%nat (foldi_nat_ fuel i f cur) = foldi_nat_ (S fuel) i f cur.
+    (cur' ← foldi_nat_ fuel i f cur ;; f (fuel + i)%nat (type_from_choice_type_elem cur')) = foldi_nat_ (S fuel) i f cur.
 Proof.
   induction fuel ; intros.
-  - reflexivity.
-  - do 2 rewrite <- foldi__nat_move_S.
+  - cbn.
+    rewrite choice_type_from_type_id.
+    rewrite raw_code_type_from_choice_type_id.
+    reflexivity.
+  - unfold foldi_nat_.
+    fold (@foldi_nat_ acc fuel).
+    rewrite bind_assoc.
+    f_equal.
+    apply functional_extensionality.
+    intros.
     replace (S fuel + i)%nat with (fuel + (S i))%nat by (symmetry ; apply plus_Snm_nSm).
     rewrite IHfuel.
     + reflexivity.
@@ -545,7 +610,7 @@ Lemma foldi_to_foldi_nat :
   forall {acc: Type}
     (lo: uint_size) (* {lo <= hi} *)
     (hi: uint_size) (* {lo <= hi} *)
-    (f: (uint_size) -> acc -> code fset.fset0 [interface] (choice_type_from_type acc)) (* {i < hi} *)
+    (f: (uint_size) -> acc -> raw_code (choice_type_from_type acc)) (* {i < hi} *)
     (init: acc),
     (unsigned lo <= unsigned hi)%Z ->
     foldi lo hi f init = foldi_nat (Z.to_nat (unsigned lo)) (Z.to_nat (unsigned hi)) (fun x => f (repr (Z.of_nat x))) init.
@@ -554,8 +619,6 @@ Proof.
 
   unfold foldi.
   unfold foldi_nat.
-  unfold foldi_pre.
-  f_equal.
 
   destruct (uint_size_as_nat hi) as [ hi_n [ hi_eq hi_H ] ] ; subst.
   rewrite (@unsigned_repr_alt WORDSIZE32 _ hi_H) in *.
@@ -590,17 +653,20 @@ Proof.
       assert (H_bound_pred: (Z.pred 0 < Z.pos (Pos.of_succ_nat n) < @modulus WORDSIZE32)%Z) by lia.
       rewrite <- (IHn H_bound_pred) ; clear IHn.
       f_equal.
-      * unfold add.
+      * rewrite foldi__move_S.
         f_equal.
+        lia.
+      * apply functional_extensionality.
+        intros.
+
+        unfold add.
         rewrite (@unsigned_repr_alt WORDSIZE32 _ lo_H) in *.
-        rewrite (unsigned_repr_alt _ H_bound_pred).
+        rewrite (@unsigned_repr_alt WORDSIZE32 _ H_bound_pred).
+        
         do 2 rewrite Zpos_P_of_succ_nat.
         rewrite Z.add_succ_l.
-        f_equal.
         rewrite Nat2Z.inj_add.
-        reflexivity.
-      * rewrite SuccNat2Pos.id_succ.
-        reflexivity.
+        reflexivity.        
 Qed.
 
 (* folds can be computed by doing one iteration and incrementing the lower bound *)
@@ -608,10 +674,10 @@ Lemma foldi_nat_split_S :
   forall {acc: Type}
     (lo: nat)
     (hi: nat) (* {lo <= hi} *)
-    (f: nat -> acc -> code fset.fset0 [interface] (choice_type_from_type acc)) (* {i < hi} *)
+    (f: nat -> acc -> raw_code (choice_type_from_type acc)) (* {i < hi} *)
     (init: acc),
     (lo < hi)%nat ->
-    foldi_nat lo hi f init = foldi_nat (S lo) hi f (code_extraction (foldi_nat lo (S lo) f init)).
+    foldi_nat lo hi f init = (cur' ← foldi_nat lo (S lo) f init ;; foldi_nat (S lo) hi f (type_from_choice_type_elem cur')).
 Proof.
   unfold foldi_nat.
   intros.
@@ -624,7 +690,9 @@ Proof.
   - apply Nat.eqb_eq in hi_eq_lo ; rewrite hi_eq_lo in *.
     rewrite (succ_sub_diag lo).
     rewrite Nat.sub_diag.
-    rewrite code_extraction_injection_id.
+
+    (* unfold foldi_nat_. *)
+    rewrite raw_code_type_from_choice_type_id.
     reflexivity.
   - apply Nat.eqb_neq in hi_eq_lo.
     apply Nat.lt_gt_cases in hi_eq_lo.
@@ -633,7 +701,10 @@ Proof.
     + rewrite (Nat.sub_succ_l (S lo)) by apply (Nat.lt_le_pred _ _ H0).
       rewrite Nat.sub_succ_l by apply (Nat.lt_le_pred _ _ H).
       replace ((S (hi - S lo))) with (hi - lo)%nat by lia.
-      rewrite code_extraction_injection_id.
+
+      unfold foldi_nat_.
+      fold (@foldi_nat_ acc).
+      rewrite raw_code_type_from_choice_type_id.
       reflexivity.
 Qed.
 
@@ -643,24 +714,35 @@ Lemma foldi_nat_split_add :
   forall {acc: Type}
     (lo: nat)
     (hi: nat) (* {lo <= hi} *)
-    (f: nat -> acc -> code fset.fset0 [interface] (choice_type_from_type acc)) (* {i < hi} *)
+    (f: nat -> acc -> raw_code (choice_type_from_type acc)) (* {i < hi} *)
     (init: acc),
   forall {guarantee: (lo + k <= hi)%nat},
-  foldi_nat lo hi f init = foldi_nat (k + lo) hi f (code_extraction (foldi_nat lo (k + lo) f init)).
+  foldi_nat lo hi f init = (cur' ← foldi_nat lo (k + lo) f init ;; foldi_nat (k + lo) hi f (type_from_choice_type_elem cur')).
 Proof.
   induction k ; intros.
   - cbn.
     unfold foldi_nat.
     rewrite Nat.sub_diag.
-    rewrite code_extraction_injection_id.
+    cbn.
+    rewrite choice_type_from_type_id.
     reflexivity.
   - rewrite foldi_nat_split_S by lia.
     replace (S k + lo)%nat with (k + S lo)%nat by lia.
-    specialize (IHk acc (S lo) hi f (code_extraction (foldi_nat lo (S lo) f init))).
-    rewrite IHk by lia.
+    specialize (IHk acc (S lo) hi f).
+
+    rewrite bind_cong with (v := foldi_nat lo (S lo) (fun (x : nat) (x0 : acc) => f x x0) init) (g := fun v => (cur' ← foldi_nat (S lo) (k + S lo) (fun (x : nat) (x0 : acc) => f x x0) (type_from_choice_type_elem v) ;;
+         foldi_nat (k + S lo) hi (fun (x : nat) (x0 : acc) => f x x0)
+           (type_from_choice_type_elem cur'))).
+
+    rewrite <- bind_assoc.
     f_equal.
+        
     rewrite <- foldi_nat_split_S by lia.
     reflexivity.
+    
+    reflexivity.
+
+    apply functional_extensionality. intros. rewrite IHk by lia. reflexivity.
 Qed.
 
 (* folds can be split at some midpoint *)
@@ -669,15 +751,16 @@ Lemma foldi_nat_split :
   forall {acc: Type}
     (lo: nat)
     (hi: nat) (* {lo <= hi} *)
-    (f: nat -> acc -> code fset.fset0 [interface] (choice_type_from_type acc)) (* {i < hi} *)
+    (f: nat -> acc -> raw_code (choice_type_from_type acc)) (* {i < hi} *)
     (init: acc),
   forall {guarantee: (lo <= mid <= hi)%nat},
-  foldi_nat lo hi f init = foldi_nat mid hi f (code_extraction (foldi_nat lo mid f init)).
+  foldi_nat lo hi f init = (cur' ← foldi_nat lo mid f init ;; foldi_nat mid hi f (type_from_choice_type_elem cur')).
 Proof.
   intros.
   assert (mid_is_low_plus_constant : {k : nat | (mid = lo + k)%nat})  by (exists (mid - lo)%nat ; lia).  
   destruct mid_is_low_plus_constant ; subst.
   rewrite Nat.add_comm.
+  pose foldi_nat_split_add.
   apply foldi_nat_split_add.
   apply guarantee.
 Qed.
@@ -688,17 +771,145 @@ Lemma foldi_split :
   forall {acc: Type}
     (lo: uint_size)
     (hi: uint_size) (* {lo <= hi} *)
-    (f: uint_size -> acc -> code fset.fset0 [interface] (choice_type_from_type acc)) (* {i < hi} *)
+    (f: uint_size -> acc -> raw_code (choice_type_from_type acc)) (* {i < hi} *)
     (init: acc),
   forall {guarantee: (unsigned lo <= unsigned mid <= unsigned hi)%Z},
-  foldi lo hi f init = foldi mid hi f (code_extraction (foldi lo mid f init)).
+  foldi lo hi f init = (cur' ← foldi lo mid f init ;; foldi mid hi f (type_from_choice_type_elem cur')).
 Proof.
   intros.
-  do 3 rewrite foldi_to_foldi_nat by lia.
+  rewrite foldi_to_foldi_nat by lia.
+  rewrite foldi_to_foldi_nat by lia.
+
+  pose @foldi_to_foldi_nat.
+  
+  rewrite bind_cong with (v := foldi_nat (Z.to_nat (unsigned lo)) (Z.to_nat (unsigned mid))
+            (fun x : nat => f (repr (Z.of_nat x))) init) (g := fun init => foldi_nat (Z.to_nat (unsigned mid)) (Z.to_nat (unsigned hi))
+       (fun x : nat => f (repr (Z.of_nat x))) (type_from_choice_type_elem init)). 
+
   apply foldi_nat_split ; lia.
+  reflexivity.
+  apply functional_extensionality.
+  intros.
+  
+  rewrite foldi_to_foldi_nat by lia.
+  reflexivity.
 Qed.
 
 (*** Default *)
+
+Check seq.
+
+Lemma valid_foldi :
+  forall {acc} L I lo hi (f : uint_size -> acc -> code L [interface] (choice_type_from_type acc)) init,
+    (forall i v, ValidCode L I (f i v)) ->
+    ValidCode L I (foldi lo hi f init).
+Proof.
+  intros.
+  unfold foldi.
+  destruct (unsigned hi - unsigned lo)%Z.
+  - cbn.
+    ssprove_valid.
+  - apply valid_foldi_, H.
+  - cbn.
+    ssprove_valid.
+Qed.  
+
+Lemma valid_remove_back :
+  forall x xs I {ct} c,
+    ValidCode (fset xs) I c ->
+    @ValidCode (fset (xs ++ [x])) I ct c.
+Proof.
+  intros.
+  apply (@valid_injectLocations) with (L1 := fset xs).
+  - (* replace (x :: xs) with (seq.cat [x] xs) by reflexivity. *)
+    rewrite fset_cat.
+    apply fsubsetUl.    
+  - apply H.
+Qed.  
+
+Lemma list_constructor : forall {A : Type} (x : A) (xs : list A) (l : list A) (H : (x :: xs) = l), (l <> []).
+Proof.
+  intros.
+  subst.
+  easy.
+Qed.
+
+Definition pop_back {A : Type} (l : list A) :=
+  match (rev l) with
+  | [] => []
+  | (x :: xs) => rev xs ++ [x]
+  end.
+
+Theorem pop_back_ignore_front : forall {A} (a : A) (l : list A), pop_back (a :: l) = a :: pop_back l.
+Proof.
+  intros.
+  induction l ; intros.
+  - reflexivity.
+  - unfold pop_back.
+    destruct (rev (a :: a0 :: l)) eqn:orev.
+    { apply f_equal with (f := @rev A) in orev.
+      rewrite (rev_involutive) in orev.
+      discriminate orev.
+    }
+    cbn in orev.
+
+    destruct (rev (a0 :: l)) eqn:orev2.
+    { apply f_equal with (f := @rev A) in orev2.
+      rewrite (rev_involutive) in orev2.
+      discriminate orev2.
+    }
+    cbn in orev2.
+    rewrite orev2 in orev ; clear orev2.
+
+    inversion_clear orev.
+    rewrite rev_unit.
+    reflexivity.
+Qed.
+    
+Theorem pop_back_is_id : forall {A} (l : list A), l = pop_back l.
+Proof.
+  intros.
+  induction l.
+  - reflexivity.
+  - destruct l.
+    + reflexivity.
+    + rewrite pop_back_ignore_front.
+      rewrite <- IHl.
+      reflexivity.
+Qed.
+
+Ltac valid_remove_back' :=
+  match goal with
+  | _ : _ |- (ValidCode (fset (?l)) _ _) =>
+      rewrite (@pop_back_is_id _ l)
+  end ;
+  apply valid_remove_back.
+
+
+Lemma valid_remove_front :
+  forall x xs I {ct} c,
+    ValidCode (fset xs) I c ->
+    @ValidCode (fset (x :: xs)) I ct c.
+Proof.
+  intros.
+  apply (@valid_injectLocations) with (L1 := fset xs).
+  - replace (x :: xs) with (seq.cat [x] xs) by reflexivity.
+    rewrite fset_cat.
+    apply fsubsetUr.    
+  - apply H.
+Qed.
+
+Lemma valid_foldi_subset :
+  forall {acc} L1 L2 I lo hi (f : uint_size -> acc -> code L1 [interface] (choice_type_from_type acc)) init,
+    fset.fsubset L1 L2 = true ->
+    (forall i v, ValidCode L1 I (f i v)) ->
+    ValidCode L2 I (foldi lo hi f init).
+Proof.
+  intros.
+  apply (@valid_injectLocations) with (L1 := L1).
+  - apply H.
+  - apply valid_foldi, H0.
+Qed.  
 
 (* Typeclass handling of default elements, for use in sequences/arrays.
    We provide instances for the library integer types *)
@@ -790,7 +1001,7 @@ Proof.
 Defined.
 
 Definition array_upd {A: Type} {len : nat} (s: nseq A len) (i: nat) (new_v: A) : code fset.fset0 [interface] (choice_type_from_type (nseq A len)) :=
-  code_injection (array_upd_pre s i new_v).
+  code_injection _ fset.fset0 (array_upd_pre s i new_v).
 
 (* Definition array_upd {A: Type} {len : uint_size} (s: lseq A len) (i: uint_size) (new_v: A) : lseq A len := List.upd s i new_v. *)
 
@@ -836,7 +1047,7 @@ Definition array_from_seq   {a: Type}
   (input: seq a)
   (* {H : List.length input = out_len} *)
     : code fset.fset0 [interface] (choice_type_from_type (nseq a out_len)) :=
-  code_injection (array_from_seq_pre out_len input).
+  code_injection _ fset.fset0 (array_from_seq_pre out_len input).
 
 (* Global Coercion array_from_seq_pre : seq >-> nseq. *)
 
@@ -865,7 +1076,7 @@ Definition array_from_slice
   (input: seq a)
   (start: nat)
   (slice_len: nat)
-  : code fset.fset0 [interface] (choice_type_from_type (nseq a out_len)) := code_injection (array_from_slice_pre default_value out_len input start slice_len).
+  : code fset.fset0 [interface] (choice_type_from_type (nseq a out_len)) := code_injection _ fset.fset0 (array_from_slice_pre default_value out_len input start slice_len).
 
 Definition array_slice_pre
   {a: Type}
@@ -1134,26 +1345,27 @@ Fixpoint seq_truncate {a} (x : seq a) (n : nat) : seq a := (* uint_size *)
 (**** Numeric operations *)
 
 (* takes two nseq's and joins them using a function op : a -> a -> a *)
-Definition array_join_map
-  {a: Type}
- `{Default a}
-  {len: nat}
-  (op: a -> a -> a)
-  (s1: nseq a len)
-  (s2 : nseq a len) :=
-  let out := s1 in
-  foldi (usize 0) (usize len) (fun i out =>
-    let i := from_uint_size i in
-    array_upd out i (op (array_index s1 i) (array_index s2 i))
-  ) out.
+(* TODO: Uncomment / fix *)
+(* Definition array_join_map *)
+(*   {a: Type} *)
+(*  `{Default a} *)
+(*   {len: nat} *)
+(*   (op: a -> a -> a) *)
+(*   (s1: nseq a len) *)
+(*   (s2 : nseq a len) := *)
+(*   let out := s1 in *)
+(*   foldi (usize 0) (usize len) (fun i out => *)
+(*     let i := from_uint_size i in *)
+(*     array_upd out i (op (array_index s1 i) (array_index s2 i)) *)
+(*   ) out. *)
 
-Infix "array_xor" := (array_join_map xor) (at level 33) : hacspec_scope.
-Infix "array_add" := (array_join_map add) (at level 33) : hacspec_scope.
-Infix "array_minus" := (array_join_map sub) (at level 33) : hacspec_scope.
-Infix "array_mul" := (array_join_map mul) (at level 33) : hacspec_scope.
-Infix "array_div" := (array_join_map divs) (at level 33) : hacspec_scope.
-Infix "array_or" := (array_join_map or) (at level 33) : hacspec_scope.
-Infix "array_and" := (array_join_map and) (at level 33) : hacspec_scope.
+(* Infix "array_xor" := (array_join_map xor) (at level 33) : hacspec_scope. *)
+(* Infix "array_add" := (array_join_map add) (at level 33) : hacspec_scope. *)
+(* Infix "array_minus" := (array_join_map sub) (at level 33) : hacspec_scope. *)
+(* Infix "array_mul" := (array_join_map mul) (at level 33) : hacspec_scope. *)
+(* Infix "array_div" := (array_join_map divs) (at level 33) : hacspec_scope. *)
+(* Infix "array_or" := (array_join_map or) (at level 33) : hacspec_scope. *)
+(* Infix "array_and" := (array_join_map and) (at level 33) : hacspec_scope. *)
 
 Definition array_eq_
   {a: Type}
@@ -1201,11 +1413,11 @@ Definition nat_mod_equal {p} (a b : nat_mod p) : bool :=
   Z.eqb (GZnZ.val p a) (GZnZ.val p b).
 
 Definition nat_mod_zero_pre {p} : nat_mod p := GZnZ.zero p.
-Definition nat_mod_zero {p} : code fset.fset0 [interface] (choice_type_from_type (nat_mod p)) := code_injection (nat_mod_zero_pre).
+Definition nat_mod_zero {p} : code fset.fset0 [interface] (choice_type_from_type (nat_mod p)) := code_injection _ fset.fset0 (nat_mod_zero_pre).
 Definition nat_mod_one_pre {p} : nat_mod p := GZnZ.one p.
-Definition nat_mod_one {p} : code fset.fset0 [interface] (choice_type_from_type (nat_mod p)) := code_injection (nat_mod_one_pre).
+Definition nat_mod_one {p} : code fset.fset0 [interface] (choice_type_from_type (nat_mod p)) := code_injection _ fset.fset0 (nat_mod_one_pre).
 Definition nat_mod_two_pre {p} : nat_mod p := GZnZ.mkznz p _ (GZnZ.modz p 2).
-Definition nat_mod_two {p} : code fset.fset0 [interface] (choice_type_from_type (nat_mod p)) := code_injection (nat_mod_two_pre).
+Definition nat_mod_two {p} : code fset.fset0 [interface] (choice_type_from_type (nat_mod p)) := code_injection _ fset.fset0 (nat_mod_two_pre).
 
 
 (* convenience coercions from nat_mod to Z and N *)
@@ -1257,7 +1469,7 @@ Proof.
   reflexivity.
 Defined.
 Definition nat_mod_from_secret_literal {m : Z} (x:int128) : code fset.fset0 [interface] (choice_type_from_type (nat_mod m)) :=
- (@code_injection (nat_mod m) (@nat_mod_from_secret_literal_pre m x)).  
+ (code_injection (nat_mod m) fset.fset0 (@nat_mod_from_secret_literal_pre m x)).  
 
 Definition nat_mod_from_literal_pre (m : Z) (x:int128) : nat_mod m := nat_mod_from_secret_literal_pre x.
 
@@ -1306,7 +1518,7 @@ Proof.
   rewrite Zmod_mod.
   reflexivity.
 Defined.
-Definition nat_mod_pow2 (m : Z) (x : N) : code fset.fset0 [interface] (choice_type_from_type (nat_mod m)) := code_injection (nat_mod_pow2_pre m x).
+Definition nat_mod_pow2 (m : Z) (x : N) : code fset.fset0 [interface] (choice_type_from_type (nat_mod m)) := code_injection _ fset.fset0 (nat_mod_pow2_pre m x).
 
 Section Casting.
 
@@ -1649,7 +1861,7 @@ Definition nat_mod_rem_pre {n : Z} (a:nat_mod n) (b:nat_mod n) : nat_mod n :=
   else nat_mod_rem_aux a b (S (nat_mod_div a b)).
 
 Definition nat_mod_rem {n : Z} (a:nat_mod n) (b:nat_mod n) : code fset.fset0 [interface] (choice_type_from_type (nat_mod n)) :=
-  code_injection (nat_mod_rem_pre a b).
+  code_injection _ fset.fset0 (nat_mod_rem_pre a b).
 
 Infix "rem" := nat_mod_rem (at level 33) : hacspec_scope.
 
@@ -1825,8 +2037,8 @@ Definition option_is_none {A} (x : option A) : bool :=
   | _ => false
   end.
 
-Definition foldi_bind {A : Type} {M : Type -> Type} `{Monad M} (a : uint_size) (b : uint_size) (f : uint_size -> A -> M A) (init : M A) : code fset.fset0 [interface] (choice_type_from_type (M A)) :=
-  @foldi (M A) a b (fun x y => code_injection (bind y (f x))) init.
+Definition foldi_bind {A : Type} {M : Type -> Type} `{Monad M} (a : uint_size) (b : uint_size) (f : uint_size -> A -> M A) (init : M A) : raw_code (choice_type_from_type (M A)) :=
+  @foldi (M A) a b (fun x y =>  (@pkg_core_definition.ret (choice_type_from_type (M A)) (choice_type_from_type_elem (@bind M H A A y (f x))))) init.
 
 Definition lift_to_result {A B C} (r : result A C) (f : A -> B) : result B C :=
   result_bind r (fun x => result_ret (f x)).
@@ -1881,7 +2093,14 @@ Global Instance prod_default {A B} `{Default A} `{Default B} : Default (A '× B)
   default := (default, default)
 }.
 
-Ltac ssprove_valid_2 :=
+Ltac ssprove_valid_location :=
+  try repeat (try (apply eqtype.predU1l ; reflexivity) ; try apply eqtype.predU1r).
+
+Ltac ssprove_valid_program :=
+  try (apply prog_valid) ;
+  try (apply valid_scheme ; apply prog_valid).
+
+Ltac destruct_choice_type_prod :=
   try match goal with
   | H : choice.Choice.sort (chElement (loc_type ?p)) |- _ =>
       unfold p in H ;
@@ -1896,8 +2115,10 @@ Ltac ssprove_valid_2 :=
   end ;
   repeat match goal with
          | H : prod _ _ |- _ => destruct H
-         end ;
+         end.
+
+Ltac ssprove_valid_2 :=
+  destruct_choice_type_prod ;
   ssprove_valid ;
-  try (apply prog_valid) ;
-  try (apply valid_scheme ; apply prog_valid) ;
-  try repeat (try (apply eqtype.predU1l ; reflexivity) ; try apply eqtype.predU1r).
+  ssprove_valid_program ;
+  ssprove_valid_location.

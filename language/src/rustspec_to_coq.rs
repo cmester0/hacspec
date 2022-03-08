@@ -32,19 +32,8 @@ lazy_static! {
     static ref ID_MAP: Mutex<HashMap<usize, usize>> = Mutex::new(HashMap::new());
 }
 
-fn make_put_binding<'a>(pat: RcDoc<'a, ()>, expr: RcDoc<'a, ()>) -> RcDoc<'a, ()> {
-    RcDoc::as_string("#put")
-        .append(RcDoc::space())
-        .append(pat.clone().append(RcDoc::as_string("_loc")).group())
-        .append(RcDoc::space())
-        .append(RcDoc::as_string(":= choice_type_from_type_elem"))
-        .group()
-        .append(RcDoc::line().append(make_paren(expr.group())))
-        .nest(2)
-        .append(RcDoc::space())
-        .append(RcDoc::as_string(";;"))
-        .append(RcDoc::line())
-        .append(pat.clone())
+fn make_get_binding<'a>(pat: RcDoc<'a, ()>) -> RcDoc<'a, ()> {
+    pat.clone()
         .append(RcDoc::space())
         .append(RcDoc::as_string("←"))
         .append(RcDoc::space())
@@ -63,6 +52,21 @@ fn make_put_binding<'a>(pat: RcDoc<'a, ()>, expr: RcDoc<'a, ()>) -> RcDoc<'a, ()
         .append(make_paren(pat.clone()))
         .append(RcDoc::space())
         .append(RcDoc::as_string("in"))
+}
+
+fn make_put_binding<'a>(pat: RcDoc<'a, ()>, expr: RcDoc<'a, ()>) -> RcDoc<'a, ()> {
+    RcDoc::as_string("#put")
+        .append(RcDoc::space())
+        .append(pat.clone().append(RcDoc::as_string("_loc")).group())
+        .append(RcDoc::space())
+        .append(RcDoc::as_string(":= choice_type_from_type_elem"))
+        .group()
+        .append(RcDoc::line().append(make_paren(expr.group())))
+        .nest(2)
+        .append(RcDoc::space())
+        .append(RcDoc::as_string(";;"))
+        .append(RcDoc::line())
+        .append(make_get_binding(pat))
 }
 
 fn make_let_binding<'a>(
@@ -1455,7 +1459,9 @@ fn translate_statements<'a>(
                             .append(trans_stmt),
                     ))
             } else {
-                make_let_binding(translate_ident(x.clone()), None, trans_e1, false, false)
+                make_get_binding(translate_ident(x.clone()))
+                    .append(RcDoc::line())
+                    .append(make_put_binding(translate_ident(x.clone()), trans_e1))
                     .append(RcDoc::hardline())
                     .append(trans_stmt)
             };
@@ -1777,7 +1783,7 @@ fn fset_and_locations<'a>(smvars: ScopeMutableVars) -> (RcDoc<'a, ()>, RcDoc<'a,
                     .append(RcDoc::space())
                     .append(RcDoc::intersperse(
                         all.iter()
-                            .map(|((i, _), _)| translate_ident(i.clone()).append("_loc")),
+                            .map(|(i, _)| translate_ident(i.clone()).append("_loc")),
                         RcDoc::space()
                             .append(RcDoc::as_string(";"))
                             .append(RcDoc::space()),
@@ -1785,14 +1791,14 @@ fn fset_and_locations<'a>(smvars: ScopeMutableVars) -> (RcDoc<'a, ()>, RcDoc<'a,
                     .append(RcDoc::as_string("]")),
             ),
             RcDoc::intersperse(
-                locals.into_iter().map(|((i, _), typ)| {
+                locals.into_iter().map(|(i, typ)| {
                     make_let_binding(
                         translate_ident(i.clone()).append("_loc"),
                         Some(RcDoc::as_string("Location")),
                         RcDoc::as_string("choice_type_from_type")
                             .append(RcDoc::space())
                             .append(match typ {
-                                Some((typ, _)) => translate_typ(typ),
+                                Some(typ) => translate_typ(typ),
                                 None => RcDoc::as_string("_"),
                             })
                             .append(RcDoc::space())
@@ -1850,12 +1856,7 @@ fn translate_item<'a>(
 ) -> RcDoc<'a, ()> {
     match &item.item {
         Item::FnDecl((f, _), sig, (b, _)) => {
-            // Should only need variables that do reassignments
-            // let local_vars : Vec<Ident> =
-            //     b.clone().stmts.iter().filter_map(|(x, _)| if let Statement::Reassignment((i,_),(e,_), b) = x { Some (i.clone()) } else { None }).collect();
-
             let block_exprs = translate_block(b.clone(), false, top_ctx);
-
             let (block_vars, block_var_loc_defs) = fset_and_locations(sig.mutable_vars.clone());
 
             block_var_loc_defs
@@ -2562,7 +2563,7 @@ pub fn translate_and_write_to_file(
         {}\n\n\
         Obligation Tactic :=\n\
           try (Tactics.program_simpl; fail); simpl ; (* Old Obligation Tactic *)\n\
-          intros ; repeat ssprove_valid_2.\n\
+          intros ; do 2 ssprove_valid_2.\n\
         \n",
         if export_quick_check {
             "From QuickChick Require Import QuickChick.\n\

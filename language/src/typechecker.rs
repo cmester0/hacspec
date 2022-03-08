@@ -2265,7 +2265,7 @@ fn typecheck_statement(
             )?;
 
             if let Pattern::IdentPat(x, true) = pat.clone() {
-                mut_vars.push(((x, pat_span.clone()), typ.clone()));
+                mut_vars.push((x, typ.clone().map(|t| t.0)));
             };
 
             Ok((mut_vars,
@@ -2311,6 +2311,9 @@ fn typecheck_statement(
                 );
                 return Err(());
             };
+
+            mut_vars.push((x.clone(), Some (x_typ.clone())));
+            
             Ok((mut_vars,
                 Statement::Reassignment(
                     (x.clone(), x_span.clone()),

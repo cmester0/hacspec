@@ -554,10 +554,10 @@ fn resolve_statement(
         }
         Statement::Reassignment(var, e, question_mark) => {
             let new_var = find_ident(sess, &var, &name_context, top_level_ctx)?;
-            let (mut_vars_new_e, new_e) =
+            let (smi_new_e, new_e) =
                 resolve_expression(sess, e, &name_context, top_level_ctx)?;
             Ok((
-                mut_vars_new_e,
+                smi_new_e,
                 (
                     Statement::Reassignment((new_var, var.1.clone()), new_e, question_mark),
                     s_span,
@@ -572,9 +572,9 @@ fn resolve_statement(
             let mut smi = ScopeMutInfo::new();
             smi.extend(smi_new_e);
 
-            if let Pattern::IdentPat(x, true) = new_pat.clone() {
-                smi.vars.push(((x, pat.1.clone()), typ.clone()));
-            };
+            // if let Pattern::IdentPat(x, true) = new_pat.clone() {
+            //     smi.vars.push(((x, pat.1.clone()), typ.clone()));
+            // };
 
             let name_context = new_name_context.union(name_context);
             Ok((
