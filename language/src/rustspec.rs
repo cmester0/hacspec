@@ -433,30 +433,52 @@ pub enum Statement {
     ReturnExp(Expression),
 }
 
-pub type MutableVar = (Spanned<Ident>, Fillable<Spanned<Typ>>);
-#[derive(Clone, Serialize, Debug)]
+pub type MutableVar = (Ident, Fillable<Typ>);
+#[derive(Clone, Debug)]
 pub struct ScopeMutableVars {
-    pub external_vars: Vec<MutableVar>,
-    pub local_vars: Vec<MutableVar>,
+    pub external_vars: HashSet<MutableVar>,
+    pub local_vars: HashSet<MutableVar>,
+}
+
+impl Serialize for ScopeMutableVars {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        // TODO: Serialize local vars
+        let mut seq = serializer.serialize_seq(Some(self.external_vars.len()))?;
+        for e in &self.external_vars {
+            seq.serialize_element(e)?;
+        }
+        seq.end()
+    }
 }
 
 impl ScopeMutableVars {
     pub fn new() -> Self {
-        ScopeMutableVars { external_vars: Vec::new(), local_vars: Vec::new() }
+        ScopeMutableVars { external_vars: HashSet::new(), local_vars: HashSet::new() }
     }
 
     pub fn push(&mut self, value: MutableVar) {
-        self.local_vars.push(value);
+        self.local_vars.insert(value);
     }
     
     pub fn extend(&mut self, other: ScopeMutableVars) {
-        self.external_vars.extend(other.external_vars);
-        self.local_vars.extend(other.local_vars);
+        for i in other.external_vars {
+            self.external_vars.insert(i);
+        }
+        for i in other.local_vars {
+            self.local_vars.insert(i);
+        }
     }
     
     pub fn extend_external(&mut self, other: ScopeMutableVars) {
-        self.external_vars.extend(other.external_vars);
-        self.external_vars.extend(other.local_vars);
+        for i in other.external_vars {
+            self.external_vars.insert(i);
+        }
+        for i in other.local_vars {
+            self.external_vars.insert(i);
+        }
     }
 }
 

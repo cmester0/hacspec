@@ -120,7 +120,7 @@ Program Definition poly1305_init
       (temp_38) in 
      temp_41 ←
       (nat_mod_zero ) ;; let temp_40 := temp_41 in
-    pkg_core_definition.ret (@T_ct poly_state_t ((temp_40, r_42, k_35)))
+    pkg_core_definition.ret ( @T_ct poly_state_t ((temp_40, r_42, k_35)))
     } : code ((fset [ n_5_loc])) [interface] _).
 
 

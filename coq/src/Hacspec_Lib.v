@@ -8,12 +8,13 @@ Import -(coercions) all_ssreflect.
 
 From Crypt Require Import choice_type Package Prelude.
 Import PackageNotation.
+From extructures Require Import ord fset.
 
 From extructures Require Import ord fset fmap.
     
 (*** Integers *)
 From Coq Require Import ZArith List.
-Import ListNotations.
+Import List.ListNotations.
 (* Require Import IntTypes. *)
 
 Require Import MachineIntegers.
@@ -248,32 +249,157 @@ Fixpoint foldi_
   {acc : ChoiceEquality}
   (fuel : nat)
   (i : uint_size)
-  (f : uint_size -> acc -> acc)
-  (cur : acc) : acc :=
+  {fset : _}
+  (f: (uint_size) -> acc -> code fset [interface] (acc))
+  (cur : acc) {struct fuel} : code fset [interface] (acc) :=  
   match fuel with
-  | 0 => cur
-  | S n' => foldi_ n' (add i one) f (f i cur)
+  | O => {code ret (T_ct cur)}
+  | S n' =>
+      {code
+         cur' ← f i cur ;;
+         foldi_ n' (add i one) f (ct_T cur')
+      }
   end.
 Close Scope nat_scope.
-Definition foldi_pre
-  {acc: ChoiceEquality}
-  (lo: uint_size)
-  (hi: uint_size) (* {lo <= hi} *)
-  (f: (uint_size) -> acc -> acc) (* {i < hi} *)
-  (init: acc) : acc :=
-  match Z.sub (unsigned hi) (unsigned lo) with
-  | Z0 => init
-  | Zneg p => init
-  | Zpos p => foldi_ (Pos.to_nat p) lo f init
-  end.
+
+Lemma valid_foldi_ :
+  forall {acc : ChoiceEquality} L I n i (f : uint_size -> acc -> code L [interface] (acc)) init,
+    (forall i v, ValidCode L I (f i v)) ->
+    ValidCode L I (foldi_ n i f init).
+Proof.
+  induction n ; intros.
+  - cbn.
+    ssprove_valid.
+  - cbn.
+    ssprove_valid.
+Qed.
+  
 Definition foldi
   {acc: ChoiceEquality}
   (lo: uint_size)
   (hi: uint_size) (* {lo <= hi} *)
-  (f: (uint_size) -> acc -> (@T acc)) (* {i < hi} *)
-  (init: acc) : _ :=
-  (foldi_pre lo hi f init).
-  
+  {fset : _}
+  (f: (uint_size) -> acc -> code fset [interface] (acc)) (* {i < hi} *)
+  (* {fset_init : _} *)
+  (init: acc) : code fset [interface] (acc) :=
+  match Z.sub (unsigned hi) (unsigned lo) with
+  | Z0 => {code ret (T_ct init)}
+  | Zneg p => {code ret (T_ct init)}
+  | Zpos p => foldi_ (Pos.to_nat p) lo f init
+  end.
+
+Lemma valid_foldi :
+  forall {acc : ChoiceEquality} L I lo hi (f : uint_size -> acc -> code L [interface] (acc)) init,
+    (forall i v, ValidCode L I (f i v)) ->
+    ValidCode L I (foldi lo hi f init).
+Proof.
+  intros.
+  unfold foldi.
+  destruct (unsigned hi - unsigned lo)%Z.
+  - cbn.
+    ssprove_valid.
+  - apply valid_foldi_, H.
+  - cbn.
+    ssprove_valid.
+Qed.  
+
+Lemma valid_remove_back :
+  forall x xs I {ct} c,
+    ValidCode (fset xs) I c ->
+    @ValidCode (fset (xs ++ [x])) I ct c.
+Proof.
+  intros.
+  apply (@valid_injectLocations) with (L1 := fset xs).
+  - (* replace (x :: xs) with (seq.cat [x] xs) by reflexivity. *)
+    rewrite fset_cat.
+    apply fsubsetUl.    
+  - apply H.
+Qed.  
+
+Lemma list_constructor : forall {A : Type} (x : A) (xs : list A) (l : list A) (H : (x :: xs) = l), (l <> []).
+Proof.
+  intros.
+  subst.
+  easy.
+Qed.
+
+Definition pop_back {A : Type} (l : list A) :=
+  match (rev l) with
+  | [] => []
+  | (x :: xs) => rev xs ++ [x]
+  end.
+
+Theorem pop_back_ignore_front : forall {A} (a : A) (l : list A), pop_back (a :: l) = a :: pop_back l.
+Proof.
+  intros.
+  induction l ; intros.
+  - reflexivity.
+  - unfold pop_back.
+    destruct (rev [:: a, a0 & l]) eqn:orev.
+    { apply f_equal with (f := @rev A) in orev.
+      rewrite (rev_involutive) in orev.
+      discriminate orev.
+    }
+    cbn in orev.
+
+    destruct (rev (a0 :: l)) eqn:orev2.
+    { apply f_equal with (f := @rev A) in orev2.
+      rewrite (rev_involutive) in orev2.
+      discriminate orev2.
+    }
+    cbn in orev2.
+    rewrite orev2 in orev ; clear orev2.
+
+    inversion_clear orev.
+    rewrite rev_unit.
+    reflexivity.
+Qed.
+    
+Theorem pop_back_is_id : forall {A} (l : list A), l = pop_back l.
+Proof.
+  intros.
+  induction l.
+  - reflexivity.
+  - destruct l.
+    + reflexivity.
+    + rewrite pop_back_ignore_front.
+      rewrite <- IHl.
+      reflexivity.
+Qed.
+
+Ltac valid_remove_back' :=
+  match goal with
+  | _ : _ |- (ValidCode (fset (?l)) _ _) =>
+      rewrite (@pop_back_is_id _ l)
+  end ;
+  apply valid_remove_back.
+
+
+Lemma valid_remove_front :
+  forall x xs I {ct} c,
+    ValidCode (fset xs) I c ->
+    @ValidCode (fset (x :: xs)) I ct c.
+Proof.
+  intros.
+  apply (@valid_injectLocations) with (L1 := fset xs).
+  - replace (x :: xs) with (seq.cat [x] xs) by reflexivity.
+    rewrite fset_cat.
+    apply fsubsetUr.    
+  - apply H.
+Qed.
+
+Lemma valid_foldi_subset :
+  forall {acc : ChoiceEquality} L1 L2 I lo hi (f : uint_size -> acc -> code L1 [interface] (acc)) init,
+    fset.fsubset L1 L2 = true ->
+    (forall i v, ValidCode L1 I (f i v)) ->
+    ValidCode L2 I (foldi lo hi f init).
+Proof.
+  intros.
+  apply (@valid_injectLocations) with (L1 := L1).
+  - apply H.
+  - apply valid_foldi, H0.
+Qed.  
+
 (* Typeclass handling of default elements, for use in sequences/arrays.
    We provide instances for the library integer types *)
 Class Default (A : Type) := {
@@ -871,7 +997,7 @@ Definition seq_get_remainder_chunk : forall {a : ChoiceEquality} `{Default (@T (
 (**** Numeric operations *)
 
 (* takes two nseq's and joins them using a function op : a -> a -> a *)
-Definition array_join_map_pre
+Definition array_join_map
   {a: ChoiceEquality}
  `{Default (@T (a))}
   {len: nat}
@@ -880,17 +1006,19 @@ Definition array_join_map_pre
   (s2 : (@T (nseq a len))) :=
   let out := s1 in
   foldi (usize 0) (usize len) (fun i out =>
-    let i := from_uint_size i in
-    array_upd_pre out i (op (array_index s1 i) (array_index s2 i))
+   {code
+      let i := from_uint_size i in
+      array_upd out i (op (array_index s1 i) (array_index s2 i))
+   }
   ) out.
 
-Global Infix "array_xor" := (array_join_map_pre xor) (at level 33) : hacspec_scope.
-Global Infix "array_add" := (array_join_map_pre add) (at level 33) : hacspec_scope.
-Global Infix "array_minus" := (array_join_map_pre sub) (at level 33) : hacspec_scope.
-Global Infix "array_mul" := (array_join_map_pre mul) (at level 33) : hacspec_scope.
-Global Infix "array_div" := (array_join_map_pre divs) (at level 33) : hacspec_scope.
-Global Infix "array_or" := (array_join_map_pre or) (at level 33) : hacspec_scope.
-Global Infix "array_and" := (array_join_map_pre and) (at level 33) : hacspec_scope.  
+Global Infix "array_xor" := (array_join_map xor) (at level 33) : hacspec_scope.
+Global Infix "array_add" := (array_join_map add) (at level 33) : hacspec_scope.
+Global Infix "array_minus" := (array_join_map sub) (at level 33) : hacspec_scope.
+Global Infix "array_mul" := (array_join_map mul) (at level 33) : hacspec_scope.
+Global Infix "array_div" := (array_join_map divs) (at level 33) : hacspec_scope.
+Global Infix "array_or" := (array_join_map or) (at level 33) : hacspec_scope.
+Global Infix "array_and" := (array_join_map and) (at level 33) : hacspec_scope.  
 
 Fixpoint array_eq_
   {a: ChoiceEquality}
@@ -1739,11 +1867,21 @@ Global Infix "+%" := nat_mod_add (at level 33) : hacspec_scope.
 Global Infix "*%" := nat_mod_mul (at level 33) : hacspec_scope.
 Global Infix "-%" := nat_mod_sub (at level 33) : hacspec_scope.
 
-Ltac ssprove_valid_2 :=
+
+Ltac ssprove_valid_location :=
+  try repeat (try (apply eqtype.predU1l ; reflexivity) ; try apply eqtype.predU1r).
+
+Ltac ssprove_valid_program :=
+  try (apply prog_valid) ;
+  try (apply valid_scheme ; apply prog_valid).
+
+Ltac destruct_choice_type_prod :=
   repeat match goal with
          | H : prod _ _ |- _ => destruct H
-         end ;
+         end.
+
+Ltac ssprove_valid_2 :=
+  destruct_choice_type_prod ;
   ssprove_valid ;
-  try (apply prog_valid) ;
-  try (apply valid_scheme ; apply prog_valid) ;
-  try repeat (try (apply eqtype.predU1l ; reflexivity) ; try apply eqtype.predU1r).
+  ssprove_valid_program ;
+  ssprove_valid_location.
