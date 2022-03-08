@@ -12,8 +12,8 @@ Open Scope hacspec_scope.
 
 
 Obligation Tactic :=
-try (Tactics.program_simpl; fail); simpl ; (* Old Obligation Tactic *)
-intros ; repeat ssprove_valid_2.
+  try (Tactics.program_simpl; fail); simpl ; (* Old Obligation Tactic *)
+  intros ; do 2 ssprove_valid_2.
 
 Require Import Hacspec_Lib.
 
@@ -59,14 +59,17 @@ Program Definition poly1305_encode_r
      temp_7 ←
       (secret (@repr WORDSIZE128 21267647620597763993911028882763415551)) ;;
     let temp_6 := type_from_choice_type_elem temp_7 : int128 in
-    let n_5 :=
-      ((n_5) .& (temp_6)) in 
+    n_5 ← get n_5_loc ;;
+    let n_5 := type_from_choice_type_elem (n_5) in
+    #put n_5_loc := choice_type_from_type_elem
+      ((n_5) .& (temp_6)) ;;
+    n_5 ← get n_5_loc ;;
+    let n_5 := type_from_choice_type_elem (n_5) in
      temp_9 ←
       (nat_mod_from_secret_literal (n_5)) ;;
     let temp_8 := type_from_choice_type_elem temp_9 in
     pkg_core_definition.ret (choice_type_from_type_elem (temp_8))
     } : code ((fset [ n_5_loc])) [interface] _).
-
 
 Program Definition poly1305_encode_block
   (b_12 : poly_block_t)
@@ -155,7 +158,7 @@ Program Definition poly1305_update_block
 
 Definition st_57_loc : Location :=
   (choice_type_from_type (field_element_t '× field_element_t '× poly_key_t
-    ) ; 62%nat).
+    ) ; 63%nat).
 Program Definition poly1305_update_blocks
   (m_51 : byte_seq)
   (st_50 : poly_state_t)
@@ -168,8 +171,7 @@ Program Definition poly1305_update_blocks
     let st_57 := type_from_choice_type_elem (st_57) in
     let n_blocks_52 : uint_size :=
       ((seq_len (m_51)) / (blocksize_v)) in 
-     temp_60 ←
-      (foldi (usize 0) (n_blocks_52) (fun i_53 st_57 =>
+    (@foldi _ (usize 0) (n_blocks_52) (fset [ st_57_loc]) (fun i_53 st_57 =>
           {code
            temp_55 ←
             (array_from_seq (16) (seq_get_exact_chunk (m_51) (blocksize_v) (
@@ -180,125 +182,152 @@ Program Definition poly1305_update_blocks
            temp_59 ←
             (poly1305_update_block (block_56) (st_57)) ;;
           let temp_58 := type_from_choice_type_elem temp_59 in
-          let st_57 :=
-            (temp_58) in 
+          st_57 ← get st_57_loc ;;
+          let st_57 := type_from_choice_type_elem (st_57) in
+          #put st_57_loc := choice_type_from_type_elem
+            (temp_58) ;;
+          st_57 ← get st_57_loc ;;
+          let st_57 := type_from_choice_type_elem (st_57) in
           pkg_core_definition.ret (choice_type_from_type_elem ((st_57)))
-          } : code (fset.fset0) [interface] _)
-        st_57) ;; let st_57 := type_from_choice_type_elem temp_60 in
+          } : code ((fset [ st_57_loc])) [interface] _) 
+              st_57) ;;
+    st_57 ← get st_57_loc ;;
+    let st_57 := type_from_choice_type_elem (st_57) in
     
     pkg_core_definition.ret (choice_type_from_type_elem (st_57))
     } : code ((fset [ st_57_loc])) [interface] _).
 
-Definition st_64_loc : Location :=
+Definition st_65_loc : Location :=
   (choice_type_from_type (field_element_t '× field_element_t '× poly_key_t
-    ) ; 74%nat).
+    ) ; 76%nat).
 Program Definition poly1305_update_last
-  (pad_len_66 : uint_size)
-  (b_65 : sub_block_t)
-  (st_63 : poly_state_t)
-  : code (fset [ st_64_loc]) [interface] (choice_type_from_type (
+  (pad_len_67 : uint_size)
+  (b_66 : sub_block_t)
+  (st_64 : poly_state_t)
+  : code (fset [ st_65_loc]) [interface] (choice_type_from_type (
       poly_state_t)) :=
   ({code
-    #put st_64_loc := choice_type_from_type_elem
-      (st_63) ;;
-    st_64 ← get st_64_loc ;;
-    let st_64 := type_from_choice_type_elem (st_64) in
-     temp_72 ←
-      (if (seq_len (b_65)) !=.? (usize 0):bool then ({code
-          let '(acc_69, r_70, k_71) :=
-            (st_64) in 
-           temp_68 ←
-            (poly1305_encode_last (pad_len_66) (b_65)) ;;
-          let temp_67 := type_from_choice_type_elem temp_68 in
-          let st_64 :=
-            ((((temp_67) +% (acc_69)) *% (r_70), r_70, k_71)) in 
-          pkg_core_definition.ret (choice_type_from_type_elem ((st_64)))
-          } : code (fset.fset0) [interface] _) else (
-          pkg_core_definition.ret (choice_type_from_type_elem ((st_64))))) ;;
-    let '(st_64) := type_from_choice_type_elem temp_72 in
+    #put st_65_loc := choice_type_from_type_elem
+      (st_64) ;;
+    st_65 ← get st_65_loc ;;
+    let st_65 := type_from_choice_type_elem (st_65) in
+     temp_74 ←
+      (if (seq_len (b_66)) !=.? (usize 0):bool then ({code
+          let '(acc_70, r_71, k_72) :=
+            (st_65) in 
+           temp_69 ←
+            (poly1305_encode_last (pad_len_67) (b_66)) ;;
+          let temp_68 := type_from_choice_type_elem temp_69 in
+          st_65 ← get st_65_loc ;;
+          let st_65 := type_from_choice_type_elem (st_65) in
+          #put st_65_loc := choice_type_from_type_elem
+            ((((temp_68) +% (acc_70)) *% (r_71), r_71, k_72)) ;;
+          st_65 ← get st_65_loc ;;
+          let st_65 := type_from_choice_type_elem (st_65) in
+          pkg_core_definition.ret (choice_type_from_type_elem ((st_65)))
+          } : code ((fset [ st_65_loc])) [interface] _) else (
+          pkg_core_definition.ret (choice_type_from_type_elem ((st_65))))) ;;
+    let '(st_65) := type_from_choice_type_elem temp_74 in
     
-    pkg_core_definition.ret (choice_type_from_type_elem (st_64))
-    } : code ((fset [ st_64_loc])) [interface] _).
-
+    pkg_core_definition.ret (choice_type_from_type_elem (st_65))
+    } : code ((fset [ st_65_loc])) [interface] _).
 
 Program Definition poly1305_update
-  (m_75 : byte_seq)
-  (st_76 : poly_state_t)
-  : code (fset [ st_57_loc ; st_64_loc]) [interface] (choice_type_from_type (
+  (m_77 : byte_seq)
+  (st_78 : poly_state_t)
+  : code (fset ([ st_57_loc] ++ [st_65_loc])) [interface] (choice_type_from_type (
       poly_state_t)) :=
   ({code
-     temp_78 ←
-      (poly1305_update_blocks (m_75) (st_76)) ;;
-    let temp_77 := type_from_choice_type_elem temp_78 in
-    let st_80 : (field_element_t '× field_element_t '× poly_key_t) :=
-      (temp_77) in 
-    let last_79 : seq uint8 :=
-      (seq_get_remainder_chunk (m_75) (blocksize_v)) in 
-     temp_82 ←
-      (poly1305_update_last (seq_len (last_79)) (last_79) (st_80)) ;;
-    let temp_81 := type_from_choice_type_elem temp_82 in
-    pkg_core_definition.ret (choice_type_from_type_elem (temp_81))
-    } : code ((fset [ st_57_loc ; st_64_loc])) [interface] _).
-
+     temp_80 ← (poly1305_update_blocks (m_77) (st_78)) ;;
+    let temp_79 := type_from_choice_type_elem temp_80 in
+    let st_82 : (field_element_t '× field_element_t '× poly_key_t) :=
+      (temp_79) in 
+    let last_81 : seq uint8 :=
+      (seq_get_remainder_chunk (m_77) (blocksize_v)) in 
+     temp_84 ←
+      (poly1305_update_last (seq_len (last_81)) (last_81) (st_82)) ;;
+    let temp_83 := type_from_choice_type_elem temp_84 in
+    pkg_core_definition.ret (choice_type_from_type_elem (temp_83))
+    } : code ((fset ([ st_57_loc] ++ [st_65_loc]))) [interface] _).
+Next Obligation.
+  valid_remove_back'.
+  apply valid_foldi.
+  intros.
+  ssprove_valid_2.
+Qed.
+  
 
 Program Definition poly1305_finish
-  (st_83 : poly_state_t)
+  (st_85 : poly_state_t)
   : code fset.fset0 [interface] (choice_type_from_type (poly1305_tag_t)) :=
   ({code
-    let '(acc_89, _, k_84) :=
-      (st_83) in 
-     temp_86 ←
-      (array_from_slice (default) (16) (k_84) (usize 16) (usize 16)) ;;
-    let temp_85 := type_from_choice_type_elem temp_86 in
+    let '(acc_91, _, k_86) :=
+      (st_85) in 
      temp_88 ←
-      (uint128_from_le_bytes (temp_85)) ;;
+      (array_from_slice (default) (16) (k_86) (usize 16) (usize 16)) ;;
     let temp_87 := type_from_choice_type_elem temp_88 in
-    let n_96 : uint128 :=
-      (temp_87) in 
-    let aby_90 : seq uint8 :=
-      (nat_mod_to_byte_seq_le (acc_89)) in 
-     temp_92 ←
-      (array_from_slice (default) (16) (aby_90) (usize 0) (usize 16)) ;;
-    let temp_91 := type_from_choice_type_elem temp_92 in
+     temp_90 ←
+      (uint128_from_le_bytes (temp_87)) ;;
+    let temp_89 := type_from_choice_type_elem temp_90 in
+    let n_98 : uint128 :=
+      (temp_89) in 
+    let aby_92 : seq uint8 :=
+      (nat_mod_to_byte_seq_le (acc_91)) in 
      temp_94 ←
-      (uint128_from_le_bytes (temp_91)) ;;
+      (array_from_slice (default) (16) (aby_92) (usize 0) (usize 16)) ;;
     let temp_93 := type_from_choice_type_elem temp_94 in
-    let a_95 : uint128 :=
-      (temp_93) in 
-     temp_98 ←
-      (uint128_to_le_bytes ((a_95) .+ (n_96))) ;;
-    let temp_97 := type_from_choice_type_elem temp_98 in
+     temp_96 ←
+      (uint128_from_le_bytes (temp_93)) ;;
+    let temp_95 := type_from_choice_type_elem temp_96 in
+    let a_97 : uint128 :=
+      (temp_95) in 
      temp_100 ←
-      (array_from_seq (16) (temp_97)) ;;
+      (uint128_to_le_bytes ((a_97) .+ (n_98))) ;;
     let temp_99 := type_from_choice_type_elem temp_100 in
-    pkg_core_definition.ret (choice_type_from_type_elem (temp_99))
+     temp_102 ←
+      (array_from_seq (16) (temp_99)) ;;
+    let temp_101 := type_from_choice_type_elem temp_102 in
+    pkg_core_definition.ret (choice_type_from_type_elem (temp_101))
     } : code (fset.fset0) [interface] _).
 
-Definition st_105_loc : Location :=
+
+Definition st_107_loc : Location :=
   (choice_type_from_type (field_element_t '× field_element_t '× poly_key_t
-    ) ; 111%nat).
+    ) ; 113%nat).
 Program Definition poly1305
-  (m_104 : byte_seq)
-  (key_101 : poly_key_t)
-  : code (fset [ n_5_loc ; st_57_loc ; st_64_loc ; st_105_loc]) [interface] (
+  (m_106 : byte_seq)
+  (key_103 : poly_key_t)
+  : code (fset [ n_5_loc ; st_65_loc ; st_57_loc ; st_107_loc]) [interface] (
     choice_type_from_type (poly1305_tag_t)) :=
   ({code
-     temp_103 ←
-      (poly1305_init (key_101)) ;;
-    let temp_102 := type_from_choice_type_elem temp_103 in
-    #put st_105_loc := choice_type_from_type_elem
-      (temp_102) ;;
-    st_105 ← get st_105_loc ;;
-    let st_105 := type_from_choice_type_elem (st_105) in
-     temp_107 ←
-      (poly1305_update (m_104) (st_105)) ;;
-    let temp_106 := type_from_choice_type_elem temp_107 in
-    let st_105 :=
-      (temp_106) in 
+     temp_105 ←
+      (poly1305_init (key_103)) ;;
+    let temp_104 := type_from_choice_type_elem temp_105 in
+    #put st_107_loc := choice_type_from_type_elem
+      (temp_104) ;;
+    st_107 ← get st_107_loc ;;
+    let st_107 := type_from_choice_type_elem (st_107) in
      temp_109 ←
-      (poly1305_finish (st_105)) ;;
+      (poly1305_update (m_106) (st_107)) ;;
     let temp_108 := type_from_choice_type_elem temp_109 in
-    pkg_core_definition.ret (choice_type_from_type_elem (temp_108))
+    st_107 ← get st_107_loc ;;
+    let st_107 := type_from_choice_type_elem (st_107) in
+    #put st_107_loc := choice_type_from_type_elem
+      (temp_108) ;;
+    st_107 ← get st_107_loc ;;
+    let st_107 := type_from_choice_type_elem (st_107) in
+     temp_111 ←
+      (poly1305_finish (st_107)) ;;
+    let temp_110 := type_from_choice_type_elem temp_111 in
+    pkg_core_definition.ret (choice_type_from_type_elem (temp_110))
     } : code ((
-        fset [ n_5_loc ; st_57_loc ; st_64_loc ; st_105_loc])) [interface] _).
+        fset [ n_5_loc ; st_65_loc ; st_57_loc ; st_107_loc])) [interface] _).
+Next Obligation.
+  valid_remove_back'.
+  apply valid_remove_front.
+  apply valid_remove_front.
+  apply valid_foldi.
+  intros.
+  ssprove_valid_2.
+Qed.
 

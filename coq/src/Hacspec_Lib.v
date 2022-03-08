@@ -8,12 +8,13 @@ Import -(coercions) all_ssreflect.
 
 From Crypt Require Import choice_type Package Prelude.
 Import PackageNotation.
+From extructures Require Import ord fset.
 
 From extructures Require Import ord fset fmap.
 
 (*** Integers *)
 From Coq Require Import ZArith List.
-Import ListNotations.
+Import List.ListNotations.
 (* Require Import IntTypes. *)
 
 Require Import MachineIntegers.
@@ -234,39 +235,187 @@ Infix ".|" := (MachineIntegers.or) (at level 77) : hacspec_scope.
 (* Definition one := (@one WORDSIZE32). *)
 (* Definition zero := (@zero WORDSIZE32). *)
 Notation "A '× B" := (prod A B) (at level 79, left associativity) : hacspec_scope.
-(*** Loops *)
+(*** Loops *)  
+
+(* Check fset.fset_cons. *)
+
+(* Lemma valid_sub : *)
+(*   forall x xs {ct} I c, *)
+(*     ValidCode (fset.fset xs) I c -> *)
+(*     @ValidCode (fset.fset (x :: xs)) I ct c. *)
+(* Proof. *)
+(*   intros. *)
+(*   pose (@valid_injectLocations I ct (fset.fset xs) (fset.fset (x :: xs)) c). *)
+(*   apply v. *)
+  
+(*   apply fset.fsubsetIl. *)
+  
+(*   induction xs. *)
+(*   - apply valid_scheme. *)
+(*     rewrite <- fset.fset0E in H. *)
+(*     apply H. *)
+(*   - apply is_valid_code. *)
+(*     apply v. *)
+    
+(*     Check in_fset. *)
 
 Open Scope nat_scope.
 Fixpoint foldi_
   {acc : Type}
   (fuel : nat)
   (i : uint_size)
-  (f : uint_size -> acc -> acc)
-  (cur : acc) : acc :=
+  {fset : _}
+  (f: (uint_size) -> acc -> code fset [interface] (choice_type_from_type acc))
+  (cur : acc) {struct fuel} : code fset [interface] (choice_type_from_type acc) :=  
   match fuel with
-  | 0 => cur
-  | S n' => foldi_ n' (add i one) f (f i cur)
+  | O => code_injection _ fset cur
+  | S n' =>
+      {code
+         cur' ← f i cur ;;
+         foldi_ n' (add i one) f (type_from_choice_type_elem cur')
+      }
   end.
-Close Scope nat_scope.
-Definition foldi_pre
-  {acc: Type}
-  (lo: uint_size)
-  (hi: uint_size) (* {lo <= hi} *)
-  (f: (uint_size) -> acc -> acc) (* {i < hi} *)
-  (init: acc) : acc :=
-  match Z.sub (unsigned hi) (unsigned lo) with
-  | Z0 => init
-  | Zneg p => init
-  | Zpos p => foldi_ (Pos.to_nat p) lo f init
-  end.
+
+Lemma valid_foldi_ :
+  forall {acc} L I n i (f : uint_size -> acc -> code L [interface] (choice_type_from_type acc)) init,
+    (forall i v, ValidCode L I (f i v)) ->
+    ValidCode L I (foldi_ n i f init).
+Proof.
+  induction n ; intros.
+  - cbn.
+    ssprove_valid.
+  - cbn.
+    ssprove_valid.
+Qed.
+  
 Definition foldi
   {acc: Type}
   (lo: uint_size)
   (hi: uint_size) (* {lo <= hi} *)
-  (f: (uint_size) -> acc -> code fset.fset0 [interface] (choice_type_from_type acc)) (* {i < hi} *)
-  (init: acc) : _ :=
-  code_injection (foldi_pre lo hi (fun x y => code_extraction (f x y)) init).
-  
+  {fset : _}
+  (f: (uint_size) -> acc -> code fset [interface] (choice_type_from_type acc)) (* {i < hi} *)
+  (* {fset_init : _} *)
+  (init: acc) : code fset [interface] (choice_type_from_type acc) :=
+  match Z.sub (unsigned hi) (unsigned lo) with
+  | Z0 => code_injection _ fset.fset0 init
+  | Zneg p => code_injection _ fset.fset0 init
+  | Zpos p => foldi_ (Pos.to_nat p) lo f init
+  end.
+
+Check seq.
+
+Lemma valid_foldi :
+  forall {acc} L I lo hi (f : uint_size -> acc -> code L [interface] (choice_type_from_type acc)) init,
+    (forall i v, ValidCode L I (f i v)) ->
+    ValidCode L I (foldi lo hi f init).
+Proof.
+  intros.
+  unfold foldi.
+  destruct (unsigned hi - unsigned lo)%Z.
+  - cbn.
+    ssprove_valid.
+  - apply valid_foldi_, H.
+  - cbn.
+    ssprove_valid.
+Qed.  
+
+Lemma valid_remove_back :
+  forall x xs I {ct} c,
+    ValidCode (fset xs) I c ->
+    @ValidCode (fset (xs ++ [x])) I ct c.
+Proof.
+  intros.
+  apply (@valid_injectLocations) with (L1 := fset xs).
+  - (* replace (x :: xs) with (seq.cat [x] xs) by reflexivity. *)
+    rewrite fset_cat.
+    apply fsubsetUl.    
+  - apply H.
+Qed.  
+
+Lemma list_constructor : forall {A : Type} (x : A) (xs : list A) (l : list A) (H : (x :: xs) = l), (l <> []).
+Proof.
+  intros.
+  subst.
+  easy.
+Qed.
+
+Definition pop_back {A : Type} (l : list A) :=
+  match (rev l) with
+  | [] => []
+  | (x :: xs) => rev xs ++ [x]
+  end.
+
+Theorem pop_back_ignore_front : forall {A} (a : A) (l : list A), pop_back (a :: l) = a :: pop_back l.
+Proof.
+  intros.
+  induction l ; intros.
+  - reflexivity.
+  - unfold pop_back.
+    destruct (rev [:: a, a0 & l]) eqn:orev.
+    { apply f_equal with (f := @rev A) in orev.
+      rewrite (rev_involutive) in orev.
+      discriminate orev.
+    }
+    cbn in orev.
+
+    destruct (rev (a0 :: l)) eqn:orev2.
+    { apply f_equal with (f := @rev A) in orev2.
+      rewrite (rev_involutive) in orev2.
+      discriminate orev2.
+    }
+    cbn in orev2.
+    rewrite orev2 in orev ; clear orev2.
+
+    inversion_clear orev.
+    rewrite rev_unit.
+    reflexivity.
+Qed.
+    
+Theorem pop_back_is_id : forall {A} (l : list A), l = pop_back l.
+Proof.
+  intros.
+  induction l.
+  - reflexivity.
+  - destruct l.
+    + reflexivity.
+    + rewrite pop_back_ignore_front.
+      rewrite <- IHl.
+      reflexivity.
+Qed.
+
+Ltac valid_remove_back' :=
+  match goal with
+  | _ : _ |- (ValidCode (fset (?l)) _ _) =>
+      rewrite (@pop_back_is_id _ l)
+  end ;
+  apply valid_remove_back.
+
+
+Lemma valid_remove_front :
+  forall x xs I {ct} c,
+    ValidCode (fset xs) I c ->
+    @ValidCode (fset (x :: xs)) I ct c.
+Proof.
+  intros.
+  apply (@valid_injectLocations) with (L1 := fset xs).
+  - replace (x :: xs) with (seq.cat [x] xs) by reflexivity.
+    rewrite fset_cat.
+    apply fsubsetUr.    
+  - apply H.
+Qed.
+
+Lemma valid_foldi_subset :
+  forall {acc} L1 L2 I lo hi (f : uint_size -> acc -> code L1 [interface] (choice_type_from_type acc)) init,
+    fset.fsubset L1 L2 ->
+    (forall i v, ValidCode L1 I (f i v)) ->
+    ValidCode L2 I (foldi lo hi f init).
+Proof.
+  intros.
+  apply (@valid_injectLocations) with (L1 := L1).
+  - apply H.
+  - apply valid_foldi, H0.
+Qed.  
+
 (* Typeclass handling of default elements, for use in sequences/arrays.
    We provide instances for the library integer types *)
 Class Default (A : Type) := {
@@ -983,11 +1132,11 @@ Definition nat_mod_equal {p} (a b : nat_mod p) : bool :=
   Z.eqb (GZnZ.val p a) (GZnZ.val p b).
 
 Definition nat_mod_zero_pre {p} : nat_mod p := GZnZ.zero p.
-Definition nat_mod_zero {p} : code fset.fset0 [interface] (choice_type_from_type (nat_mod p)) := code_injection (nat_mod_zero_pre).
+Definition nat_mod_zero {p} : code fset.fset0 [interface] (choice_type_from_type (nat_mod p)) := code_injection _ fset.fset0 (nat_mod_zero_pre).
 Definition nat_mod_one_pre {p} : nat_mod p := GZnZ.one p.
-Definition nat_mod_one {p} : code fset.fset0 [interface] (choice_type_from_type (nat_mod p)) := code_injection (nat_mod_one_pre).
+Definition nat_mod_one {p} : code fset.fset0 [interface] (choice_type_from_type (nat_mod p)) := code_injection _ fset.fset0 (nat_mod_one_pre).
 Definition nat_mod_two_pre {p} : nat_mod p := GZnZ.mkznz p _ (GZnZ.modz p 2).
-Definition nat_mod_two {p} : code fset.fset0 [interface] (choice_type_from_type (nat_mod p)) := code_injection (nat_mod_two_pre).
+Definition nat_mod_two {p} : code fset.fset0 [interface] (choice_type_from_type (nat_mod p)) := code_injection _ fset.fset0 (nat_mod_two_pre).
 
 Definition nat_mod_add {n : Z} (a : nat_mod n) (b : nat_mod n) : nat_mod n := GZnZ.add n a b.
 
@@ -1035,7 +1184,7 @@ Proof.
   reflexivity.
 Defined.
 Definition nat_mod_from_secret_literal {m : Z} (x:int128) : code fset.fset0 [interface] (choice_type_from_type (nat_mod m)) :=
- (@code_injection (nat_mod m) (@nat_mod_from_secret_literal_pre m x)).  
+ (code_injection (nat_mod m) fset.fset0 (@nat_mod_from_secret_literal_pre m x)).  
 
 Definition nat_mod_from_literal_pre (m : Z) (x:int128) : nat_mod m := nat_mod_from_secret_literal_pre x.
 
@@ -1081,7 +1230,7 @@ Proof.
   rewrite Zmod_mod.
   reflexivity.
 Defined.
-Definition nat_mod_pow2 (m : Z) (x : N) : code fset.fset0 [interface] (choice_type_from_type (nat_mod m)) := code_injection (nat_mod_pow2_pre m x).
+Definition nat_mod_pow2 (m : Z) (x : N) : code fset.fset0 [interface] (choice_type_from_type (nat_mod m)) := code_injection _ fset.fset0 (nat_mod_pow2_pre m x).
 
 Section Casting.
 
@@ -1605,7 +1754,7 @@ Definition option_is_none {A} (x : option A) : bool :=
   end.
 
 Definition foldi_bind {A : Type} {M : Type -> Type} `{Monad M} (a : uint_size) (b : uint_size) (f : uint_size -> A -> M A) (init : M A) : code fset.fset0 [interface] (choice_type_from_type (M A)) :=
-  @foldi (M A) a b (fun x y => code_injection (bind y (f x))) init.
+  @foldi (M A) a b _ (fun x y => code_injection _ fset.fset0 (bind y (f x))) (* fset.fset0 *) init.
 
 Definition lift_to_result {A B C} (r : result A C) (f : A -> B) : result B C :=
   result_bind r (fun x => result_ret (f x)).
@@ -1661,7 +1810,14 @@ Global Instance prod_default {A B} `{Default A} `{Default B} : Default (A '× B)
   default := (default, default)
   }.
 
-Ltac ssprove_valid_2 :=
+Ltac ssprove_valid_location :=
+  try repeat (try (apply eqtype.predU1l ; reflexivity) ; try apply eqtype.predU1r).
+
+Ltac ssprove_valid_program :=
+  try (apply prog_valid) ;
+  try (apply valid_scheme ; apply prog_valid).
+
+Ltac destruct_choice_type_prod :=
   try match goal with
   | H : choice.Choice.sort (chElement (loc_type ?p)) |- _ =>
       unfold p in H ;
@@ -1676,8 +1832,10 @@ Ltac ssprove_valid_2 :=
   end ;
   repeat match goal with
          | H : prod _ _ |- _ => destruct H
-         end ;
+         end.
+
+Ltac ssprove_valid_2 :=
+  destruct_choice_type_prod ;
   ssprove_valid ;
-  try (apply prog_valid) ;
-  try (apply valid_scheme ; apply prog_valid) ;
-  try repeat (try (apply eqtype.predU1l ; reflexivity) ; try apply eqtype.predU1r).
+  ssprove_valid_program ;
+  ssprove_valid_location.
