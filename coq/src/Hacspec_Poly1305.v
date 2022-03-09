@@ -7,24 +7,25 @@ Open Scope bool_scope.
 Open Scope hacspec_scope.
 Require Import Hacspec_Lib.
 
-Definition poly_key_t := nseq (uint8) (usize 32).
+Notation poly_key_t := (nseq (uint8_choice) (usize 32)).
 
-Definition blocksize_v : uint_size :=
-  usize 16.
+Notation blocksize_v := (usize 16).
 
-Definition poly_block_t := nseq (uint8) (usize 16).
+Notation poly_block_t := (nseq (uint8_choice) (usize 16)).
 
-Definition poly1305_tag_t := nseq (uint8) (usize 16).
+Notation poly1305_tag_t := (nseq (uint8_choice) (usize 16)).
 
 Notation "'sub_block_t'" := (byte_seq) : hacspec_scope.
 
 Notation "'block_index_t'" := (uint_size) : hacspec_scope.
 
-Definition field_canvas_t := nseq (int8) (17).
+Definition field_canvas_t := nseq (int8_choice) (17).
 Definition field_element_t := nat_mod 0x03fffffffffffffffffffffffffffffffb.
 
-Notation "'poly_state_t'" := ((field_element_t × field_element_t × poly_key_t
+Notation "'poly_state_t'" := ((field_element_t '× field_element_t '× poly_key_t
 )) : hacspec_scope.
+
+Check (fun b_0 : poly_block_t => b_0 : seq _).
 
 Definition poly1305_encode_r (b_0 : poly_block_t) : field_element_t :=
   let n_1 : uint128 :=
@@ -72,7 +73,7 @@ Definition poly1305_update_blocks
   (m_16 : byte_seq)
   (st_17 : poly_state_t)
   : poly_state_t :=
-  let st_18 : (field_element_t × field_element_t × poly_key_t) :=
+  let st_18 : (field_element_t '× field_element_t '× poly_key_t) :=
     st_17 in 
   let n_blocks_19 : uint_size :=
     (seq_len (m_16)) / (blocksize_v) in 
@@ -92,7 +93,7 @@ Definition poly1305_update_last
   (b_23 : sub_block_t)
   (st_24 : poly_state_t)
   : poly_state_t :=
-  let st_25 : (field_element_t × field_element_t × poly_key_t) :=
+  let st_25 : (field_element_t '× field_element_t '× poly_key_t) :=
     st_24 in 
   let '(st_25) :=
     if (seq_len (b_23)) !=.? (usize 0):bool then (let '(acc_26, r_27, k_28) :=
@@ -110,9 +111,9 @@ Definition poly1305_update
   (m_29 : byte_seq)
   (st_30 : poly_state_t)
   : poly_state_t :=
-  let st_31 : (field_element_t × field_element_t × poly_key_t) :=
+  let st_31 : (field_element_t '× field_element_t '× poly_key_t) :=
     poly1305_update_blocks (m_29) (st_30) in 
-  let last_32 : seq uint8 :=
+  let last_32 : seq uint8_choice :=
     seq_get_remainder_chunk (m_29) (blocksize_v) in 
   poly1305_update_last (seq_len (last_32)) (last_32) (st_31).
 
@@ -122,7 +123,7 @@ Definition poly1305_finish (st_33 : poly_state_t) : poly1305_tag_t :=
   let n_36 : uint128 :=
     uint128_from_le_bytes (array_from_slice (default) (16) (k_35) (usize 16) (
         usize 16)) in 
-  let aby_37 : seq uint8 :=
+  let aby_37 : seq uint8_choice :=
     nat_mod_to_byte_seq_le (acc_34) in 
   let a_38 : uint128 :=
     uint128_from_le_bytes (array_from_slice (default) (16) (aby_37) (usize 0) (
@@ -130,7 +131,7 @@ Definition poly1305_finish (st_33 : poly_state_t) : poly1305_tag_t :=
   array_from_seq (16) (uint128_to_le_bytes ((a_38) .+ (n_36))).
 
 Definition poly1305 (m_39 : byte_seq) (key_40 : poly_key_t) : poly1305_tag_t :=
-  let st_41 : (field_element_t × field_element_t × poly_key_t) :=
+  let st_41 : (field_element_t '× field_element_t '× poly_key_t) :=
     poly1305_init (key_40) in 
   let st_41 :=
     poly1305_update (m_39) (st_41) in 

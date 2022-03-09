@@ -3,13 +3,13 @@ Global Set Warnings "-uniform-inheritance".
 Global Set Warnings "-auto-template".
 Global Set Warnings "-disj-pattern-notation".
 
-From mathcomp Require Import choice (* all_ssreflect *) (* ssreflect *) (* seq tuple *).
+From mathcomp Require fintype choice ssrbool. (* ssreflect *) (* seq tuple *)
+Import -(coercions) fintype choice ssrbool.
+
 From Crypt Require Import choice_type Package Prelude.
 Import PackageNotation.
 
 From extructures Require Import ord fset fmap.
-
-Check boolp.choice_of_Type.
 
 (*** Integers *)
 From Coq Require Import ZArith List.
@@ -22,6 +22,8 @@ From Coqprime Require GZnZ.
 Require Import Lia.
 
 Declare Scope hacspec_scope.
+
+Axiom secret : forall {WS : WORDSIZE},  (@int WS) -> (@int WS).
 
 Require Import Eqdep_dec Zquot Zwf.
 From compcert Require Import Coqlib Zbits.
@@ -54,14 +56,26 @@ Axiom int128_classify : int128 -> int128.
 (* CompCert integers' signedness is only interpreted through 'signed' and 'unsigned',
    and not in the representation. Therefore, uints are just names for their respective ints.
 *)
-Definition uint8 := int8.
-Definition uint16 := int16.
-Definition uint32 := int32.
-Definition uint64 := int64.
-Definition uint128 := int128.
 
-Definition uint_size := int32.
-Definition int_size := int32.
+Definition uint8_choice : choice_type := int8_choice.
+Definition uint16_choice : choice_type := int16_choice.
+Definition uint32_choice : choice_type := int32_choice.
+Definition uint64_choice : choice_type := int64_choice.
+Definition uint128_choice : choice_type := int128_choice.
+
+Definition uint_size_choice : choice_type := int32_choice.
+Definition int_size_choice : choice_type := int32_choice.
+
+
+Definition uint8 : Type := int8.
+
+Definition uint16 : Type := int16.
+Definition uint32 : Type := int32.
+Definition uint64 : Type := int64.
+Definition uint128 : Type := int128.
+
+Definition uint_size : Type := int32.
+Definition int_size : Type := int32.
 
 Axiom declassify_usize_from_uint8 : uint8 -> uint_size.
 
@@ -246,16 +260,21 @@ Theorem uint_size_as_nat :
       us = repr (Z.of_nat n) /\ (Z.pred 0 < Z.of_nat n < @modulus WORDSIZE32)%Z}.
 Proof.
   destruct us.
-  exists (Z.to_nat intval).
-  rewrite Z2Nat.id by (apply Z.lt_pred_le ; apply intrange).
+  unfold pos in *.
+  exists m.
 
   split.
-  - apply mkint_eq.
+  - unfold repr.
+    unfold mkint.
+    apply mkint_eq.
+    apply (ssrbool.elimT (@ssrnat.ltP (m) (Z.to_nat (@modulus WORDSIZE32)))) in i.
     rewrite Z_mod_modulus_eq.
     rewrite Z.mod_small.
-    + reflexivity.
+    + rewrite Nat2Z.id.
+      reflexivity.
     + lia.
-  - apply intrange.
+  - apply (ssrbool.elimT (@ssrnat.ltP (m) (Z.to_nat (@modulus WORDSIZE32)))) in i.
+    split ; lia.
 Qed.
 
 (* destruct uint_size as you would a natural number *)
@@ -312,18 +331,23 @@ Theorem uint_size_as_positive :
       }.
 Proof.
   destruct us.
-  destruct intval.
+  unfold pos in *.
+  destruct m.
   - exists (inl tt). apply mkint_eq. reflexivity.
-  - exists (inr p).
+  - exists (inr (Pos.of_nat (S m))).
+    
     split.
     + apply mkint_eq.
+      apply (ssrbool.elimT (@ssrnat.ltP (S m) (Z.to_nat (@modulus WORDSIZE32)))) in i.
       rewrite Z_mod_modulus_eq.
       symmetry.
-      apply Zmod_small.
+      rewrite Z2Nat.inj_mod ; try lia.
+      rewrite Z2Nat.inj_pos.
+      rewrite Nat2Pos.id by lia.
+      apply Nat.mod_small.
       lia.
-    + apply intrange.
-  - exfalso.
-    lia.
+    + apply (ssrbool.elimT (@ssrnat.ltP (S m) (Z.to_nat (@modulus WORDSIZE32)))) in i.
+      lia.
 Defined.
 
 (* destruction of uint_size as positive *)
@@ -427,7 +451,7 @@ Definition foldi_nat
   (hi: nat) (* {lo <= hi} *)
   (f: nat -> acc -> acc) (* {i < hi} *)
   (init: acc) : acc :=
-  match Nat.sub hi lo with
+  match (hi - lo)%nat with
   | O => init
   | S n' => foldi_nat_ (S n') lo f init
   end.
@@ -581,9 +605,9 @@ Proof.
   unfold foldi_nat.
   intros.
   
-  assert (succ_sub_diag : forall n, (S n - n = 1)%nat) by lia.
+  assert (succ_sub_diag : forall n, (S n - n = 1)%nat) by (induction n ; [ reflexivity | apply IHn ]).
   rewrite (succ_sub_diag lo).
-
+  
   induction hi ; [ lia | ].
   destruct (S hi =? S lo)%nat eqn:hi_eq_lo.
   - apply Nat.eqb_eq in hi_eq_lo ; rewrite hi_eq_lo in *.
@@ -596,7 +620,7 @@ Proof.
     + lia.
     + rewrite (Nat.sub_succ_l (S lo)) by apply (Nat.lt_le_pred _ _ H0).
       rewrite Nat.sub_succ_l by apply (Nat.lt_le_pred _ _ H).
-      replace ((S (hi - S lo))) with (hi - lo)%nat by lia.
+      replace (S (hi - S lo)) with (hi - lo)%nat by lia.
       reflexivity.
 Qed.
 
@@ -620,9 +644,8 @@ Proof.
     replace (S k + lo)%nat with (k + S lo)%nat by lia.
     specialize (IHk acc (S lo) hi f (foldi_nat lo (S lo) f init)).
     rewrite IHk by lia.
-    f_equal.
     rewrite <- foldi_nat_split_S by lia.
-    reflexivity.
+    reflexivity.    
 Qed.
 
 (* folds can be split at some midpoint *)
@@ -677,16 +700,12 @@ Definition nseq' (A : choice_type) (len : nat) : choice_type :=
   | S n => chMap ('fin (S n)) A
   end.
 
-Definition nseq : forall (A : choice_type) (len : nat), Type :=
-  fun A len => nseq' A len.
+Definition nseq (A : choice_type) (len : nat) := (nseq' A len : Type).
 
-Definition unit_nseq_zero_nat (A : choice_type) (t : unit) : nseq A 0 := tt.
-Global Coercion unit_nseq_zero_nat : unit >-> nseq.
+Definition seq (A : choice_type) := (chMap 'nat A : Type).
 
-Definition seq (A : choice_type) := chMap 'nat A.
-  
-Definition public_byte_seq := seq (int8).
-Definition byte_seq := seq (int8).
+Notation public_byte_seq := (seq int8_choice).
+Notation byte_seq := (seq int8_choice).
 Definition list_len := length.
 
 Definition seq_index {A: choice_type} `{Default A} (s: seq A) (i : nat) : A :=
@@ -695,7 +714,7 @@ Definition seq_index {A: choice_type} `{Default A} (s: seq A) (i : nat) : A :=
   | None => default
   end.
 
-Definition seq_len {A: choice_type} (s: seq A) : N := N.of_nat (length s).
+Definition seq_len {A: choice_type} (s: seq A) : nat := (length s).
 
 Fixpoint insert_or_extend {A : Type} (n : nat) (a : A) (l : list A) {struct n} :=
   match n with
@@ -711,7 +730,7 @@ Proof.
   induction s.
   - apply [].
   - cbn in *.
-    destruct a.
+    destruct a as [_ s0].
     apply (s0 :: IHs).
 Defined.
 
@@ -721,22 +740,10 @@ Fixpoint list_iter (n : nat) (k : nat) `{(n <= k)%nat} : list { x : nat | (x < k
   destruct n.
   - apply [].
   - apply app.
-    + assert (H0: (n <= k)%nat).
-      {
-        apply ltnSE.
-        apply leqW.
-        (* apply ltnW. *)
-        apply H.
-      }
+    + assert (H0: (n <= k)%nat) by lia.
       apply (list_iter n k H0).
     + apply cons.
-      * assert (H1: (n < k)%nat).
-        {
-          apply ltnSE.
-          (* apply leqW. *)
-          (* apply ltnW. *)
-          apply H.
-        }
+      * assert (H1: (n < k)%nat) by lia.
         apply (@exist nat (fun x => (x < k)%nat) n H1).
       * apply nil.
 Defined.
@@ -748,33 +755,16 @@ Proof.
   destruct l as [ | x xs ].
   - apply tt.
   - pose (l := x :: xs).
-    pose (zip l (@list_iter (length l) (length l) (leqnn (length l)))).
-    apply (foldr (fun (x : A * { x : nat | (x < length l)%nat }) y =>
+    pose (seq.zip l (@list_iter (length l) (length l) (le_n (length l)))).
+    apply (seq.foldr (fun (x : A * { x : nat | (x < length l)%nat }) y =>
                    setm
                      (S := A)
                      y
-                     (Ordinal (n := length l) (m := proj1_sig (snd x)) (proj2_sig (snd x)))
+                     (fintype.Ordinal (n := length l) (m := proj1_sig (snd x)) (((ssrbool.introT ssrnat.leP)) (proj2_sig (snd x))))
                      (fst x))
                 emptym
-                (zip l (@list_iter (length l) (length l) (leqnn (length l))))).
+                (seq.zip l (@list_iter (length l) (length l) (le_n (length l))))).
 Defined.
-
-Definition array_from_list_nat (l: list 'nat) : nseq 'nat (length l) :=
-  array_from_list 'nat l.
-
-(* Definition array_from_list_nat_nil (A : choice_type) (l: list A) : nseq A (length l) := *)
-(*   array_from_list A l. *)
-(* Global Coercion array_from_list_nat_nil : list >-> nseq. *)
-
-Definition array_from_list_nat_nil (l: list 'nat) : nseq 'nat (length l) :=
-  array_from_list 'nat l.
-Global Coercion array_from_list_nat_nil : list >-> nseq.
-
-(* Check Funclass. *)
-
-
-
-
 
 (**** Array manipulation *)
 
@@ -792,12 +782,12 @@ Open Scope nat_scope.
 
 Definition array_index' {A: choice_type} `{Default A} {len : nat} (s: nseq' A len) (i: nat) : A.
 Proof.
-  destruct (i < len) eqn:H1.
+  destruct (i <? len) eqn:H1.
   (* If i < len, index normally *)
-  - (* apply Nat.ltb_lt in H1. *)
-    destruct len. { inversion H1. }
-    destruct (@getm _ _ s (Ordinal (n := len.+1) (m := i) H1)).
-    + exact s0.
+  - apply Nat.ltb_lt in H1.
+    destruct len. { lia. }
+    destruct (@getm _ _ s (Ordinal (n := S len) (m := i) (introT ssrnat.ltP H1))) as [f | _].
+    + exact f.
     + exact default.
 
   (* otherwise return default element *)
@@ -809,11 +799,11 @@ Definition array_index {A: choice_type} `{Default A} {len : nat} (s: nseq A len)
 
 Definition array_upd' {A: choice_type} {len : nat} (s: nseq' A len) (i: nat) (new_v: A) : nseq' A len.
 Proof.
-  destruct (i < len) eqn:v.
+  destruct (i <? len) eqn:v.
   (* If i < len, update normally *)
-  - (* apply Nat.ltb_lt in H. *)
-    destruct len. { inversion v. }
-    apply (setm s (Ordinal (m := i) v) new_v).
+  - apply Nat.ltb_lt in v.
+    destruct len. { lia. }
+    apply (setm s (Ordinal (m := i) (introT ssrnat.ltP v)) new_v).
 
     (* exact (VectorDef.replace s (Fin.of_nat_lt H) new_v). *)
   (* otherwise return original array *)
@@ -854,14 +844,14 @@ Proof.
   apply (update_sub' out 0 (out_len - 1) (@array_from_list _ (@seq_to_list _ input))).
 Defined.
 
-Global Coercion array_from_seq
+Definition array_from_seq
   {a: choice_type}
  `{Default a}
   (out_len:nat)
   (input: seq a)
   : nseq (a) out_len :=
    (@array_from_seq' a H out_len input).
-(* Global Coercion array_from_coercion : seq >-> nseq.  *) (* TODO: Fix coercions ! *)
+Global Coercion array_from_seq : seq >-> nseq.
 
 
 Definition slice {A} (l : list A) (i j : nat) : list A :=
@@ -876,40 +866,34 @@ Fixpoint array_to_list_helper {A : choice_type} {n} (f : nseq A (S n)) (i : nat)
            | None => []
            | Some a => array_to_list_helper A n f i' _ ++ [a]
            end.
-    easy.
-    apply ltnW.
-    apply H.
+    + unfold pos.
+      apply (introT ssrnat.ltP).
+      lia.
+    + lia.
 Defined.  
 
 Definition array_to_list {A : choice_type} {n} (f : nseq' A n) : list A.
   destruct n.
   - apply [].
   - refine (array_to_list_helper f (S n) (H := _)).
-    apply (ltnSn n.+1).
+    lia.
 Defined.
 
 Definition array_to_seq {A : choice_type} {n} (f : nseq A n) :=
   seq_from_list _ (array_to_list f).
 
-(* Global Coercion array_to_seq : nseq >-> seq. *)
-Global Coercion array_to_seq_coerce {A : choice_type} `{Default A} {n} (f : nseq A n) :=
-  array_to_seq f.
+Global Coercion array_to_seq : nseq >-> seq.
 
 Definition positive_slice' {A : choice_type} `{Hd: Default A} {n} `{H: Positive n} (l : nseq' A n) (i j : nat) `{H1: i < j} `{j - i < length (array_to_list l) - i} : Positive (length (slice (array_to_list l) i j)).
 Proof.
   unfold slice.
-  rewrite (proj2 (Nat.leb_gt j i) (elimT (@ltP i j) H1)).
+  rewrite (proj2 (Nat.leb_gt j i) (H1)).
   rewrite firstn_length_le.
   - unfold Positive.
-    pose subn_gt0.
-    rewrite <- e in H1.
-    apply ltn_addr.
-    assumption.
+    apply (introT ssrnat.ltP).
+    lia.
   - rewrite skipn_length.
-    apply lt_n_Sm_le.
-    replace (length (array_to_list l) - i)%coq_nat.+1 with (length (array_to_list l) - i + 1) by apply addn1.
-    apply (plus_lt_compat_r).
-    apply (elimT ltP), H0.
+    lia.
 Defined.
 
 Theorem slice_length :
@@ -919,9 +903,7 @@ Theorem slice_length :
 Proof.
   intros.
   unfold slice.
-  destruct (j <=? i).
-  - reflexivity.
-  - reflexivity.
+  destruct (j <=? i) ; reflexivity.
 Qed.      
 
 Definition positive_slice {A : choice_type} `{Hd: Default A} {n} `{H: Positive n} (l : nseq A n) (i j : nat) `{H1: i < j} `{j - i < length (array_to_list l) - i} : Positive (length (slice (array_to_list l) i j)).
@@ -952,8 +934,7 @@ Definition array_from_slice'
   (slice_len: nat)
   : nseq' a out_len.
   pose (out := array_new_' default out_len).
-  pose (@array_from_seq' _ _ out_len input (* H1 *)).
-  apply s.
+  apply (@array_from_seq' _ _ out_len input (* H1 *)).
 Defined.
 
 Definition array_from_slice
@@ -966,12 +947,11 @@ Definition array_from_slice
   (slice_len: nat)
   : nseq a out_len.
 Proof.
-  pose (@array_from_seq'
+  apply (@array_from_seq'
           (a)
           (_)
           out_len
           (input) ).
-  apply s.
 Defined.
                   
 Definition array_slice
@@ -1010,7 +990,7 @@ Proof.
   pose (out := array_new_ default_value out_len).
   destruct start_fin as [start fin].
   refine (update_sub out 0 ((from_uint_size fin) - (from_uint_size start)) _).
-  apply (@lseq_slice a (fin - start) (array_from_seq (fin - start) input) start fin).
+  apply (@lseq_slice a ((from_uint_size fin) - (from_uint_size start)) (array_from_seq ((from_uint_size fin) - (from_uint_size start)) input) (from_uint_size start) (from_uint_size fin)).
 Defined.  
     (* let out := array_new_ default_value out_len in *)
     (* let (start, fin) := start_fin in *)
@@ -1229,7 +1209,7 @@ Definition seq_get_exact_chunk {a : choice_type} `{Default a} (l : seq a) (chunk
 
 Definition seq_set_exact_chunk {a : choice_type} `{H : Default a} := @seq_set_chunk a H.
 
-Definition seq_get_remainder_chunk : forall {a : choice_type},  `{Default a} -> seq a -> uint_size -> seq a :=
+Definition seq_get_remainder_chunk : forall {a : choice_type} `{Default a},  seq a -> uint_size -> seq a :=
   fun _ _ l chunk_size =>
     let chunks := seq_num_chunks l (from_uint_size chunk_size) in
     let last_chunk := if 0 <? chunks then
@@ -1292,9 +1272,9 @@ Fixpoint array_eq_
 Proof.
   destruct len ; cbn in *.
   - exact  true.
-  - destruct (getm s1 (Ordinal (m := len) (ltnSn _))).
-    + destruct (getm s2 (Ordinal (m := len) (ltnSn _))).
-      * exact (eq (s) (s0)).
+  - destruct (getm s1 (Ordinal (m := len) (ssrnat.ltnSn _))) as [s | _].
+    + destruct (getm s2 (Ordinal (m := len) (ssrnat.ltnSn _))) as [s0 | _].
+      * exact (eq s s0).
       * exact false.
     + exact false.
 Defined.
@@ -1304,91 +1284,91 @@ Infix "array_neq" := (fun s1 s2 => negb (array_eq_ eq s1 s2)) (at level 33) : ha
 
 
 (**** Integers to arrays *)
-Axiom uint32_to_le_bytes : int32 -> nseq int8 4.
+Axiom uint32_to_le_bytes : int32 -> nseq int8_choice 4.
 (* Definition uint32_to_le_bytes (x: uint32) : nseq uint8 4 :=
   LBSeq.uint_to_bytes_le x. *)
 
-Axiom uint32_to_be_bytes : int32 -> nseq int8 4.
+Axiom uint32_to_be_bytes : int32 -> nseq int8_choice 4.
 (* Definition uint32_to_be_bytes (x: uint32) : nseq uint8 4 :=
   LBSeq.uint_to_bytes_be x *)
 
-Axiom uint32_from_le_bytes : nseq int8 4 -> int32.
+Axiom uint32_from_le_bytes : nseq int8_choice 4 -> int32.
 (* Definition uint32_from_le_bytes (s: nseq uint8 4) : uint32 :=
   LBSeq.uint_from_bytes_le s *)
 
-Axiom uint32_from_be_bytes : nseq int8 4 -> int32.
+Axiom uint32_from_be_bytes : nseq int8_choice 4 -> int32.
 (* Definition uint32_from_be_bytes (s: nseq uint8 4) : uint32 :=
   LBSeq.uint_from_bytes_be s *)
 
-Axiom uint64_to_le_bytes : int64 -> nseq int8 8.
+Axiom uint64_to_le_bytes : int64 -> nseq int8_choice 8.
 (* Definition uint64_to_le_bytes (x: uint64) : nseq uint8 8 :=
   LBSeq.uint_to_bytes_le x *)
 
-Axiom uint64_to_be_bytes : int64 -> nseq int8 8.
+Axiom uint64_to_be_bytes : int64 -> nseq int8_choice 8.
 (* Definition uint64_to_be_bytes (x: uint64) : nseq uint8 8 :=
   LBSeq.uint_to_bytes_be x *)
 
-Axiom uint64_from_le_bytes : nseq int8 8 -> int64.
+Axiom uint64_from_le_bytes : nseq int8_choice 8 -> int64.
 (* Definition uint64_from_le_bytes (s: nseq uint8 8) : uint64 :=
   LBSeq.uint_from_bytes_le s *)
 
-Axiom uint64_from_be_bytes : nseq int8 8 -> int64.
+Axiom uint64_from_be_bytes : nseq int8_choice 8 -> int64.
 (* Definition uint64_from_be_bytes (s: nseq uint8 8) : uint64 :=
   LBSeq.uint_from_bytes_be s *)
 
-Axiom uint128_to_le_bytes : int128 -> nseq int8 16.
+Axiom uint128_to_le_bytes : int128 -> nseq int8_choice 16.
 (* Definition uint128_to_le_bytes (x: uint128) : nseq uint8 16 :=
   LBSeq.uint_to_bytes_le x *)
 
-Axiom uint128_to_be_bytes : int128 -> nseq int8 16.
+Axiom uint128_to_be_bytes : int128 -> nseq int8_choice 16.
 (* Definition uint128_to_be_bytes (x: uint128) : nseq uint8 16 :=
   LBSeq.uint_to_bytes_be x *)
 
-Axiom uint128_from_le_bytes : nseq int8 16 -> int128.
+Axiom uint128_from_le_bytes : nseq int8_choice 16 -> int128.
 (* Definition uint128_from_le_bytes (input: nseq uint8 16) : uint128 :=
   LBSeq.uint_from_bytes_le input *)
 
-Axiom uint128_from_be_bytes : nseq int8 16 -> int128.
+Axiom uint128_from_be_bytes : nseq int8_choice 16 -> int128.
 (* Definition uint128_from_be_bytes (s: nseq uint8 16) : uint128 :=
   LBSeq.uint_from_bytes_be s *)
 
-Axiom u32_to_le_bytes : int32 -> nseq int8 4.
+Axiom u32_to_le_bytes : int32 -> nseq int8_choice 4.
 (* Definition u32_to_le_bytes (x: pub_uint32) : nseq pub_uint8 4 :=
   LBSeq.uint_to_bytes_le x *)
 
-Axiom u32_to_be_bytes : int32 -> nseq int8 4.
+Axiom u32_to_be_bytes : int32 -> nseq int8_choice 4.
 (* Definition u32_to_be_bytes (x: pub_uint32) : nseq pub_uint8 4 :=
   LBSeq.uint_to_bytes_be x *)
 
-Axiom u32_from_le_bytes : nseq int8 4 -> int32.
+Axiom u32_from_le_bytes : nseq int8_choice 4 -> int32.
 (* Definition u32_from_le_bytes (s: nseq pub_uint8 4) : pub_uint32 :=
   LBSeq.uint_from_bytes_le s *)
 
-Axiom u32_from_be_bytes : nseq int8 4 -> int32.
+Axiom u32_from_be_bytes : nseq int8_choice 4 -> int32.
 (* Definition u32_from_be_bytes (s: nseq pub_uint8 4) : pub_uint32 :=
   LBSeq.uint_from_bytes_be s *)
 
-Axiom u64_to_le_bytes : int64 -> nseq int8 8.
+Axiom u64_to_le_bytes : int64 -> nseq int8_choice 8.
 (* Definition u64_to_le_bytes (x: int64) : nseq int8 8 :=
   LBSeq.uint_to_bytes_le x *)
 
-Axiom u64_from_le_bytes : nseq int8 8 -> int64.
+Axiom u64_from_le_bytes : nseq int8_choice 8 -> int64.
 (* Definition u64_from_le_bytes (s: nseq int8 8) : int64 :=
   LBSeq.uint_from_bytes_le s *)
 
-Axiom u128_to_le_bytes : int128 -> nseq int8 16.
+Axiom u128_to_le_bytes : int128 -> nseq int8_choice 16.
 (* Definition u128_to_le_bytes (x: int128) : nseq int8 16 :=
   LBSeq.uint_to_bytes_le x *)
 
-Axiom u128_to_be_bytes : int128 -> nseq int8 16.
+Axiom u128_to_be_bytes : int128 -> nseq int8_choice 16.
 (* Definition u128_to_be_bytes (x: int128) : nseq int8 16 :=
   LBSeq.uint_to_bytes_be x *)
 
-Axiom u128_from_le_bytes : nseq int8 16 -> int128.
+Axiom u128_from_le_bytes : nseq int8_choice 16 -> int128.
 (* Definition u128_from_le_bytes (input: nseq int8 16) : int128 :=
   LBSeq.uint_from_bytes_le input *)
 
-Axiom u128_from_be_bytes : nseq int8 16 -> int128.
+Axiom u128_from_be_bytes : nseq int8_choice 16 -> int128.
 (* Definition u128_from_be_bytes (s: nseq int8 16) : pub_uint128 :=
   LBSeq.uint_from_bytes_be s *)
 
@@ -1405,10 +1385,6 @@ Definition nat_mod_equal {p} (a b : nat_mod p) : bool :=
 Definition nat_mod_zero {p} : nat_mod p := GZnZ.zero p.
 Definition nat_mod_one {p} : nat_mod p := GZnZ.one p.
 Definition nat_mod_two {p} : nat_mod p := GZnZ.mkznz p _ (GZnZ.modz p 2).
-
-
-(* convenience coercions from nat_mod to Z and N *)
-(* Coercion Z.of_N : N >-> Z. *)
 
 Definition nat_mod_add {n : Z} (a : nat_mod n) (b : nat_mod n) : nat_mod n := GZnZ.add n a b.
 
@@ -1458,10 +1434,10 @@ Defined.
 
 Definition nat_mod_from_literal (m : Z) (x:int128) : nat_mod m := nat_mod_from_secret_literal x.
 
-Axiom nat_mod_to_byte_seq_le : forall {n : Z}, nat_mod n -> seq int8.
-Axiom nat_mod_to_byte_seq_be : forall {n : Z}, nat_mod n -> seq int8.
-Axiom nat_mod_to_public_byte_seq_le : forall (n : Z), nat_mod n -> seq int8.
-Axiom nat_mod_to_public_byte_seq_be : forall (n : Z), nat_mod n -> seq int8.
+Axiom nat_mod_to_byte_seq_le : forall {n : Z}, nat_mod n -> seq int8_choice.
+Axiom nat_mod_to_byte_seq_be : forall {n : Z}, nat_mod n -> seq int8_choice.
+Axiom nat_mod_to_public_byte_seq_le : forall (n : Z), nat_mod n -> seq int8_choice.
+Axiom nat_mod_to_public_byte_seq_be : forall (n : Z), nat_mod n -> seq int8_choice.
 
 Definition nat_mod_bit {n : Z} (a : nat_mod n) (i : uint_size) :=
   Z.testbit (GZnZ.val n a) (from_uint_size i).
@@ -1483,10 +1459,10 @@ Definition nat_mod_to_public_byte_seq_le (n: pos)  (len: uint_size) (x: nat_mod_
   Lib.ByteSequence.nat_to_bytes_be len n' *)
 
 Axiom array_declassify_eq : forall  {A l}, nseq A l -> nseq A l -> bool.
-Axiom array_to_le_uint32s : forall {A l}, nseq A l -> nseq uint32 l.
-Axiom array_to_be_uint32s : forall {l}, nseq uint8 l -> nseq uint32 (l/4).
-Axiom array_to_le_bytes : forall {A l}, nseq A l -> seq uint8.
-Axiom array_to_be_bytes : forall {A l}, nseq A l -> seq uint8.
+Axiom array_to_le_uint32s : forall {A l}, nseq A l -> nseq uint32_choice l.
+Axiom array_to_be_uint32s : forall {l}, nseq uint8_choice l -> nseq uint32_choice (l/4).
+Axiom array_to_le_bytes : forall {A l}, nseq A l -> seq uint8_choice.
+Axiom array_to_be_bytes : forall {A l}, nseq A l -> seq uint8_choice.
 Axiom nat_mod_from_byte_seq_le : forall  {A n}, seq A -> nat_mod n.
 Axiom most_significant_bit : forall {m}, nat_mod m -> uint_size -> uint_size.
 
@@ -1584,91 +1560,70 @@ Section Coercions.
   Global Coercion N.to_nat : N >-> nat.
   Global Coercion Z.of_N : N >-> Z.
 
-  (* TODO Re-add *)
-  (* Global Coercion repr : Z >-> int. *)
+  Global Coercion repr : Z >-> int.
 
   Definition Z_to_int `{WORDSIZE} (n : Z) : int := repr n.
-  (* TODO Re-add *)
-  (* Global Coercion  Z_to_int : Z >-> int. *)
+  Global Coercion  Z_to_int : Z >-> int.
 
   Definition Z_to_uint_size (n : Z) : uint_size := repr n.
-  (* TODO Re-add *)
-  (* Global Coercion Z_to_uint_size : Z >-> uint_size. *)
+
+  Global Coercion Z_to_uint_size : Z >-> uint_size.
   Definition Z_to_int_size (n : Z) : int_size := repr n.
-  (* TODO Re-add *)
-  (* Global Coercion Z_to_int_size : Z >-> int_size. *)
+  Global Coercion Z_to_int_size : Z >-> int_size.
 
   Definition N_to_int `{WORDSIZE} (n : N) : int := repr (Z.of_N n).
   Global Coercion N.of_nat : nat >-> N.
-  (* TODO Re-add *)
-  (* Global Coercion N_to_int : N >-> int. *)
+  Global Coercion N_to_int : N >-> int.
   Definition N_to_uint_size (n : Z) : uint_size := repr n.
-  (* TODO Re-add *)
-  (* Global Coercion N_to_uint_size : Z >-> uint_size. *)
+  Global Coercion N_to_uint_size : Z >-> uint_size.
   Definition nat_to_int `{WORDSIZE} (n : nat) := repr (Z.of_nat n).
-  (* TODO Re-add *)
-  (* Global Coercion nat_to_int : nat >-> int. *)
+  Global Coercion nat_to_int : nat >-> int.
 
   Definition uint_size_to_nat (n : uint_size) : nat := from_uint_size n.
-  (* TODO Re-add *)
-  (* Global Coercion uint_size_to_nat : uint_size >-> nat. *)
+  Global Coercion uint_size_to_nat : uint_size >-> nat.
 
   Definition uint_size_to_Z (n : uint_size) : Z := from_uint_size n.
-  (* TODO Re-add *)
-  (* Global Coercion uint_size_to_Z : uint_size >-> Z. *)
+  Global Coercion uint_size_to_Z : uint_size >-> Z.
 
   Definition uint32_to_nat (n : uint32) : nat := Z.to_nat (unsigned n).
-  (* TODO Re-add *)
-  (* Global Coercion uint32_to_nat : uint32 >-> nat. *)
+  Global Coercion uint32_to_nat : uint32 >-> nat.
 
 
   Global Coercion GZnZ.val : GZnZ.znz >-> Z.
 
   Definition int8_to_nat (n : int8) : nat := Z.to_nat (unsigned n).
-  (* TODO Re-add *)
-  (* Global Coercion int8_to_nat : int8 >-> nat. *)
+  Global Coercion int8_to_nat : int8 >-> nat.
   Definition int16_to_nat (n : int16) : nat := Z.to_nat (unsigned n).
-  (* TODO Re-add *)
-  (* Global Coercion int16_to_nat : int16 >-> nat. *)
+  Global Coercion int16_to_nat : int16 >-> nat.
   Definition int32_to_nat (n : int32) : nat := Z.to_nat (unsigned n).
-  (* TODO Re-add *)
-  (* Global Coercion int32_to_nat : int32 >-> nat. *)
+  Global Coercion int32_to_nat : int32 >-> nat.
   Definition int64_to_nat (n : int64) : nat := Z.to_nat (unsigned n).
-  (* TODO Re-add *)
-  (* Global Coercion int64_to_nat : int64 >-> nat. *)
+  Global Coercion int64_to_nat : int64 >-> nat.
   Definition int128_to_nat (n : int128) : nat := Z.to_nat (unsigned n).
-  (* TODO Re-add *)
-  (* Global Coercion int128_to_nat : int128 >-> nat. *)
+  Global Coercion int128_to_nat : int128 >-> nat.
 
   (* coercions int8 >-> int16 >-> ... int128 *)
 
   Definition int8_to_int16 (n : int8) : int16 := repr n.
-  (* TODO Re-add *)
-  (* Global Coercion int8_to_int16 : int8 >-> int16. *)
+  Global Coercion int8_to_int16 : int8 >-> int16.
 
   Definition int8_to_int32 (n : int8) : int32 := repr n.
-  (* TODO Re-add *)
-  (* Global Coercion int8_to_int32 : int8 >-> int32. *)
+  Global Coercion int8_to_int32 : int8 >-> int32.
 
   Definition int16_to_int32 (n : int16) : int32 := repr n.
-  (* TODO Re-add *)
-  (* Global Coercion int16_to_int32 : int16 >-> int32. *)
+  Global Coercion int16_to_int32 : int16 >-> int32.
 
   Definition int32_to_int64 (n : int32) : int64 := repr n.
-  (* TODO Re-add *)
-  (* Global Coercion int32_to_int64 : int32 >-> int64. *)
+  Global Coercion int32_to_int64 : int32 >-> int64.
 
   Definition int64_to_int128 (n : int64) : int128 := repr n.
-  (* TODO Re-add *)
-  (* Global Coercion int64_to_int128 : int64 >-> int128. *)
-
+  Global Coercion int64_to_int128 : int64 >-> int128.
+  
   Definition int32_to_int128 (n : int32) : int128 := repr n.
-  (* TODO Re-add *)
-  (* Global Coercion int32_to_int128 : int32 >-> int128. *)
+  Global Coercion int32_to_int128 : int32 >-> int128.
 
   Definition uint_size_to_int64 (n : uint_size) : int64 := repr n.
-  (* TODO Re-add *)
-  (* Global Coercion uint_size_to_int64 : uint_size >-> int64. *)
+  Global Coercion uint_size_to_int64 : uint_size >-> int64.
 
 
   (* coercions into nat_mod *)
@@ -1977,15 +1932,16 @@ Definition nat_be_range (k : nat) (z : Z) (n : nat) : Z :=
 
 Compute nat_be_range 4 0 300.
 
-Definition u64_to_be_bytes' : int64 -> nseq int8 8 :=
-  fun k => array_from_list (int8) [@nat_to_int WORDSIZE8 (Z.to_nat (nat_be_range 4 k 7)) ;
-                               @nat_to_int WORDSIZE8 (Z.to_nat (nat_be_range 4 k 6)) ;
-                               @nat_to_int WORDSIZE8 (Z.to_nat (nat_be_range 4 k 5)) ;
-                               @nat_to_int WORDSIZE8 (Z.to_nat (nat_be_range 4 k 4)) ;
-                               @nat_to_int WORDSIZE8 (Z.to_nat (nat_be_range 4 k 3)) ;
-                               @nat_to_int WORDSIZE8 (Z.to_nat (nat_be_range 4 k 2)) ;
-                               @nat_to_int WORDSIZE8 (Z.to_nat (nat_be_range 4 k 1)) ;
-                               @nat_to_int WORDSIZE8 (Z.to_nat (nat_be_range 4 k 0))].
+(* TODO: readd *)
+(* Definition u64_to_be_bytes' : int64 -> nseq int8 8 := *)
+(*   fun k => array_from_list (int8) [@nat_to_int WORDSIZE8 (Z.to_nat (nat_be_range 4 k 7)) ; *)
+(*                                @nat_to_int WORDSIZE8 (Z.to_nat (nat_be_range 4 k 6)) ; *)
+(*                                @nat_to_int WORDSIZE8 (Z.to_nat (nat_be_range 4 k 5)) ; *)
+(*                                @nat_to_int WORDSIZE8 (Z.to_nat (nat_be_range 4 k 4)) ; *)
+(*                                @nat_to_int WORDSIZE8 (Z.to_nat (nat_be_range 4 k 3)) ; *)
+(*                                @nat_to_int WORDSIZE8 (Z.to_nat (nat_be_range 4 k 2)) ; *)
+(*                                @nat_to_int WORDSIZE8 (Z.to_nat (nat_be_range 4 k 1)) ; *)
+(*                                @nat_to_int WORDSIZE8 (Z.to_nat (nat_be_range 4 k 0))]. *)
 
 Open Scope hacspec_scope.
 

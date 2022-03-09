@@ -110,18 +110,56 @@ Hint Resolve modulus_pos: ints.
   integer (type [Z]) plus a proof that it is in the range 0 (included) to
   [modulus] (excluded). *)
 
-From mathcomp Require Import all_ssreflect (* ssreflect *) (* seq tuple *).
+From mathcomp Require fintype choice. (* ssreflect *) (* seq tuple *)
+Import -(coercions) fintype choice.
+
+(* From mathcomp Require Import all_ssreflect. *)
+
 From Crypt Require Import choice_type Package Prelude.
 Import PackageNotation.
 
 From extructures Require Import ord fset fmap.
 
-Theorem expn_is_pow : forall n, expn 2 n = Z.to_nat (two_power_nat n).
+Coercion choice_type_to_type (a : choice_type) : Type.
+Proof.
+  pose (Choice.sort (chElement a)).
+  unfold Choice.sort in T.
+  unfold chElement in T.
+
+  induction a ; cbn in T.
+  - apply unit.
+  - apply nat.
+  - apply bool.
+  - cbn in IHa1.
+    cbn in IHa2.
+    apply (IHa1 * IHa2).
+  - cbn in IHa1.
+    cbn in IHa2.
+    apply (FMap.fmap_type (chElement_ordType a1) IHa2).
+  - cbn in IHa.
+    apply (option IHa).
+  - apply T.
+Defined.
+  (* := unkeyed (Choice.sort (chElement a)). *)
+(* Coercion choice_type_to_type : choice_type >-> Sortclass. *)
+
+Print Coercion Paths choice_type Sortclass.
+
+
+Theorem proj_sumbool_helper : (forall {T} x {k} (y z : T), (match proj_sumbool (zlt x k) with true => y | false => z end) = (match zlt x k with left _ => y | right _ => z end)).
+Proof.
+    intros.
+    unfold proj_sumbool.
+    destruct (zlt x k) ; reflexivity.
+Qed.
+
+
+Theorem expn_is_pow : forall n, ssrnat.expn 2 n = Z.to_nat (two_power_nat n).
 Proof.
   intros.
   induction n.
   - reflexivity.
-  - rewrite expnS.
+  - rewrite ssrnat.expnS.
     rewrite two_power_nat_S.
     rewrite Z2Nat.inj_mul.
     + rewrite IHn.
@@ -130,20 +168,33 @@ Proof.
     + easy.
 Qed.
 
-Program Definition int : choice_type.
-Proof.
-  apply chFin.
-  apply (@mkpos (Z.to_nat modulus)). (* (Nat.pow 2 wordsize) *)
-  unfold modulus.
-  rewrite <- (expn_is_pow wordsize).
-  apply (PositiveExp2 wordsize).
-Defined.
+Definition int' := (chFin
+   (@mkpos (Z.to_nat modulus)
+      (@eq_ind nat (ssrnat.expn 2%nat (@wordsize WS)) (Positive)
+         (PositiveExp2 (@wordsize WS)) (Z.to_nat (two_power_nat (@wordsize WS)))
+         (expn_is_pow (@wordsize WS)) : Positive (Z.to_nat modulus)))).
+
+(* Proof. *)
+(*   apply chFin . *)
+(*   apply (@mkpos (Z.to_nat modulus)). (* (Nat.pow 2 wordsize) *) *)
+(*   unfold modulus. *)
+(*   rewrite <- (expn_is_pow wordsize). *)
+(*   apply (PositiveExp2 wordsize). *)
+(*   Set Printing All. *)
+(*   Show Proof. *)
+(* Defined. *)
+Definition int : Type := int'.
+(*   pose (choice_type_to_type int'). *)
+(*   cbn in T. *)
+(*   apply T. *)
+(* Defined. *)
+
 Program Definition mkint (z : Z) (intrange: -1 < z < modulus) : int :=
   (Ordinal (n := Z.to_nat modulus) (m := (Z.to_nat z)) _).
 Next Obligation.
   (* apply (Ordinal (n := Z.to_nat modulus) (m := (Z.to_nat z))). *)
   intros.
-  apply (introT (@ltP (Z.to_nat _) (Z.to_nat modulus))).
+  apply (ssrbool.introT (@ssrnat.ltP (Z.to_nat _) (Z.to_nat modulus))).
   apply Z2Nat.inj_lt.
   - lia.
   - easy.
@@ -218,7 +269,7 @@ Lemma mkint_eq':
   forall x y Px Py, x = y -> Ordinal (n := Z.to_nat modulus) (m := Z.to_nat x) Px = Ordinal (n := Z.to_nat modulus) (m := Z.to_nat y) Py.
 Proof.
   intros. subst y.
-  assert (forall (n m: Z) (P1 P2: (Z.to_nat n < Z.to_nat m)%nat), P1 = P2).
+  assert (forall (n m: Z) (P1 P2: is_true (ssrnat.leq (S (Z.to_nat n)) (Z.to_nat m))%nat), P1 = P2).
   {
     unfold Z.lt; intros.
     apply eq_proofs_unicity.
@@ -250,7 +301,7 @@ Proof.
   - lia.
   - rewrite <- Z2Nat.id.
     apply inj_lt.
-    + apply (elimT (@ltP i (Z.to_nat modulus))).
+    + apply (ssrbool.elimT ssrnat.ltP).
       apply i0.
     + easy.
 Qed.
@@ -695,11 +746,11 @@ Theorem signed_repr:
   forall z, min_signed <= z <= max_signed -> signed (repr z) = z.
 Proof.
   intros. unfold signed. destruct (zle 0 z).
-  unfold proj_sumbool.
+  (* rewrite proj_sumbool_helper.  *)
   replace (unsigned (repr z)) with z.
   rewrite zlt_true. auto. unfold max_signed in H. lia.
   symmetry. apply unsigned_repr. generalize max_signed_unsigned. lia.
-  unfold proj_sumbool.
+  (* rewrite proj_sumbool_helper. *)
   pose (z' := (z + modulus)%Z).
   replace (repr z) with (repr z').
   replace (unsigned (repr z')) with z'.
@@ -757,7 +808,7 @@ Theorem signed_zero: signed zero = 0.
 Proof.
   unfold signed. rewrite unsigned_zero.
   pose half_modulus_pos.
-  unfold proj_sumbool.
+  (* rewrite proj_sumbool_helper. *)
   rewrite zlt_true.
   - reflexivity.
   - generalize half_modulus_pos; lia.
@@ -766,7 +817,7 @@ Qed.
 Theorem signed_one: zwordsize > 1 -> signed one = 1.
 Proof.
   intros. unfold signed. rewrite unsigned_one.
-  unfold proj_sumbool.
+  (* rewrite proj_sumbool_helper. *)
   rewrite zlt_true.
   - reflexivity.
   - change 1 with (two_p 0). rewrite half_modulus_power. apply two_p_monotone_strict. lia. 
@@ -775,7 +826,7 @@ Qed.
 Theorem signed_mone: signed mone = -1.
 Proof.
   unfold signed. rewrite unsigned_mone.
-  unfold proj_sumbool.
+  (* rewrite proj_sumbool_helper. *)
   rewrite zlt_false. lia.
   rewrite half_modulus_modulus. generalize half_modulus_pos. lia.
 Qed.
@@ -3577,7 +3628,8 @@ Section Int32.
     wordsize_not_zero := wordsize_not_zero
   }.
   
-  Definition int32 := @int WORDSIZE32.
+  Definition int32_choice : choice_type := @int' WORDSIZE32.
+  Definition int32 : Type := @int WORDSIZE32.
 
   Remark int_wordsize_divides_modulus:
     Z.divide (Z.of_nat wordsize) modulus.
@@ -3595,7 +3647,8 @@ Section Int8.
     wordsize := wordsize8;
     wordsize_not_zero := wordsize_not_zero
   }.
-  Definition int8 := @int WORDSIZE8.
+  Definition int8_choice : choice_type := @int' WORDSIZE8.
+  Definition int8 : Type := @int WORDSIZE8.
 
 End Int8.
 
@@ -3607,7 +3660,8 @@ Section Int16.
     wordsize := wordsize16;
     wordsize_not_zero := wordsize_not_zero
   }.
-  Definition int16 := @int WORDSIZE16.
+  Definition int16_choice : choice_type := @int' WORDSIZE16.
+  Definition int16 : Type := @int WORDSIZE16.
 
 End Int16.
 
@@ -3620,7 +3674,9 @@ Section Int64.
     wordsize_not_zero := wordsize_not_zero
   }.
   
-  Definition int64 := @int WORDSIZE64.
+  Definition int64_choice : choice_type := @int' WORDSIZE64.
+  Definition int64 : Type := @int WORDSIZE64.
+  
 End Int64.
 
 
@@ -3633,7 +3689,8 @@ Section Int128.
     wordsize_not_zero := wordsize_not_zero
   }.
   
-  Definition int128 := @int WORDSIZE128.
+  Definition int128_choice : choice_type := @int' WORDSIZE128.
+  Definition int128 : Type := @int WORDSIZE128.
   
 End Int128.
 
@@ -3692,7 +3749,8 @@ Lemma bits_shr':
   testbit x (if zlt (i + @unsigned WORDSIZE32 y) zwordsize then (i + @unsigned WORDSIZE32 y)%Z else zwordsize - 1).
 Proof.
   intros. unfold shr'. rewrite testbit_repr; auto.
-  rewrite Z.shiftr_spec. apply bits_signed.
+  rewrite Z.shiftr_spec. rewrite bits_signed. 
+  (* rewrite proj_sumbool_helper. *) reflexivity.
   generalize (@unsigned_range WORDSIZE32 y); lia.
   lia.
 Qed.
@@ -3706,18 +3764,19 @@ Proof.
   generalize (@unsigned_range WORDSIZE32 y); lia.
 Qed.
 
-Lemma shl'_one_two_p:
-  forall y, shl' one y = repr (two_p (@unsigned WORDSIZE32 y)).
-Proof.
-  intros. rewrite shl'_mul_two_p. rewrite mul_commut. rewrite mul_one. auto.
-Qed.
+(* TODO: Fix stack overflow *)
+(* Lemma shl'_one_two_p: *)
+(*   forall y, shl' one y = repr (two_p (@unsigned WORDSIZE32 y)). *)
+(* Proof. *)
+(*   intros. rewrite shl'_mul_two_p. rewrite mul_commut. rewrite mul_one. auto. *)
+(* Qed. *)
 
-Theorem shl'_mul:
-  forall x y,
-  shl' x y = mul x (shl' one y).
-Proof.
-  intros. rewrite shl'_one_two_p. apply shl'_mul_two_p.
-Qed.
+(* Theorem shl'_mul: *)
+(*   forall x y, *)
+(*   shl' x y = mul x (shl' one y). *)
+(* Proof. *)
+(*   intros. rewrite shl'_one_two_p. apply shl'_mul_two_p. *)
+(* Qed. *)
 
 Theorem shl'_zero:
   forall x, shl' x (@zero WORDSIZE32) = x.
