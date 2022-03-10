@@ -7,27 +7,29 @@ Open Scope bool_scope.
 Open Scope hacspec_scope.
 Require Import Hacspec_Lib.
 
-Notation poly_key_t := (nseq (uint8_choice) (usize 32)).
+Definition poly_key_t := nseq (uint8) (usize 32 : uint_size_type).
 
-Notation blocksize_v := (usize 16).
+Definition blocksize_v := (usize 16).
 
-Notation poly_block_t := (nseq (uint8_choice) (usize 16)).
+Definition poly_block_t := (nseq (uint8) (usize 16 : uint_size_type)).
 
-Notation poly1305_tag_t := (nseq (uint8_choice) (usize 16)).
+Definition poly1305_tag_t := (nseq (uint8) (usize 16 : uint_size_type)).
 
 Notation "'sub_block_t'" := (byte_seq) : hacspec_scope.
 
 Notation "'block_index_t'" := (uint_size) : hacspec_scope.
 
-Definition field_canvas_t := nseq (int8_choice) (17).
+Definition field_canvas_t := nseq (int8) (17).
 Definition field_element_t := nat_mod 0x03fffffffffffffffffffffffffffffffb.
 
 Notation "'poly_state_t'" := ((field_element_t '× field_element_t '× poly_key_t
 )) : hacspec_scope.
 
-Check (fun b_0 : poly_block_t => b_0 : seq _).
-
-Definition poly1305_encode_r (b_0 : poly_block_t) : field_element_t :=
+Program Definition poly1305_encode_r (b_0 : poly_block_t) :=
+  (array_from_seq (16) (b_0)).
+Next Obligation.
+  
+Program Definition poly1305_encode_r (b_0 : poly_block_t) : field_element_t :=
   let n_1 : uint128 :=
     uint128_from_le_bytes (array_from_seq (16) (b_0)) in 
   let n_1 :=

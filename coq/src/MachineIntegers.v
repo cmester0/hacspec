@@ -67,6 +67,33 @@ Local Unset Elimination Schemes.
 Local Unset Case Analysis Schemes.
 Local Set Printing Projections.
 
+
+(* Choice types coercion help *)
+From mathcomp Require Import all_ssreflect. (* ssreflect *) (* seq tuple *)
+(* Import -(coercions) all_ssreflect. *)
+
+From Crypt Require Import choice_type Package Prelude.
+Import PackageNotation.
+
+From extructures Require Import ord fset fmap.
+
+Class ChoiceEquality := {
+    T : Type ;
+    ct : choice_type ;
+    ChoiceEq : Choice.sort (chElement ct) = T ;
+    (* ct_T_id : forall t, ct_T (T_ct t) = t ; *)
+    (* T_ct_id : forall ct, T_ct (ct_T ct) = ct ; *)
+  }.
+
+Definition ct_T {ce : ChoiceEquality} (x : @ct ce) : @T ce :=
+  @eq_rect Type (@ct ce) id x  (@T ce) (@ChoiceEq ce).
+
+Definition T_ct {ce : ChoiceEquality} (x : @T ce) : @ct ce :=
+  eq_rect_r id x ce.(ChoiceEq).
+
+Local Coercion T : ChoiceEquality >-> Sortclass.
+Local Coercion ct : ChoiceEquality >-> choice_type.
+
 Section Make.
 Context {WS : WORDSIZE}.
 Global Opaque wordsize wordsize_not_zero.
@@ -110,42 +137,31 @@ Hint Resolve modulus_pos: ints.
   integer (type [Z]) plus a proof that it is in the range 0 (included) to
   [modulus] (excluded). *)
 
-From mathcomp Require all_ssreflect. (* ssreflect *) (* seq tuple *)
-Import -(coercions) all_ssreflect.
+(* Coercion choice_type_to_type (a : choice_type) : Type. *)
+(* Proof. *)
+(*   pose (unkeyed (Choice.sort (chElement a))). *)
 
-From Crypt Require Import choice_type Package Prelude.
-Import PackageNotation.
-
-From extructures Require Import ord fset fmap.
-
-Coercion choice_type_to_type (a : choice_type) : Type.
-Proof.
-  pose (unkeyed (Choice.sort (chElement a))).
-
-  induction a ; cbn in T.
-  - apply unit.
-  - apply nat.
-  - apply bool.
-  - cbn in IHa1.
-    cbn in IHa2.
-    apply (IHa1 * IHa2).
-  - cbn in IHa1.
-    cbn in IHa2.
-    apply (FMap.fmap_type (chElement_ordType a1) IHa2).
-  - cbn in IHa.
-    apply (option IHa).
-  - apply T.
-Defined.
-  (* := unkeyed (Choice.sort (chElement a)). *)
-(* Coercion choice_type_to_type : choice_type >-> Sortclass. *)
-
-Print Coercion Paths choice_type Sortclass.
-
+(*   induction a ; cbn in T. *)
+(*   - apply unit. *)
+(*   - apply nat. *)
+(*   - apply bool. *)
+(*   - cbn in IHa1. *)
+(*     cbn in IHa2. *)
+(*     apply (IHa1 * IHa2). *)
+(*   - cbn in IHa1. *)
+(*     cbn in IHa2. *)
+(*     apply (FMap.fmap_type (chElement_ordType a1) IHa2). *)
+(*   - cbn in IHa. *)
+(*     apply (option IHa). *)
+(*   - apply T. *)
+(* Defined. *)
+(* Hint Transparent choice_type_to_type. *)
+(* (* := unkeyed (Choice.sort (chElement a)). *) *)
+(* (* Coercion choice_type_to_type : choice_type >-> Sortclass. *) *)
 
 Theorem proj_sumbool_helper : (forall {T} x {k} (y z : T), (match proj_sumbool (zlt x k) with true => y | false => z end) = (match zlt x k with left _ => y | right _ => z end)).
 Proof.
     intros.
-    unfold proj_sumbool.
     destruct (zlt x k) ; reflexivity.
 Qed.
 
@@ -164,26 +180,16 @@ Proof.
     + easy.
 Qed.
 
-Definition int' := (chFin
-   (@mkpos (Z.to_nat modulus)
-      (@eq_ind nat (expn 2%nat (@wordsize WS)) (Positive)
+Definition positive_modulus : Positive (Z.to_nat modulus).
+Proof.
+  apply (@eq_ind nat (expn 2%nat (@wordsize WS)) (Positive)
          (PositiveExp2 (@wordsize WS)) (Z.to_nat (two_power_nat (@wordsize WS)))
-         (expn_is_pow (@wordsize WS)) : Positive (Z.to_nat modulus)))).
+         (expn_is_pow (@wordsize WS)) : Positive (Z.to_nat modulus)).
+Qed.
 
-(* Proof. *)
-(*   apply chFin . *)
-(*   apply (@mkpos (Z.to_nat modulus)). (* (Nat.pow 2 wordsize) *) *)
-(*   unfold modulus. *)
-(*   rewrite <- (expn_is_pow wordsize). *)
-(*   apply (PositiveExp2 wordsize). *)
-(*   Set Printing All. *)
-(*   Show Proof. *)
-(* Defined. *)
-Definition int : Type := int'.
-(*   pose (choice_type_to_type int'). *)
-(*   cbn in T. *)
-(*   apply T. *)
-(* Defined. *)
+Definition int_choice := chFin (@mkpos (Z.to_nat modulus) positive_modulus).
+Definition int_type : Type := unkeyed (int_choice).
+Program Instance int : ChoiceEquality := {| ct := int_choice ; T := int_type |}.
 
 Program Definition mkint (z : Z) (intrange: -1 < z < modulus) : int :=
   (Ordinal (n := Z.to_nat modulus) (m := (Z.to_nat z)) _).
@@ -253,7 +259,7 @@ Definition signed (n: int) : Z :=
 (** Conversely, [repr] takes a Coq integer and returns the corresponding
   machine integer.  The argument is treated modulo [modulus]. *)
 
-Definition repr (x: Z) : int := mkint (Z_mod_modulus x) (Z_mod_modulus_range' x).
+Definition repr (x: Z) : int_type := mkint (Z_mod_modulus x) (Z_mod_modulus_range' x).
 
 Definition zero := repr 0.
 Definition one  := repr 1.
@@ -3624,8 +3630,7 @@ Section Int32.
     wordsize_not_zero := wordsize_not_zero
   }.
   
-  Definition int32_choice : choice_type := @int' WORDSIZE32.
-  Definition int32 : Type := @int WORDSIZE32.
+  Instance int32 : ChoiceEquality := @int WORDSIZE32.
 
   Remark int_wordsize_divides_modulus:
     Z.divide (Z.of_nat wordsize) modulus.
@@ -3643,8 +3648,7 @@ Section Int8.
     wordsize := wordsize8;
     wordsize_not_zero := wordsize_not_zero
   }.
-  Definition int8_choice : choice_type := @int' WORDSIZE8.
-  Definition int8 : Type := @int WORDSIZE8.
+  Instance int8 : ChoiceEquality := @int WORDSIZE8.
 
 End Int8.
 
@@ -3656,8 +3660,8 @@ Section Int16.
     wordsize := wordsize16;
     wordsize_not_zero := wordsize_not_zero
   }.
-  Definition int16_choice : choice_type := @int' WORDSIZE16.
-  Definition int16 : Type := @int WORDSIZE16.
+
+  Instance int16 : ChoiceEquality := @int WORDSIZE16.
 
 End Int16.
 
@@ -3670,9 +3674,7 @@ Section Int64.
     wordsize_not_zero := wordsize_not_zero
   }.
   
-  Definition int64_choice : choice_type := @int' WORDSIZE64.
-  Definition int64 : Type := @int WORDSIZE64.
-  
+  Instance int64 : ChoiceEquality := @int WORDSIZE64.  
 End Int64.
 
 
@@ -3685,15 +3687,13 @@ Section Int128.
     wordsize_not_zero := wordsize_not_zero
   }.
   
-  Definition int128_choice : choice_type := @int' WORDSIZE128.
-  Definition int128 : Type := @int WORDSIZE128.
-  
+  Instance int128 : ChoiceEquality := @int WORDSIZE128.  
 End Int128.
 
 (** Shifts with amount given as a 32-bit integer *)
 
 Section Shift64With32Bit.
-
+  
 Existing Instance WORDSIZE64.
 
 Definition iwordsize': int32 := repr (@zwordsize WORDSIZE64).
