@@ -43,15 +43,6 @@ fn make_get_binding<'a>(pat: RcDoc<'a, ()>) -> RcDoc<'a, ()> {
         .append(RcDoc::space())
         .append(RcDoc::as_string(";;"))
         .append(RcDoc::line())
-        .append(RcDoc::as_string("let"))
-        .append(RcDoc::space())
-        .append(pat.clone())
-        .append(RcDoc::space())
-        .append(RcDoc::as_string(":= type_from_choice_type_elem"))
-        .append(RcDoc::space())
-        .append(make_paren(pat.clone()))
-        .append(RcDoc::space())
-        .append(RcDoc::as_string("in"))
 }
 
 fn make_put_binding<'a>(pat: RcDoc<'a, ()>, expr: RcDoc<'a, ()>) -> RcDoc<'a, ()> {
@@ -59,7 +50,7 @@ fn make_put_binding<'a>(pat: RcDoc<'a, ()>, expr: RcDoc<'a, ()>) -> RcDoc<'a, ()
         .append(RcDoc::space())
         .append(pat.clone().append(RcDoc::as_string("_loc")).group())
         .append(RcDoc::space())
-        .append(RcDoc::as_string(":= choice_type_from_type_elem"))
+        .append(RcDoc::as_string(":= (* choice_type_from_type_elem *)"))
         .group()
         .append(RcDoc::line().append(make_paren(expr.group())))
         .nest(2)
@@ -135,7 +126,7 @@ fn make_let_binding<'a>(
     .append(if do_bind {
         RcDoc::as_string("let ")
             .append(pat.clone())
-            .append(RcDoc::as_string(" := type_from_choice_type_elem "))
+            .append(RcDoc::as_string(" := (*type_from_choice_type_elem*) "))
             .append(
                 pat2.clone().append(match typ.clone() {
                     None => RcDoc::nil(),
@@ -1428,7 +1419,7 @@ fn translate_statements<'a>(
                 .into_iter()
                 .fold(RcDoc::nil(), |rc, x| rc.append(x))
                 .append(RcDoc::as_string(
-                    "pkg_core_definition.ret (choice_type_from_type_elem ",
+                    "pkg_core_definition.ret ((*choice_type_from_type_elem*) ",
                 ))
                 .append(make_paren(trans_e1))
                 .append(RcDoc::as_string(")"))
@@ -1667,7 +1658,7 @@ fn fset_and_locations<'a>(smvars: ScopeMutableVars) -> (RcDoc<'a, ()>, RcDoc<'a,
     } else {
         (
             make_paren(
-                RcDoc::as_string("fset [")
+                RcDoc::as_string("fset [:: ")
                     .append(RcDoc::space())
                     .append(RcDoc::intersperse(
                         all.iter()
@@ -1683,7 +1674,7 @@ fn fset_and_locations<'a>(smvars: ScopeMutableVars) -> (RcDoc<'a, ()>, RcDoc<'a,
                     make_let_binding(
                         translate_ident(i.clone()).append("_loc"),
                         Some(RcDoc::as_string("Location")),
-                        RcDoc::as_string("choice_type_from_type")
+                        RcDoc::as_string("(*choice_type_from_type*)")
                             .append(RcDoc::space())
                             .append(match typ {
                                 Some(typ) => translate_typ(typ),
@@ -1778,7 +1769,7 @@ fn translate_item<'a>(
                             .append(RcDoc::as_string("[interface]"))
                             .append(RcDoc::space())
                             .append(make_paren(
-                                RcDoc::as_string("choice_type_from_type")
+                                RcDoc::as_string("(* choice_type_from_type *)")
                                     .append(RcDoc::space())
                                     .append(make_paren(translate_base_typ(sig.ret.0.clone())))
                             ))
@@ -2438,6 +2429,10 @@ pub fn translate_and_write_to_file(
     write!(
         file,
         "(** This file was automatically generated using Hacspec **)\n\
+         \n\
+         From mathcomp Require all_ssreflect. (* ssreflect *) (* seq tuple *)\n\
+         Import (* -(coercions) *) all_ssreflect.\n\
+         \n\
          From Crypt Require Import choice_type Package Prelude.\n\
          Import PackageNotation.\n\
          From extructures Require Import ord fset.\n\
