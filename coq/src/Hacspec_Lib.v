@@ -23,7 +23,7 @@ From Coqprime Require GZnZ.
 
 Declare Scope hacspec_scope.
 
-Axiom secret : forall {WS : WORDSIZE},  @T (@int WS) -> @T (@int WS).
+Definition secret : forall {WS : WORDSIZE},  @T (@int WS) -> @T (@int WS) := fun=> id.
 
 Require Import Eqdep_dec Zquot Zwf.
 From compcert Require Import Coqlib Zbits.
@@ -77,8 +77,8 @@ Axiom declassify_usize_from_uint8 : uint8 -> uint_size.
 
 (* Represents any type that can be converted to uint_size and back *)
 Class UInt_sizable (A : Type) := {
-  usize : A -> uint_size;
-  from_uint_size : uint_size -> A;
+  usize :> A -> uint_size;
+  from_uint_size :> uint_size -> A;
 }.
 Arguments usize {_} {_}.
 Arguments from_uint_size {_} {_}.
@@ -190,12 +190,10 @@ Definition uint128_rotate_right (u: int128) (s: int128) : int128 :=
 (* should use size u instead of u? *)
 Definition usize_shift_right (u: uint_size) (s: int32) : uint_size :=
   (ror u s).
-Infix "usize_shift_right" := (usize_shift_right) (at level 77) : hacspec_scope.
 
 (* should use size u instead of u? *)
 Definition usize_shift_left (u: uint_size) (s: int32) : uint_size :=
   (rol u s).
-Infix "usize_shift_left" := (usize_shift_left) (at level 77) : hacspec_scope.
 
 Definition pub_uint128_wrapping_add (x y: int128) : int128 :=
   add x y.
@@ -208,19 +206,19 @@ Definition shift_right_ `{WS : WORDSIZE} (i : @int WS) (j : uint_size) :=
 
 End Uint.
 
-Infix "shift_left" := (shift_left_) (at level 77) : hacspec_scope.
-Infix "shift_right" := (shift_right_) (at level 77) : hacspec_scope.
+Global Infix "shift_left" := (shift_left_) (at level 77) : hacspec_scope.
+Global Infix "shift_right" := (shift_right_) (at level 77) : hacspec_scope.
 
 (* Infix "%%" := Z.rem (at level 40, left associativity) : Z_scope. *)
-Infix ".+" := (add) (at level 77) : hacspec_scope.
-Infix ".-" := (sub) (at level 77) : hacspec_scope.
-Notation "-" := (neg) (at level 77) : hacspec_scope.
-Infix ".*" := (mul) (at level 77) : hacspec_scope.
-Infix "./" := (divs) (at level 77) : hacspec_scope.
-Infix ".%" := (mods) (at level 77) : hacspec_scope.
-Infix ".^" := (MachineIntegers.xor) (at level 77) : hacspec_scope.
-Infix ".&" := (MachineIntegers.and) (at level 77) : hacspec_scope.
-Infix ".|" := (MachineIntegers.or) (at level 77) : hacspec_scope.
+Global Infix ".+" := (add) (at level 77) : hacspec_scope.
+Global Infix ".-" := (sub) (at level 77) : hacspec_scope.
+Global Notation "-" := (neg) (at level 77) : hacspec_scope.
+Global Infix ".*" := (mul) (at level 77) : hacspec_scope.
+Global Infix "./" := (divs) (at level 77) : hacspec_scope.
+Global Infix ".%" := (mods) (at level 77) : hacspec_scope.
+Global Infix ".^" := (MachineIntegers.xor) (at level 77) : hacspec_scope.
+Global Infix ".&" := (MachineIntegers.and) (at level 77) : hacspec_scope.
+Global Infix ".|" := (MachineIntegers.or) (at level 77) : hacspec_scope.
 (* Infix "==" := (MachineIntegers.eq) (at level 32) : hacspec_scope. *)
 (* Definition one := (@one WORDSIZE32). *)
 (* Definition zero := (@zero WORDSIZE32). *)
@@ -833,13 +831,13 @@ Definition array_join_map
     array_upd out i (op (array_index s1 i) (array_index s2 i))
   ) out.
 
-Infix "array_xor" := (array_join_map xor) (at level 33) : hacspec_scope.
-Infix "array_add" := (array_join_map add) (at level 33) : hacspec_scope.
-Infix "array_minus" := (array_join_map sub) (at level 33) : hacspec_scope.
-Infix "array_mul" := (array_join_map mul) (at level 33) : hacspec_scope.
-Infix "array_div" := (array_join_map divs) (at level 33) : hacspec_scope.
-Infix "array_or" := (array_join_map or) (at level 33) : hacspec_scope.
-Infix "array_and" := (array_join_map and) (at level 33) : hacspec_scope.  
+Global Infix "array_xor" := (array_join_map xor) (at level 33) : hacspec_scope.
+Global Infix "array_add" := (array_join_map add) (at level 33) : hacspec_scope.
+Global Infix "array_minus" := (array_join_map sub) (at level 33) : hacspec_scope.
+Global Infix "array_mul" := (array_join_map mul) (at level 33) : hacspec_scope.
+Global Infix "array_div" := (array_join_map divs) (at level 33) : hacspec_scope.
+Global Infix "array_or" := (array_join_map or) (at level 33) : hacspec_scope.
+Global Infix "array_and" := (array_join_map and) (at level 33) : hacspec_scope.  
 
 Fixpoint array_eq_
   {a: ChoiceEquality}
@@ -859,8 +857,8 @@ Proof.
     + exact false.
 Defined.
 
-Infix "array_eq" := (array_eq_ eq) (at level 33) : hacspec_scope.
-Infix "array_neq" := (fun s1 s2 => negb (array_eq_ eq s1 s2)) (at level 33) : hacspec_scope.
+Global Infix "array_eq" := (array_eq_ eq) (at level 33) : hacspec_scope.
+Global Infix "array_neq" := (fun s1 s2 => negb (array_eq_ eq s1 s2)) (at level 33) : hacspec_scope.
 
 Section Todosection.
 
@@ -959,35 +957,34 @@ Axiom u128_from_be_bytes : nseq int8 16 -> int128.
 
 (*** Nats *)
 
-
-Definition nat_mod (p : Z) : Set := GZnZ.znz p.
-
+(* TODO replace nat_mod with actual field, instead of @int which just overflows ?! *)
+Program Definition WORDSIZE_p (p : Z) : WORDSIZE := {| wordsize := (Z.to_nat p).+1 |}.
+Definition nat_mod (p : Z) : ChoiceEquality := @int (WORDSIZE_p p). (* GZnZ.znz p. *)
 
 Definition nat_mod_equal {p} (a b : nat_mod p) : bool :=
-  Z.eqb (GZnZ.val p a) (GZnZ.val p b).
+  Z.eqb (unsigned a) (unsigned b).
 
-Definition nat_mod_zero {p} : nat_mod p := GZnZ.zero p.
-Definition nat_mod_one {p} : nat_mod p := GZnZ.one p.
-Definition nat_mod_two {p} : nat_mod p := GZnZ.mkznz p _ (GZnZ.modz p 2).
+Definition nat_mod_zero {p} : nat_mod p := @zero (WORDSIZE_p p).
+Definition nat_mod_one {p} : nat_mod p := @one (WORDSIZE_p p).
+Definition nat_mod_two {p} : nat_mod p := repr 2.
 
-Definition nat_mod_add {n : Z} (a : nat_mod n) (b : nat_mod n) : nat_mod n := GZnZ.add n a b.
+Definition nat_mod_add {n : Z} (a : nat_mod n) (b : nat_mod n) : nat_mod n := MachineIntegers.add a b.
 
-Infix "+%" := nat_mod_add (at level 33) : hacspec_scope.
 
-Definition nat_mod_mul {n : Z} (a:nat_mod n) (b:nat_mod n) : nat_mod n := GZnZ.mul n a b.
-Infix "*%" := nat_mod_mul (at level 33) : hacspec_scope.
+Definition nat_mod_mul {n : Z} (a:nat_mod n) (b:nat_mod n) : nat_mod n := MachineIntegers.mul a b.
 
-Definition nat_mod_sub {n : Z} (a:nat_mod n) (b:nat_mod n) : nat_mod n := GZnZ.sub n a b.
-Infix "-%" := nat_mod_sub (at level 33) : hacspec_scope.
+Definition nat_mod_sub {n : Z} (a:nat_mod n) (b:nat_mod n) : nat_mod n := MachineIntegers.sub a b.
 
-Definition nat_mod_div {n : Z} (a:nat_mod n) (b:nat_mod n) : nat_mod n := GZnZ.div n a b.
-Infix "/%" := nat_mod_div (at level 33) : hacspec_scope.
+(* TOOD: find MachineIntegers implmenetation *)
+(* Definition nat_mod_div {n : Z} (a:nat_mod n) (b:nat_mod n) : nat_mod n := GZnZ.div n a b. *)
+(* Infix "/%" := nat_mod_div (at level 33) : hacspec_scope. *)
 
 (* A % B = (a * B + r) *)
 
-Definition nat_mod_neg {n : Z} (a:nat_mod n) : nat_mod n := GZnZ.opp n a.
+(* TODO: MachineIntegers implementation *)
+(* Definition nat_mod_neg {n : Z} (a:nat_mod n) : nat_mod n := GZnZ.opp n a. *)
 
-Definition nat_mod_inv {n : Z} (a:nat_mod n) : nat_mod n := GZnZ.inv n a.
+(* Definition nat_mod_inv {n : Z} (a:nat_mod n) : nat_mod n := GZnZ.inv n a. *)
 
 Definition nat_mod_exp_def {p : Z} (a:nat_mod p) (n : nat) : nat_mod p :=
   let fix exp_ (e : nat_mod p) (n : nat) :=
@@ -1005,16 +1002,16 @@ Close Scope nat_scope.
 Open Scope Z_scope.
 
 (* We assume x < m *)
-Definition nat_mod_from_secret_literal {m : Z} (x:int128) : nat_mod m.
-Proof.
-  unfold nat_mod.
-  (* since we assume x < m, it will be true that (unsigned x) = (unsigned x) mod m  *)
-  remember ((unsigned x) mod m) as zmodm.
-  apply (GZnZ.mkznz m zmodm).
-  rewrite Heqzmodm.
-  rewrite Zmod_mod.
-  reflexivity.
-Defined.
+Definition nat_mod_from_secret_literal {m : Z} (x:int128) : nat_mod m := repr (unsigned x).
+(* Proof. *)
+(*   unfold nat_mod. *)
+(*   (* since we assume x < m, it will be true that (unsigned x) = (unsigned x) mod m  *) *)
+(*   remember ((unsigned x) mod m) as zmodm. *)
+(*   apply (GZnZ.mkznz m zmodm). *)
+(*   rewrite Heqzmodm. *)
+(*   rewrite Zmod_mod. *)
+(*   reflexivity. *)
+(* Defined. *)
 
 Definition nat_mod_from_literal (m : Z) (x:int128) : nat_mod m := nat_mod_from_secret_literal x.
 
@@ -1024,7 +1021,7 @@ Axiom nat_mod_to_public_byte_seq_le : forall (n : Z), nat_mod n -> seq int8.
 Axiom nat_mod_to_public_byte_seq_be : forall (n : Z), nat_mod n -> seq int8.
 
 Definition nat_mod_bit {n : Z} (a : nat_mod n) (i : uint_size) :=
-  Z.testbit (GZnZ.val n a) (from_uint_size i).
+  Z.testbit (unsigned a) (from_uint_size i).
 
 (* Alias for nat_mod_bit *)
 Definition nat_get_mod_bit {p} (a : nat_mod p) := nat_mod_bit a.
@@ -1052,14 +1049,14 @@ Axiom most_significant_bit : forall {m}, nat_mod m -> uint_size -> uint_size.
 
 
 (* We assume 2^x < m *)
-Definition nat_mod_pow2 (m : Z) (x : N) : nat_mod m.
-Proof.
-  remember (Z.pow 2 (Z.of_N x) mod m) as y.
-  apply (GZnZ.mkznz m y).
-  rewrite Heqy.
-  rewrite Zmod_mod.
-  reflexivity.
-Defined.
+Definition nat_mod_pow2 (m : Z) (x : N) : nat_mod m := repr (Z.pow 2 (Z.of_N x)).
+(* Proof. *)
+(*   remember (Z.pow 2 (Z.of_N x) mod m) as y. *)
+(*   apply (GZnZ.mkznz m y). *)
+(*   rewrite Heqy. *)
+(*   rewrite Zmod_mod. *)
+(*   reflexivity. *)
+(* Defined. *)
 
 End Todosection.
 
@@ -1112,7 +1109,7 @@ Local Coercion ct : ChoiceEquality >-> choice_type.
   }.
 
   Global Instance cast_natmod_to_Z {p} : Cast (nat_mod p) Z := {
-    cast n := GZnZ.val p n
+    cast n := unsigned n
   }.
 
   (* Note: should be aware of typeclass resolution with int/uint since they are just aliases of each other currently *)
@@ -1173,6 +1170,9 @@ Local Coercion ct : ChoiceEquality >-> choice_type.
   Definition uint_size_to_nat (n : uint_size_type) : nat := from_uint_size n.
   Global Coercion uint_size_to_nat : uint_size_type >-> nat.
 
+  (* Definition nat_to_uint_size (n : nat) : uint_size_type := uint_size n. *)
+  (* Global Coercion nat_to_uint_size : nat >-> uint_size_type. *)
+
   Definition uint_size_to_Z (n : uint_size) : Z := from_uint_size n.
   (* TODO: fix *)
   (* Global Coercion uint_size_to_Z : uint_size >-> Z. *)
@@ -1226,28 +1226,28 @@ Local Coercion ct : ChoiceEquality >-> choice_type.
 
 
   (* coercions into nat_mod *)
-  Definition Z_in_nat_mod {m : Z} (x:Z) : nat_mod m.
-  Proof.
-    unfold nat_mod.
-    remember ((x) mod m)%Z as zmodm.
-    apply (GZnZ.mkznz m zmodm).
-    rewrite Heqzmodm.
-    rewrite Zmod_mod.
-    reflexivity.
-  Defined.
+  Definition Z_in_nat_mod {m : Z} (x:Z) : nat_mod m := repr x.
+  (* Proof. *)
+  (*   unfold nat_mod. *)
+  (*   remember ((x) mod m)%Z as zmodm. *)
+  (*   apply (GZnZ.mkznz m zmodm). *)
+  (*   rewrite Heqzmodm. *)
+  (*   rewrite Zmod_mod. *)
+  (*   reflexivity. *)
+  (* Defined. *)
   (* Global Coercion Z_in_nat_mod : Z >-> nat_mod.  *)
 
-  Definition int_in_nat_mod {m : Z} `{WORDSIZE} (x:int) : nat_mod m.
-  Proof.
-    unfold nat_mod.
-    (* since we assume x < m, it will be true that (unsigned x) = (unsigned x) mod m  *)
-    remember ((unsigned x) mod m)%Z as zmodm.
-    apply (GZnZ.mkznz m zmodm).
-    rewrite Heqzmodm.
-    rewrite Zmod_mod.
-    reflexivity.
-    Show Proof.
-  Defined.
+  Definition int_in_nat_mod {m : Z} `{WORDSIZE} (x:int) : nat_mod m := repr (unsigned x).
+  (* Proof. *)
+  (*   unfold nat_mod. *)
+  (*   (* since we assume x < m, it will be true that (unsigned x) = (unsigned x) mod m  *) *)
+  (*   remember ((unsigned x) mod m)%Z as zmodm. *)
+  (*   apply (GZnZ.mkznz m zmodm). *)
+  (*   rewrite Heqzmodm. *)
+  (*   rewrite Zmod_mod. *)
+  (*   reflexivity. *)
+  (*   Show Proof. *)
+  (* Defined. *)
   (* TODO Re-add *)
   (* Global Coercion int_in_nat_mod : int >-> nat_mod. *)
 
@@ -1309,19 +1309,12 @@ Class EqDec (A : Type) :=
   { eqb : A -> A -> bool ;
     eqb_leibniz : forall x y, eqb x y = true <-> x = y }.
 
-Infix "=.?" := eqb (at level 40) : hacspec_scope.
-Infix "!=.?" := (fun a b => negb (eqb a b)) (at level 40) : hacspec_scope.
-
 Class Comparable (A : Type) := {
   ltb : A -> A -> bool;
   leb : A -> A -> bool;
   gtb : A -> A -> bool;
   geb : A -> A -> bool;
 }.
-Infix "<.?" := ltb (at level 42) : hacspec_scope.
-Infix "<=.?" := leb (at level 42) : hacspec_scope.
-Infix ">.?" := gtb (at level 42) : hacspec_scope.
-Infix ">=.?" := geb (at level 42) : hacspec_scope.
 
 Theorem eqb_refl : forall {A} {H : EqDec A} (x : A), @eqb A H x x = true.
 Proof.
@@ -1386,7 +1379,7 @@ Global Instance int_comparable `{WORDSIZE} : Comparable int := {
 
 Definition uint8_equal : int8 -> int8 -> bool := eqb.
 
-Definition nat_mod_val (p : Z) (a : nat_mod p) : Z := GZnZ.val p a.
+Definition nat_mod_val (p : Z) (a : nat_mod p) : Z := unsigned a.
 
 Theorem nat_mod_eqb_spec : forall {p} (a b : nat_mod p), Z.eqb (nat_mod_val p a) (nat_mod_val p b) = true <-> a = b.
 Proof.
@@ -1394,7 +1387,11 @@ Proof.
   - apply Z.eqb_eq in H.
     destruct a, b.
     cbn in H.
-    apply (GZnZ.zirr p val val0 inZnZ inZnZ0 H).
+    unfold nat_mod_val in H.
+    unfold unsigned in H.
+    cbn in H.
+    apply Nat2Z.inj in H.
+    apply mkint_eq, H.
   - subst.
     apply Z.eqb_eq.
     reflexivity.
@@ -1407,9 +1404,9 @@ Global Instance nat_mod_eqdec {p} : EqDec (nat_mod p) := {
 
 Global Instance nat_mod_comparable `{p : Z} : Comparable (nat_mod p) := {
   ltb a b := Z.ltb (nat_mod_val p a) (nat_mod_val p b);
-  leb a b := if Zeq_bool a b then true else Z.ltb (nat_mod_val p a) (nat_mod_val p b) ;
+  leb a b := if eq a b then true else Z.ltb (nat_mod_val p a) (nat_mod_val p b) ;
   gtb a b := Z.ltb (nat_mod_val p b) (nat_mod_val p a);
-  geb a b := if Zeq_bool b a then true else Z.ltb (nat_mod_val p b) (nat_mod_val p a) ;
+  geb a b := if eq b a then true else Z.ltb (nat_mod_val p b) (nat_mod_val p a) ;
 }.
 
 Fixpoint nat_mod_rem_aux {n : Z} (a:nat_mod n) (b:nat_mod n) (f : nat) {struct f} : nat_mod n :=
@@ -1669,3 +1666,16 @@ End TodoSection2.
 
 Global Coercion T : ChoiceEquality >-> Sortclass.
 Global Coercion ct : ChoiceEquality >-> choice_type.
+
+Global Infix "usize_shift_right" := (usize_shift_right) (at level 77) : hacspec_scope.
+Global Infix "usize_shift_left" := (usize_shift_left) (at level 77) : hacspec_scope.
+Global Infix "=.?" := eqb (at level 40) : hacspec_scope.
+Global Infix "!=.?" := (fun a b => negb (eqb a b)) (at level 40) : hacspec_scope.
+Global Infix "<.?" := ltb (at level 42) : hacspec_scope.
+Global Infix "<=.?" := leb (at level 42) : hacspec_scope.
+Global Infix ">.?" := gtb (at level 42) : hacspec_scope.
+Global Infix ">=.?" := geb (at level 42) : hacspec_scope.
+
+Global Infix "+%" := nat_mod_add (at level 33) : hacspec_scope.
+Global Infix "*%" := nat_mod_mul (at level 33) : hacspec_scope.
+Global Infix "-%" := nat_mod_sub (at level 33) : hacspec_scope.
