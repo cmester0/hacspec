@@ -22,16 +22,17 @@ Notation poly_key_t := (nseq (uint8_choice) (usize 32)).
 Definition blocksize_v : uint_size :=
   (usize 16).
 
-Notation poly_block_t := (nseq (uint8_choice) (usize 16)).
+Definition poly_block_t := (nseq (uint8_choice) (16)).
 
-Notation poly1305_tag_t := (nseq (uint8_choice) (usize 16)).
+Definition poly1305_tag_t := (nseq (uint8_choice) (16)).
 
 Notation "'sub_block_t'" := (byte_seq) : hacspec_scope.
 
 Notation "'block_index_t'" := (uint_size) : hacspec_scope.
 
 Definition field_canvas_t := nseq (int8_choice) (17).
-Definition field_element_t := nat_mod 0x03fffffffffffffffffffffffffffffffb.
+Definition field_element_t : choice_type :=
+  nat_mod_choice (0x03fffffffffffffffffffffffffffffffb).
 
 Notation "'poly_state_t'" := ((
   field_element_t '×
@@ -40,37 +41,83 @@ Notation "'poly_state_t'" := ((
 )) : hacspec_scope.
 
 Definition n_5_loc : Location :=
-  (choice_type_from_type uint128 ; 11%nat).
+  (uint128_choice ; 11%nat).
 Program Definition poly1305_encode_r
   (b_0 : poly_block_t)
-  : code (fset [ n_5_loc]) [interface] (choice_type_from_type (
-      field_element_t)) :=
-  ({code
-     temp_2 ←
-      (array_from_seq (16) (b_0)) ;;
-    let temp_1 := type_from_choice_type_elem temp_2 in
+  : code (fset [ n_5_loc]) [interface] ((field_element_t)) :=
+  {code
+     let temp_2 := b_0 in
+      (* (array_from_seq (16) (array_to_seq _ b_0)) ;; *)
+    let temp_1 := temp_2 in
      temp_4 ←
       (uint128_from_le_bytes (temp_1)) ;;
-    let temp_3 := type_from_choice_type_elem temp_4 in
-    #put n_5_loc := choice_type_from_type_elem
+    let temp_3 := temp_4 in
+    #put n_5_loc := 
       (temp_3) ;;
     n_5 ← get n_5_loc ;;
-    let n_5 := type_from_choice_type_elem (n_5) in
-     temp_7 ←
-      (secret (@repr WORDSIZE128 21267647620597763993911028882763415551)) ;;
-    let temp_6 := type_from_choice_type_elem temp_7 : int128 in
+    let n_5 :=  (n_5) in
+    (*  temp_7 ← (secret (@repr WORDSIZE128 21267647620597763993911028882763415551)) ;; *)
+    (* let temp_6 := temp_7 : int128 in *)
+    (* n_5 ← get n_5_loc ;; *)
+    (* let n_5 :=  (n_5) in *)
+    (* #put n_5_loc :=  *)
+    (*   ((n_5) .& (temp_6)) ;; *)
+    (* n_5 ← get n_5_loc ;; *)
+    (* let n_5 :=  (n_5) in *)
+    temp_9 ← (nat_mod_from_secret_literal (n_5)) ;;
+    let temp_8 : choice.Choice.sort (chElement field_element_t) := temp_9 in
+    pkg_core_definition.ret ((temp_8)) : raw_code field_element_t
+  }.
+  Locate "{ code _ }".
+  pose (r :=
+     let temp_2 := b_0 in
+      (* (array_from_seq (16) (array_to_seq _ b_0)) ;; *)
+    let temp_1 := temp_2 in
+     temp_4 ←
+      (uint128_from_le_bytes (temp_1)) ;;
+    let temp_3 := temp_4 in
+    #put n_5_loc := 
+      (temp_3) ;;
     n_5 ← get n_5_loc ;;
-    let n_5 := type_from_choice_type_elem (n_5) in
-    #put n_5_loc := choice_type_from_type_elem
+    let n_5 :=  (n_5) in
+     temp_7 ← (secret (@repr WORDSIZE128 21267647620597763993911028882763415551)) ;;
+    let temp_6 := temp_7 : int128 in
+    n_5 ← get n_5_loc ;;
+    let n_5 :=  (n_5) in
+    #put n_5_loc := 
       ((n_5) .& (temp_6)) ;;
     n_5 ← get n_5_loc ;;
-    let n_5 := type_from_choice_type_elem (n_5) in
-     temp_9 ←
-      (nat_mod_from_secret_literal (n_5)) ;;
-    let temp_8 := type_from_choice_type_elem temp_9 in
-    pkg_core_definition.ret (choice_type_from_type_elem (temp_8))
-    } : code ((fset [ n_5_loc])) [interface] _).
+    let n_5 :=  (n_5) in
+    temp_9 ← (nat_mod_from_secret_literal (n_5)) ;;
+    let temp_8 : choice.Choice.sort (chElement field_element_t) := temp_9 in
+    pkg_core_definition.ret ((temp_8)) : raw_code field_element_t).
+  refine {code r}.
+  cbn.
+  unfold unsigned.
 
+  ssprove_valid.
+  
+  unfold nat_mod_mod.
+
+  
+  cbn in r.
+    
+
+  
+  unfold n_5_loc.
+  unfold nat_mod_mod.
+  cbn.
+  unfold uint128_choice.
+  unfold int128_choice.
+  unfold int'.
+  unfold modulus.
+  pose (expn_is_pow (@wordsize WORDSIZE128)).
+
+  
+  
+  rewrite <- e.
+  ssprove_valid.
+  
 Program Definition poly1305_encode_block
   (b_12 : poly_block_t)
   : code fset.fset0 [interface] (choice_type_from_type (field_element_t)) :=

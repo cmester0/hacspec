@@ -67,6 +67,16 @@ Local Unset Elimination Schemes.
 Local Unset Case Analysis Schemes.
 Local Set Printing Projections.
 
+
+From mathcomp Require all_ssreflect. (* ssreflect *) (* seq tuple *)
+Import (* -(coercions) *) all_ssreflect.
+
+From Crypt Require Import choice_type Package Prelude.
+Import PackageNotation.
+
+From extructures Require Import ord fset fmap.
+
+
 Section Make.
 Context {WS : WORDSIZE}.
 Global Opaque wordsize wordsize_not_zero.
@@ -76,6 +86,7 @@ Global Opaque wordsize wordsize_not_zero.
 
 Definition zwordsize: Z := Z.of_nat wordsize.
 Definition modulus : Z := two_power_nat wordsize.
+Definition nat_modulus : nat := Pos.to_nat (shift_nat wordsize 1).
 Definition half_modulus : Z := modulus / 2.
 Definition max_unsigned : Z := modulus - 1.
 Definition max_signed : Z := half_modulus - 1.
@@ -110,37 +121,26 @@ Hint Resolve modulus_pos: ints.
   integer (type [Z]) plus a proof that it is in the range 0 (included) to
   [modulus] (excluded). *)
 
-From mathcomp Require all_ssreflect. (* ssreflect *) (* seq tuple *)
-Import -(coercions) all_ssreflect.
+(* Coercion choice_type_to_type (a : choice_type) : Type. *)
+(* Proof. *)
+(*   pose (unkeyed (Choice.sort (chElement a))). *)
 
-From Crypt Require Import choice_type Package Prelude.
-Import PackageNotation.
-
-From extructures Require Import ord fset fmap.
-
-Coercion choice_type_to_type (a : choice_type) : Type.
-Proof.
-  pose (unkeyed (Choice.sort (chElement a))).
-
-  induction a ; cbn in T.
-  - apply unit.
-  - apply nat.
-  - apply bool.
-  - cbn in IHa1.
-    cbn in IHa2.
-    apply (IHa1 * IHa2).
-  - cbn in IHa1.
-    cbn in IHa2.
-    apply (FMap.fmap_type (chElement_ordType a1) IHa2).
-  - cbn in IHa.
-    apply (option IHa).
-  - apply T.
-Defined.
-  (* := unkeyed (Choice.sort (chElement a)). *)
-(* Coercion choice_type_to_type : choice_type >-> Sortclass. *)
-
-Print Coercion Paths choice_type Sortclass.
-
+(*   induction a ; cbn in T. *)
+(*   - apply unit. *)
+(*   - apply nat. *)
+(*   - apply bool. *)
+(*   - cbn in IHa1. *)
+(*     cbn in IHa2. *)
+(*     apply (IHa1 * IHa2). *)
+(*   - cbn in IHa1. *)
+(*     cbn in IHa2. *)
+(*     apply (FMap.fmap_type (chElement_ordType a1) IHa2). *)
+(*   - cbn in IHa. *)
+(*     apply (option IHa). *)
+(*   - apply T. *)
+(* Defined. *)
+(*   (* := unkeyed (Choice.sort (chElement a)). *) *)
+(* (* Coercion choice_type_to_type : choice_type >-> Sortclass. *) *)
 
 Theorem proj_sumbool_helper : (forall {T} x {k} (y z : T), (match proj_sumbool (zlt x k) with true => y | false => z end) = (match zlt x k with left _ => y | right _ => z end)).
 Proof.
@@ -186,7 +186,7 @@ Definition int : Type := int'.
 (* Defined. *)
 
 Program Definition mkint (z : Z) (intrange: -1 < z < modulus) : int :=
-  (Ordinal (n := Z.to_nat modulus) (m := (Z.to_nat z)) _).
+  Ordinal (n := Z.to_nat modulus) (m := (Z.to_nat z)) _.
 Next Obligation.
   (* apply (Ordinal (n := Z.to_nat modulus) (m := (Z.to_nat z))). *)
   intros.
