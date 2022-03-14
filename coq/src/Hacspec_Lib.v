@@ -1867,7 +1867,26 @@ Global Infix "+%" := nat_mod_add (at level 33) : hacspec_scope.
 Global Infix "*%" := nat_mod_mul (at level 33) : hacspec_scope.
 Global Infix "-%" := nat_mod_sub (at level 33) : hacspec_scope.
 
-
+Theorem single_mem : forall m, 
+Datatypes.is_true
+    (@ssrbool.in_mem
+       (Ord.sort (@tag_ordType choice_type_ordType (fun _ : choice_type => nat_ordType)))
+       m
+       (@ssrbool.mem
+          (Ord.sort
+             (@tag_ordType choice_type_ordType (fun _ : choice_type => nat_ordType)))
+          (fset_predType
+             (@tag_ordType choice_type_ordType (fun _ : choice_type => nat_ordType)))
+          (@fset (@tag_ordType choice_type_ordType (fun _ : choice_type => nat_ordType))
+             (@cons (@sigT choice_type (fun _ : choice_type => nat)) m
+                    (@nil (@sigT choice_type (fun _ : choice_type => nat))))))).
+Proof.
+  intros.
+  pose (@fset1E (@tag_ordType choice_type_ordType (fun _ : choice_type => nat_ordType))).
+  rewrite <- e.
+  rewrite (introT (fset1P _ _)) ; reflexivity.
+Qed.
+  
 Ltac ssprove_valid_location :=
   try repeat (try (apply eqtype.predU1l ; reflexivity) ; try apply eqtype.predU1r).
 
