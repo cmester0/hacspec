@@ -42,16 +42,6 @@ fn make_get_binding<'a>(pat: RcDoc<'a, ()>) -> RcDoc<'a, ()> {
         .append(pat.clone().append(RcDoc::as_string("_loc")).group())
         .append(RcDoc::space())
         .append(RcDoc::as_string(";;"))
-        .append(RcDoc::line())
-        .append(RcDoc::as_string("let"))
-        .append(RcDoc::space())
-        .append(pat.clone())
-        .append(RcDoc::space())
-        .append(RcDoc::as_string(":= type_from_choice_type_elem"))
-        .append(RcDoc::space())
-        .append(make_paren(pat.clone()))
-        .append(RcDoc::space())
-        .append(RcDoc::as_string("in"))
 }
 
 fn make_put_binding<'a>(pat: RcDoc<'a, ()>, expr: RcDoc<'a, ()>) -> RcDoc<'a, ()> {
@@ -59,7 +49,7 @@ fn make_put_binding<'a>(pat: RcDoc<'a, ()>, expr: RcDoc<'a, ()>) -> RcDoc<'a, ()
         .append(RcDoc::space())
         .append(pat.clone().append(RcDoc::as_string("_loc")).group())
         .append(RcDoc::space())
-        .append(RcDoc::as_string(":= choice_type_from_type_elem"))
+        .append(RcDoc::as_string(":= "))
         .group()
         .append(RcDoc::line().append(make_paren(expr.group())))
         .nest(2)
@@ -76,17 +66,6 @@ fn make_let_binding<'a>(
     toplevel: bool,
     do_bind: bool,
 ) -> RcDoc<'a, ()> {
-    let pat2 = if do_bind {
-        let codegen_id: usize = {
-            let c_id = fresh_codegen_id();
-            // id_map.insert(id, c_id); // TODO: should this be inserted? (no need)
-            c_id
-        };
-        translate_ident_str(format!("{}_{}", "temp", codegen_id))
-    } else {
-        pat.clone()
-    };
-
     RcDoc::as_string(if toplevel {
         "Definition"
     } else {
@@ -98,7 +77,7 @@ fn make_let_binding<'a>(
     })
     .append(RcDoc::space())
     .append(
-        pat2.clone()
+        pat.clone()
             .append(if do_bind {
                 RcDoc::nil()
             } else {
@@ -130,25 +109,7 @@ fn make_let_binding<'a>(
             } else {
                 RcDoc::as_string("in")
             })
-            .append(RcDoc::softline())
-    })
-    .append(if do_bind {
-        RcDoc::as_string("let ")
-            .append(pat.clone())
-            .append(RcDoc::as_string(" := type_from_choice_type_elem "))
-            .append(
-                pat2.clone().append(match typ.clone() {
-                    None => RcDoc::nil(),
-                    Some(tau) => RcDoc::space()
-                        .append(RcDoc::as_string(":"))
-                        .append(RcDoc::space())
-                        .append(tau),
-                }),
-            )
-            .append(RcDoc::as_string(" in"))
             .append(RcDoc::line())
-    } else {
-        RcDoc::nil()
     })
 }
 
@@ -1540,7 +1501,7 @@ fn translate_statements<'a>(
                 .into_iter()
                 .fold(RcDoc::nil(), |rc, x| rc.append(x))
                 .append(RcDoc::as_string(
-                    "pkg_core_definition.ret (choice_type_from_type_elem ",
+                    "pkg_core_definition.ret ( ",
                 ))
                 .append(make_paren(trans_e1))
                 .append(RcDoc::as_string(")"))
@@ -1795,7 +1756,7 @@ fn fset_and_locations<'a>(smvars: ScopeMutableVars) -> (RcDoc<'a, ()>, RcDoc<'a,
                     make_let_binding(
                         translate_ident(i.clone()).append("_loc"),
                         Some(RcDoc::as_string("Location")),
-                        RcDoc::as_string("choice_type_from_type")
+                        RcDoc::as_string("@ct")
                             .append(RcDoc::space())
                             .append(match typ {
                                 Some(typ) => translate_typ(typ),
@@ -1890,7 +1851,7 @@ fn translate_item<'a>(
                             .append(RcDoc::as_string("[interface]"))
                             .append(RcDoc::space())
                             .append(make_paren(
-                                RcDoc::as_string("choice_type_from_type")
+                                RcDoc::as_string("@ct")
                                     .append(RcDoc::space())
                                     .append(make_paren(translate_base_typ(sig.ret.0.clone())))
                             ))
@@ -2563,7 +2524,7 @@ pub fn translate_and_write_to_file(
         {}\n\n\
         Obligation Tactic :=\n\
           try (Tactics.program_simpl; fail); simpl ; (* Old Obligation Tactic *)\n\
-          intros ; do 2 ssprove_valid_2.\n\
+          intros ; do 2 ssprove_valid'_2.\n\
         \n",
         if export_quick_check {
             "From QuickChick Require Import QuickChick.\n\
