@@ -4,6 +4,7 @@ Global Set Warnings "-auto-template".
 Global Set Warnings "-disj-pattern-notation".
 
 From mathcomp Require Import choice fintype.
+
 From Crypt Require Import choice_type Package Prelude.
 Import PackageNotation.
 From extructures Require Import ord fset fmap.
@@ -35,7 +36,7 @@ Program Instance int {WS : wsize} : ChoiceEquality :=
   
 Definition unsigned {WS : wsize} (i : @int WS) : Z := wunsigned i.
 Definition signed {WS : wsize} (i: @int WS) : Z := wsigned i.
-Definition repr {WS : wsize} (z : Z) : @int WS := wrepr WS z. 
+Definition repr {WS : wsize} (z : Z) : @int_type WS := wrepr WS z. 
 
 Definition rol {WS} (u s : @int WS) := wrol u (unsigned s).
 Definition ror {WS} (u s : @int WS) := wror u (unsigned s).
@@ -1689,17 +1690,21 @@ Section Todosection.
 Local Coercion T : ChoiceEquality >-> Sortclass.
 Local Coercion ct : ChoiceEquality >-> choice_type.
 
-(* TODO replace nat_mod with actual field, instead of @int which just overflows ?! *)
-Program Definition wsize_p (p : Z) : wsize := {| wordsize := S (Z.to_nat p) |}.
-Definition nat_mod (p : Z) : ChoiceEquality := @int (wsize_p p). (* GZnZ.znz p. *)
-Definition nat_mod_type {p : Z} : Type := @T (nat_mod p). (* GZnZ.znz p. *)
+Definition nat_mod_choice {p : Z} : choice_type := 'fin (S (Init.Nat.pred (Z.to_nat p))).
+Definition nat_mod_type {p : Z} : Type := 'I_(S (Init.Nat.pred (Z.to_nat p))).
+Instance nat_mod (p : Z) : ChoiceEquality :=
+  {| ct :=  nat_mod_choice ; T :=  @nat_mod_type p ; ChoiceEq := eq_refl |}.    
+Definition mk_natmod {p} (z : Z) : nat_mod p := @zmodp.inZp (Init.Nat.pred (Z.to_nat p)) (Z.to_nat z).
 
 Definition nat_mod_equal {p} (a b : nat_mod p) : bool :=
-  Z.eqb (unsigned a) (unsigned b).
+  @eqtype.eq_op (ordinal_eqType (S (Init.Nat.pred (Z.to_nat p)))) a b.
 
-Definition nat_mod_zero_pre {p} : nat_mod p := @zero (wsize_p p).
-Definition nat_mod_one_pre {p} : nat_mod p := @one (wsize_p p).
-Definition nat_mod_two_pre {p} : nat_mod p := repr 2.
+Definition nat_mod_equal_reflect {p} {a b} : Bool.reflect (a = b) (@nat_mod_equal p a b) :=
+  @eqtype.eqP (ordinal_eqType (S (Init.Nat.pred (Z.to_nat p)))) a b.
+      
+Definition nat_mod_zero_pre {p} : nat_mod p := zmodp.Zp0.
+Definition nat_mod_one_pre {p} : nat_mod p := zmodp.Zp1.
+Definition nat_mod_two_pre {p} : nat_mod p := zmodp.inZp 2.
 
 Definition nat_mod_zero {p} : code fset.fset0 [interface] (@ct (nat_mod p)) := {code ret (T_ct (nat_mod_zero_pre))}.
 Definition nat_mod_one {p} : code fset.fset0 [interface] (@ct (nat_mod p)) := {code ret (T_ct (nat_mod_one_pre))}.
@@ -1710,16 +1715,14 @@ Definition nat_mod_two {p} : code fset.fset0 [interface] (@ct (nat_mod p)) := {c
 (* Coercion Z.of_N : N >-> Z. *)
 
 
-Definition nat_mod_add_pre {n : Z} (a : nat_mod n) (b : nat_mod n) : nat_mod n := MachineIntegers.add a b.
+Definition nat_mod_add_pre {n : Z} (a : nat_mod n) (b : nat_mod n) : nat_mod n := zmodp.Zp_add a b.
 
-Definition nat_mod_mul_pre {n : Z} (a:nat_mod n) (b:nat_mod n) : nat_mod n := MachineIntegers.mul a b.
+Definition nat_mod_mul_pre {n : Z} (a:nat_mod n) (b:nat_mod n) : nat_mod n := zmodp.Zp_mul a b.
 
-Definition nat_mod_sub_pre {n : Z} (a:nat_mod n) (b:nat_mod n) : nat_mod n := MachineIntegers.sub a b.
-(* Infix "-%" := nat_mod_sub (at level 33) : hacspec_scope. *)
+Definition nat_mod_sub_pre {n : Z} (a:nat_mod n) (b:nat_mod n) : nat_mod n := zmodp.Zp_add a (zmodp.Zp_opp b).
 
-(* TOOD: find MachineIntegers implmenetation *)
-(* Definition nat_mod_div {n : Z} (a:nat_mod n) (b:nat_mod n) : nat_mod n := GZnZ.div n a b. *)
-(* Infix "/%" := nat_mod_div (at level 33) : hacspec_scope. *)
+Definition nat_mod_div_pre {n : Z} (a:nat_mod n) (b:nat_mod n) : nat_mod n :=
+  zmodp.Zp_mul a (zmodp.Zp_inv b).
 
 (* A % B = (a * B + r) *)
 
@@ -1745,7 +1748,9 @@ Open Scope Z_scope.
 
 (* We assume x < m *)
 
-Definition nat_mod_from_secret_literal_pre {m : Z} (x:int128) : nat_mod m := repr (unsigned x).
+Definition nat_mod_from_secret_literal_pre {m : Z} (x:int128) : nat_mod m :=
+  @zmodp.inZp (Init.Nat.pred (Z.to_nat m)) (Z.to_nat (unsigned x)).
+
 Definition nat_mod_from_secret_literal {m : Z} (x:int128) : code fset.fset0 [interface] (@ct (nat_mod m)) :=
  {code ret (T_ct (@nat_mod_from_secret_literal_pre m x))}.  
 
@@ -1756,8 +1761,8 @@ Axiom nat_mod_to_byte_seq_be : forall {n : Z}, nat_mod n -> code fset.fset0 [int
 Axiom nat_mod_to_public_byte_seq_le : forall (n : Z), nat_mod n -> code fset.fset0 [interface] (seq int8).
 Axiom nat_mod_to_public_byte_seq_be : forall (n : Z), nat_mod n -> code fset.fset0 [interface] (seq int8).
 
-Definition nat_mod_bit_pre {n : Z} (a : nat_mod n) (i : uint_size) :=
-  Z.testbit (unsigned a) (from_uint_size i).
+Definition nat_mod_bit_pre {n : Z} (a : nat_mod n) (i : uint_size) : bool :=
+  Z.testbit (Z.of_nat (nat_of_ord a)) (from_uint_size i).
 
 (* Alias for nat_mod_bit *)
 Definition nat_get_mod_bit_pre {p} (a : nat_mod p) := nat_mod_bit_pre a.
@@ -1786,13 +1791,15 @@ Axiom most_significant_bit : forall {m}, nat_mod m -> uint_size -> code fset.fse
 
 (* We assume 2^x < m *)
 
-Definition nat_mod_pow2_pre (m : Z) (x : N) : nat_mod m := repr (Z.pow 2 (Z.of_N x)).
+Definition nat_mod_pow2_pre (m : Z) (x : N) : nat_mod m := mk_natmod (Z.pow 2 (Z.of_N x)).
 Definition nat_mod_pow2 (m : Z) (x : N) : code fset.fset0 [interface] (@ct (nat_mod m)) := {code ret (T_ct (nat_mod_pow2_pre m x))}.
 
 End Todosection.
 
 Infix "+%" := nat_mod_add_pre (at level 33) : hacspec_scope.
 Infix "*%" := nat_mod_mul_pre (at level 33) : hacspec_scope.
+Infix "-%" := nat_mod_sub_pre (at level 33) : hacspec_scope.
+Infix "/%" := nat_mod_div_pre (at level 33) : hacspec_scope.
 
 Section Casting.
 
@@ -1843,7 +1850,7 @@ Local Coercion ct : ChoiceEquality >-> choice_type.
   }.
 
   Global Instance cast_natmod_to_Z {p} : Cast (nat_mod p) Z := {
-    cast n := unsigned n
+    cast n := Z.of_nat (nat_of_ord n)
   }.
 
   (* Note: should be aware of typeclass resolution with int/uint since they are just aliases of each other currently *)
@@ -1858,8 +1865,8 @@ Local Coercion ct : ChoiceEquality >-> choice_type.
     cast n := repr (unsigned n)
   }.
 
-  Global Instance cast_int_to_nat `{wsize} : Cast int nat := {
-    cast n := Z.to_nat (signed n)
+  Global Instance cast_int_to_nat `{WS : wsize} : Cast int nat := {
+    cast n := Z.to_nat (@signed WS n)
   }.
 
   Close Scope hacspec_scope.
@@ -1884,7 +1891,7 @@ Local Coercion ct : ChoiceEquality >-> choice_type.
 
   Global Coercion repr : Z >-> int_type.
 
-  Definition Z_to_int `{wsize} (n : Z) : int_type := repr n.
+  Definition Z_to_int `{WS : wsize} (n : Z) : @int_type WS := repr n.
   Global Coercion  Z_to_int : Z >-> int_type.
 
   Definition Z_to_uint_size (n : Z) : uint_size_type := repr n.
@@ -1892,12 +1899,12 @@ Local Coercion ct : ChoiceEquality >-> choice_type.
   Definition Z_to_int_size (n : Z) : int_size_type := repr n.
   Global Coercion Z_to_int_size : Z >-> int_size_type.
 
-  Definition N_to_int `{wsize} (n : N) : int_type := repr (Z.of_N n).
+  Definition N_to_int `{WS : wsize} (n : N) : @int_type WS := repr (Z.of_N n).
   Global Coercion N.of_nat : nat >-> N.
   Global Coercion N_to_int : N >-> int_type.
   Definition N_to_uint_size (n : Z) : uint_size_type := repr n.
   Global Coercion N_to_uint_size : Z >-> uint_size_type.
-  Definition nat_to_int `{wsize} (n : nat) := repr (Z.of_nat n).
+  Definition nat_to_int `{WS : wsize} (n : nat) : @int_type WS := repr (Z.of_nat n).
   Global Coercion nat_to_int : nat >-> int_type.
 
   Definition uint_size_to_nat (n : uint_size_type) : nat := from_uint_size n.
@@ -1908,9 +1915,6 @@ Local Coercion ct : ChoiceEquality >-> choice_type.
 
   (* Definition uint32_to_nat (n : uint32) : nat := unsigned n. *)
   (* Global Coercion uint32_to_nat : uint32 >-> nat. *)
-
-
-  Global Coercion GZnZ.val : GZnZ.znz >-> Z.
 
   (* Definition int8_to_nat (n : int8) : nat := unsigned n. *)
   (* Global Coercion int8_to_nat : int8 >-> nat. *)
@@ -1948,10 +1952,10 @@ Local Coercion ct : ChoiceEquality >-> choice_type.
 
 
   (* coercions into nat_mod *)
-  Definition Z_in_nat_mod {m : Z} (x:Z) : @nat_mod_type m := repr x.
+  Definition Z_in_nat_mod {m : Z} (x:Z) : @nat_mod_type m := mk_natmod x.
   (* Global Coercion Z_in_nat_mod : Z >-> nat_mod_type. *)
 
-  Definition int_in_nat_mod {m : Z} `{wsize} (x:int_type) : @nat_mod_type m := repr (unsigned x).
+  Definition int_in_nat_mod {m : Z} `{WS : wsize} (x:@int_type WS) : @nat_mod_type m := mk_natmod (unsigned x).
   Global Coercion int_in_nat_mod : int_type >-> nat_mod_type.
 
   Definition uint_size_in_nat_mod (n : uint_size_type) : @nat_mod_type 16 := int_in_nat_mod n.
@@ -2017,6 +2021,12 @@ Class Comparable (A : Type) := {
   gtb : A -> A -> bool;
   geb : A -> A -> bool;
 }.
+Instance eq_dec_lt_Comparable {A : Type} `{EqDec A} (ltb : A -> A -> bool) : Comparable A := {
+    ltb := ltb;
+    leb a b := if eqb a b then true else ltb a b ;
+    gtb a b := ltb b a;
+    geb a b := if eqb a b then true else ltb b a;
+  }.
 
 Theorem eqb_refl : forall {A} {H : EqDec A} (x : A), @eqb A H x x = true.
 Proof.
@@ -2060,56 +2070,37 @@ Global Instance Z_comparable : Comparable Z := {
   geb a b := Z.leb b a;
 }.
 
-Lemma int_eqb_eq : forall {WS : wsize} (a b : int), eq a b = true <-> a = b.
+Lemma int_eqb_eq : forall {WS : wsize} (a b : @int WS),
+    eqtype.eq_op a b = true <-> a = b.
 Proof.
-  intros. split.
-  - apply same_if_eq.
-  - intros. rewrite H. apply eq_true.
+  symmetry ; exact (ssrbool.rwP (@eqtype.eqP _ a b)).
 Qed.
 
-Global Instance int_eqdec `{wsize}: EqDec int := {
-  eqb := eq;
+Global Instance int_eqdec `{WS : wsize}: EqDec (@int WS) := {
+  eqb := eqtype.eq_op ;
   eqb_leibniz := int_eqb_eq ;
 }.
 
-Global Instance int_comparable `{wsize} : Comparable int := {
-  ltb := lt;
-  leb a b := if eq a b then true else lt a b ;
-  gtb a b := lt b a;
-  geb a b := if eq a b then true else lt b a;
-}.
-
+Global Instance int_comparable `{WS : wsize} : Comparable (@int WS) :=
+    eq_dec_lt_Comparable (wlt Unsigned).
+  
 Definition uint8_equal : int8 -> int8 -> bool := eqb.
 
-Definition nat_mod_val (p : Z) (a : nat_mod p) : Z := unsigned a.
+(* Definition nat_mod_val (p : Z) (a : nat_mod p) : Z := nat_of_ord a. *)
 
-Theorem nat_mod_eqb_spec : forall {p} (a b : nat_mod p), Z.eqb (nat_mod_val p a) (nat_mod_val p b) = true <-> a = b.
+Theorem nat_mod_eqb_spec : forall {p} (a b : nat_mod p),
+    nat_mod_equal a b = true <-> a = b.
 Proof.
-  split ; intros.
-  - apply Z.eqb_eq in H.
-    destruct a, b.
-    cbn in H.
-    unfold nat_mod_val in H.
-    unfold unsigned in H.
-    cbn in H.
-    apply Nat2Z.inj in H.
-    apply mkint_eq, H.
-  - subst.
-    apply Z.eqb_eq.
-    reflexivity.
+  symmetry ; apply (ssrbool.rwP nat_mod_equal_reflect).
 Qed.
 
 Global Instance nat_mod_eqdec {p} : EqDec (nat_mod p) := {
-  eqb a b := Z.eqb (nat_mod_val p a) (nat_mod_val p b);
+  eqb a b := nat_mod_equal a b;
   eqb_leibniz := nat_mod_eqb_spec;
 }.
 
-Global Instance nat_mod_comparable `{p : Z} : Comparable (nat_mod p) := {
-  ltb a b := Z.ltb (nat_mod_val p a) (nat_mod_val p b);
-  leb a b := if eq a b then true else Z.ltb (nat_mod_val p a) (nat_mod_val p b) ;
-  gtb a b := Z.ltb (nat_mod_val p b) (nat_mod_val p a);
-  geb a b := if eq b a then true else Z.ltb (nat_mod_val p b) (nat_mod_val p a) ;
-}.
+Global Instance nat_mod_comparable `{p : Z} : Comparable (nat_mod p) :=
+  eq_dec_lt_Comparable (@order.Order.lt order.Order.OrdinalOrder.ord_display (order.Order.OrdinalOrder.porderType _)).
 
 Fixpoint nat_mod_rem_aux {n : Z} (a:nat_mod n) (b:nat_mod n) (f : nat) {struct f} : nat_mod n :=
   match f with
@@ -2336,7 +2327,7 @@ Global Instance uint_size_default : Default uint_size := {
 Global Instance int_size_default : Default int_size := {
   default := zero
 }.
-Global Instance int_default {WS : wsize} : Default int := {
+Global Instance int_default {WS : wsize} : Default (@int WS) := {
   default := repr 0
 }.
 Global Instance uint8_default : Default uint8 := _.
