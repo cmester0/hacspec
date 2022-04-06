@@ -287,13 +287,13 @@ Next Obligation.
   apply (poly1305_update_blocks m_56 st_57).
   
   eapply (valid_injectLocations_b) with (L1 := fset [st_46_loc]).
-  rewrite simplify_fset.
-  rewrite simplify_fset.
-  
+  rewrite simplify_fset ; try reflexivity.
+  rewrite simplify_sorted_fset by reflexivity.
+
   unfold List.incl.
   intros [].
   repeat rewrite <- in_bool_eq.
- 
+  
   unfold path.sort.
   unfold path.merge_sort_rec.
   
@@ -303,66 +303,8 @@ Next Obligation.
 
   rewrite tag_leq_simplify ; [ | rewrite Ord.eq_leq ; reflexivity | reflexivity ].
   cbn ; incl_b_compute.
-  apply path.sort_sorted ; apply Ord.leq_total.
-  
-  
-  unfold negb.
-  unfold path.merge.
-
-  unfold Inb.
-  
     
   eapply (poly1305_update_last).
-
-
-  replace (@path.sort Location
-       (@tag_leq choice_type_ordType (fun _ : choice_type => nat_ordType))
-       [st_46_loc; st_40_loc]) with [st_40_loc ; st_46_loc]%list.
-
-  unfold List.incl.
-  intros.
-  rewrite <- in_bool_eq.
-  rewrite <- in_bool_eq in H.
-
-  cbn in *.
-
-  repeat rewrite is_true_split_or in H.
-  decompose [and or] H ; clear H.
-  - repeat rewrite is_true_split_or.
-    try (left ; assumption).
-  - discriminate H0.
-
-    cbn.
-
-    replace (tag_leq (I:=choice_type_ordType) (T_:=fun _ : choice_type => nat_ordType) st_46_loc st_40_loc) with false.
-    reflexivity.
-    
-    unfold tag_leq.
-    symmetry.
-    
-    rewrite Ord.ltxx.
-    cbn.
-    unfold eqtype.tagged_as.
-    destruct eqtype.eqP ; try contradiction.
-    unfold eq_rect_r , eq_rect.
-    destruct eq_sym.
-    cbn.
-
-    rewrite ssrnat.eqnE.
-    rewrite eqtype.eq_refl.
-    cbn.
-
-    rewrite choice_type_refl.
-    cbn.
-
-    reflexivity.
-
-    apply (poly1305_update_blocks m_56 st_57).
-    
-    apply (poly1305_update_last ((seq_len (seq_get_remainder_chunk m_56 blocksize_v)) : uint_size_type)
-       (seq_get_remainder_chunk m_56 blocksize_v) x).
-    
-  eapply valid_foldi with (is_subset := H).
 Qed.
 
 Program Definition poly1305_finish
