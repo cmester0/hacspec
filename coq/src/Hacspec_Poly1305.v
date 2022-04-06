@@ -68,8 +68,7 @@ Program Definition poly1305_encode_r
     pkg_core_definition.ret ( (temp_5))
     } : code ((fset [n_3_loc])) [interface] _).
 Next Obligation.
-  ssprove_valid ; 
-    try (apply valid_scheme ; apply prog_valid) ; ssprove_valid_location'.
+  ssprove_valid'.
 Qed.
   
 Program Definition poly1305_encode_block
@@ -161,7 +160,7 @@ Definition st_40_loc : Location :=
 Program Definition poly1305_update_blocks
   (m_35 : byte_seq)
   (st_34 : poly_state_t)
-  : code (fset [ st_40_loc]) [interface] (@ct (poly_state_t)) :=
+  : code (fset (path.sort leb [ st_40_loc])) [interface] (@ct (poly_state_t)) :=
   ({code
     #put st_40_loc := 
       (st_34) ;;
@@ -189,12 +188,12 @@ Program Definition poly1305_update_blocks
         st_40) ;;
     
     pkg_core_definition.ret ( (st_40))
-    } : code ((fset [ st_40_loc])) [interface] _).
+    } : code (fset (path.sort leb [ st_40_loc])) [interface] _).
 Next Obligation.
-  ssprove_valid'_2.
+  ssprove_valid'.
 Qed.
 Next Obligation.
-  ssprove_valid'_2.  
+  ssprove_valid'.
 Qed.
 
 Definition st_46_loc : Location :=
@@ -203,7 +202,7 @@ Program Definition poly1305_update_last
   (pad_len_48 : uint_size)
   (b_47 : sub_block_t)
   (st_45 : poly_state_t)
-  : code (fset [ st_46_loc]) [interface] (@ct (poly_state_t)) :=
+  : code (fset (path.sort leb [ st_46_loc])) [interface] (@ct (poly_state_t)) :=
   ({code
     #put st_46_loc := 
       (st_45) ;;
@@ -224,7 +223,7 @@ Program Definition poly1305_update_last
           pkg_core_definition.ret ( ((st_46))))) ;;
     
     pkg_core_definition.ret ( (st_46))
-    } : code ((fset [ st_46_loc])) [interface] _).
+    } : code (fset (path.sort leb [ st_46_loc ])) [interface] _).
 Next Obligation.
   ssprove_valid'_2.
 Qed.
@@ -248,63 +247,9 @@ Program Definition poly1305_update
      temp_61 ←
       (poly1305_update_last (seq_len (last_59) : uint_size_type) (last_59) (st_60)) ;;
     pkg_core_definition.ret ( (temp_61))
-    } : code ((fset (path.sort _ [ st_46_loc ; st_40_loc]))) [interface] _).
+    } : code ((fset (path.sort leb [ st_46_loc ; st_40_loc]))) [interface] _).
 Next Obligation.
-  unfold Location.
-  unfold ssrbool.rel.
-  pose (tag_leq (I:=choice_type_ordType) (T_:=fun _ : choice_type => nat_ordType)).
-  cbn in b.
-  unfold ssrbool.pred.
-  apply b.
-Defined.
-Next Obligation.
-  unfold poly1305_update_obligation_1.
-  ssprove_valid.
-    
-  eapply (valid_injectLocations_b) with (L1 := fset [st_40_loc]).
-  {
-    rewrite simplify_fset ; try reflexivity.
-    rewrite simplify_sorted_fset by reflexivity.
-    
-    cbn.
-    
-    unfold List.incl.
-    intros [].
-    repeat rewrite <- in_bool_eq.
-
-    rewrite tag_leq_inverse.
-    rewrite Bool.andb_false_r.
-    rewrite Bool.orb_false_r.
-
-    rewrite tag_leq_simplify ; [ | rewrite Ord.eq_leq ; reflexivity | reflexivity ].
-    
-    unfold negb.
-    unfold path.merge.
-
-    unfold Inb.    
-    incl_b_compute.
-  }
-  apply (poly1305_update_blocks m_56 st_57).
-  
-  eapply (valid_injectLocations_b) with (L1 := fset [st_46_loc]).
-  rewrite simplify_fset ; try reflexivity.
-  rewrite simplify_sorted_fset by reflexivity.
-
-  unfold List.incl.
-  intros [].
-  repeat rewrite <- in_bool_eq.
-  
-  unfold path.sort.
-  unfold path.merge_sort_rec.
-  
-  rewrite tag_leq_inverse.
-  rewrite Bool.andb_false_r.
-  rewrite Bool.orb_false_r.
-
-  rewrite tag_leq_simplify ; [ | rewrite Ord.eq_leq ; reflexivity | reflexivity ].
-  cbn ; incl_b_compute.
-    
-  eapply (poly1305_update_last).
+  ssprove_valid'.
 Qed.
 
 Program Definition poly1305_finish

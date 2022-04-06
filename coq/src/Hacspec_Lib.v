@@ -2462,24 +2462,6 @@ Proof.
   rewrite <- (@fset1E (@tag_ordType choice_type_ordType (fun _ : choice_type => nat_ordType))).
   rewrite (ssrbool.introT (fset1P _ _)) ; reflexivity.
 Qed.
-
-Ltac ssprove_valid' :=
-  repeat (apply valid_ret ||
-    (apply valid_bind ; [apply valid_scheme ; apply prog_valid | intros]) ||
-    (apply valid_bind ; [ | intros ; ssprove_valid' ]) ||
-    (apply valid_putr ; [ssprove_valid_location | ]) ||
-    (apply valid_getr ; [ssprove_valid_location | intros]) ||
-      (apply valid_foldi ; intros) ||
-        match goal with
-        | [ |- context[match ?x with | true => _ | false => _ end] ] =>
-            destruct x
-        end).
-
-Ltac ssprove_valid'_2 :=
-  destruct_choice_type_prod ;
-  ssprove_valid' ;
-  ssprove_valid_program ;
-  ssprove_valid_location.
   
 (* Notation "ct( x , y , .. , z )" := (pair_ChoiceEquality .. (pair_ChoiceEquality x y) .. z) : hacspec_scope. *)
 Fixpoint Inb {A : Type} `{EqDec A} (a:A) (l:list A) : bool :=
@@ -2530,13 +2512,14 @@ Axiom location_is_types : (forall l1 l2 : Location ,
  is_true (ssrfun.tagged l1 =.? ssrfun.tagged l2) ->
  is_true (eqtype.eq_op (ssrfun.tag l1) (ssrfun.tag l2))).
 
-Definition simple_tag_equality : forall (l1 l2 : Location),
-    (@eqtype.eq_op
-       (@eqtype.tag_eqType choice_type_eqType
-                           (fun _ : choice_type => ssrnat.nat_eqType)) l1 l2) =
-      eqb (ssrfun.tagged l1) (ssrfun.tagged l2).
+Definition location_eqbP : forall (l1 l2 : Location),
+    eqb (ssrfun.tagged l1) (ssrfun.tagged l2)
+    = (@eqtype.eq_op
+         (@eqtype.tag_eqType choice_type_eqType
+                           (fun _ : choice_type => ssrnat.nat_eqType)) l1 l2).
 Proof.
   intros.
+  symmetry.
   pose (location_is_types l1 l2).
   destruct l1, l2.
   unfold location_eqb.
@@ -2566,7 +2549,7 @@ Proof.
   unfold is_true.
   replace (location_eqb ℓ ℓ' = true) with (true = location_eqb ℓ ℓ') by
     (rewrite boolp.propeqE ; split ; symmetry ; assumption).
-  unfold location_eqb. rewrite <- simple_tag_equality.
+  unfold location_eqb. rewrite location_eqbP.
   split.
   - symmetry ; apply lookup_hpv_r_obligation_1 ; assumption.
   - intros ; subst. cbn. symmetry. rewrite eqtype.tag_eqE. apply eqtype.eq_refl.
@@ -2577,7 +2560,126 @@ Global Program Instance location_eqdec: EqDec (Location) := {
   eqb_leibniz := location_eqb_sound;
   }.
 
-Global Instance location_comparable : Comparable (Location) := eq_dec_le_Comparable (tag_leq (I:=choice_type_ordType) (T_:=fun _ : choice_type => nat_ordType)).
+Definition location_ltb : Location -> Location -> bool :=
+  (fun l1 l2 : Location =>
+     let (_, n1) := l1 in
+      let (_, n2) := l2 in
+      n1 <.? n2).
+
+Global Instance location_comparable : Comparable (Location) :=
+  eq_dec_lt_Comparable location_ltb.
+
+Definition le_is_ord_leq : forall s s0 : nat_ordType,
+    eqtype.eq_op s s0 = false -> s <.? s0 = (s <= s0)%ord.
+Proof.
+  intros s s0.
+  unfold "<.?" , nat_comparable , "<?".
+  intros e.
+  
+  generalize dependent s.
+  induction s0 ; intros.
+  * destruct s ; easy.
+  * destruct s. reflexivity.
+    (* unfold Nat.leb ; fold Nat.leb. *)
+    cbn.
+    cbn in IHs0.
+    rewrite IHs0.
+    reflexivity.
+    assumption.
+Qed.
+
+(* Definition le_is_ord_leq2 : forall (s s0 : Location), *)
+(*     eqb (ssrfun.tagged s) (ssrfun.tagged s0) = false ->  *)
+(*     eqtype.eq_op (ssrfun.tag s) (ssrfun.tag s0) = false -> *)
+(*     s <.? s0 = (s <= s0)%ord. *)
+(* Proof. *)
+(*   intros s s0. *)
+(*   unfold "<.?" , location_comparable , eq_dec_lt_Comparable , location_ltb , "<?". *)
+(*   unfold eqtype.tagged_as, ssrfun.tagged , ssrfun.tag , ".π1" , ".π2". *)
+(*   intros e H. *)
+(*   destruct s , s0. *)
+
+(*   replace (((x; n) <= (x0; n0))%ord) with (x < x0)%ord. *)
+(*   2 : {     *)
+(*     cbn. *)
+(*     unfold tag_leq. *)
+(*     cbn. *)
+(*     cbn in H. *)
+(*     replace (choice_type_test x x0) with false by apply H. *)
+(*     cbn. *)
+(*     rewrite Bool.orb_false_r. *)
+(*     reflexivity. *)
+(*   }   *)
+
+  
+  
+(*   replace (eqtype.eq_op (ssrfun.tag (x; n)) (ssrfun.tag (x0; n0))) with false. *)
+  
+(*   rewrite le_is_ord_leq by apply e. *)
+
+  
+  
+(*   generalize dependent n. *)
+(*   induction n0 ; intros. *)
+(*   * destruct s ; easy. *)
+(*   * destruct s. reflexivity. *)
+(*     (* unfold Nat.leb ; fold Nat.leb. *) *)
+(*     cbn. *)
+(*     cbn in IHs0. *)
+(*     rewrite IHs0. *)
+(*     reflexivity. *)
+(*     assumption. *)
+(* Qed. *)
+
+Definition location_lebP : (tag_leq (I:=choice_type_ordType) (T_:=fun _ : choice_type => nat_ordType)) = leb.
+Proof.
+  symmetry.
+  do 2 (apply functional_extensionality ; intro).
+  unfold tag_leq.
+  unfold "<=.?".
+  unfold location_comparable.
+  unfold eq_dec_lt_Comparable.
+  destruct (@eqb Location _ x x0) eqn:x_eq_x0.
+  - cbn in x_eq_x0.
+    rewrite location_is_types by apply x_eq_x0.    
+    unfold eqtype.tagged_as.
+    destruct eqtype.eqP.
+    + rewrite (Couplings.reflection_nonsense _ (ssrfun.tagged x) (ssrfun.tagged x0) x_eq_x0).
+      unfold eq_rect_r , eq_rect ; destruct eq_sym.
+      rewrite Ord.leqxx.
+      rewrite Bool.orb_true_r.
+      reflexivity. 
+    + exfalso.
+      apply n.
+      apply Couplings.reflection_nonsense.
+      apply (location_is_types x x0 x_eq_x0).
+  - unfold location_ltb.
+    pose (location_eqbP x x0).
+    destruct x , x0.
+    cbn in x_eq_x0.
+    cbn in e.
+    rewrite x_eq_x0 in e.
+    symmetry in e.
+    unfold eqtype.tag_eq in e.
+    unfold eqtype.tagged_as, ssrfun.tagged , ssrfun.tag , ".π1" , ".π2" in e.
+    
+    unfold eqtype.tagged_as, ssrfun.tagged , ssrfun.tag , ".π1" , ".π2".
+    destruct eqtype.eqP.
+    + subst.
+      unfold eq_rect_r , eq_rect in * ; destruct eq_sym.
+      rewrite choice_type_refl in e.
+      rewrite Bool.andb_true_l in e.
+
+      rewrite Ord.ltxx.
+      
+      rewrite Bool.orb_false_l.
+      rewrite Bool.andb_true_l.
+
+      apply le_is_ord_leq.
+      assumption.
+    + exfalso.
+      admit.
+Admitted.
 
 Theorem loc_compute_b :
   (forall l : (@sigT choice_type (fun _ : choice_type => nat)),
@@ -2600,7 +2702,7 @@ Theorem loc_compute_b :
     unfold "||".
     rewrite eqtype.tag_eqE ; rewrite eqtype.eq_sym ; rewrite <- eqtype.tag_eqE.
     rewrite IHn.
-    rewrite <- simple_tag_equality.
+    rewrite location_eqbP.
     reflexivity.
 Qed.
 
@@ -2684,17 +2786,18 @@ Theorem simplify_fset : forall l,
   - reflexivity.
   - destruct (tag_leqP (I:=choice_type_ordType) (fun _ : choice_type => nat_ordType)) as [ _ trans _ _ ].
     apply trans.
-  - assumption.  
+  - rewrite location_lebP.
+    assumption.  
 Qed.
 
 Theorem simplify_sorted_fset : forall l,
     is_true (uniqb l) ->
     (@FSet.fsval (@tag_ordType choice_type_ordType (fun _ : choice_type => nat_ordType))
-       (@fset _  (path.sort (tag_leq (I:=choice_type_ordType) (T_:= fun _ : choice_type => nat_ordType)) l))) = (path.sort (tag_leq (I:=choice_type_ordType) (T_:= fun _ : choice_type => nat_ordType)) l).
+       (@fset _  (path.sort (leb : Location -> Location -> bool) l))) = (path.sort (leb : Location -> Location -> bool) l).
 Proof.
   intros.
   apply simplify_fset.
-  apply path.sort_sorted ; apply Ord.leq_total.
+  apply path.sort_sorted ; pose location_lebP ; cbn ; cbn in e ; rewrite <- e ; apply Ord.leq_total.
   rewrite <- uniq_is_bool.
   rewrite path.sort_uniq.
   rewrite uniq_is_bool.
@@ -2794,3 +2897,63 @@ Ltac incl_b_compute :=
   [ repeat rewrite is_true_split_or ;
     repeat (try (left ; assumption) ; right)
   | discriminate ].
+
+Ltac incl_compute :=
+  now (unfold List.incl ; intros [] ; repeat rewrite <- in_bool_eq ; unfold Inb ; incl_b_compute).
+
+(* Lemma valid_inject_loc_b : *)
+(*   forall (import : Interface) (A : choiceType) *)
+(*     (L1 L2 : {fset tag_ordType (I:=choice_type_ordType) (fun _ : choice_type => nat_ordType)}) *)
+(*     (v : raw_code A), *)
+(*     List.incl (path.sort leb L1) (path.sort leb L2). *)
+(* Proof. *)
+(*   intros. *)
+(*   rewrite simplify_sorted_fset by reflexivity. *)
+(*   eapply (valid_injectLocations_b) with (L1 := L1). *)
+(*   [ rewrite simplify_sorted_fset by reflexivity  *)
+(*     ; rewrite simplify_sorted_fset by reflexivity *)
+(*     ; cbn   *)
+(*     ; incl_compute *)
+(*   | .. ]    . *)
+(* Qed. *)
+
+(* eapply (valid_injectLocations_b) with (L1 := _) ; *)
+
+Ltac valid_sorted_incl :=
+  rewrite simplify_sorted_fset by reflexivity 
+    ; rewrite simplify_sorted_fset by reflexivity
+    ; cbn  
+    ; incl_compute.
+
+Ltac valid_program :=
+  (* match goal with *)
+  (* | |- (ValidCode _ _ (@prog _ _ _ (?program))) => apply program *)
+  (* end. *)
+  match goal with
+  | |- (ValidCode _ _ (@prog _ _ _ ?program)) =>
+      pose program ;
+      match goal with
+      | H : (code ?fset _ _) |- _ =>          
+          eapply (valid_injectLocations_b) with (L1 := fset) ;
+          [ valid_sorted_incl | apply program ]
+      end           
+  end.
+
+Ltac ssprove_valid' :=
+  repeat (apply valid_ret
+          || valid_program
+          || (apply valid_bind ; [apply valid_scheme ; apply prog_valid | intros])
+          || (apply valid_bind ; [ | intros ; ssprove_valid' ])
+          || (apply valid_putr ; [ cbn ; ssprove_valid_location | ])
+          || (apply valid_getr ; [ cbn ; ssprove_valid_location | intros])
+          || (apply valid_foldi ; intros)
+          || match goal with
+            | [ |- context[match ?x with | true => _ | false => _ end] ] =>
+                destruct x
+            end).
+
+Ltac ssprove_valid'_2 :=
+  destruct_choice_type_prod ;
+  ssprove_valid' ;
+  ssprove_valid_program ;
+  ssprove_valid_location.
