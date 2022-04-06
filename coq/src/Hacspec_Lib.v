@@ -15,12 +15,12 @@ Import List.ListNotations.
 (* Require Import IntTypes. *)
 
 Require Import ChoiceEquality.
-(* Require Import MachineIntegers. *)
 
 Require Import Lia.
 Require Import Coq.Logic.FunctionalExtensionality.
 
 Declare Scope hacspec_scope.
+Open Scope bool_scope.
 
 From CoqWord Require Import ssrZ word.
 From Jasmin Require Import word.
@@ -225,7 +225,8 @@ Next Obligation.
 Defined.
   
 Notation "A '× B" := (prod_ChoiceEquality A B) (at level 79, left associativity) : hacspec_scope.
-Definition pair_ChoiceEquality {A B : ChoiceEquality} (x : @ct A) (y : @ct B) : @ct (prod_ChoiceEquality A B) := (x , y).
+Definition pair_ChoiceEquality {A B : ChoiceEquality} (x : @ct A) (y : @ct B) : @ct (prod_ChoiceEquality A B)
+  := (x , y).
 Locate "( _ , _ , _ )".
 Locate chProd.
 Notation "ch_( x , y , .. , z )" := (pair_ChoiceEquality .. (pair_ChoiceEquality x y) .. z) : hacspec_scope.
@@ -847,29 +848,57 @@ Qed.
 
 Check seq.
 
-Lemma valid_foldi :
-  forall {acc : ChoiceEquality} L I lo hi (f : @T uint_size -> @T acc -> code fset.fset0 [interface] (@ct acc)) init,
-    (forall i v, ValidCode L I (f i v)) ->
-    ValidCode L I (foldi_pre lo hi f init).
+Lemma valid_foldi_pre :
+  forall {acc : ChoiceEquality} (lo hi : int_type) {L : {fset Location}} {I : Interface} (f : int_type -> T -> code L I ct),
+  (forall (i : int_type) (v : T), ValidCode L I (f i v)) ->
+  forall init : T,
+  ValidCode L I (foldi_pre lo hi f init).
 Proof.
   intros.
   unfold foldi_pre.
   destruct (unsigned hi - unsigned lo)%Z.
   - ssprove_valid.
-  - apply valid_foldi_, H.
+  - apply valid_foldi_.
+    assumption.
   - ssprove_valid.
-Qed.  
+Qed.
+
+    (* is_true (fsubset L1 L0) -> *)
+(* apply @valid_injectLocations with (L1 := L1). *)
 
 Definition foldi
   {acc: ChoiceEquality}
   (lo: @T uint_size)
   (hi: @T uint_size) (* {lo <= hi} *)
-  (f: (@T uint_size) -> @T acc -> code fset.fset0 [interface] (@ct acc)) (* {i < hi} *)
-  `{forall i v : T, ValidCode fset0 (fset []) (f i v)}
-  (init: @T acc) : code fset.fset0 [interface] (@ct acc).
-  refine ({code (foldi_pre lo hi (fun x y => f x y) init)}).
-  apply valid_foldi, H.
-Qed.
+  {L}
+  {I}
+  (f: (@T uint_size) -> @T acc -> code L I (@ct acc)) (* {i < hi} *)
+  (* `[is_subset : is_true (fsubset L1 L0)] *)
+  (* `[forall i v, ValidCode L1 I (f i v)] *)
+  (init: @T acc)
+  :
+  code L I (@ct acc) :=
+  {| prog := (foldi_pre lo hi f init);
+    prog_valid := valid_foldi_pre _ _ _ _ _ |}.
+
+(* Check prog_valid. *)
+Definition valid_foldi L I ce := fun lo hi d f => @prog_valid L I (@ct ce) (@foldi ce lo hi L I d f).
+
+(* Check valid_foldi. *)
+
+(* Lemma valid_foldi : *)
+(*   forall {acc : ChoiceEquality} (lo hi : int_type) {L0 L1 : {fset Location}} {I : Interface} (f : int_type -> T -> code L1 I ct), *)
+(*   is_true (fsubset L1 L0) -> *)
+(*   (forall (i : int_type) (v : T), ValidCode L1 I (f i v)) -> *)
+(*   forall init : T, *)
+(*   ValidCode L0 I (foldi lo hi (L0 := L0) f init). *)
+(* Proof. *)
+(*   intros. *)
+(*   apply (valid_foldi_pre L0 L1) ; assumption. *)
+(* Qed.   *)
+
+
+(* Global Arguments foldi {_} _ _ {_} {_} {_} _ _ {_} {_}. *)
 
 Lemma valid_remove_back :
   forall x xs I {ct} c,
@@ -1514,9 +1543,16 @@ Definition seq_set_chunk_pre
 (*   code fset.fset0 [interface] (@ct (seq a)) := *)
 (*   {code ret (T_ct (seq_get_exact_chunk_pre l chunk_size chunk_num))}. *)
 
+Definition seq_get_exact_chunk {a : ChoiceEquality} `{Default (@T (a))} (l : (@T (seq a))) (chunk_size chunk_num: (@T (uint_size))) : (@T (seq a)).
+Admitted.
+(*   code fset.fset0 [interface] (@ct (seq a)) := *)
+(*   {code ret (T_ct (seq_get_exact_chunk_pre l chunk_size chunk_num))}. *)
+
 Definition seq_set_exact_chunk_pre {a : ChoiceEquality} `{H : Default (@T (a))} := @seq_set_chunk_pre a H.
 
 
+Definition seq_get_remainder_chunk : forall {a : ChoiceEquality} `{Default (@T (a))},  (@T (seq a)) -> (@T (uint_size)) -> (@T (seq a)).
+Admitted.
 (* Definition seq_get_remainder_chunk_pre : forall {a : ChoiceEquality} `{Default (@T (a))},  (@T (seq a)) -> (@T (uint_size)) -> (@T (seq a)) := *)
 (*   fun _ _ l chunk_size => *)
 (*     let chunks := seq_num_chunks_pre l (from_uint_size chunk_size) in *)
@@ -2028,11 +2064,19 @@ Instance eq_dec_lt_Comparable {A : Type} `{EqDec A} (ltb : A -> A -> bool) : Com
     geb a b := if eqb a b then true else ltb b a;
   }.
 
+Instance eq_dec_le_Comparable {A : Type} `{EqDec A} (leb : A -> A -> bool) : Comparable A := {
+    ltb a b := if eqb a b then false else leb a b;
+    leb := leb ;
+    gtb a b := if eqb a b then false else leb b a;
+    geb a b := leb b a;
+  }.
+
 Theorem eqb_refl : forall {A} {H : EqDec A} (x : A), @eqb A H x x = true.
 Proof.
   intros.
   now rewrite eqb_leibniz.
 Qed.
+
 
 Global Program Instance nat_eqdec : EqDec nat := {
   eqb := Nat.eqb;
@@ -2329,8 +2373,9 @@ Global Instance int_size_default : Default int_size := {
 }.
 Global Instance int_default {WS : wsize} : Default (@int WS) := {
   default := repr 0
-}.
-Global Instance uint8_default : Default uint8 := _.
+  }.
+Canonical int8_default : Default uint8 := @int_default U8.
+
 Global Instance nat_mod_default {p : Z} : Default (nat_mod p) := {
   default := nat_mod_zero_pre
 }.
@@ -2394,6 +2439,8 @@ Ltac ssprove_valid_2 :=
 Global Coercion T : ChoiceEquality >-> Sortclass.
 Global Coercion ct : ChoiceEquality >-> choice_type.
 
+Check ct.
+
 Global Coercion ct_T_coerce {ce : ChoiceEquality} (x : @ct ce) : @T ce := @ct_T ce x.
 Global Coercion T_ct_coerce {ce : ChoiceEquality} (x : @T ce) : @ct ce := @T_ct ce x.
 
@@ -2422,7 +2469,11 @@ Ltac ssprove_valid' :=
     (apply valid_bind ; [ | intros ; ssprove_valid' ]) ||
     (apply valid_putr ; [ssprove_valid_location | ]) ||
     (apply valid_getr ; [ssprove_valid_location | intros]) ||
-    (apply valid_foldi ; intros)).
+      (apply valid_foldi ; intros) ||
+        match goal with
+        | [ |- context[match ?x with | true => _ | false => _ end] ] =>
+            destruct x
+        end).
 
 Ltac ssprove_valid'_2 :=
   destruct_choice_type_prod ;
@@ -2430,4 +2481,316 @@ Ltac ssprove_valid'_2 :=
   ssprove_valid_program ;
   ssprove_valid_location.
   
-(* Notation "( x , y , .. , z )" := (pair_ChoiceEquality .. (pair_ChoiceEquality x y) .. z) : hacspec_scope. *)
+(* Notation "ct( x , y , .. , z )" := (pair_ChoiceEquality .. (pair_ChoiceEquality x y) .. z) : hacspec_scope. *)
+Fixpoint Inb {A : Type} `{EqDec A} (a:A) (l:list A) : bool :=
+  match l with
+  | nil => false
+  | cons b m => (eqb b a) || Inb a m
+  end.
+
+Theorem is_true_split_or : forall a b, is_true (a || b) = (is_true a \/ is_true b).
+Proof.
+  intros.
+  rewrite boolp.propeqE.
+  symmetry.
+  apply (ssrbool.rwP ssrbool.orP).
+Qed.  
+Theorem is_true_split_and : forall a b, is_true (a && b) = (is_true a /\ is_true b).
+Proof.
+  intros.
+  rewrite boolp.propeqE.
+  symmetry.
+  apply (ssrbool.rwP ssrbool.andP).
+Qed.  
+  
+  
+Theorem in_bool_iff : forall {A : Type} `{EqDec A} (a:A) (l:list A), is_true (Inb a l) <-> List.In a l.
+  induction l ; cbn.
+  - rewrite boolp.falseE.
+    reflexivity.
+  - cbn.
+    rewrite is_true_split_or.    
+    apply ZifyClasses.or_morph.
+    apply eqb_leibniz.
+    apply IHl.
+Qed.
+
+Theorem in_bool_eq : forall {A : Type} `{EqDec A} (a:A) (l:list A), is_true (Inb a l) = List.In a l.
+  intros.
+  rewrite boolp.propeqE. apply in_bool_iff.
+Qed.
+
+Definition location_eqb (ℓ ℓ' : Location) :=
+  (ssrfun.tagged ℓ =.? ssrfun.tagged ℓ').
+(* (@eqtype.eq_op *)
+(* (@eqtype.tag_eqType choice_type_eqType *)
+(*                     (fun _ : choice_type => ssrnat.nat_eqType)) ℓ ℓ'). *)
+
+Axiom location_is_types : (forall l1 l2 : Location ,
+ is_true (ssrfun.tagged l1 =.? ssrfun.tagged l2) ->
+ is_true (eqtype.eq_op (ssrfun.tag l1) (ssrfun.tag l2))).
+
+Definition simple_tag_equality : forall (l1 l2 : Location),
+    (@eqtype.eq_op
+       (@eqtype.tag_eqType choice_type_eqType
+                           (fun _ : choice_type => ssrnat.nat_eqType)) l1 l2) =
+      eqb (ssrfun.tagged l1) (ssrfun.tagged l2).
+Proof.
+  intros.
+  pose (location_is_types l1 l2).
+  destruct l1, l2.
+  unfold location_eqb.
+  cbn.
+  unfold eqtype.tag_eq.
+  unfold eqtype.tagged_as, ssrfun.tagged , ssrfun.tag , ".π1" , ".π2" in *.
+  
+  destruct (n =? n0) eqn:b.
+  - rewrite i by assumption.
+    destruct eqtype.eqP.
+    + cbn.
+      unfold eq_rect_r , eq_rect ; destruct eq_sym.      
+      assumption.
+    + rewrite eqtype.eq_refl.
+      reflexivity.
+  - destruct eqtype.eqP.
+    + cbn.
+      unfold eq_rect_r , eq_rect ; destruct eq_sym.      
+      assumption.
+    + rewrite eqtype.eq_refl.
+      reflexivity.
+Qed.
+
+Lemma location_eqb_sound : forall ℓ ℓ' : Location, is_true (location_eqb ℓ ℓ') <-> ℓ = ℓ'.
+Proof.
+  intros.
+  unfold is_true.
+  replace (location_eqb ℓ ℓ' = true) with (true = location_eqb ℓ ℓ') by
+    (rewrite boolp.propeqE ; split ; symmetry ; assumption).
+  unfold location_eqb. rewrite <- simple_tag_equality.
+  split.
+  - symmetry ; apply lookup_hpv_r_obligation_1 ; assumption.
+  - intros ; subst. cbn. symmetry. rewrite eqtype.tag_eqE. apply eqtype.eq_refl.
+Qed.
+
+Global Program Instance location_eqdec: EqDec (Location) := {
+  eqb := location_eqb;
+  eqb_leibniz := location_eqb_sound;
+  }.
+
+Global Instance location_comparable : Comparable (Location) := eq_dec_le_Comparable (tag_leq (I:=choice_type_ordType) (T_:=fun _ : choice_type => nat_ordType)).
+
+Theorem loc_compute_b :
+  (forall l : (@sigT choice_type (fun _ : choice_type => nat)),
+    forall n : list (@sigT choice_type (fun _ : choice_type => nat)),
+      Inb l n = ssrbool.in_mem l (@ssrbool.mem _
+          (seq.seq_predType
+             (Ord.eqType
+                (@tag_ordType choice_type_ordType (fun _ : choice_type => nat_ordType))))
+          n)).
+  intros.
+  cbn.
+  unfold ssrbool.in_mem.
+  unfold ssrbool.pred_of_mem.
+  unfold ssrbool.mem ; cbn.
+  
+  induction n.
+  - cbn.
+    reflexivity.
+  - cbn.
+    unfold "||".
+    rewrite eqtype.tag_eqE ; rewrite eqtype.eq_sym ; rewrite <- eqtype.tag_eqE.
+    rewrite IHn.
+    rewrite <- simple_tag_equality.
+    reflexivity.
+Qed.
+
+Theorem loc_compute : (forall l : (@sigT choice_type (fun _ : choice_type => nat)), forall n : list (@sigT choice_type (fun _ : choice_type => nat)), List.In l n <-> is_true (ssrbool.in_mem l (@ssrbool.mem _
+          (seq.seq_predType
+             (Ord.eqType
+                (@tag_ordType choice_type_ordType (fun _ : choice_type => nat_ordType))))
+          n))).
+  intros.
+  rewrite <- loc_compute_b.
+  symmetry.
+  apply in_bool_iff.
+Qed.
+
+Ltac ssprove_valid_location' :=
+  apply loc_compute ; repeat (try (left ; reflexivity) ; right) ; try reflexivity.
+
+Theorem LocsSubset : (forall {A} (L1 L2 : list A) (a : A),
+     List.incl L1 L2 ->
+     List.In a L1 ->
+     List.In a L2).
+  intros.
+  induction L1 as [ | a0 L ] ; cbn in *.
+  - contradiction.
+  - destruct (List.incl_cons_inv H).
+    destruct H0.
+    + subst.
+      assumption.
+    + apply IHL ; assumption.
+Qed.
+
+Lemma valid_injectLocations_b :
+  forall (import : Interface) (A : choiceType)
+    (L1 L2 : {fset tag_ordType (I:=choice_type_ordType) (fun _ : choice_type => nat_ordType)})
+    (v : raw_code A),
+    List.incl L1 L2 -> ValidCode L1 import v -> ValidCode L2 import v.
+Proof.
+    intros A L1 L2 v h incl p.
+    induction p.
+    all:
+      try solve [ constructor ; eauto ].
+    all: apply loc_compute in H 
+    ; constructor ; [ | eauto ]
+    ; apply loc_compute
+    ; eapply LocsSubset
+    ; eauto.
+Qed.
+
+Fixpoint uniqb {A} `{EqDec A} (s : list A) :=
+  match s with
+  | cons x s' => andb (negb (Inb x s')) (uniqb s')
+  | _ => true
+  end.
+
+Theorem uniq_is_bool : forall (l : list (tag_ordType (I:=choice_type_ordType) (fun _ : choice_type => nat_ordType))), seq.uniq l = uniqb l.
+Proof.
+  cbn ; intros.
+  induction l.
+  - reflexivity.
+  - cbn.
+    f_equal.
+    + f_equal.
+      rewrite loc_compute_b.
+      reflexivity.
+    + exact IHl.
+Qed.        
+    
+Theorem simplify_fset : forall l,
+    is_true
+    (path.sorted leb l) ->
+    is_true (uniqb l) ->
+    (@FSet.fsval (@tag_ordType choice_type_ordType (fun _ : choice_type => nat_ordType))
+       (@fset _
+              l)) = (l).
+  intros l is_sorted  is_unique.
+  unfold fset ; rewrite ssreflect.locked_withE.
+  cbn.
+  rewrite <- uniq_is_bool in is_unique.
+  rewrite seq.undup_id by assumption.
+  rewrite path.sorted_sort.
+  - reflexivity.
+  - destruct (tag_leqP (I:=choice_type_ordType) (fun _ : choice_type => nat_ordType)) as [ _ trans _ _ ].
+    apply trans.
+  - assumption.  
+Qed.
+
+Theorem simplify_sorted_fset : forall l,
+    is_true (uniqb l) ->
+    (@FSet.fsval (@tag_ordType choice_type_ordType (fun _ : choice_type => nat_ordType))
+       (@fset _  (path.sort (tag_leq (I:=choice_type_ordType) (T_:= fun _ : choice_type => nat_ordType)) l))) = (path.sort (tag_leq (I:=choice_type_ordType) (T_:= fun _ : choice_type => nat_ordType)) l).
+Proof.
+  intros.
+  apply simplify_fset.
+  apply path.sort_sorted ; apply Ord.leq_total.
+  rewrite <- uniq_is_bool.
+  rewrite path.sort_uniq.
+  rewrite uniq_is_bool.
+  apply H.
+Qed.
+  
+Theorem tag_leq_simplify :
+  forall (a b : Location),
+    is_true (ssrfun.tag a <= ssrfun.tag b)%ord ->
+    is_true (ssrfun.tagged a <= ssrfun.tagged b)%ord ->
+    is_true (tag_leq (I:=choice_type_ordType) (T_:=fun _ : choice_type => nat_ordType) a b).
+Proof.
+  intros [] [].
+  
+  unfold tag_leq.
+  unfold eqtype.tagged_as, ssrfun.tagged , ssrfun.tag , ".π1" , ".π2".
+
+  intro.
+  rewrite Ord.leq_eqVlt in H.
+  rewrite is_true_split_or in H.
+  destruct H.
+  - apply Couplings.reflection_nonsense in H ; subst.
+    
+    rewrite Ord.ltxx.
+    rewrite Bool.orb_false_l.
+    rewrite eqtype.eq_refl.
+    rewrite Bool.andb_true_l.
+    
+    destruct eqtype.eqP.
+    + unfold eq_rect_r , eq_rect ; destruct eq_sym.
+      trivial.
+    + contradiction.
+  - rewrite H ; clear H.
+    reflexivity.    
+Qed.
+  
+Theorem tag_leq_inverse :
+  forall a b,
+    tag_leq (I:=choice_type_ordType) (T_:=fun _ : choice_type => nat_ordType) a b
+    =
+      negb (tag_leq (I:=choice_type_ordType) (T_:=fun _ : choice_type => nat_ordType)
+                    b a) ||
+           eqtype.eq_op (ssrfun.tag a) (ssrfun.tag b) &&
+        eqtype.eq_op (ssrfun.tagged a) (ssrfun.tagged b).
+Proof.
+  intros [a b] [c d].
+  unfold tag_leq.
+  
+  rewrite Bool.negb_orb.
+  rewrite Bool.negb_andb.
+  rewrite Bool.andb_orb_distrib_r.
+
+  unfold eqtype.tagged_as.
+  unfold ssrfun.tagged , ssrfun.tag , ".π1" , ".π2".
+  rewrite <- Bool.orb_assoc.
+  
+  f_equal.
+  - rewrite <- Bool.negb_orb.    
+    rewrite <- Bool.orb_comm.
+    rewrite <- Ord.leq_eqVlt.
+    rewrite <- Ord.ltNge.
+    reflexivity.
+  - destruct (eqtype.eq_op a c) eqn:a_eq_c.
+    + apply Couplings.reflection_nonsense in a_eq_c.
+      subst.
+      do 2 rewrite Bool.andb_true_l.
+
+      destruct eqtype.eqP. 2: contradiction.
+      
+      unfold eq_rect_r , eq_rect.
+      destruct eq_sym.
+
+      rewrite Ord.leq_eqVlt.
+      rewrite Bool.orb_comm.
+
+      f_equal.
+      rewrite <- Ord.ltNge.
+      rewrite Ord.ltxx.
+      reflexivity.
+    + do 2 rewrite Bool.andb_false_l.
+      rewrite Bool.orb_false_r.
+      symmetry.
+
+      destruct eqtype.eqP.
+      { subst. rewrite eqtype.eq_refl in a_eq_c. discriminate a_eq_c. }
+
+      rewrite Ord.eq_leq by reflexivity.
+      rewrite Bool.andb_false_r.
+      reflexivity.
+Qed.
+
+Ltac incl_b_compute :=
+  let H := fresh in
+  intro H ;
+  repeat rewrite is_true_split_or in H ;
+  decompose [and or] H ; clear H ;
+  [ repeat rewrite is_true_split_or ;
+    repeat (try (left ; assumption) ; right)
+  | discriminate ].

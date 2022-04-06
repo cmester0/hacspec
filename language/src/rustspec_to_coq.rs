@@ -373,16 +373,16 @@ fn translate_literal<'a>(lit: Literal) -> RcDoc<'a, ()> {
         Literal::Unit => RcDoc::as_string("tt"),
         Literal::Bool(true) => RcDoc::as_string("true"),
         Literal::Bool(false) => RcDoc::as_string("false"),
-        Literal::Int128(x) => RcDoc::as_string(format!("@repr WORDSIZE128 {}", x)),
-        Literal::UInt128(x) => RcDoc::as_string(format!("@repr WORDSIZE128 {}", x)),
-        Literal::Int64(x) => RcDoc::as_string(format!("@repr WORDSIZE64 {}", x)),
-        Literal::UInt64(x) => RcDoc::as_string(format!("@repr WORDSIZE64 {}", x)),
-        Literal::Int32(x) => RcDoc::as_string(format!("@repr WORDSIZE32 {}", x)),
-        Literal::UInt32(x) => RcDoc::as_string(format!("@repr WORDSIZE32 {}", x)),
-        Literal::Int16(x) => RcDoc::as_string(format!("@repr WORDSIZE16 {}", x)),
-        Literal::UInt16(x) => RcDoc::as_string(format!("@repr WORDSIZE16 {}", x)),
-        Literal::Int8(x) => RcDoc::as_string(format!("@repr WORDSIZE8 {}", x)),
-        Literal::UInt8(x) => RcDoc::as_string(format!("@repr WORDSIZE8 {}", x)),
+        Literal::Int128(x) => RcDoc::as_string(format!("@repr U128 {}", x)),
+        Literal::UInt128(x) => RcDoc::as_string(format!("@repr U128 {}", x)),
+        Literal::Int64(x) => RcDoc::as_string(format!("@repr U64 {}", x)),
+        Literal::UInt64(x) => RcDoc::as_string(format!("@repr U64 {}", x)),
+        Literal::Int32(x) => RcDoc::as_string(format!("@repr U32 {}", x)),
+        Literal::UInt32(x) => RcDoc::as_string(format!("@repr U32 {}", x)),
+        Literal::Int16(x) => RcDoc::as_string(format!("@repr U16 {}", x)),
+        Literal::UInt16(x) => RcDoc::as_string(format!("@repr U16 {}", x)),
+        Literal::Int8(x) => RcDoc::as_string(format!("@repr U8 {}", x)),
+        Literal::UInt8(x) => RcDoc::as_string(format!("@repr U8 {}", x)),
         Literal::Isize(x) => RcDoc::as_string(format!("isize {}", x)),
         Literal::Usize(x) => RcDoc::as_string(format!("usize {}", x)),
         Literal::Str(msg) => RcDoc::as_string(format!("\"{}\"", msg)),
@@ -999,9 +999,12 @@ fn translate_expression<'a>(
         }
         Expression::Named(p) => (Vec::new(), translate_ident(p.clone())),
         Expression::FuncCall(prefix, name, args, arg_types) => {
-            let (func_name, additional_args, func_ret_ty, extra_info) =
-                translate_func_name(prefix.clone(), Ident::TopLevel(name.0.clone()), top_ctx,
-                arg_types.unwrap());
+            let (func_name, additional_args, func_ret_ty, extra_info) = translate_func_name(
+                prefix.clone(),
+                Ident::TopLevel(name.0.clone()),
+                top_ctx,
+                arg_types.unwrap(),
+            );
             let total_args = args.len() + additional_args.len();
 
             let (ass_arg_iter, trans_arg_iter): (Vec<_>, Vec<_>) = args
@@ -1500,9 +1503,7 @@ fn translate_statements<'a>(
             ass_e1
                 .into_iter()
                 .fold(RcDoc::nil(), |rc, x| rc.append(x))
-                .append(RcDoc::as_string(
-                    "pkg_core_definition.ret ( ",
-                ))
+                .append(RcDoc::as_string("pkg_core_definition.ret ( "))
                 .append(make_paren(trans_e1))
                 .append(RcDoc::as_string(")"))
         }
@@ -2511,24 +2512,28 @@ pub fn translate_and_write_to_file(
     write!(
         file,
         "(** This file was automatically generated using Hacspec **)\n\
+         From mathcomp Require Import choice fintype.\n\
          From Crypt Require Import choice_type Package Prelude.\n\
          Import PackageNotation.\n\
          From extructures Require Import ord fset.\n\
+         From CoqWord Require Import ssrZ word.\n\
+         From Jasmin Require Import word.\n\
+         Require Import ChoiceEquality.\n\
          \n\
-        Require Import Hacspec_Lib MachineIntegers.\n\
-        From Coq Require Import ZArith.\n\
-        Import List.ListNotations.\n\
-        Open Scope Z_scope.\n\
-        Open Scope bool_scope.\n\
-        Open Scope hacspec_scope.\n\
-        {}\n\n\
-        Obligation Tactic :=\n\
-          try (Tactics.program_simpl; fail); simpl ; (* Old Obligation Tactic *)\n\
-          intros ; do 2 ssprove_valid'_2.\n\
-        \n",
+         Require Import Hacspec_Lib.\n\
+         From Coq Require Import ZArith.\n\
+         Import List.ListNotations.\n\
+         Open Scope Z_scope.\n\
+         Open Scope bool_scope.\n\
+         Open Scope hacspec_scope.\n\
+         {}\n\n\
+         Obligation Tactic :=\n\
+         (intros ; do 2 ssprove_valid'_2) ||\n\
+         (try (Tactics.program_simpl; fail); simpl). (* Old Obligation Tactic *)\n\
+         \n",
         if export_quick_check {
             "From QuickChick Require Import QuickChick.\n\
-            Require Import QuickChickLib.\n"
+             Require Import QuickChickLib.\n"
         } else {
             ""
         }

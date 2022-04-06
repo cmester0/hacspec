@@ -3,7 +3,6 @@
 -arg all
 
 src/ChoiceEquality.v
-src/MachineIntegers.v
 src/Hacspec_Lib.v
 src/QuickChickLib.v
 
