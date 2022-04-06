@@ -1741,7 +1741,7 @@ fn fset_and_locations<'a>(smvars: ScopeMutableVars) -> (RcDoc<'a, ()>, RcDoc<'a,
     } else {
         (
             make_paren(
-                RcDoc::as_string("fset [")
+                RcDoc::as_string("fset (path.sort leb [")
                     .append(RcDoc::space())
                     .append(RcDoc::intersperse(
                         all.iter()
@@ -1750,7 +1750,7 @@ fn fset_and_locations<'a>(smvars: ScopeMutableVars) -> (RcDoc<'a, ()>, RcDoc<'a,
                             .append(RcDoc::as_string(";"))
                             .append(RcDoc::space()),
                     ))
-                    .append(RcDoc::as_string("]")),
+                    .append(RcDoc::as_string("])")),
             ),
             RcDoc::intersperse(
                 locals.into_iter().map(|(i, typ)| {

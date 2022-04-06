@@ -15,9 +15,9 @@ Open Scope bool_scope.
 Open Scope hacspec_scope.
 
 
-Obligation Tactic := intros.
-(* (intros ; do 2 ssprove_valid'_2) || *)
-(* (try (Tactics.program_simpl; fail); simpl). (* Old Obligation Tactic *) *)
+Obligation Tactic :=
+(intros ; do 2 ssprove_valid'_2) ||
+(try (Tactics.program_simpl; fail); simpl). (* Old Obligation Tactic *)
 
 Require Import Hacspec_Lib.
 
@@ -45,10 +45,10 @@ Notation "'poly_state_t'" := ((
 
 Definition n_3_loc : Location :=
   (@ct uint128 ; 7%nat).
-
 Program Definition poly1305_encode_r
   (b_0 : poly_block_t)
-  : code ([fset n_3_loc]) [interface] (@ct (field_element_t)) :=
+  : code (fset (path.sort leb [ n_3_loc])) [interface] (@ct (
+      field_element_t)) :=
   ({code
      temp_1 ←
       (array_from_seq (16) (array_to_seq (b_0))) ;;
@@ -66,11 +66,9 @@ Program Definition poly1305_encode_r
      temp_5 ←
       (nat_mod_from_secret_literal (n_3)) ;;
     pkg_core_definition.ret ( (temp_5))
-    } : code ((fset [n_3_loc])) [interface] _).
-Next Obligation.
-  ssprove_valid'.
-Qed.
-  
+    } : code ((fset (path.sort leb [ n_3_loc]))) [interface] _).
+
+
 Program Definition poly1305_encode_block
   (b_8 : poly_block_t)
   : code fset.fset0 [interface] (@ct (field_element_t)) :=
@@ -119,7 +117,7 @@ Program Definition poly1305_encode_last
 
 Program Definition poly1305_init
   (k_23 : poly_key_t)
-  : code (fset [ n_3_loc]) [interface] (@ct (poly_state_t)) :=
+  : code (fset (path.sort leb [ n_3_loc])) [interface] (@ct (poly_state_t)) :=
   ({code
      temp_24 ←
       (array_from_slice (default) (16) (array_to_seq (k_23)) (usize 0) (
@@ -132,10 +130,7 @@ Program Definition poly1305_init
      temp_26 ←
       (nat_mod_zero ) ;;
     pkg_core_definition.ret ( ((temp_26, r_27, k_23)))
-    } : code ((fset [ n_3_loc])) [interface] _).
-Next Obligation.
-  ssprove_valid'.
-Qed.
+    } : code ((fset (path.sort leb [ n_3_loc]))) [interface] _).
 
 
 Program Definition poly1305_update_block
@@ -150,10 +145,6 @@ Program Definition poly1305_update_block
       (poly1305_encode_block (b_29)) ;;
     pkg_core_definition.ret ( ((((temp_30) +% (acc_31)) *% (r_32), r_32, k_33)))
     } : code (fset.fset0) [interface] _).
-Next Obligation.
-  ssprove_valid'_2.
-  ssprove_valid'_2.
-Qed.
 
 Definition st_40_loc : Location :=
   (@ct (field_element_t '× field_element_t '× poly_key_t) ; 44%nat).
@@ -166,7 +157,7 @@ Program Definition poly1305_update_blocks
       (st_34) ;;
     st_40 ← get st_40_loc ;;
     let n_blocks_36 : uint_size :=
-      ((seq_len (m_35)) / (blocksize_v)) : uint_size_type in
+      ((seq_len (m_35)) / (blocksize_v) : uint_size_type) in
     
      st_40 ←
       (foldi (usize 0) (n_blocks_36) (fun i_37 st_40 =>
@@ -184,17 +175,11 @@ Program Definition poly1305_update_blocks
             (temp_41) ;;
           st_40 ← get st_40_loc ;;
           pkg_core_definition.ret ( ((st_40)))
-          } : code ((fset [ st_40_loc])) [interface] _)
+          } : code ((fset (path.sort leb [ st_40_loc]))) [interface] _)
         st_40) ;;
     
     pkg_core_definition.ret ( (st_40))
-    } : code (fset (path.sort leb [ st_40_loc])) [interface] _).
-Next Obligation.
-  ssprove_valid'.
-Qed.
-Next Obligation.
-  ssprove_valid'.
-Qed.
+    } : code ((fset (path.sort leb [ st_40_loc]))) [interface] _).
 
 Definition st_46_loc : Location :=
   (@ct (field_element_t '× field_element_t '× poly_key_t) ; 55%nat).
@@ -219,22 +204,18 @@ Program Definition poly1305_update_last
             ((((temp_49) +% (acc_50)) *% (r_51), r_51, k_52)) ;;
           st_46 ← get st_46_loc ;;
           pkg_core_definition.ret ( ((st_46)))
-          } : code ((fset [ st_46_loc])) [interface] _) else (
+          } : code ((fset (path.sort leb [ st_46_loc]))) [interface] _) else (
           pkg_core_definition.ret ( ((st_46))))) ;;
     
     pkg_core_definition.ret ( (st_46))
-    } : code (fset (path.sort leb [ st_46_loc ])) [interface] _).
-Next Obligation.
-  ssprove_valid'_2.
-Qed.
-Next Obligation.
-  ssprove_valid'_2.
-Qed.
+    } : code ((fset (path.sort leb [ st_46_loc]))) [interface] _).
+
 
 Program Definition poly1305_update
   (m_56 : byte_seq)
   (st_57 : poly_state_t)
-  : code ((fset (path.sort _ [ st_46_loc ; st_40_loc]))) [interface] (@ct (poly_state_t)) :=
+  : code (fset (path.sort leb [ st_40_loc ; st_46_loc])) [interface] (@ct (
+      poly_state_t)) :=
   ({code
      temp_58 ←
       (poly1305_update_blocks (m_56) (st_57)) ;;
@@ -245,12 +226,10 @@ Program Definition poly1305_update
       (seq_get_remainder_chunk (m_56) ( (blocksize_v))) in
     
      temp_61 ←
-      (poly1305_update_last (seq_len (last_59) : uint_size_type) (last_59) (st_60)) ;;
+      (poly1305_update_last (seq_len (last_59)  : uint_size_type) (last_59) (st_60)) ;;
     pkg_core_definition.ret ( (temp_61))
-    } : code ((fset (path.sort leb [ st_46_loc ; st_40_loc]))) [interface] _).
-Next Obligation.
-  ssprove_valid'.
-Qed.
+    } : code ((fset (path.sort leb [ st_40_loc ; st_46_loc]))) [interface] _).
+
 
 Program Definition poly1305_finish
   (st_62 : poly_state_t)
@@ -267,11 +246,11 @@ Program Definition poly1305_finish
     let n_71 : uint128 :=
       (temp_65) in
     
-    let aby_67 : seq uint8 :=
-      (nat_mod_to_byte_seq_le (acc_66)) in
+    aby_67 ←
+      (nat_mod_to_byte_seq_le (acc_66)) ;;
     
      temp_68 ←
-      (array_from_slice (default) (16) (aby_67) (usize 0) (usize 16)) ;;
+      (array_from_slice (default) (16) (ct_T aby_67) (usize 0) (usize 16)) ;;
      temp_69 ←
       (uint128_from_le_bytes (temp_68)) ;;
     let a_70 : uint128 :=
@@ -280,7 +259,7 @@ Program Definition poly1305_finish
      temp_72 ←
       (uint128_to_le_bytes ((a_70) .+ (n_71))) ;;
      temp_73 ←
-      (array_from_seq (16) (array_to_seq (temp_72))) ;;
+      (array_from_seq (16) (array_to_seq (ct_T temp_72))) ;;
     pkg_core_definition.ret ( (temp_73))
     } : code (fset.fset0) [interface] _).
 
@@ -289,7 +268,8 @@ Definition st_77_loc : Location :=
 Program Definition poly1305
   (m_76 : byte_seq)
   (key_74 : poly_key_t)
-  : code (fset [ st_77_loc ; st_46_loc ; st_40_loc ; n_3_loc]) [interface] (
+  : code (
+    fset (path.sort leb [ n_3_loc ; st_40_loc ; st_77_loc ; st_46_loc])) [interface] (
     @ct (poly1305_tag_t)) :=
   ({code
      temp_75 ←
@@ -307,5 +287,5 @@ Program Definition poly1305
       (poly1305_finish (st_77)) ;;
     pkg_core_definition.ret ( (temp_79))
     } : code ((
-        fset [ st_77_loc ; st_46_loc ; st_40_loc ; n_3_loc])) [interface] _).
+        fset (path.sort leb [ n_3_loc ; st_40_loc ; st_77_loc ; st_46_loc]))) [interface] _).
 
