@@ -1119,23 +1119,39 @@ fn translate_expression<'a>(
             if f.string == "clone" {
                 (ass, arg_trans)
             } else {
-                (
-                    ass,
-                    func_name // We append implicit arguments first
-                        .append(RcDoc::concat(
-                            additional_args
-                                .into_iter()
-                                .map(|arg| RcDoc::space().append(make_paren(arg))),
-                        ))
-                        .append(RcDoc::space())
-                        .append(arg_trans)
-                        .append(match func_ret_ty {
-                            Some(ret_ty) => {
-                                RcDoc::as_string(" : ").append(translate_base_typ(ret_ty))
-                            }
-                            None => RcDoc::nil(),
-                        }),
-                )
+                let method_call_expr = func_name // We append implicit arguments first
+                    .append(RcDoc::concat(
+                        additional_args
+                            .into_iter()
+                            .map(|arg| RcDoc::space().append(make_paren(arg))),
+                    ))
+                    .append(RcDoc::space())
+                    .append(arg_trans.clone())
+                    .append(match func_ret_ty.clone() {
+                        Some(ret_ty) => RcDoc::as_string(" : ").append(translate_base_typ(ret_ty)),
+                        None => RcDoc::nil(),
+                    });
+
+                let codegen_id: usize = {
+                    let c_id = fresh_codegen_id();
+                    // id_map.insert(id, c_id); // TODO: should this be inserted? (no need)
+                    c_id
+                };
+                let temp_name = translate_ident_str(format!("{}_{}", "temp", codegen_id));
+
+                let temp_ass: RcDoc<'a, ()> = make_let_binding(
+                    temp_name.clone(),
+                    match func_ret_ty.clone() {
+                        Some(ret_ty) => Some(translate_base_typ(ret_ty)),
+                        None => None,
+                    },
+                    method_call_expr,
+                    false,
+                    true,
+                );
+                ass.push(temp_ass);
+
+                (ass, temp_name)
             }
         }
         Expression::ArrayIndex(x, e2, typ) => {
@@ -1298,7 +1314,7 @@ fn add_ok_if_result(
                     // If b has an early return, then we must prefix the returned
                     // mutated variables by Ok or Some
                     match stmt {
-                        Statement::ReturnExp(e) => Statement::ReturnExp(Expression::EnumInject(
+                        Statement::ReturnExp(e, t) => Statement::ReturnExp(Expression::EnumInject(
                             BaseTyp::Named(
                                 (
                                     TopLevelIdent {
@@ -1325,7 +1341,8 @@ fn add_ok_if_result(
                                 DUMMY_SP.into(),
                             ),
                             Some((Box::new(e.clone()), DUMMY_SP.into())),
-                        )),
+                        )
+                        , t), // todo typing info
                         _ => panic!("should not happen"),
                     }
                 } else {
@@ -1497,13 +1514,18 @@ fn translate_statements<'a>(
                 .append(expr)
         }
 
-        Statement::ReturnExp(e1) => {
+        Statement::ReturnExp(e1, t1) => {
             let (ass_e1, trans_e1) = translate_expression(e1.clone(), top_ctx);
 
             ass_e1
                 .into_iter()
                 .fold(RcDoc::nil(), |rc, x| rc.append(x))
-                .append(RcDoc::as_string("pkg_core_definition.ret ( "))
+                .append(RcDoc::as_string("@pkg_core_definition.ret "))
+                .append(match t1 {
+                    Some ((_, (x, _))) => translate_base_typ(x),
+                    None => RcDoc::as_string("_"),
+                })
+                .append(RcDoc::as_string(" ( "))
                 .append(make_paren(trans_e1))
                 .append(RcDoc::as_string(")"))
         }
@@ -1788,7 +1810,7 @@ fn translate_block<'a>(
         (None, _) => panic!(), // should not happen,
         (Some(((Borrowing::Consumed, _), (BaseTyp::Unit, _))), false) => {
             statements.push((
-                Statement::ReturnExp(Expression::Lit(Literal::Unit)),
+                Statement::ReturnExp(Expression::Lit(Literal::Unit), None), // todo typing info
                 DUMMY_SP.into(),
             ));
         }
@@ -2512,7 +2534,6 @@ pub fn translate_and_write_to_file(
     write!(
         file,
         "(** This file was automatically generated using Hacspec **)\n\
-         From mathcomp Require Import choice fintype.\n\
          From Crypt Require Import choice_type Package Prelude.\n\
          Import PackageNotation.\n\
          From extructures Require Import ord fset.\n\

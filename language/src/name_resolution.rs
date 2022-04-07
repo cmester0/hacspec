@@ -518,12 +518,12 @@ fn resolve_statement(
                 name_context,
             ))
         }
-        Statement::ReturnExp(e) => {
+        Statement::ReturnExp(e, _) => {
             let (smi_new_e, new_e) =
                 resolve_expression(sess, (e, s_span.clone()), &name_context, top_level_ctx)?;
             Ok((
                 smi_new_e,
-                (Statement::ReturnExp(new_e.0), s_span),
+                (Statement::ReturnExp(new_e.0, None), s_span),
                 name_context,
             ))
         }

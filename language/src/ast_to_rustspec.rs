@@ -1073,8 +1073,8 @@ fn translate_expr(
                         let r_f_e = block_r_f_e.0.stmts.pop().unwrap();
                         match (r_t_e, r_f_e) {
                             (
-                                (Statement::ReturnExp(r_t_e), _),
-                                (Statement::ReturnExp(r_f_e), _),
+                                (Statement::ReturnExp(r_t_e, None), _),
+                                (Statement::ReturnExp(r_f_e, None), _),
                             ) => Ok((
                                 ExprTranslationResult::TransExpr(Expression::InlineConditional(
                                     Box::new(r_cond),
@@ -1373,7 +1373,7 @@ fn translate_expr(
                 translated_statements.len(),
                 translated_statements.iter().next().unwrap(),
             ) {
-                (1, (Statement::ReturnExp(e), span)) => {
+                (1, (Statement::ReturnExp(e, None), span)) => {
                     Ok((ExprTranslationResult::TransExpr(e.clone()), span.clone()))
                 }
                 _ => {
@@ -1748,7 +1748,7 @@ fn translate_statement(
         StmtKind::Expr(e) => {
             let t_s = translate_expr(sess, specials, &e)?;
             let t_s = match t_s {
-                (ExprTranslationResult::TransExpr(e), _) => Statement::ReturnExp(e),
+                (ExprTranslationResult::TransExpr(e), _) => Statement::ReturnExp(e, None),
                 (ExprTranslationResult::TransStmt(s), _) => s,
             };
             Ok(vec![(t_s, s.span.into())])

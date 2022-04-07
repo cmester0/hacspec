@@ -1,6 +1,7 @@
 From mathcomp Require Import choice.
 
-From Crypt Require Import choice_type.
+From Crypt Require Import choice_type Package.
+Import PackageNlotation.
 
 Class ChoiceEquality := {
     T : Type ;
@@ -22,3 +23,6 @@ Proof (fun ce => rew_opp_l id (@ChoiceEq ce)).
 
 (* Local Coercion T : ChoiceEquality >-> Sortclass. *)
 (* Local Coercion ct : ChoiceEquality >-> choice_type. *)
+
+Definition lift_to_code {ce : ChoiceEquality} (x : @T ce) : code fset.fset0 [interface] (@ct ce) :=
+  {code ret (T_ct x)}.

@@ -432,7 +432,7 @@ pub enum Statement {
         bool,                // Presence of a question mark at the end of the cell value expression
         Fillable<Typ>,       // Type of the array
     ),
-    ReturnExp(Expression),
+    ReturnExp(Expression, Fillable<Typ>),
 }
 
 pub type MutableVar = (Ident, Fillable<Typ>);

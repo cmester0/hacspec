@@ -2036,7 +2036,7 @@ fn var_set_to_tuple(vars: &VarSet, span: &RustspecSpan) -> Statement {
         )
     } else {
         Expression::Lit(Literal::Unit)
-    })
+    }, None) // Todo: get typing information
 }
 
 fn dealias_type(ty: BaseTyp, top_level_context: &TopLevelContext) -> BaseTyp {
@@ -2399,11 +2399,11 @@ fn typecheck_statement(
                 })),
             ))
         }
-        Statement::ReturnExp(e) => {
+        Statement::ReturnExp(e, _) => {
             let (mut_vars_e, new_e, e_t, var_context) =
                 typecheck_expression(sess, &(e.clone(), s_span), top_level_context, var_context)?;
             Ok((mut_vars_e,
-                Statement::ReturnExp(new_e),
+                Statement::ReturnExp(new_e, Some(e_t.clone())),
                 e_t,
                 var_context,
                 VarSet(HashSet::new()),

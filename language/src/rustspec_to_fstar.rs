@@ -1033,7 +1033,7 @@ fn add_ok_if_result(stmt: Statement, question_mark: bool) -> Spanned<Statement> 
             // If b has an early return, then we must prefix the returned
             // mutated variables by Ok
             match stmt {
-                Statement::ReturnExp(e) => Statement::ReturnExp(Expression::EnumInject(
+                Statement::ReturnExp(e, t) => Statement::ReturnExp(Expression::EnumInject(
                     BaseTyp::Named(
                         (
                             TopLevelIdent {
@@ -1052,7 +1052,7 @@ fn add_ok_if_result(stmt: Statement, question_mark: bool) -> Spanned<Statement> 
                         DUMMY_SP.into(),
                     ),
                     Some((Box::new(e.clone()), DUMMY_SP.into())),
-                )),
+                ), t), // TODO typing
                 _ => panic!("should not happen"),
             }
         } else {
@@ -1176,7 +1176,7 @@ fn translate_statements<'a>(
                     .append(translate_statements(sess, statements, top_ctx))
             }
         }
-        Statement::ReturnExp(e1) => translate_expression(sess, e1.clone(), top_ctx),
+        Statement::ReturnExp(e1, _) => translate_expression(sess, e1.clone(), top_ctx),
         Statement::Conditional((cond, _), (mut b1, _), b2, mutated) => {
             let mutated_info = mutated.unwrap();
             let pat = make_tuple(
@@ -1304,7 +1304,7 @@ fn translate_block<'a>(
         (None, _) => panic!(), // should not happen,
         (Some(((Borrowing::Consumed, _), (BaseTyp::Unit, _))), false) => {
             statements.push((
-                Statement::ReturnExp(Expression::Lit(Literal::Unit)),
+                Statement::ReturnExp(Expression::Lit(Literal::Unit), None),
                 DUMMY_SP.into(),
             ));
         }

@@ -237,7 +237,6 @@ Definition nat_to_'nat (n : nat) : 'nat := n.
 (* Global Coercion T_ct_coerce {ce : ChoiceEquality} (x : @T ce) : @ct ce := @T_ct ce x. *)
 
 Program Instance nat_ChoiceEquality : ChoiceEquality := {| T := nat ; ct := 'nat |}.
-Check (2 , 3) : @ct (prod_ChoiceEquality nat_ChoiceEquality nat_ChoiceEquality).
 
 (*** Positive util *)
 
@@ -1008,6 +1007,11 @@ End Loops.
 
 (*** Seq *)
 
+Section Seqs.
+
+(* Local Coercion T : ChoiceEquality >-> Sortclass. *)
+(* Local Coercion ct : ChoiceEquality >-> choice_type. *)
+
 Definition nseq_choice (A: ChoiceEquality) (len : nat) : choice_type :=  
   match len with
   | O => chUnit (* A *)
@@ -1054,7 +1058,8 @@ Definition seq_index {A: ChoiceEquality} `{Default (@T A)} (s: @T (seq A)) (i : 
   | None => default
   end.
 
-Definition seq_len {A: ChoiceEquality} (s: @T (seq A)) : nat := (length s).
+Definition seq_len_pre {A: ChoiceEquality} (s: @T (seq A)) : @T (nat_ChoiceEquality) := (length s).
+Definition seq_len {A: ChoiceEquality} (s: @T (seq A)) : code fset.fset0 [interface] (@ct nat_ChoiceEquality) := lift_to_code (seq_len_pre s).
 
 Fixpoint insert_or_extend {A : Type} (n : nat) (a : A) (l : list A) {struct n} :=
   match n with
@@ -1160,7 +1165,7 @@ Proof.
   - exact s.
 Defined.
 Definition array_upd {A: ChoiceEquality} {len : nat} (s: @T (nseq A len)) (i: nat) (new_v: @T A) : code fset.fset0 [interface] (@ct (nseq A len)) :=
-  {code ret (T_ct (array_upd_pre s i new_v))}.
+  lift_to_code (array_upd_pre s i new_v).
 
 (* substitutes a sequence (seq) into an array (nseq), given index interval  *)
 (* Axiom update_sub : forall {A len }, nseq A len -> nat -> nat -> seq A -> t A len. *)
@@ -1173,7 +1178,7 @@ Definition update_sub_pre {A : ChoiceEquality} {len slen} `{Default (@T A)} (v :
     end in
   rec (n - i + 1) v.
 Definition update_sub {A : ChoiceEquality} {len slen} `{Default (@T A)} (v : @T (nseq A len)) (i : nat) (n : nat) (sub : @T (nseq A slen)) : code fset.fset0 [interface] (@ct (nseq A len)) :=
-  {code ret (T_ct (update_sub_pre v i n sub))}.
+  lift_to_code (update_sub_pre v i n sub).
 
 (* Sanity check *)
 (* Compute (to_list (update_sub [1;2;3;4;5] 0 4 (of_list [9;8;7;6;12]))). *)
@@ -1192,7 +1197,7 @@ Definition array_from_seq   {a: ChoiceEquality}
   (out_len:nat)
   (input: @T (seq a))
   : code fset.fset0 [interface] (@ct (nseq a out_len)) :=
-  {code ret (T_ct (array_from_seq_pre out_len input : @T (nseq a out_len)))}.
+  lift_to_code (array_from_seq_pre out_len input : @T (nseq a out_len)).
   
 Global Coercion array_from_seq_pre : seq_type >-> nseq_type.
 
@@ -1272,7 +1277,8 @@ Definition array_from_slice
   (out_len: nat)
   (input: @T (seq a))
   (start: nat)
-  (slice_len: nat)  : code fset.fset0 [interface] (@ct (nseq a out_len)) := {code ret (T_ct (array_from_slice_pre default_value out_len input start slice_len))}.
+  (slice_len: nat)  : code fset.fset0 [interface] (@ct (nseq a out_len)) :=
+  lift_to_code (array_from_slice_pre default_value out_len input start slice_len).
 
 
 Definition array_slice_pre
@@ -1293,7 +1299,8 @@ Definition array_slice
   (input: @T (seq a))
   (start: nat)
   (slice_len: nat)
-  : code fset.fset0 [interface] (@ct (nseq a slice_len)) := {code ret (T_ct (array_slice_pre input start slice_len))}.
+  : code fset.fset0 [interface] (@ct (nseq a slice_len)) :=
+  lift_to_code (array_slice_pre input start slice_len).
 
 
 Definition array_from_slice_range_pre
@@ -1318,7 +1325,7 @@ Definition array_from_slice_range
   (input: @T (seq a))
   (start_fin: (@T uint_size * @T uint_size))
   : code fset.fset0 [interface] (@ct (nseq a out_len)) :=
-  {code ret (T_ct (array_from_slice_range_pre default_value out_len input start_fin))}.
+  lift_to_code (array_from_slice_range_pre default_value out_len input start_fin).
 
 Definition array_slice_range_pre
   {a: ChoiceEquality}
@@ -1335,7 +1342,7 @@ Definition array_slice_range
   (input: @T (nseq a len))
   (start_fin:(@T uint_size * @T uint_size))
     : code fset.fset0 [interface] (@ct (seq a)) :=
-  {code ret (T_ct (array_slice_range_pre input start_fin))}.
+  lift_to_code (array_slice_range_pre input start_fin).
 
 Definition array_update_pre
   {a: ChoiceEquality}
@@ -1345,7 +1352,7 @@ Definition array_update_pre
   (start : nat)
   (start_s: @T (seq a))
   : @T (nseq a len) :=
-  update_sub_pre s start (seq_len start_s) (array_from_seq_pre (seq_len start_s) (start_s)).
+  update_sub_pre s start (seq_len_pre start_s) (array_from_seq_pre (seq_len_pre start_s) (start_s)).
 Definition array_update
   {a: ChoiceEquality}
  `{Default (@T a)}
@@ -1354,7 +1361,7 @@ Definition array_update
   (start : nat)
   (start_s: @T (seq a))
   : code fset.fset0 [interface] (@ct (nseq a len)) :=
-    {code ret (T_ct (array_update_pre s start start_s))}.
+    lift_to_code (array_update_pre s start start_s).
 
 Definition array_update_start_pre
   {a: ChoiceEquality}
@@ -1363,7 +1370,7 @@ Definition array_update_start_pre
   (s: @T (nseq a len))
   (start_s: @T (seq a))
     : @T (nseq a len) :=
-    update_sub_pre s 0 (seq_len start_s) (array_from_seq_pre (seq_len start_s) start_s).
+    update_sub_pre s 0 (seq_len_pre start_s) (array_from_seq_pre (seq_len_pre start_s) start_s).
 Definition array_update_start
   {a: ChoiceEquality}
  `{Default (@T a)}
@@ -1371,7 +1378,7 @@ Definition array_update_start
   (s: @T (nseq a len))
   (start_s: @T (seq a))
     : code fset.fset0 [interface] (@ct (nseq a len)) :=
-    {code ret (T_ct (array_update_start_pre s start_s))}.
+    lift_to_code (array_update_start_pre s start_s).
 
 Definition array_len_pre  {a: ChoiceEquality} {len: nat} (s: @T (nseq a len)) := len.
 (* May also come up as 'length' instead of 'len' *)
@@ -1387,7 +1394,7 @@ Definition seq_slice_pre
   (start: nat)
   (len: nat)
     : (@T (nseq a _)) :=
-  lseq_slice (array_from_seq_pre (seq_len s) s) start (start + len).
+  lseq_slice (array_from_seq_pre (seq_len_pre s) s) start (start + len).
 
 Definition seq_slice_range_pre
   {a: ChoiceEquality}
@@ -1405,7 +1412,7 @@ Definition seq_update_pre
   (start: nat)
   (input: (@T (seq a)))
   : (@T (seq a)) :=
-  array_to_seq (update_sub_pre (array_from_seq_pre (seq_len s) s) start (seq_len input) (array_from_seq_pre (seq_len input) input)).
+  array_to_seq (update_sub_pre (array_from_seq_pre (seq_len_pre s) s) start (seq_len_pre input) (array_from_seq_pre (seq_len_pre input) input)).
 
 (* updating only a single value in a sequence*)
 Definition seq_upd
@@ -1418,7 +1425,7 @@ Definition seq_upd
   seq_update_pre s start (setm emptym 0 v).
 
 Definition seq_sub {a : ChoiceEquality} `{Default (@T (a))} (s : (@T (seq a))) start n :=
-  lseq_slice (array_from_seq_pre (seq_len s) s) start (start + n).
+  lseq_slice (array_from_seq_pre (seq_len_pre s) s) start (start + n).
 
 Definition seq_update_start_pre
   {a: ChoiceEquality}
@@ -1426,7 +1433,7 @@ Definition seq_update_start_pre
   (s: (@T (seq a)))
   (start_s: (@T (seq a)))
     : (@T (seq a)) :=
-    array_to_seq (update_sub_pre (array_from_seq_pre (seq_len s) s) 0 (seq_len start_s) (array_from_seq_pre (seq_len start_s) start_s)).
+    array_to_seq (update_sub_pre (array_from_seq_pre (seq_len_pre s) s) 0 (seq_len_pre start_s) (array_from_seq_pre (seq_len_pre start_s) start_s)).
 
 Definition array_update_slice_pre
   {a : ChoiceEquality}
@@ -1437,8 +1444,8 @@ Definition array_update_slice_pre
   (input: (@T (seq a)))
   (start_in: nat)
   (len: nat)
-  : (@T (nseq a (seq_len out))) :=
-  update_sub_pre (array_from_seq_pre (seq_len out) out) start_out len (seq_sub input start_in len).
+  : (@T (nseq a (seq_len_pre out))) :=
+  update_sub_pre (array_from_seq_pre (seq_len_pre out) out) start_out len (seq_sub input start_in len).
   
 Definition seq_update_slice_pre
   {a : ChoiceEquality}
@@ -1448,9 +1455,9 @@ Definition seq_update_slice_pre
   (input: (@T (seq a)))
   (start_in: nat)
   (len: nat)
-    : (@T (nseq a (seq_len out)))
+    : (@T (nseq a (seq_len_pre out)))
   :=
-  update_sub_pre (array_from_seq_pre (seq_len out) out) start_out len (seq_sub input start_in len).
+  update_sub_pre (array_from_seq_pre (seq_len_pre out) out) start_out len (seq_sub input start_in len).
 
 Definition seq_concat_pre
   {a : ChoiceEquality}
@@ -1472,16 +1479,16 @@ Definition seq_from_slice_range_pre
   (input: (@T (seq a)))
   (start_fin: ((@T (uint_size)) * (@T (uint_size))))
   : (@T (seq a)) :=
-  let out := array_new_ (default) (seq_len input) in
+  let out := array_new_ (default) (seq_len_pre input) in
   let (start, fin) := start_fin in
-    array_to_seq (update_sub_pre out 0 ((from_uint_size fin) - (from_uint_size start)) ((lseq_slice (array_from_seq_pre (seq_len input) input) (from_uint_size start) (from_uint_size fin)))).
+    array_to_seq (update_sub_pre out 0 ((from_uint_size fin) - (from_uint_size start)) ((lseq_slice (array_from_seq_pre (seq_len_pre input) input) (from_uint_size start) (from_uint_size fin)))).
 
 Definition seq_from_seq_pre {A} (l : @T (seq A)) := l.
 
 (**** Chunking *)
 
 Definition seq_num_chunks_pre {a: ChoiceEquality} (s: (@T (seq a))) (chunk_len: nat) : nat :=
-  ((seq_len s) + chunk_len - 1) / chunk_len.
+  ((seq_len_pre s) + chunk_len - 1) / chunk_len.
 
 Definition seq_chunk_len_pre
   {a: ChoiceEquality}
@@ -1490,8 +1497,8 @@ Definition seq_chunk_len_pre
   (chunk_num: nat)
     : nat :=
   let idx_start := chunk_len * chunk_num in
-  if (seq_len s) <? idx_start + chunk_len then
-    (seq_len s) - idx_start
+  if (seq_len_pre s) <? idx_start + chunk_len then
+    (seq_len_pre s) - idx_start
   else
     chunk_len.
 
@@ -1518,7 +1525,7 @@ Definition seq_get_chunk_pre
  :=
   let idx_start := chunk_len * chunk_num in
   let out_len := seq_chunk_len_pre s chunk_len chunk_num in
-  (usize out_len, array_to_seq (lseq_slice (array_from_seq_pre (seq_len s) s) idx_start (idx_start + seq_chunk_len_pre s chunk_len chunk_num))).
+  (usize out_len, array_to_seq (lseq_slice (array_from_seq_pre (seq_len_pre s) s) idx_start (idx_start + seq_chunk_len_pre s chunk_len chunk_num))).
 
 Definition seq_set_chunk_pre
   {a: ChoiceEquality}
@@ -1529,29 +1536,29 @@ Definition seq_set_chunk_pre
   (chunk: (@T (seq a)) ) : (@T (seq a)) :=
  let idx_start := chunk_len * chunk_num in
  let out_len := seq_chunk_len_pre s chunk_len chunk_num in
-  array_to_seq (update_sub_pre (array_from_seq_pre (seq_len s) s) idx_start out_len (array_from_seq_pre (seq_len chunk) chunk)).
+  array_to_seq (update_sub_pre (array_from_seq_pre (seq_len_pre s) s) idx_start out_len (array_from_seq_pre (seq_len_pre chunk) chunk)).
 
 
 (* Definition seq_num_exact_chunks_pre {a} (l : (@T (seq a))) (chunk_size : (@T (uint_size))) : (@T (uint_size)) := *)
 (*   divs (repr (Z.of_nat (length l))) chunk_size. *)
 
 (* Until #84 is fixed this returns an empty sequence if not enough *)
-(* Definition seq_get_exact_chunk_pre {a : ChoiceEquality} `{Default (@T (a))} (l : (@T (seq a))) (chunk_size chunk_num: (@T (uint_size))) : (@T (seq a)) := *)
-(*   let '(len, chunk) := seq_get_chunk_pre l (from_uint_size chunk_size) (from_uint_size chunk_num) in *)
-(*   if eq len chunk_size then emptym else chunk. *)
-(* Definition seq_get_exact_chunk {a : ChoiceEquality} `{Default (@T (a))} (l : (@T (seq a))) (chunk_size chunk_num: (@T (uint_size))) : *)
-(*   code fset.fset0 [interface] (@ct (seq a)) := *)
-(*   {code ret (T_ct (seq_get_exact_chunk_pre l chunk_size chunk_num))}. *)
+Definition seq_get_exact_chunk_pre {a : ChoiceEquality} `{Default (@T (a))} (l : (@T (seq a))) (chunk_size chunk_num: (@T (uint_size))) : (@T (seq a)) :=
+  let '(len, chunk) := seq_get_chunk_pre l (from_uint_size chunk_size) (from_uint_size chunk_num) in
+  if eqtype.eq_op len chunk_size then emptym else chunk.
+Definition seq_get_exact_chunk {a : ChoiceEquality} `{Default (@T (a))} (l : (@T (seq a))) (chunk_size chunk_num: (@T (uint_size))) :
+  code fset.fset0 [interface] (@ct (seq a)) :=
+  lift_to_code (seq_get_exact_chunk_pre l chunk_size chunk_num).
 
-Definition seq_get_exact_chunk {a : ChoiceEquality} `{Default (@T (a))} (l : (@T (seq a))) (chunk_size chunk_num: (@T (uint_size))) : (@T (seq a)).
-Admitted.
+(* Definition seq_get_exact_chunk {a : ChoiceEquality} `{Default (@T (a))} (l : (@T (seq a))) (chunk_size chunk_num: (@T (uint_size))) : code fset.fset0 [interface] (@ct (seq a)). *)
+(* Admitted. *)
 (*   code fset.fset0 [interface] (@ct (seq a)) := *)
 (*   {code ret (T_ct (seq_get_exact_chunk_pre l chunk_size chunk_num))}. *)
 
 Definition seq_set_exact_chunk_pre {a : ChoiceEquality} `{H : Default (@T (a))} := @seq_set_chunk_pre a H.
 
 
-Definition seq_get_remainder_chunk : forall {a : ChoiceEquality} `{Default (@T (a))},  (@T (seq a)) -> (@T (uint_size)) -> (@T (seq a)).
+Definition seq_get_remainder_chunk : forall {a : ChoiceEquality} `{Default (@T (a))},  (@T (seq a)) -> (@T (uint_size)) -> code fset.fset0 [interface] (@ct (seq a)).
 Admitted.
 (* Definition seq_get_remainder_chunk_pre : forall {a : ChoiceEquality} `{Default (@T (a))},  (@T (seq a)) -> (@T (uint_size)) -> (@T (seq a)) := *)
 (*   fun _ _ l chunk_size => *)
@@ -1623,6 +1630,9 @@ Proof.
       * exact false.
     + exact false.
 Defined.
+
+End Seqs.
+
 
 Infix "array_eq" := (array_eq_ eq) (at level 33) : hacspec_scope.
 Infix "array_neq" := (fun s1 s2 => negb (array_eq_ eq s1 s2)) (at level 33) : hacspec_scope.
@@ -1742,9 +1752,9 @@ Definition nat_mod_zero_pre {p} : nat_mod p := zmodp.Zp0.
 Definition nat_mod_one_pre {p} : nat_mod p := zmodp.Zp1.
 Definition nat_mod_two_pre {p} : nat_mod p := zmodp.inZp 2.
 
-Definition nat_mod_zero {p} : code fset.fset0 [interface] (@ct (nat_mod p)) := {code ret (T_ct (nat_mod_zero_pre))}.
-Definition nat_mod_one {p} : code fset.fset0 [interface] (@ct (nat_mod p)) := {code ret (T_ct (nat_mod_one_pre))}.
-Definition nat_mod_two {p} : code fset.fset0 [interface] (@ct (nat_mod p)) := {code ret (T_ct (nat_mod_two_pre))}.
+Definition nat_mod_zero {p} : code fset.fset0 [interface] (@ct (nat_mod p)) := lift_to_code (nat_mod_zero_pre).
+Definition nat_mod_one {p} : code fset.fset0 [interface] (@ct (nat_mod p)) := lift_to_code (nat_mod_one_pre).
+Definition nat_mod_two {p} : code fset.fset0 [interface] (@ct (nat_mod p)) := lift_to_code (nat_mod_two_pre).
 
 
 (* convenience coercions from nat_mod to Z and N *)
@@ -1788,7 +1798,7 @@ Definition nat_mod_from_secret_literal_pre {m : Z} (x:int128) : nat_mod m :=
   @zmodp.inZp (Init.Nat.pred (Z.to_nat m)) (Z.to_nat (unsigned x)).
 
 Definition nat_mod_from_secret_literal {m : Z} (x:int128) : code fset.fset0 [interface] (@ct (nat_mod m)) :=
- {code ret (T_ct (@nat_mod_from_secret_literal_pre m x))}.  
+ lift_to_code (@nat_mod_from_secret_literal_pre m x).  
 
 Definition nat_mod_from_literal_pre (m : Z) (x:int128) : nat_mod m := nat_mod_from_secret_literal_pre x.
 
@@ -1828,7 +1838,8 @@ Axiom most_significant_bit : forall {m}, nat_mod m -> uint_size -> code fset.fse
 (* We assume 2^x < m *)
 
 Definition nat_mod_pow2_pre (m : Z) (x : N) : nat_mod m := mk_natmod (Z.pow 2 (Z.of_N x)).
-Definition nat_mod_pow2 (m : Z) (x : N) : code fset.fset0 [interface] (@ct (nat_mod m)) := {code ret (T_ct (nat_mod_pow2_pre m x))}.
+Definition nat_mod_pow2 (m : Z) (x : N) : code fset.fset0 [interface] (@ct (nat_mod m)) :=
+  lift_to_code (nat_mod_pow2_pre m x).
 
 End Todosection.
 
@@ -2957,3 +2968,15 @@ Ltac ssprove_valid'_2 :=
   ssprove_valid' ;
   ssprove_valid_program ;
   ssprove_valid_location.
+
+(* Set Printing All. *)
+(* Definition pct := prod_choiceType. *)
+(* Print pct. *)
+
+
+(* (* Definition prod_choiceMixin T1 T2 := CanChoiceMixin (@tag_of_pairK T1 T2). *) *)
+(* (* Canonical prod_choiceType T1 T2 := *) *)
+(* (*   Eval hnf in ChoiceType (T1 * T2) (prod_choiceMixin T1 T2). *) *)
+
+(* Canonical pct (T1 T2 : choiceType) := *)
+(*   Eval hnf in ChoiceType (T1 * T2) (prod_choiceMixin T1 T2). *)

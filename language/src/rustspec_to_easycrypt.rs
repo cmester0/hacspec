@@ -886,7 +886,7 @@ fn translate_statement<'a>(s: &'a Statement, top_ctx: &'a TopLevelContext) -> Rc
                 )
                 .append(RcDoc::as_string("]")),
         ),
-        Statement::ReturnExp(e1) => translate_expression(e1.clone(), top_ctx),
+        Statement::ReturnExp(e1, _) => translate_expression(e1.clone(), top_ctx),
         Statement::Conditional((cond, _), (b1, _), b2, mutated) => {
             let mutated_info = mutated.as_ref().unwrap().as_ref();
             make_let_binding(
