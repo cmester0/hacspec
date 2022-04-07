@@ -111,6 +111,15 @@ fn make_let_binding<'a>(
             })
             .append(RcDoc::line())
     })
+    .append(if do_bind {
+        if let Some(_) = typ.clone() {
+            make_let_binding(pat.clone(), typ.clone(), pat.clone(), false, false)
+        } else {
+            RcDoc::nil()
+        }
+    } else {
+        RcDoc::nil()
+    })
 }
 
 fn make_uint_size_coercion<'a>(pat: RcDoc<'a, ()>) -> RcDoc<'a, ()> {
@@ -599,12 +608,13 @@ fn translate_func_name<'a>(
     prefix: Option<Spanned<BaseTyp>>,
     name: Ident,
     top_ctx: &'a TopLevelContext,
+    mut args: Vec<RcDoc<'a, ()>>,
     args_ty: Vec<BaseTyp>,
 ) -> (
     RcDoc<'a, ()>,
     Vec<RcDoc<'a, ()>>,
     Option<BaseTyp>,
-    Vec<(RcDoc<'a, ()>, RcDoc<'a, ()>)>,
+    (Vec<RcDoc<'a, ()>>, Vec<RcDoc<'a, ()>>),
 ) {
     match prefix.clone() {
         None => {
@@ -632,9 +642,9 @@ fn translate_func_name<'a>(
                         "int8" => BaseTyp::Int8,
                         _ => panic!("Should not happen"),
                     }),
-                    vec![],
+                    (vec![], args),
                 ),
-                _ => (name, vec![], None, vec![]), // TODO: is None correct?
+                _ => (name, vec![], None, (vec![], args)), // TODO: is None correct?
             }
         }
         Some((prefix, _)) => {
@@ -646,7 +656,7 @@ fn translate_func_name<'a>(
             let func_ident = translate_ident(name.clone());
             let mut additional_args = Vec::new();
 
-            let mut extra_info = Vec::new();
+            let mut args_ass = Vec::new();
 
             // We add the modulo value for nat_mod
 
@@ -782,14 +792,27 @@ fn translate_func_name<'a>(
                         _ => args_ty[position].clone(),
                     };
 
-                    if let BaseTyp::Array(..) = ty {
-                        while extra_info.len() <= position {
-                            extra_info.push((RcDoc::nil(), RcDoc::nil()))
-                        }
-                        extra_info.insert(
-                            position,
-                            (RcDoc::as_string("array_to_seq ("), RcDoc::as_string(")")),
+                    if let BaseTyp::Array(_ , base_ty) = ty {
+                        let codegen_id: usize = {
+                            let c_id = fresh_codegen_id();
+                            // id_map.insert(id, c_id); // TODO: should this be inserted? (no need)
+                            c_id
+                        };
+
+                        let temp_name = translate_ident_str(format!("{}_{}", "temp", codegen_id));
+
+                        let temp_ass: RcDoc<'a, ()> = make_let_binding(
+                            temp_name.clone(),
+                            Some(translate_base_typ(BaseTyp::Seq(base_ty))),
+                            RcDoc::as_string("array_to_seq (")
+                                .append(args[position].clone())
+                                .append(RcDoc::as_string(")")),
+                            false,
+                            true,
                         );
+                        args_ass.push(temp_ass);
+
+                        args[position] = temp_name;
                     }
                 }
                 _ => (),
@@ -831,7 +854,7 @@ fn translate_func_name<'a>(
                     .append(func_ident.clone()),
                 additional_args,
                 result_typ,
-                extra_info,
+                (args_ass, args),
             )
         }
     }
@@ -999,15 +1022,8 @@ fn translate_expression<'a>(
         }
         Expression::Named(p) => (Vec::new(), translate_ident(p.clone())),
         Expression::FuncCall(prefix, name, args, arg_types) => {
-            let (func_name, additional_args, func_ret_ty, extra_info) = translate_func_name(
-                prefix.clone(),
-                Ident::TopLevel(name.0.clone()),
-                top_ctx,
-                arg_types.unwrap(),
-            );
-            let total_args = args.len() + additional_args.len();
-
             let (ass_arg_iter, trans_arg_iter): (Vec<_>, Vec<_>) = args
+                .clone()
                 .into_iter()
                 .map(|((arg, _), _)| {
                     let (ass, trans) = translate_expression(arg, top_ctx);
@@ -1015,11 +1031,22 @@ fn translate_expression<'a>(
                 })
                 .unzip();
 
+            let (func_name, additional_args, func_ret_ty, (trans_arg_ass, trans_arg_iter)) =
+                translate_func_name(
+                    prefix.clone(),
+                    Ident::TopLevel(name.0.clone()),
+                    top_ctx,
+                    trans_arg_iter,
+                    arg_types.unwrap(),
+                );
+            let total_args = args.len() + additional_args.len();
+
             let mut ass: Vec<RcDoc<'a, ()>> = Vec::new();
             ass.extend(ass_arg_iter.into_iter().fold(Vec::new(), |mut v, x| {
                 v.extend(x);
                 v
             }));
+            ass.extend(trans_arg_ass);
 
             let fun_expr = func_name
                 // We append implicit arguments first
@@ -1029,16 +1056,11 @@ fn translate_expression<'a>(
                         .map(|arg| RcDoc::space().append(make_paren(arg))),
                 ))
                 // Then the explicit arguments
-                .append(RcDoc::concat(trans_arg_iter.into_iter().enumerate().map(
-                    |(i, trans_arg)| {
-                        RcDoc::space().append(make_paren(if i < extra_info.len() {
-                            let (pre_arg, post_arg) = extra_info[i].clone();
-                            pre_arg.clone().append(trans_arg).append(post_arg.clone())
-                        } else {
-                            trans_arg
-                        }))
-                    },
-                )))
+                .append(RcDoc::concat(
+                    trans_arg_iter
+                        .into_iter()
+                        .map(|trans_arg| RcDoc::space().append(make_paren(trans_arg))),
+                ))
                 .append(if total_args == 0 {
                     RcDoc::space() //.append(RcDoc::as_string("()"))
                 } else {
@@ -1082,36 +1104,32 @@ fn translate_expression<'a>(
                 v
             });
 
+            let mut ass = Vec::new();
+            ass.extend(ass_sel_arg_0_0);
+            ass.extend(ass_arg);
+
+            let (func_name, additional_args, func_ret_ty, (args_ass, trans_arg_iter)) =
+                translate_func_name(
+                    sel_typ.clone().map(|x| x.1),
+                    Ident::TopLevel(f.clone()),
+                    top_ctx,
+                    trans_arg_iter,
+                    arg_types.unwrap(),
+                );
+
+            ass.extend(args_ass);
+
             let trans_args: Vec<_> = trans_arg_iter
                 .into_iter()
                 .map(|trans_arg| RcDoc::space().append(make_paren(trans_arg)))
                 .collect();
 
-            let mut ass = Vec::new();
-            ass.extend(ass_sel_arg_0_0);
-            ass.extend(ass_arg);
-
-            let (func_name, additional_args, func_ret_ty, extra_info) = translate_func_name(
-                sel_typ.clone().map(|x| x.1),
-                Ident::TopLevel(f.clone()),
-                top_ctx,
-                arg_types.unwrap(),
-            );
-
             let arg_trans = // Then the self argument
                     make_paren(trans_sel_arg_0_0)
                         // And finally the rest of the arguments
-                        .append(RcDoc::concat(trans_args.into_iter().enumerate().map(
-                        |(i, trans_arg)| {
-                            RcDoc::space().append(make_paren(if i < extra_info.len() {
-                                let (pre_arg, post_arg) = extra_info[i].clone();
-                                pre_arg
-                                    .clone()
-                                    .append(trans_arg)
-                                    .append(post_arg.clone())
-                            } else {
-                                trans_arg
-                            }))
+                        .append(RcDoc::concat(trans_args.into_iter().map(
+                        |trans_arg| {
+                            RcDoc::space().append(make_paren(trans_arg))
                         },
                     )));
 
@@ -1314,35 +1332,37 @@ fn add_ok_if_result(
                     // If b has an early return, then we must prefix the returned
                     // mutated variables by Ok or Some
                     match stmt {
-                        Statement::ReturnExp(e, t) => Statement::ReturnExp(Expression::EnumInject(
-                            BaseTyp::Named(
+                        Statement::ReturnExp(e, t) => Statement::ReturnExp(
+                            Expression::EnumInject(
+                                BaseTyp::Named(
+                                    (
+                                        TopLevelIdent {
+                                            string: match ert {
+                                                EarlyReturnType::Option => "Option",
+                                                EarlyReturnType::Result => "Result",
+                                            }
+                                            .to_string(),
+                                            kind: TopLevelIdentKind::Type,
+                                        },
+                                        DUMMY_SP.into(),
+                                    ),
+                                    None,
+                                ),
                                 (
                                     TopLevelIdent {
                                         string: match ert {
-                                            EarlyReturnType::Option => "Option",
-                                            EarlyReturnType::Result => "Result",
+                                            EarlyReturnType::Option => "Some",
+                                            EarlyReturnType::Result => "Ok",
                                         }
                                         .to_string(),
-                                        kind: TopLevelIdentKind::Type,
+                                        kind: TopLevelIdentKind::EnumConstructor,
                                     },
                                     DUMMY_SP.into(),
                                 ),
-                                None,
+                                Some((Box::new(e.clone()), DUMMY_SP.into())),
                             ),
-                            (
-                                TopLevelIdent {
-                                    string: match ert {
-                                        EarlyReturnType::Option => "Some",
-                                        EarlyReturnType::Result => "Ok",
-                                    }
-                                    .to_string(),
-                                    kind: TopLevelIdentKind::EnumConstructor,
-                                },
-                                DUMMY_SP.into(),
-                            ),
-                            Some((Box::new(e.clone()), DUMMY_SP.into())),
-                        )
-                        , t), // todo typing info
+                            t,
+                        ), // todo typing info
                         _ => panic!("should not happen"),
                     }
                 } else {
@@ -1522,7 +1542,7 @@ fn translate_statements<'a>(
                 .fold(RcDoc::nil(), |rc, x| rc.append(x))
                 .append(RcDoc::as_string("@pkg_core_definition.ret "))
                 .append(match t1 {
-                    Some ((_, (x, _))) => translate_base_typ(x),
+                    Some((_, (x, _))) => translate_base_typ(x),
                     None => RcDoc::as_string("_"),
                 })
                 .append(RcDoc::as_string(" ( "))

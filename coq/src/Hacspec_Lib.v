@@ -3,7 +3,7 @@ Global Set Warnings "-uniform-inheritance".
 Global Set Warnings "-auto-template".
 Global Set Warnings "-disj-pattern-notation".
 
-From mathcomp Require Import choice fintype.
+From mathcomp Require Import (* choice  *)fintype.
 
 From Crypt Require Import choice_type Package Prelude.
 Import PackageNotation.
@@ -225,16 +225,6 @@ Next Obligation.
 Defined.
   
 Notation "A '× B" := (prod_ChoiceEquality A B) (at level 79, left associativity) : hacspec_scope.
-Definition pair_ChoiceEquality {A B : ChoiceEquality} (x : @ct A) (y : @ct B) : @ct (prod_ChoiceEquality A B)
-  := (x , y).
-Locate "( _ , _ , _ )".
-Locate chProd.
-Notation "ch_( x , y , .. , z )" := (pair_ChoiceEquality .. (pair_ChoiceEquality x y) .. z) : hacspec_scope.
-Open Scope hacspec_scope.
-
-Definition nat_to_'nat (n : nat) : 'nat := n.
-(* Global Coercion ct_T_coerce {ce : ChoiceEquality} (x : @ct ce) : @T ce := @ct_T ce x. *)
-(* Global Coercion T_ct_coerce {ce : ChoiceEquality} (x : @T ce) : @ct ce := @T_ct ce x. *)
 
 Program Instance nat_ChoiceEquality : ChoiceEquality := {| T := nat ; ct := 'nat |}.
 
@@ -1031,8 +1021,6 @@ Next Obligation.
   intros.
   unfold nseq_type.
   unfold nseq_choice.
-  unfold Choice.sort.
-  cbn.
   rewrite <- @ChoiceEq.
   destruct len ; reflexivity.
 Qed.
@@ -1195,7 +1183,7 @@ Definition array_from_seq_pre
 Definition array_from_seq   {a: ChoiceEquality}
  `{Default (@T a)}
   (out_len:nat)
-  (input: @T (seq a))
+  (input: @T (seq a)) 
   : code fset.fset0 [interface] (@ct (nseq a out_len)) :=
   lift_to_code (array_from_seq_pre out_len input : @T (nseq a out_len)).
   
@@ -1223,10 +1211,11 @@ Definition array_to_list {A : ChoiceEquality} {n} (f : @T (nseq A n)) : list (@T
     lia.
 Defined.
 
-Definition array_to_seq {A : ChoiceEquality} {n} (f : nseq_type A n) : seq_type _ :=
+Definition array_to_seq_pre {A : ChoiceEquality} {n} (f : nseq_type A n) : seq_type _ :=
   seq_from_list _ (array_to_list f).
+Definition array_to_seq {A : ChoiceEquality} {n} (f : nseq_type A n) : code fset.fset0 [interface] (@ct (seq _)) := @lift_to_code (seq A) (array_to_seq_pre f).
 
-Global Coercion array_to_seq : nseq_type >-> seq_type.
+Global Coercion array_to_seq_pre : nseq_type >-> seq_type.
 
 
 Definition positive_slice {A : ChoiceEquality} `{Hd: Default (@T A)} {n} `{H: Positive n} (l : @T (nseq A n)) (i j : nat) `{H1: i < j} `{j - i < length (array_to_list l) - i} : Positive (length (slice (array_to_list l) i j)).
@@ -1290,7 +1279,7 @@ Definition array_slice_pre
   : @T (nseq a slice_len).
 Proof.
   refine (array_from_seq_pre slice_len _).
-  refine (array_to_seq _).
+  refine (array_to_seq_pre _).
   apply (@lseq_slice a slice_len (array_from_seq_pre slice_len input) start (start + slice_len)).
 Defined.
 Definition array_slice
@@ -1334,7 +1323,7 @@ Definition array_slice_range_pre
   (input: @T (nseq a len))
   (start_fin:(@T uint_size * @T uint_size))
     : @T (seq a) :=
-  array_to_seq (lseq_slice input (from_uint_size (fst start_fin)) (from_uint_size (snd start_fin))).
+  array_to_seq_pre (lseq_slice input (from_uint_size (fst start_fin)) (from_uint_size (snd start_fin))).
 Definition array_slice_range
   {a: ChoiceEquality}
  `{Default (@T a)}
@@ -1412,7 +1401,7 @@ Definition seq_update_pre
   (start: nat)
   (input: (@T (seq a)))
   : (@T (seq a)) :=
-  array_to_seq (update_sub_pre (array_from_seq_pre (seq_len_pre s) s) start (seq_len_pre input) (array_from_seq_pre (seq_len_pre input) input)).
+  array_to_seq_pre (update_sub_pre (array_from_seq_pre (seq_len_pre s) s) start (seq_len_pre input) (array_from_seq_pre (seq_len_pre input) input)).
 
 (* updating only a single value in a sequence*)
 Definition seq_upd
@@ -1433,7 +1422,7 @@ Definition seq_update_start_pre
   (s: (@T (seq a)))
   (start_s: (@T (seq a)))
     : (@T (seq a)) :=
-    array_to_seq (update_sub_pre (array_from_seq_pre (seq_len_pre s) s) 0 (seq_len_pre start_s) (array_from_seq_pre (seq_len_pre start_s) start_s)).
+    array_to_seq_pre (update_sub_pre (array_from_seq_pre (seq_len_pre s) s) 0 (seq_len_pre start_s) (array_from_seq_pre (seq_len_pre start_s) start_s)).
 
 Definition array_update_slice_pre
   {a : ChoiceEquality}
@@ -1481,7 +1470,7 @@ Definition seq_from_slice_range_pre
   : (@T (seq a)) :=
   let out := array_new_ (default) (seq_len_pre input) in
   let (start, fin) := start_fin in
-    array_to_seq (update_sub_pre out 0 ((from_uint_size fin) - (from_uint_size start)) ((lseq_slice (array_from_seq_pre (seq_len_pre input) input) (from_uint_size start) (from_uint_size fin)))).
+    array_to_seq_pre (update_sub_pre out 0 ((from_uint_size fin) - (from_uint_size start)) ((lseq_slice (array_from_seq_pre (seq_len_pre input) input) (from_uint_size start) (from_uint_size fin)))).
 
 Definition seq_from_seq_pre {A} (l : @T (seq A)) := l.
 
@@ -1525,7 +1514,7 @@ Definition seq_get_chunk_pre
  :=
   let idx_start := chunk_len * chunk_num in
   let out_len := seq_chunk_len_pre s chunk_len chunk_num in
-  (usize out_len, array_to_seq (lseq_slice (array_from_seq_pre (seq_len_pre s) s) idx_start (idx_start + seq_chunk_len_pre s chunk_len chunk_num))).
+  (usize out_len, array_to_seq_pre (lseq_slice (array_from_seq_pre (seq_len_pre s) s) idx_start (idx_start + seq_chunk_len_pre s chunk_len chunk_num))).
 
 Definition seq_set_chunk_pre
   {a: ChoiceEquality}
@@ -1536,7 +1525,7 @@ Definition seq_set_chunk_pre
   (chunk: (@T (seq a)) ) : (@T (seq a)) :=
  let idx_start := chunk_len * chunk_num in
  let out_len := seq_chunk_len_pre s chunk_len chunk_num in
-  array_to_seq (update_sub_pre (array_from_seq_pre (seq_len_pre s) s) idx_start out_len (array_from_seq_pre (seq_len_pre chunk) chunk)).
+  array_to_seq_pre (update_sub_pre (array_from_seq_pre (seq_len_pre s) s) idx_start out_len (array_from_seq_pre (seq_len_pre chunk) chunk)).
 
 
 (* Definition seq_num_exact_chunks_pre {a} (l : (@T (seq a))) (chunk_size : (@T (uint_size))) : (@T (uint_size)) := *)
@@ -2447,13 +2436,7 @@ Ltac ssprove_valid_2 :=
   ssprove_valid_program ;
   ssprove_valid_location.
 
-Global Coercion T : ChoiceEquality >-> Sortclass.
-Global Coercion ct : ChoiceEquality >-> choice_type.
-
 Check ct.
-
-Global Coercion ct_T_coerce {ce : ChoiceEquality} (x : @ct ce) : @T ce := @ct_T ce x.
-Global Coercion T_ct_coerce {ce : ChoiceEquality} (x : @T ce) : @ct ce := @T_ct ce x.
 
 Theorem single_mem : forall m, 
 Datatypes.is_true
@@ -2513,14 +2496,16 @@ Theorem in_bool_eq : forall {A : Type} `{EqDec A} (a:A) (l:list A), is_true (Inb
   rewrite boolp.propeqE. apply in_bool_iff.
 Qed.
 
+(* Locate "=.?". *)
+
 Definition location_eqb (ℓ ℓ' : Location) :=
-  (ssrfun.tagged ℓ =.? ssrfun.tagged ℓ').
+  (eqb (ssrfun.tagged ℓ) (ssrfun.tagged ℓ')).
 (* (@eqtype.eq_op *)
 (* (@eqtype.tag_eqType choice_type_eqType *)
 (*                     (fun _ : choice_type => ssrnat.nat_eqType)) ℓ ℓ'). *)
 
 Axiom location_is_types : (forall l1 l2 : Location ,
- is_true (ssrfun.tagged l1 =.? ssrfun.tagged l2) ->
+ is_true (eqb (ssrfun.tagged l1) (ssrfun.tagged l2)) ->
  is_true (eqtype.eq_op (ssrfun.tag l1) (ssrfun.tag l2))).
 
 Definition location_eqbP : forall (l1 l2 : Location),
@@ -2575,13 +2560,13 @@ Definition location_ltb : Location -> Location -> bool :=
   (fun l1 l2 : Location =>
      let (_, n1) := l1 in
       let (_, n2) := l2 in
-      n1 <.? n2).
+      ltb n1 n2).
 
 Global Instance location_comparable : Comparable (Location) :=
   eq_dec_lt_Comparable location_ltb.
 
 Definition le_is_ord_leq : forall s s0 : nat_ordType,
-    eqtype.eq_op s s0 = false -> s <.? s0 = (s <= s0)%ord.
+    eqtype.eq_op s s0 = false -> ltb s s0 = (s <= s0)%ord.
 Proof.
   intros s s0.
   unfold "<.?" , nat_comparable , "<?".
@@ -2746,7 +2731,7 @@ Theorem LocsSubset : (forall {A} (L1 L2 : list A) (a : A),
 Qed.
 
 Lemma valid_injectLocations_b :
-  forall (import : Interface) (A : choiceType)
+  forall (import : Interface) (A : choice.Choice.type)
     (L1 L2 : {fset tag_ordType (I:=choice_type_ordType) (fun _ : choice_type => nat_ordType)})
     (v : raw_code A),
     List.incl L1 L2 -> ValidCode L1 import v -> ValidCode L2 import v.
