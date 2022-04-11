@@ -186,7 +186,7 @@ fn bind_code<'a>(
         .append(RcDoc::space())
         .append(code_block_wrap(
             RcDoc::as_string("@pkg_core_definition.ret ").append(expr),
-            None,
+            Some(local_vars),
             None,
         ))
         .append(RcDoc::space())
