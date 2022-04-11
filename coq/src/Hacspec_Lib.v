@@ -26,8 +26,6 @@ From CoqWord Require Import ssrZ word.
 From Jasmin Require Import word.
 
 Section IntType.
-Local Coercion T : ChoiceEquality >-> Sortclass.
-Local Coercion ct : ChoiceEquality >-> choice_type.
 
 Definition int_choice {WS : wsize} := chWord WS.
 Definition int_type {WS : wsize} : Type := WS.-word.
@@ -47,20 +45,35 @@ Instance int32 : ChoiceEquality := @int U32.
 Instance int64 : ChoiceEquality := @int U64.
 Instance int128 : ChoiceEquality := @int U128.
 
+Definition int_modi {WS : wsize} : @int WS -> @int WS -> @int WS := wmodi.
+Definition int_add {WS : wsize} : @int WS -> @int WS -> @int WS := @add_word WS.
+Definition int_sub {WS : wsize} : @int WS -> @int WS -> @int WS := @sub_word WS.
+Definition int_opp {WS : wsize} : @int WS -> @int WS := @opp_word WS.
+Definition int_mul {WS : wsize} : @int WS -> @int WS -> @int WS := @mul_word WS.
+Definition int_div {WS : wsize} : @int WS -> @int WS -> @int WS := wdiv.
+Definition int_mod {WS : wsize} : @int WS -> @int WS -> @int WS := wmod.
+Definition int_xor {WS : wsize} : @int WS -> @int WS -> @int WS := wxor.
+Definition int_and {WS : wsize} : @int WS -> @int WS -> @int WS := wand.
+Definition int_or {WS : wsize} : @int WS -> @int WS -> @int WS := wor.
+
 End IntType.
 
-Axiom secret : forall {WS : wsize},  (@T (@int WS)) -> code fset.fset0 [interface] (@ct (@int WS)).
+Axiom secret_pure : forall {WS : wsize},  (@T (@int WS)) -> (@T (@int WS)).
+Definition secret : forall {WS : wsize},  (@T (@int WS)) -> code fset.fset0 [interface] (@ct (@int WS)) := fun {WS} x => lift_to_code (secret_pure x).
+(* code fset.fset0 [interface] (@ct (@int WS)) *)
 
-Infix "%%" := wmodi (at level 40, left associativity) : Z_scope.
-Infix ".+" := ssralg.GRing.add (at level 77) : hacspec_scope.
-Infix ".-" := (sub_word) (at level 77) : hacspec_scope.
-Notation "-" := (opp_word) (at level 77) : hacspec_scope.
-Infix ".*" := (mul_word) (at level 77) : hacspec_scope.
-(* Infix "./" := (div_word) (at level 77) : hacspec_scope. *)
-(* Infix ".%" := (mod_word) (at level 77) : hacspec_scope. *)
-Infix ".^" := (wxor) (at level 77) : hacspec_scope.
-Infix ".&" := (wand) (at level 77) : hacspec_scope.
-Infix ".|" := (wor) (at level 77) : hacspec_scope.
+
+
+Infix "%%" := int_modi (at level 40, left associativity) : Z_scope.
+Infix ".+" := int_add (at level 77) : hacspec_scope.
+Infix ".-" := int_sub (at level 77) : hacspec_scope.
+Notation "-" := int_opp (at level 77) : hacspec_scope.
+Infix ".*" := int_mul (at level 77) : hacspec_scope.
+Infix "./" := int_div (at level 77) : hacspec_scope.
+Infix ".%" := int_mod (at level 77) : hacspec_scope.
+Infix ".^" := int_xor (at level 77) : hacspec_scope.
+Infix ".&" := int_and (at level 77) : hacspec_scope.
+Infix ".|" := int_or (at level 77) : hacspec_scope.
 (* Infix "==" := (MachineIntegers.eq) (at level 32) : hacspec_scope. *)
 (* w1 == w2 -- already defined *)
 Definition zero {WS : wsize} : @T (@int WS) := @word0 WS.
@@ -68,43 +81,51 @@ Definition one {WS : wsize} : @T (@int WS) := @word1 (pred WS).
 
 Section Uint.
   
-Local Coercion T : ChoiceEquality >-> Sortclass.
-Local Coercion ct : ChoiceEquality >-> choice_type.
-
 Open Scope hacspec_scope.
 
-Axiom uint8_declassify : int8 -> int8.
-Axiom int8_declassify : int8 -> int8.
-Axiom uint16_declassify : int16 -> int16.
-Axiom int16_declassify : int16 -> int16.
-Axiom uint32_declassify : int32 -> int32.
-Axiom int32_declassify : int32 -> int32.
-Axiom uint64_declassify : int64 -> int64.
-Axiom int64_declassify : int64 -> int64.
-Axiom uint128_declassify : int128 -> int128.
-Axiom int128_declassify : int128 -> int128.
+Axiom uint8_declassify : int8 -> code fset.fset0 [interface] int8.
+Axiom int8_declassify : int8 -> code fset.fset0 [interface] int8.
+Axiom uint16_declassify : int16 -> code fset.fset0 [interface] int16.
+Axiom int16_declassify : int16 -> code fset.fset0 [interface] int16.
+Axiom uint32_declassify : int32 -> code fset.fset0 [interface] int32.
+Axiom int32_declassify : int32 -> code fset.fset0 [interface] int32.
+Axiom uint64_declassify : int64 -> code fset.fset0 [interface] int64.
+Axiom int64_declassify : int64 -> code fset.fset0 [interface] int64.
+Axiom uint128_declassify : int128 -> code fset.fset0 [interface] int128.
+Axiom int128_declassify : int128 -> code fset.fset0 [interface] int128.
 
-Axiom uint8_classify : int8 -> int8.
-Axiom int8_classify : int8 -> int8.
-Axiom uint16_classify : int16 -> int16.
-Axiom int16_classify : int16 -> int16.
-Axiom uint32_classify : int32 -> int32.
-Axiom int32_classify : int32 -> int32.
-Axiom uint64_classify : int64 -> int64.
-Axiom int64_classify : int64 -> int64.
-Axiom uint128_classify : int128 -> int128.
-Axiom int128_classify : int128 -> int128.
+Axiom uint8_classify : int8 -> code fset.fset0 [interface] int8.
+Axiom int8_classify : int8 -> code fset.fset0 [interface] int8.
+Axiom uint16_classify : int16 -> code fset.fset0 [interface] int16.
+Axiom int16_classify : int16 -> code fset.fset0 [interface] int16.
+Axiom uint32_classify : int32 -> code fset.fset0 [interface] int32.
+Axiom int32_classify : int32 -> code fset.fset0 [interface] int32.
+Axiom uint64_classify : int64 -> code fset.fset0 [interface] int64.
+Axiom int64_classify : int64 -> code fset.fset0 [interface] int64.
+Axiom uint128_classify : int128 -> code fset.fset0 [interface] int128.
+Axiom int128_classify : int128 -> code fset.fset0 [interface] int128.
 
 
 (* CompCert integers' signedness is only interpreted through 'signed' and 'unsigned',
    and not in the representation. Therefore, uints are just names for their respective ints.
 *)
 
+Definition int8_type := @int_type U8.
+Definition int16_type := @int_type U16.
+Definition int32_type := @int_type U32.
+Definition int64_type := @int_type U64.
+Definition int128_type := @int_type U128.
+
 Instance uint8 : ChoiceEquality := int8.
+Definition uint8_type := @int_type U8.
 Instance uint16 : ChoiceEquality := int16.
+Definition uint16_type := @int_type U16.
 Instance uint32 : ChoiceEquality := int32.
+Definition uint32_type := @int_type U32.
 Instance uint64 : ChoiceEquality := int64.
+Definition uint64_type := @int_type U64.
 Instance uint128 : ChoiceEquality := int128.
+Definition uint128_type := @int_type U128.
 
 Instance uint_size : ChoiceEquality := int32.
 Definition uint_size_type := @int_type U32.
@@ -112,12 +133,12 @@ Definition uint_size_type := @int_type U32.
 Instance int_size : ChoiceEquality := int32.
 Definition int_size_type := @int_type U32.
 
-Axiom declassify_usize_from_uint8 : uint8 -> uint_size.
+Axiom declassify_usize_from_uint8 : uint8 -> code fset.fset0 [interface] uint_size.
 
 (* Represents any type that can be converted to uint_size and back *)
 Class UInt_sizable (A : Type) := {
-  usize : A -> uint_size_type;
-  from_uint_size : uint_size_type -> A;
+  usize : A -> @T (uint_size);
+  from_uint_size : @T (uint_size) -> A;
 }.
 Arguments usize {_} {_}.
 Arguments from_uint_size {_} {_}.
@@ -232,9 +253,6 @@ Program Instance nat_ChoiceEquality : ChoiceEquality := {| T := nat ; ct := 'nat
 
 Section Util.
   
-Local Coercion T : ChoiceEquality >-> Sortclass.
-Local Coercion ct : ChoiceEquality >-> choice_type.
-
 Fixpoint binary_representation_pre (n : nat) {struct n}: positive :=
   match n with
   | O => 1
@@ -578,6 +596,7 @@ Proof.
   induction fuel ; intros.
   - cbn.
     replace (repr 0) with (@zero U32) by (apply word_ext ; reflexivity).
+    unfold ".+".
     rewrite add0w.
     
     rewrite ct_T_id.
@@ -596,12 +615,13 @@ Proof.
     replace ((repr (Z.of_nat (S fuel))) .+ i)
       with ((repr (Z.of_nat fuel)) .+ (i .+ one)).
     2 : {
-      rewrite <- (ssralg.GRing.addrC one).
-      rewrite ssralg.GRing.addrA.
+      unfold ".+".
+      rewrite <- addwC.
+      rewrite <- addwA.
+      rewrite addwC.
       f_equal.
       apply word_ext.
-      rewrite (urepr_word one).
-      rewrite Z.add_1_r.
+      rewrite Z.add_1_l.
       rewrite Nat2Z.inj_succ.
       f_equal.
       f_equal.
@@ -685,6 +705,7 @@ Proof.
     destruct n.
     + cbn.
       replace (repr 0) with (@zero U32) by (apply word_ext ; reflexivity).
+      unfold int_add.
       rewrite add0w.
       reflexivity.
     + assert (H_bound_pred: (Z.pred 0 < Z.pos (Pos.of_succ_nat n) < @modulus U32)%Z) by lia.
@@ -1040,6 +1061,18 @@ Definition public_byte_seq := seq int8.
 Definition byte_seq := seq int8.
 Definition list_len := length.
 
+(**** Unsafe functions *)
+
+Definition seq_new__pre {A: ChoiceEquality} (init : A) (len: nat) : seq A :=
+  fmap_of_seq (repeat init len).
+Definition seq_new_ {A: ChoiceEquality} (init : A) (len: nat) : code fset.fset0 [interface] (seq A) :=
+  lift_to_code (seq_new__pre init len).
+
+Definition seq_new_pre {A: ChoiceEquality} `{Default A} (len: nat) : seq A :=
+  seq_new__pre default len.
+Definition seq_new {A: ChoiceEquality} `{Default A} (len: nat) : code fset.fset0 [interface] (seq A) :=
+  lift_to_code (seq_new_pre len).
+  
 Definition seq_index {A: ChoiceEquality} `{Default (@T A)} (s: @T (seq A)) (i : nat) : @T A :=
   match getm s i with
   | Some a => a
@@ -1082,7 +1115,7 @@ Fixpoint list_iter (n : nat) (k : nat) `{(n <= k)%nat} : list { x : nat | (x < k
       * apply nil.
 Defined.
 
-Definition array_from_list
+Definition array_from_list_pre
            (A: ChoiceEquality)
            (l: list (@T A)) : @T (nseq A (length l)).
 Proof.
@@ -1102,6 +1135,16 @@ Proof.
     rewrite -> ChoiceEq.
     apply X.
 Defined.
+Definition array_from_list
+           (A: ChoiceEquality)
+           (l: list (@T A)) := array_from_list_pre A l.
+
+(* Definition array_from_list *)
+(*            (A: ChoiceEquality) *)
+(*            (l: list (@T A)) : code fset.fset0 [interface] (@ct (nseq A (length l))) := *)
+(*   lift_to_code (array_from_list_pre A l). *)
+
+
 
 (**** Array manipulation *)
 
@@ -1110,7 +1153,7 @@ Defined.
 Definition array_new_ {A: ChoiceEquality} (init:@T A) (len: nat) : @T (nseq A len).
   rewrite <- (repeat_length init len).
   intros.
-  apply (@array_from_list A (repeat init len)).
+  apply (@array_from_list_pre A (repeat init len)).
 Defined.
 
 
@@ -1178,7 +1221,7 @@ Definition array_from_seq_pre
   (input: seq_type a)
   : nseq_type a out_len :=
   let out := array_new_ default out_len in
-  update_sub_pre out 0 (out_len - 1) (@array_from_list a (@seq_to_list a input)).
+  update_sub_pre out 0 (out_len - 1) (@array_from_list_pre a (@seq_to_list a input)).
 
 Definition array_from_seq   {a: ChoiceEquality}
  `{Default (@T a)}
@@ -1213,7 +1256,7 @@ Defined.
 
 Definition array_to_seq_pre {A : ChoiceEquality} {n} (f : nseq_type A n) : seq_type _ :=
   seq_from_list _ (array_to_list f).
-Definition array_to_seq {A : ChoiceEquality} {n} (f : nseq_type A n) : code fset.fset0 [interface] (@ct (seq _)) := @lift_to_code (seq A) (array_to_seq_pre f).
+Definition array_to_seq {A : ChoiceEquality} {n} (f : nseq_type A n) : code fset.fset0 [interface] (@ct (seq _)) := @lift_to_code (seq A) _ _ (array_to_seq_pre f).
 
 Global Coercion array_to_seq_pre : nseq_type >-> seq_type.
 
@@ -1244,7 +1287,7 @@ Proof.
 Qed.      
 
 Definition lseq_slice {A : ChoiceEquality} {n} (l : @T (nseq A n)) (i j : nat) : @T (@nseq A (length (slice (array_to_list l) i j))) :=
-  array_from_list _ (slice (array_to_list l) i j).
+  array_from_list_pre _ (slice (array_to_list l) i j).
 
 
 Definition array_from_slice_pre
@@ -1402,6 +1445,14 @@ Definition seq_update_pre
   (input: (@T (seq a)))
   : (@T (seq a)) :=
   array_to_seq_pre (update_sub_pre (array_from_seq_pre (seq_len_pre s) s) start (seq_len_pre input) (array_from_seq_pre (seq_len_pre input) input)).
+Definition seq_update
+  {a: ChoiceEquality}
+ `{Default (@T (a))}
+  (s: (@T (seq a)))
+  (start: nat)
+  (input: (@T (seq a)))
+  : code fset.fset0 [interface] (@ct (seq a)) :=
+  lift_to_code (seq_update_pre s start input).
 
 (* updating only a single value in a sequence*)
 Definition seq_upd
@@ -1423,6 +1474,13 @@ Definition seq_update_start_pre
   (start_s: (@T (seq a)))
     : (@T (seq a)) :=
     array_to_seq_pre (update_sub_pre (array_from_seq_pre (seq_len_pre s) s) 0 (seq_len_pre start_s) (array_from_seq_pre (seq_len_pre start_s) start_s)).
+Definition seq_update_start
+  {a: ChoiceEquality}
+ `{Default (@T (a))}
+  (s: (@T (seq a)))
+  (start_s: (@T (seq a)))
+    : code fset.fset0 [interface] (@ct (seq a)) :=
+    lift_to_code (seq_update_start_pre s start_s).
 
 Definition array_update_slice_pre
   {a : ChoiceEquality}
@@ -1471,13 +1529,22 @@ Definition seq_from_slice_range_pre
   let out := array_new_ (default) (seq_len_pre input) in
   let (start, fin) := start_fin in
     array_to_seq_pre (update_sub_pre out 0 ((from_uint_size fin) - (from_uint_size start)) ((lseq_slice (array_from_seq_pre (seq_len_pre input) input) (from_uint_size start) (from_uint_size fin)))).
+Definition seq_from_slice_range
+  {a: ChoiceEquality}
+ `{Default (@T (a))}
+  (input: (@T (seq a)))
+  (start_fin: ((@T (uint_size)) * (@T (uint_size))))
+  : code fset.fset0 [interface] (@ct (seq a)) :=
+  lift_to_code (seq_from_slice_range_pre input start_fin).
 
 Definition seq_from_seq_pre {A} (l : @T (seq A)) := l.
 
 (**** Chunking *)
 
-Definition seq_num_chunks_pre {a: ChoiceEquality} (s: (@T (seq a))) (chunk_len: nat) : nat :=
+Definition seq_num_chunks_pre {a: ChoiceEquality} (s: (@T (seq a))) (chunk_len: nat) : nat_ChoiceEquality :=
   ((seq_len_pre s) + chunk_len - 1) / chunk_len.
+Definition seq_num_chunks {a: ChoiceEquality} (s: (@T (seq a))) (chunk_len: nat) : code fset.fset0 [interface] (@ct uint_size) :=
+  lift_to_code (usize (seq_num_chunks_pre s chunk_len)).
 
 Definition seq_chunk_len_pre
   {a: ChoiceEquality}
@@ -1500,21 +1567,26 @@ Definition seq_chunk_len_pre
     (requires (LSeq.length s1 := LSeq.length s2 /\ chunk_len * chunk_num <= Seq.length s1))
     (ensures (seq_chunk_len s1 chunk_len chunk_lseq. Admitted. *)
 
+Open Scope hacspec_scope.
 Definition seq_get_chunk_pre
   {a: ChoiceEquality}
   `{Default (@T (a))}
   (s: (@T (seq a)))
   (chunk_len: nat)
   (chunk_num: nat)
-  : ((@T (uint_size)) * (@T (seq a)))
-    (* (requires (chunk_len * chunk_num <= Seq.length s))
-    (ensures (fun '(out_len, chunk) =>
-      out_len := seq_chunk_len s chunk_len chunk_num /\ LSeq.length chunk := out_len
-    )) *)
+  : ((@T (uint_size '× seq a)))
  :=
   let idx_start := chunk_len * chunk_num in
   let out_len := seq_chunk_len_pre s chunk_len chunk_num in
   (usize out_len, array_to_seq_pre (lseq_slice (array_from_seq_pre (seq_len_pre s) s) idx_start (idx_start + seq_chunk_len_pre s chunk_len chunk_num))).
+Definition seq_get_chunk
+  {a: ChoiceEquality}
+  `{Default (@T (a))}
+  (s: (@T (seq a)))
+  (chunk_len: nat)
+  (chunk_num: nat)
+  : code fset.fset0 [interface] ((@ct (uint_size '× seq a))) :=
+  lift_to_code (seq_get_chunk_pre s chunk_len chunk_num).
 
 Definition seq_set_chunk_pre
   {a: ChoiceEquality}
@@ -1722,9 +1794,6 @@ Axiom u128_from_be_bytes : @T (nseq int8 16) -> code fset.fset0 [interface] (@ct
 
 Section Todosection.
 
-Local Coercion T : ChoiceEquality >-> Sortclass.
-Local Coercion ct : ChoiceEquality >-> choice_type.
-
 Definition nat_mod_choice {p : Z} : choice_type := 'fin (S (Init.Nat.pred (Z.to_nat p))).
 Definition nat_mod_type {p : Z} : Type := 'I_(S (Init.Nat.pred (Z.to_nat p))).
 Instance nat_mod (p : Z) : ChoiceEquality :=
@@ -1839,9 +1908,6 @@ Infix "/%" := nat_mod_div_pre (at level 33) : hacspec_scope.
 
 Section Casting.
 
-Local Coercion T : ChoiceEquality >-> Sortclass.
-Local Coercion ct : ChoiceEquality >-> choice_type.
-
   (* Type casts, as defined in Section 4.5 in https://arxiv.org/pdf/1106.3448.pdf *)
   Class Cast A B := cast : A -> B.
 
@@ -1914,9 +1980,6 @@ Global Arguments pair {_ _} & _ _.
 Section Coercions.
   (* First, in order to have automatic coercions for tuples, we add bidirectionality hints: *)
 
-Local Coercion T : ChoiceEquality >-> Sortclass.
-Local Coercion ct : ChoiceEquality >-> choice_type.
-
   (* Integer coercions *)
   (* We have nat >-> N >-> Z >-> int/int32 *)
   (* and uint >-> Z *)
@@ -1949,42 +2012,42 @@ Local Coercion ct : ChoiceEquality >-> choice_type.
   Definition uint_size_to_Z (n : uint_size_type) : Z := from_uint_size n.
   Global Coercion uint_size_to_Z : uint_size_type >-> Z.
 
-  (* Definition uint32_to_nat (n : uint32) : nat := unsigned n. *)
-  (* Global Coercion uint32_to_nat : uint32 >-> nat. *)
+  Definition uint32_to_nat (n : uint32_type) : nat := unsigned n.
+  Global Coercion uint32_to_nat : uint32_type >-> nat.
 
-  (* Definition int8_to_nat (n : int8) : nat := unsigned n. *)
-  (* Global Coercion int8_to_nat : int8 >-> nat. *)
-  (* Definition int16_to_nat (n : int16) : nat := unsigned n. *)
-  (* Global Coercion int16_to_nat : int16 >-> nat. *)
-  (* Definition int32_to_nat (n : int32) : nat := unsigned n. *)
-  (* Global Coercion int32_to_nat : int32 >-> nat. *)
-  (* Definition int64_to_nat (n : int64) : nat := unsigned n. *)
-  (* Global Coercion int64_to_nat : int64 >-> nat. *)
-  (* Definition int128_to_nat (n : int128) : nat := unsigned n. *)
-  (* Global Coercion int128_to_nat : int128 >-> nat. *)
+  Definition int8_to_nat (n : int8_type) : nat := unsigned n.
+  Global Coercion int8_to_nat : int8_type >-> nat.
+  Definition int16_to_nat (n : int16_type) : nat := unsigned n.
+  Global Coercion int16_to_nat : int16_type >-> nat.
+  Definition int32_to_nat (n : int32_type) : nat := unsigned n.
+  Global Coercion int32_to_nat : int32_type >-> nat.
+  Definition int64_to_nat (n : int64_type) : nat := unsigned n.
+  Global Coercion int64_to_nat : int64_type >-> nat.
+  Definition int128_to_nat (n : int128_type) : nat := unsigned n.
+  Global Coercion int128_to_nat : int128_type >-> nat.
 
   (* coercions int8 >-> int16 >-> ... int128 *)
 
-  (* Definition int8_to_int16 (n : int8) : int16 := repr n. *)
-  (* Global Coercion int8_to_int16 : int8 >-> int16. *)
+  Definition int8_to_int16 (n : int8_type) : int16_type := repr n.
+  Global Coercion int8_to_int16 : int8_type >-> int16_type.
 
-  (* Definition int8_to_int32 (n : int8) : int32 := repr n. *)
-  (* Global Coercion int8_to_int32 : int8 >-> int32. *)
+  Definition int8_to_int32 (n : int8_type) : int32_type := repr n.
+  Global Coercion int8_to_int32 : int8_type >-> int32_type.
 
-  (* Definition int16_to_int32 (n : int16) : int32 := repr n. *)
-  (* Global Coercion int16_to_int32 : int16 >-> int32. *)
+  Definition int16_to_int32 (n : int16_type) : int32_type := repr n.
+  Global Coercion int16_to_int32 : int16_type >-> int32_type.
 
-  (* Definition int32_to_int64 (n : int32) : int64 := repr n. *)
-  (* Global Coercion int32_to_int64 : int32 >-> int64. *)
+  Definition int32_to_int64 (n : int32_type) : int64_type := repr n.
+  Global Coercion int32_to_int64 : int32_type >-> int64_type.
 
-  (* Definition int64_to_int128 (n : int64) : int128 := repr n. *)
-  (* Global Coercion int64_to_int128 : int64 >-> int128. *)
+  Definition int64_to_int128 (n : int64_type) : int128_type := repr n.
+  Global Coercion int64_to_int128 : int64_type >-> int128_type.
 
-  (* Definition int32_to_int128 (n : int32) : int128 := repr n. *)
-  (* Global Coercion int32_to_int128 : int32 >-> int128. *)
+  Definition int32_to_int128 (n : int32_type) : int128_type := repr n.
+  Global Coercion int32_to_int128 : int32_type >-> int128_type.
 
-  (* Definition uint_size_to_int64 (n : uint_size) : int64 := repr n. *)
-  (* Global Coercion uint_size_to_int64 : uint_size >-> int64. *)
+  Definition uint_size_to_int64 (n : uint_size_type) : int64_type := repr n.
+  Global Coercion uint_size_to_int64 : uint_size_type >-> int64_type.
 
 
   (* coercions into nat_mod *)
@@ -2003,9 +2066,6 @@ End Coercions.
 (*** Casting *)
 
 Section TodoSection2.
-
-Local Coercion T : ChoiceEquality >-> Sortclass.
-Local Coercion ct : ChoiceEquality >-> choice_type.
 
 Definition uint128_from_usize (n : uint_size) : int128 := repr (unsigned n).
 Definition uint64_from_usize (n : uint_size) : int64 := repr (unsigned n).
@@ -2234,15 +2294,6 @@ Next Obligation.
   - inversion_clear H1. now do 2 rewrite eqb_refl.
 Defined.
 
-(*** Result *)
-
-Inductive result (a: ChoiceEquality) (b: ChoiceEquality) :=
-  | Ok : a -> result a b
-  | Err : b -> result a b.
-
-Arguments Ok {_ _}.
-Arguments Err {_ _}.
-
 (*** Be Bytes *)
 
 
@@ -2289,37 +2340,32 @@ Open Scope hacspec_scope.
 (* Definition nat_mod_to_byte_seq_be : forall {n : Z}, nat_mod n -> seq int8 := *)
 (*   fun k => VectorDef.of_list . *)
 
+End TodoSection2.
+
 (*** Monad / Bind *)
 
-Class Monad (M : ChoiceEquality -> ChoiceEquality) :=
-  { bind {A B : ChoiceEquality} (x : M A) (f : A -> M B) : M B ;
-    ret {A : ChoiceEquality} (x : A) : M A ;
-  }.
+Inductive result_type (a b : Type) :=
+| Ok_type : a -> result_type a b
+| Err_type : b -> result_type a b.
 
-Check choice_type.
+Axiom result_choice_type : choice_type -> choice_type -> choice_type.
+Axiom result_compute : forall a b, choice.Choice.sort (result_choice_type a b) = result_type (choice.Choice.sort a) (choice.Choice.sort b).
+#[refine] Instance result2 (b a : ChoiceEquality) : ChoiceEquality :=
+  {| ct := result_choice_type a b ; T := result_type a b |}.
+Proof.
+  intros.
+  rewrite result_compute.  
+  do 2 rewrite ChoiceEq.
+  reflexivity.
+Defined.
 
-(* Program Definition result2 (b: ChoiceEquality) (a: ChoiceEquality) : ChoiceEquality := *)
-(*   {| ct := chProd (chOption a) (chOption b) ; T := result a b ; |}.  *)
-  
-  
-(* Definition result_bind {A B C} (r : result2 C A) (f : A -> result2 C B) : result2 C B := *)
-(*   match r with *)
-(*     Ok a => f a *)
-(*   | Err e => Err e *)
-(*   end. *)
+#[global] Definition result := (fun x y => result2 y x).
 
-(* Definition result_ret {A C : ChoiceEquality} (a : A) : result2 C A := Ok a. *)
+Definition Ok {a b : ChoiceEquality} : a -> result a b := Ok_type (@T a) (@T b).
+Definition Err {a b : ChoiceEquality} : b -> result a b := Err_type (@T a) (@T b).
 
-(* Global Instance result_monad {C : ChoiceEquality} : Monad (result2 C) := *)
-(*   Build_Monad (result2 C) (fun A B => @result_bind A B C) (fun A => @result_ret A C). *)
-
-Definition option_bind {A B} (r : option A) (f : A -> option B) : option B :=
-  match r with
-    Some (a) => f a
-  | None => None
-  end.
-
-Definition option_ret {A} (a : A) : option A := Some a.
+Arguments Ok {_ _}.
+Arguments Err {_ _}.        
 
 Program Definition option_choice_equality (a : ChoiceEquality) :=
   {| ct := chOption a ; T := option a ; |}.
@@ -2328,29 +2374,95 @@ Next Obligation.
   rewrite ChoiceEq.
   reflexivity.
 Qed.
+
+Module ChoiceEqualityMonad.
   
-Global Instance option_monad : Monad option_choice_equality :=
-  Build_Monad option_choice_equality (@option_bind) (@option_ret).
+  Class CEMonad (M : ChoiceEquality -> ChoiceEquality) : Type :=
+    {
+      bind {A B : ChoiceEquality} (x : M A) (f : A -> M B) : M B ;
+      ret {A : ChoiceEquality} (x : A) : M A ;
+    }.  
+  
+  Section ResultMonad.  
+    Definition result_bind {C A B} (r : result A C) (f : A -> result B C) : result B C :=
+      match r with
+      | Ok_type a => f a
+      | Err_type e => Err e
+      end.
 
-Definition option_is_none {A} (x : option A) : bool :=
-  match x with
-  | None => true
-  | _ => false
-  end.
+    Definition result_ret {C A : ChoiceEquality} (a : A) : result A C := Ok a.
 
-(* Definition foldi_bind {A : ChoiceEquality} {M : ChoiceEquality -> ChoiceEquality} `{@Monad M} (a : uint_size) (b : uint_size) (f : uint_size -> A -> M A) (init : M A) : raw_code (@ct (M A)) := *)
-(*   @foldi (M A) a b (fun x y => pkg_core_definition.ret (T_ct (@bind M H A A y (f x)))) init.   *)
-(* (* @foldi (M A) a b (fun x y =>  (@pkg_core_definition.ret (@ct (M A)) (@T_ct (@bind M H A A y (f x))))) init. *) *)
+    Global Instance result_monad {C : ChoiceEquality} : CEMonad (result2 C) :=
+      Build_CEMonad (result2 C) (@result_bind C) (@result_ret C).
+    
+    Arguments result_monad {_} &.
+    
+    (* Existing Instance result_monad. *)
+  End ResultMonad.
+
+  (* Definition foldi_bind {A : ChoiceEquality} `{mnd : CEMonad} (a : uint_size) (b : uint_size) {L I} (f : uint_size -> A -> M A) (init : M A) : code L I (@ct (M A)) :=     *)
+  (*   @foldi (M A) a b L I *)
+  (*  (fun (x : @T uint_size) (y : @T (M A)) => *)
+  (*   @lift_to_code (M A) L I (@bind M mnd A A y (f x))) init. *)
+
+  Class bind_through_code {M} (mon : CEMonad M) :=
+    {
+      bind_code : forall {A B} {L I} (y : code L I (M A)) (f : A -> code L I (M B)) , code L I (M B)
+    }.
+
+  (* Class bind_through_code {M} (mon : CEMonad M) := *)
+  (*   {bind_code : forall {A B} {L I} (y : M A) (f : A -> code L I (M B)) , code L I (M B)}. *)
+  
+  Global Instance result_bind_code {C} : bind_through_code (@result_monad C) :=
+    {|
+      bind_code A B L I y f :=
+      {code
+         z ← y ;;
+         match ct_T z with
+         | @Ok_type _ _ a => f a
+         | @Err_type _ _ b => (@mkprog L I _ (pkg_core_definition.ret (Err b)) _)
+         end}
+    |}.
+
+  Definition foldi_bind_code {A : ChoiceEquality} `{mnd : CEMonad} `{@bind_through_code _ mnd} (a : uint_size) (b : uint_size) {L I} (f : uint_size -> A -> code L I (@ct (M A))) (init : M A) : code L I (@ct (M A)) := (foldi a b (fun x y => bind_code (lift_to_code y) (f x)) init).
+
+    (* @foldi (M A) a b L I *)
+   (* (fun (x : @T uint_size) (y : @T (M A)) => *)
+   (*  @lift_to_code (M A) L I (@bind M mnd A A y (f x))) init. *)
+
+  
+  
+
+  
+  Definition option_bind {A B} (r : option A) (f : A -> option B) : option B :=
+    match r with
+      Some (a) => f a
+    | None => None
+    end.
+
+  Definition option_ret {A} (a : A) : option A := Some a.
+  
+  Global Instance option_monad : CEMonad option_choice_equality :=
+    Build_CEMonad option_choice_equality (@option_bind) (@option_ret).
+
+  Definition option_is_none {A} (x : option A) : bool :=
+    match x with
+    | None => true
+    | _ => false
+    end.
+  
+End ChoiceEqualityMonad.  
 
 (*** Notation *)
 
-Notation "'ifbnd' b 'then' x 'else' y '>>' f" := (if b then f x else f y) (at level 200).
-Notation "'ifbnd' b 'thenbnd' x 'else' y '>>' f" := (if b then (bind x) f else f y) (at level 200).
-Notation "'ifbnd' b 'then' x 'elsebnd' y '>>' f" := (if b then f x else (bind y) f) (at level 200).
-Notation "'ifbnd' b 'thenbnd' x 'elsebnd' y '>>' f" := (if b then bind x f else bind y f) (at level 200).
+Global Notation "'ifbnd' b 'then' x 'else' y '>>' f" := (if b then f x else f y) (at level 200).
+Global Notation "'ifbnd' b 'thenbnd' x 'else' y '>>' f" := (if b then (ChoiceEqualityMonad.bind x) f else f y) (at level 200).
+Global Notation "'ifbnd' b 'then' x 'elsebnd' y '>>' f" := (if b then f x else (ChoiceEqualityMonad.bind y) f) (at level 200).
+Global Notation "'ifbnd' b 'thenbnd' x 'elsebnd' y '>>' f" := (if b then ChoiceEqualityMonad.bind x f else ChoiceEqualityMonad.bind y f) (at level 200).
 
-Notation "'foldibnd' s 'to' e 'for' z '>>' f" := (foldi s e (fun x y => bind y (f x)) (Ok z)) (at level 50).
+Global Notation "'foldibnd' s 'to' e 'for' z '>>' f" := (ChoiceEqualityMonad.foldi_bind_code s e f (Ok z)) (at level 50).
 
+Section TodoSection3.
 Axiom nat_mod_from_byte_seq_be : forall  {A n}, seq A -> nat_mod n.
 
 (*** Default *)
@@ -2383,7 +2495,7 @@ Global Instance prod_default {A B} `{Default A} `{Default B} : Default (prod A B
   default := (default, default)
 }.
 
-End TodoSection2.
+End TodoSection3.
 
 Infix "=.?" := eqb (at level 40) : hacspec_scope.
 Infix "!=.?" := (fun a b => negb (eqb a b)) (at level 40) : hacspec_scope.
@@ -2936,8 +3048,7 @@ Ltac valid_program :=
   end.
 
 Ltac ssprove_valid' :=
-  repeat (apply valid_ret
-          || valid_program
+  repeat (valid_program
           || (apply valid_bind ; [apply valid_scheme ; apply prog_valid | intros])
           || (apply valid_bind ; [ | intros ; ssprove_valid' ])
           || (apply valid_putr ; [ cbn ; ssprove_valid_location | ])
@@ -2946,7 +3057,12 @@ Ltac ssprove_valid' :=
           || match goal with
             | [ |- context[match ?x with | true => _ | false => _ end] ] =>
                 destruct x
-            end).
+            end
+          || match goal with
+            | [ |- context[match ?x with | Ok_type _ => _ | Err_type _ => _ end] ] =>
+                destruct x
+            end
+         || apply valid_ret).
 
 Ltac ssprove_valid'_2 :=
   destruct_choice_type_prod ;

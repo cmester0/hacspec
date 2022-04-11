@@ -1099,7 +1099,7 @@ fn translate_statements<'a>(
     };
     match s.0 {
         Statement::LetBinding((pat, _), typ, (expr, _), question_mark) => {
-            if question_mark {
+            if question_mark.is_some() {
                 make_error_returning_let_binding(
                     translate_pattern(pat.clone()),
                     typ.map(|(typ, _)| translate_typ(typ)),
@@ -1118,7 +1118,7 @@ fn translate_statements<'a>(
             }
         }
         Statement::Reassignment((x, _), (e1, _), question_mark) => {
-            if question_mark {
+            if question_mark.is_some() {
                 make_error_returning_let_binding(
                     translate_ident(x.clone()),
                     None,
@@ -1138,7 +1138,7 @@ fn translate_statements<'a>(
         }
         Statement::ArrayUpdate((x, _), (e1, _), (e2, _), question_mark, typ) => {
             let array_or_seq = array_or_seq(typ.unwrap(), top_ctx);
-            if question_mark {
+            if question_mark.is_some() {
                 let tmp_ident = Ident::Local(LocalIdent {
                     name: "tmp".to_string(),
                     id: fresh_codegen_id(),

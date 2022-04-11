@@ -626,17 +626,17 @@ fn resolve_item(
     let i = item.clone().item;
     let i = match i {
         Item::ConstDecl(id, typ, e) => {
-            let (smi_new_e, new_e) = resolve_expression(sess, e, &HashMap::new(), top_level_ctx)?;
+            let (_smi_new_e, new_e) = resolve_expression(sess, e, &HashMap::new(), top_level_ctx)?;
             Ok((Item::ConstDecl(id, typ, new_e), i_span))
         }
         Item::ArrayDecl(id, size, cell_t, index_typ) => {
-            let (smi_new_size, new_size) =
+            let (_smi_new_size, new_size) =
                 resolve_expression(sess, size, &HashMap::new(), top_level_ctx)?;
             Ok((Item::ArrayDecl(id, new_size, cell_t, index_typ), i_span))
         }
         Item::EnumDecl(_, _) | Item::AliasDecl(_, _) | Item::ImportedCrate(_) => Ok((i, i_span)),
         Item::NaturalIntegerDecl(typ_ident, secrecy, canvas_size, info) => {
-            let (smi_new_canvas_size, new_canvas_size) =
+            let (_smi_new_canvas_size, new_canvas_size) =
                 resolve_expression(sess, canvas_size, &HashMap::new(), top_level_ctx)?;
             Ok((
                 Item::NaturalIntegerDecl(typ_ident, secrecy, new_canvas_size, info),
@@ -978,21 +978,9 @@ pub fn resolve_crate<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
     for x in items.clone().into_iter() {
         match x.0.item {
             Item::FnDecl((f, _f_span), sig, _b) => {
-                // let mut mut_vars = Vec::new();
-                // for (f_dep, _) in sig.clone().function_dependencies {
-                //     match top_level_ctx.functions.get(&FnKey::Independent(f_dep.clone())) {
-                //         Some(FnValue::Local(sig_dep)) => {
-                //             mut_vars.extend(sig_dep.clone().mutable_vars);
-                //         }
-                //         _ => (),
-                //     }
-                // }
-                let mut new_sig = sig.clone();
-                // new_sig.mutable_vars.extend(mut_vars);
-
                 top_level_ctx.functions.insert(
                     FnKey::Independent(f.clone()),
-                    FnValue::Local(new_sig.clone()),
+                    FnValue::Local(sig.clone()),
                 );
             }
             _ => (),

@@ -522,7 +522,7 @@ fn sig_ret(sig: &FnValue) -> BaseTyp {
 fn sig_mut_vars(sig: &FnValue) -> ScopeMutableVars {
     match sig {
         FnValue::Local(sig) => sig.mutable_vars.clone(),
-        FnValue::External(sig) => ScopeMutableVars::new(),
+        FnValue::External(_) => ScopeMutableVars::new(),
         FnValue::ExternalNotInHacspec(_) => panic!("should not happen"),
     }
 }
@@ -2222,7 +2222,7 @@ fn typecheck_statement(
             
             let expr_typ = typecheck_question_mark(
                 sess,
-                *question_mark,
+                question_mark.clone().is_some(),
                 expr_typ,
                 return_typ,
                 expr.1.clone(),
@@ -2268,12 +2268,12 @@ fn typecheck_statement(
                 mut_vars.push((x, typ.clone().map(|t| t.0)));
             };
 
-            Ok((mut_vars,
+            Ok((mut_vars.clone(),
                 Statement::LetBinding(
                     (pat.clone(), pat_span.clone()),
                     typ.clone(),
                     (new_expr, expr.1.clone()),
-                    *question_mark,
+                    question_mark.clone().map(|_| mut_vars.clone()),
                 ),
                 ((Borrowing::Consumed, s_span), (BaseTyp::Unit, s_span)),
                 new_var_context.clone().union(pat_var_context),
@@ -2287,7 +2287,7 @@ fn typecheck_statement(
             mut_vars.extend(mut_vars_e);
             let e_typ = typecheck_question_mark(
                 sess,
-                *question_mark,
+                question_mark.clone().is_some(),
                 e_typ,
                 return_typ,
                 e.1.clone(),
@@ -2314,11 +2314,11 @@ fn typecheck_statement(
 
             mut_vars.push((x.clone(), Some (x_typ.clone())));
             
-            Ok((mut_vars,
+            Ok((mut_vars.clone(),
                 Statement::Reassignment(
                     (x.clone(), x_span.clone()),
                     (new_e, e.1.clone()),
-                    *question_mark,
+                    question_mark.clone().map(|_| mut_vars.clone()),
                 ),
                 ((Borrowing::Consumed, s_span), (BaseTyp::Unit, s_span)),
                 add_var(&x, &x_typ, &new_var_context),
@@ -2338,7 +2338,7 @@ fn typecheck_statement(
             mut_vars.extend(mut_vars_e2);
             let e2_t = typecheck_question_mark(
                 sess,
-                *question_mark,
+                question_mark.clone().is_some(),
                 e2_t,
                 return_typ,
                 e2.1.clone(),
@@ -2383,12 +2383,12 @@ fn typecheck_statement(
                 );
                 return Err(());
             };
-            Ok((mut_vars,
+            Ok((mut_vars.clone(),
                 Statement::ArrayUpdate(
                     (x.clone(), x_span.clone()),
                     (new_e1, e1.1.clone()),
                     (new_e2, e2.1.clone()),
-                    *question_mark,
+                    question_mark.clone().map(|_| mut_vars.clone()),
                     Some(x_typ),
                 ),
                 ((Borrowing::Consumed, s_span), (BaseTyp::Unit, s_span)),
@@ -2654,7 +2654,7 @@ fn typecheck_block(
         .retain(|mut_var| original_var_context.contains_key(&mut_var.id));
     let mut_tuple = var_set_to_tuple(&mutated_vars, &b_span);
     let contains_question_mark = Some(new_stmts.iter().any(|s| match s {
-        (Statement::Reassignment(_, _, true), _) | (Statement::LetBinding(_, _, _, true), _) => {
+        (Statement::Reassignment(_, _, Some(_)), _) | (Statement::LetBinding(_, _, _, Some(_)), _) => {
             true
         }
         (Statement::Conditional(_, then_b, else_b, _), _) => {
@@ -2697,7 +2697,7 @@ fn typecheck_item(
     let i = match &i {
         Item::NaturalIntegerDecl(typ_ident, secrecy, canvas_size, info) => {
             let canvas_size_span = canvas_size.1.clone();
-            let (mut_vars_canvas_size, new_canvas_size, canvas_size_typ, _) =
+            let (_mut_vars_canvas_size, new_canvas_size, canvas_size_typ, _) =
                 typecheck_expression(sess, canvas_size, top_level_context, &HashMap::new())?;
             if let None = unify_types(
                 sess,
@@ -2778,7 +2778,7 @@ fn typecheck_item(
             Ok(out)
         }
         Item::ArrayDecl(id, size, cell_t, index_typ) => {
-            let (mut_vars_size, new_size, size_typ, _) =
+            let (_mut_vars_size, new_size, size_typ, _) =
                 typecheck_expression(sess, size, top_level_context, &HashMap::new())?;
             if let None = unify_types(
                 sess,
@@ -2808,7 +2808,7 @@ fn typecheck_item(
             ))
         }
         Item::ConstDecl(id, typ, e) => {
-            let (mut_vars_e, new_e, new_t, _) =
+            let (_mut_vars_e, new_e, new_t, _) =
                 typecheck_expression(sess, e, top_level_context, &HashMap::new())?;
             if let None = unify_types(
                 sess,

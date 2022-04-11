@@ -1,9 +1,9 @@
 use core::cmp::PartialEq;
 use core::hash::Hash;
-use im::{HashMap, HashSet};
+use im::{HashSet};
 use itertools::Itertools;
 use rustc_span::{MultiSpan, Span};
-use serde::{ser::SerializeMap, ser::SerializeSeq, Serialize, Serializer};
+use serde::{ser::SerializeSeq, Serialize, Serializer};
 use std::fmt;
 
 #[derive(Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Debug, Copy)]
@@ -403,15 +403,15 @@ pub type Fillable<T> = Option<T>;
 #[derive(Clone, Serialize, Debug)]
 pub enum Statement {
     LetBinding(
-        Spanned<Pattern>,     // Let-binded pattern
-        Option<Spanned<Typ>>, // Typ of the binded expr
-        Spanned<Expression>,  // Binded expr
-        bool,                 // Presence of a question mark at the end
+        Spanned<Pattern>,           // Let-binded pattern
+        Option<Spanned<Typ>>,       // Typ of the binded expr
+        Spanned<Expression>,        // Binded expr
+        Option<ScopeMutableVars>, // Presence of a question mark at the end
     ),
     Reassignment(
-        Spanned<Ident>,      // Variable reassigned
-        Spanned<Expression>, // New value
-        bool,                // Presence of a question mark at the end
+        Spanned<Ident>,             // Variable reassigned
+        Spanned<Expression>,        // New value
+        Option<ScopeMutableVars>, // Presence of a question mark at the end
     ),
     Conditional(
         Spanned<Expression>,        // Condition
@@ -426,11 +426,11 @@ pub enum Statement {
         Spanned<Block>,         // Loop body
     ),
     ArrayUpdate(
-        Spanned<Ident>,      // Array variable
-        Spanned<Expression>, // Index value
-        Spanned<Expression>, // Cell value
-        bool,                // Presence of a question mark at the end of the cell value expression
-        Fillable<Typ>,       // Type of the array
+        Spanned<Ident>,             // Array variable
+        Spanned<Expression>,        // Index value
+        Spanned<Expression>,        // Cell value
+        Option<ScopeMutableVars>, // Presence of a question mark at the end of the cell value expression
+        Fillable<Typ>,              // Type of the array
     ),
     ReturnExp(Expression, Fillable<Typ>),
 }

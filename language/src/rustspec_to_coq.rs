@@ -32,7 +32,7 @@ lazy_static! {
     static ref ID_MAP: Mutex<HashMap<usize, usize>> = Mutex::new(HashMap::new());
 }
 
-fn make_get_binding<'a>(pat: RcDoc<'a, ()>) -> RcDoc<'a, ()> {
+fn make_get_binding<'a>(pat: RcDoc<'a, ()>, typ: Option<RcDoc<'a, ()>>) -> RcDoc<'a, ()> {
     pat.clone()
         .append(RcDoc::space())
         .append(RcDoc::as_string("←"))
@@ -42,9 +42,19 @@ fn make_get_binding<'a>(pat: RcDoc<'a, ()>) -> RcDoc<'a, ()> {
         .append(pat.clone().append(RcDoc::as_string("_loc")).group())
         .append(RcDoc::space())
         .append(RcDoc::as_string(";;"))
+        .append(RcDoc::line())
+        .append(if let Some(_) = typ.clone() {
+            make_let_binding(pat.clone(), typ.clone(), pat.clone(), false, false)
+        } else {
+            RcDoc::nil()
+        })
 }
 
-fn make_put_binding<'a>(pat: RcDoc<'a, ()>, expr: RcDoc<'a, ()>) -> RcDoc<'a, ()> {
+fn make_put_binding<'a>(
+    pat: RcDoc<'a, ()>,
+    typ: Option<RcDoc<'a, ()>>,
+    expr: RcDoc<'a, ()>,
+) -> RcDoc<'a, ()> {
     RcDoc::as_string("#put")
         .append(RcDoc::space())
         .append(pat.clone().append(RcDoc::as_string("_loc")).group())
@@ -56,7 +66,7 @@ fn make_put_binding<'a>(pat: RcDoc<'a, ()>, expr: RcDoc<'a, ()>) -> RcDoc<'a, ()
         .append(RcDoc::space())
         .append(RcDoc::as_string(";;"))
         .append(RcDoc::line())
-        .append(make_get_binding(pat))
+        .append(make_get_binding(pat, typ))
 }
 
 fn make_let_binding<'a>(
@@ -98,7 +108,19 @@ fn make_let_binding<'a>(
         RcDoc::as_string(":=")
     })
     .group()
-    .append(RcDoc::line().append(make_paren(expr.group())))
+    .append(RcDoc::line().append(make_paren(
+        expr.group(), // .append(if do_bind {
+                      //     match typ.clone() {
+                      //         None => RcDoc::nil(),
+                      //         Some(tau) => RcDoc::space()
+                      //             .append(RcDoc::as_string(": code _ _"))
+                      //             .append(RcDoc::space())
+                      //             .append(make_paren(tau)),
+                      //     }
+                      // } else {
+                      //     RcDoc::nil()
+                      // })
+    )))
     .nest(2)
     .append(if toplevel {
         RcDoc::as_string(".")
@@ -120,6 +142,62 @@ fn make_let_binding<'a>(
     } else {
         RcDoc::nil()
     })
+}
+
+fn code_block_wrap<'a>(
+    expr: RcDoc<'a, ()>,
+    location_vars: Option<RcDoc<'a, ()>>,
+    result_typ: Option<RcDoc<'a, ()>>,
+) -> RcDoc<'a, ()> {
+    make_paren(
+        RcDoc::as_string("{code ")
+            .append(expr)
+            .append(" } ")
+            .append(RcDoc::as_string(":"))
+            .append(RcDoc::space())
+            .append(RcDoc::as_string("code "))
+            .append(match location_vars {
+                Some(a) => a,
+                None => RcDoc::as_string("_"),
+            })
+            .append(RcDoc::as_string(" [interface] "))
+            .append(match result_typ {
+                Some(a) => a,
+                None => RcDoc::as_string("_"),
+            }),
+    )
+}
+
+fn bind_code<'a>(
+    expr: RcDoc<'a, ()>,
+    typ: Option<RcDoc<'a, ()>>,
+    fun_pat: RcDoc<'a, ()>,
+    fun_body: RcDoc<'a, ()>,
+    smv: ScopeMutableVars,
+) -> RcDoc<'a, ()> {
+    let (local_vars, _location_definitions) = fset_and_locations(smv);
+
+    RcDoc::as_string("ChoiceEqualityMonad.bind_code (M := ")
+        .append(match typ {
+            Some(a) => a,
+            None => RcDoc::as_string("_"),
+        })
+        .append(RcDoc::as_string(")"))
+        .append(RcDoc::space())
+        .append(code_block_wrap(
+            RcDoc::as_string("@pkg_core_definition.ret ").append(expr),
+            None,
+            None,
+        ))
+        .append(RcDoc::space())
+        .append(make_paren(
+            RcDoc::as_string("fun")
+                .append(RcDoc::space())
+                .append(fun_pat)
+                .append(RcDoc::as_string(" =>"))
+                .append(RcDoc::softline())
+                .append(code_block_wrap(fun_body, Some(local_vars), None)),
+        ))
 }
 
 fn make_uint_size_coercion<'a>(pat: RcDoc<'a, ()>) -> RcDoc<'a, ()> {
@@ -492,16 +570,16 @@ fn translate_binop<'a, 'b>(
             ))
         }
         (BinOpKind::Sub, BaseTyp::Usize) | (BinOpKind::Sub, BaseTyp::Isize) => {
-            RcDoc::as_string("-")
+            RcDoc::as_string(".-")
         }
         (BinOpKind::Add, BaseTyp::Usize) | (BinOpKind::Add, BaseTyp::Isize) => {
-            RcDoc::as_string("+")
+            RcDoc::as_string(".+")
         }
         (BinOpKind::Mul, BaseTyp::Usize) | (BinOpKind::Mul, BaseTyp::Isize) => {
-            RcDoc::as_string("*")
+            RcDoc::as_string(".*")
         }
         (BinOpKind::Div, BaseTyp::Usize) | (BinOpKind::Div, BaseTyp::Isize) => {
-            RcDoc::as_string("/")
+            RcDoc::as_string("./")
         }
         (BinOpKind::Rem, BaseTyp::Usize) | (BinOpKind::Rem, BaseTyp::Isize) => {
             RcDoc::as_string("%%")
@@ -610,6 +688,7 @@ fn translate_func_name<'a>(
     top_ctx: &'a TopLevelContext,
     mut args: Vec<RcDoc<'a, ()>>,
     args_ty: Vec<BaseTyp>,
+    inline: bool,
 ) -> (
     RcDoc<'a, ()>,
     Vec<RcDoc<'a, ()>>,
@@ -627,7 +706,7 @@ fn translate_func_name<'a>(
                 // TODO: may need to add type annotation here
                 x @ ("uint128" | "uint64" | "uint32" | "uint16" | "uint8" | "int128" | "int64"
                 | "int32" | "int16" | "int8") => (
-                    RcDoc::as_string("secret"),
+                    RcDoc::as_string(if inline { "secret_pure" } else { "secret" }),
                     vec![],
                     Some(match x {
                         "uint128" => BaseTyp::UInt128,
@@ -792,7 +871,7 @@ fn translate_func_name<'a>(
                         _ => args_ty[position].clone(),
                     };
 
-                    if let BaseTyp::Array(_ , base_ty) = ty {
+                    if let BaseTyp::Array(_, base_ty) = ty {
                         let codegen_id: usize = {
                             let c_id = fresh_codegen_id();
                             // id_map.insert(id, c_id); // TODO: should this be inserted? (no need)
@@ -808,7 +887,7 @@ fn translate_func_name<'a>(
                                 .append(args[position].clone())
                                 .append(RcDoc::as_string(")")),
                             false,
-                            true,
+                            !inline,
                         );
                         args_ass.push(temp_ass);
 
@@ -863,14 +942,15 @@ fn translate_func_name<'a>(
 fn translate_expression<'a>(
     e: Expression,
     top_ctx: &'a TopLevelContext,
+    inline: bool,
 ) -> (Vec<RcDoc<'a, ()>>, RcDoc<'a, ()>) {
     match e {
         Expression::Binary((op, _), e1, e2, op_typ) => {
             let e1 = e1.0;
             let e2 = e2.0;
 
-            let (ass_e1, trans_e1) = translate_expression(e1, top_ctx);
-            let (ass_e2, trans_e2) = translate_expression(e2, top_ctx);
+            let (ass_e1, trans_e1) = translate_expression(e1, top_ctx, inline);
+            let (ass_e2, trans_e2) = translate_expression(e2, top_ctx, inline);
 
             let mut ass = Vec::new();
             ass.extend(ass_e1);
@@ -888,12 +968,12 @@ fn translate_expression<'a>(
         }
         //todo
         Expression::MatchWith(arg, arms) => {
-            let (ass_arg_0, trans_arg_0) = translate_expression(arg.0, top_ctx);
+            let (ass_arg_0, trans_arg_0) = translate_expression(arg.0, top_ctx, inline);
 
             let (ass_e1_0_iter, trans_e1_0_iter): (Vec<_>, Vec<_>) = arms
                 .into_iter()
                 .map(|(enum_name, case_name, payload, e1)| {
-                    let (ass_e1, trans_e1) = translate_expression(e1.0, top_ctx);
+                    let (ass_e1, trans_e1) = translate_expression(e1.0, top_ctx, inline);
                     (ass_e1, (enum_name, case_name, payload, trans_e1))
                 })
                 .unzip();
@@ -945,7 +1025,7 @@ fn translate_expression<'a>(
             let (ass, trans) = match payload {
                 None => (Vec::new(), RcDoc::nil()),
                 Some(payload) => {
-                    let (ass, trans) = translate_expression(*payload.0.clone(), top_ctx);
+                    let (ass, trans) = translate_expression(*payload.0.clone(), top_ctx, inline);
                     (ass, RcDoc::space().append(make_paren(trans)))
                 }
             };
@@ -961,9 +1041,9 @@ fn translate_expression<'a>(
             let e_t = e_t.0;
             let e_f = e_f.0;
 
-            let (ass_cond, trans_cond) = translate_expression(cond, top_ctx);
-            let (ass_e_t, trans_e_t) = translate_expression(e_t, top_ctx);
-            let (ass_e_f, trans_e_f) = translate_expression(e_f, top_ctx);
+            let (ass_cond, trans_cond) = translate_expression(cond, top_ctx, inline);
+            let (ass_e_t, trans_e_t) = translate_expression(e_t, top_ctx, inline);
+            let (ass_e_f, trans_e_f) = translate_expression(e_f, top_ctx, inline);
 
             let mut ass = Vec::new();
             ass.extend(ass_cond);
@@ -992,7 +1072,7 @@ fn translate_expression<'a>(
         Expression::Unary(op, e1, op_typ) => {
             let e1 = e1.0;
 
-            let (ass, trans) = translate_expression(e1, top_ctx);
+            let (ass, trans) = translate_expression(e1, top_ctx, inline);
 
             (
                 ass,
@@ -1007,7 +1087,7 @@ fn translate_expression<'a>(
             let (ass_iter, trans_iter): (Vec<_>, Vec<_>) = es
                 .into_iter()
                 .map(|(e, _)| {
-                    let (ass, trans) = translate_expression(e, top_ctx);
+                    let (ass, trans) = translate_expression(e, top_ctx, inline);
                     (ass, trans)
                 })
                 .unzip();
@@ -1026,7 +1106,7 @@ fn translate_expression<'a>(
                 .clone()
                 .into_iter()
                 .map(|((arg, _), _)| {
-                    let (ass, trans) = translate_expression(arg, top_ctx);
+                    let (ass, trans) = translate_expression(arg, top_ctx, inline);
                     (ass, trans)
                 })
                 .unzip();
@@ -1038,6 +1118,7 @@ fn translate_expression<'a>(
                     top_ctx,
                     trans_arg_iter,
                     arg_types.unwrap(),
+                    inline,
                 );
             let total_args = args.len() + additional_args.len();
 
@@ -1082,19 +1163,20 @@ fn translate_expression<'a>(
                 },
                 fun_expr,
                 false,
-                true,
+                !inline,
             );
             ass.push(temp_ass);
 
             (ass, temp_name)
         }
         Expression::MethodCall(sel_arg, sel_typ, (f, _), args, arg_types) => {
-            let (ass_sel_arg_0_0, trans_sel_arg_0_0) = translate_expression((sel_arg.0).0, top_ctx);
+            let (ass_sel_arg_0_0, trans_sel_arg_0_0) =
+                translate_expression((sel_arg.0).0, top_ctx, inline);
 
             let (ass_arg_iter, trans_arg_iter): (Vec<_>, Vec<_>) = args
                 .into_iter()
                 .map(|((arg, _), _)| {
-                    let (ass, trans) = translate_expression(arg, top_ctx);
+                    let (ass, trans) = translate_expression(arg, top_ctx, inline);
                     (ass, trans)
                 })
                 .unzip();
@@ -1108,26 +1190,22 @@ fn translate_expression<'a>(
             ass.extend(ass_sel_arg_0_0);
             ass.extend(ass_arg);
 
-            let (func_name, additional_args, func_ret_ty, (args_ass, trans_arg_iter)) =
+            let (func_name, additional_args, func_ret_ty, (trans_args_ass, trans_arg_iter)) =
                 translate_func_name(
                     sel_typ.clone().map(|x| x.1),
                     Ident::TopLevel(f.clone()),
                     top_ctx,
                     trans_arg_iter,
                     arg_types.unwrap(),
+                    inline,
                 );
 
-            ass.extend(args_ass);
-
-            let trans_args: Vec<_> = trans_arg_iter
-                .into_iter()
-                .map(|trans_arg| RcDoc::space().append(make_paren(trans_arg)))
-                .collect();
+            ass.extend(trans_args_ass);
 
             let arg_trans = // Then the self argument
                     make_paren(trans_sel_arg_0_0)
                         // And finally the rest of the arguments
-                        .append(RcDoc::concat(trans_args.into_iter().map(
+                        .append(RcDoc::concat(trans_arg_iter.into_iter().map(
                         |trans_arg| {
                             RcDoc::space().append(make_paren(trans_arg))
                         },
@@ -1165,7 +1243,7 @@ fn translate_expression<'a>(
                     },
                     method_call_expr,
                     false,
-                    true,
+                    !inline,
                 );
                 ass.push(temp_ass);
 
@@ -1176,7 +1254,7 @@ fn translate_expression<'a>(
             let e2 = e2.0;
             let array_or_seq = array_or_seq(typ.unwrap(), top_ctx);
 
-            let (ass_e2, trans_e2) = translate_expression(e2, top_ctx);
+            let (ass_e2, trans_e2) = translate_expression(e2, top_ctx, inline);
 
             (
                 ass_e2,
@@ -1196,7 +1274,7 @@ fn translate_expression<'a>(
             let (ass_iter, trans_iter): (Vec<_>, Vec<_>) = args
                 .into_iter()
                 .map(|(e, _)| {
-                    let (ass, trans) = translate_expression(e.clone(), top_ctx);
+                    let (ass, trans) = translate_expression(e.clone(), top_ctx, inline);
                     (ass, trans)
                 })
                 .unzip();
@@ -1247,7 +1325,7 @@ fn translate_expression<'a>(
                         BaseTyp::Isize => RcDoc::as_string("isize"),
                         _ => panic!(), // should not happen
                     };
-                    let (ass_x, trans_x) = translate_expression(x.0.clone(), top_ctx);
+                    let (ass_x, trans_x) = translate_expression(x.0.clone(), top_ctx, inline);
                     (
                         ass_x,
                         new_t_doc.append(RcDoc::space()).append(make_paren(trans_x)),
@@ -1274,7 +1352,8 @@ fn translate_expression<'a>(
                         BaseTyp::Named(_, _) => true,
                         _ => false,
                     };
-                    let (ass_x, trans_x) = translate_expression(x.as_ref().0.clone(), top_ctx);
+                    let (ass_x, trans_x) =
+                        translate_expression(x.as_ref().0.clone(), top_ctx, inline);
                     (
                         ass_x,
                         RcDoc::as_string("@cast _")
@@ -1323,50 +1402,52 @@ fn array_or_seq<'a>(t: Typ, top_ctxt: &'a TopLevelContext) -> RcDoc<'a, ()> {
 fn add_ok_if_result(
     stmt: Statement,
     early_return_type: Fillable<EarlyReturnType>,
-    question_mark: bool,
+    question_mark: Option<ScopeMutableVars>,
 ) -> Spanned<Statement> {
     (
         match early_return_type {
             Some(ert) => {
-                if question_mark {
+                match question_mark {
+                    Some(_) =>
                     // If b has an early return, then we must prefix the returned
                     // mutated variables by Ok or Some
-                    match stmt {
-                        Statement::ReturnExp(e, t) => Statement::ReturnExp(
-                            Expression::EnumInject(
-                                BaseTyp::Named(
+                    {
+                        match stmt {
+                            Statement::ReturnExp(e, t) => Statement::ReturnExp(
+                                Expression::EnumInject(
+                                    BaseTyp::Named(
+                                        (
+                                            TopLevelIdent {
+                                                string: match ert {
+                                                    EarlyReturnType::Option => "Option",
+                                                    EarlyReturnType::Result => "Result",
+                                                }
+                                                .to_string(),
+                                                kind: TopLevelIdentKind::Type,
+                                            },
+                                            DUMMY_SP.into(),
+                                        ),
+                                        None,
+                                    ),
                                     (
                                         TopLevelIdent {
                                             string: match ert {
-                                                EarlyReturnType::Option => "Option",
-                                                EarlyReturnType::Result => "Result",
+                                                EarlyReturnType::Option => "Some",
+                                                EarlyReturnType::Result => "Ok",
                                             }
                                             .to_string(),
-                                            kind: TopLevelIdentKind::Type,
+                                            kind: TopLevelIdentKind::EnumConstructor,
                                         },
                                         DUMMY_SP.into(),
                                     ),
-                                    None,
+                                    Some((Box::new(e.clone()), DUMMY_SP.into())),
                                 ),
-                                (
-                                    TopLevelIdent {
-                                        string: match ert {
-                                            EarlyReturnType::Option => "Some",
-                                            EarlyReturnType::Result => "Ok",
-                                        }
-                                        .to_string(),
-                                        kind: TopLevelIdentKind::EnumConstructor,
-                                    },
-                                    DUMMY_SP.into(),
-                                ),
-                                Some((Box::new(e.clone()), DUMMY_SP.into())),
-                            ),
-                            t,
-                        ), // todo typing info
-                        _ => panic!("should not happen"),
+                                t,
+                            ), // todo typing info
+                            _ => panic!("should not happen"),
+                        }
                     }
-                } else {
-                    stmt.clone()
+                    None => stmt.clone(),
                 }
             }
             _ => stmt.clone(),
@@ -1378,6 +1459,7 @@ fn add_ok_if_result(
 fn translate_statements<'a>(
     mut statements: Iter<Spanned<Statement>>,
     top_ctx: &'a TopLevelContext,
+    inline: bool,
 ) -> RcDoc<'a, ()> {
     let s = match statements.next() {
         None => return RcDoc::nil(),
@@ -1385,33 +1467,32 @@ fn translate_statements<'a>(
     };
     match s.0 {
         Statement::LetBinding((pat, _), typ, (expr, _), question_mark) => {
-            let (ass_expr, trans_expr) = translate_expression(expr.clone(), top_ctx);
-            let trans_stmt = translate_statements(statements, top_ctx);
+            let (ass_expr, trans_expr) = translate_expression(expr.clone(), top_ctx, inline);
+            let trans_stmt = translate_statements(statements, top_ctx, inline);
 
-            let expr = if question_mark {
-                RcDoc::as_string("bind ")
-                    .append(make_paren(trans_expr))
-                    .append(RcDoc::space())
-                    .append(make_paren(
-                        RcDoc::as_string("fun")
-                            .append(RcDoc::space())
-                            .append(match pat.clone() {
-                                Pattern::SingleCaseEnum(_, _) => RcDoc::as_string("'"),
-                                _ => RcDoc::nil(),
-                            })
-                            .append(translate_pattern_tick(pat.clone()))
-                            .append(RcDoc::as_string(" =>"))
-                            .append(RcDoc::softline())
-                            .append(trans_stmt),
-                    ))
-            } else {
-                if let Pattern::IdentPat(_i, true) = pat.clone() {
+            let expr = match question_mark {
+                Some(smv) => bind_code(
+                    trans_expr,
+                    None,
+                    match pat.clone() {
+                        Pattern::SingleCaseEnum(_, _) => RcDoc::as_string("'"),
+                        _ => RcDoc::nil(),
+                    }
+                    .append(translate_pattern_tick(pat.clone())),
+                    trans_stmt,
+                    smv,
+                ),
+                None => if let Pattern::IdentPat(_i, true) = pat.clone() {
                     make_put_binding(
                         match pat.clone() {
                             Pattern::SingleCaseEnum(_, _) => RcDoc::as_string("'"),
                             _ => RcDoc::nil(),
                         }
                         .append(translate_pattern_tick(pat.clone())),
+                        match pat.clone() {
+                            Pattern::SingleCaseEnum(_, _) | Pattern::Tuple(_) => None,
+                            _ => typ.map(|(typ, _)| translate_typ(typ)),
+                        },
                         trans_expr,
                     )
                 } else {
@@ -1430,8 +1511,7 @@ fn translate_statements<'a>(
                         false,
                     )
                 }
-                .append(RcDoc::hardline())
-                .append(trans_stmt)
+                .append(trans_stmt),
             };
 
             ass_expr
@@ -1442,29 +1522,16 @@ fn translate_statements<'a>(
         Statement::Reassignment((x, _), (e1, _), question_mark) =>
         //TODO: not yet handled
         {
-            let (ass_e1, trans_e1) = translate_expression(e1.clone(), top_ctx);
-            let trans_stmt = translate_statements(statements, top_ctx);
+            let (ass_e1, trans_e1) = translate_expression(e1.clone(), top_ctx, inline);
+            let trans_stmt = translate_statements(statements, top_ctx, inline);
 
-            let expr = if question_mark {
-                RcDoc::as_string("bind")
-                    .append(RcDoc::space())
-                    .append(make_paren(trans_e1))
-                    .append(RcDoc::space())
-                    .append(make_paren(
-                        RcDoc::as_string("fun")
-                            .append(RcDoc::space())
-                            .append(translate_ident(x.clone()))
-                            .append(RcDoc::space())
-                            .append(RcDoc::as_string(" =>"))
-                            .append(RcDoc::softline())
-                            .append(trans_stmt),
-                    ))
-            } else {
-                make_get_binding(translate_ident(x.clone()))
+            let expr = match question_mark {
+                Some(smv) => bind_code(trans_e1, None, translate_ident(x.clone()), trans_stmt, smv),
+                None => make_get_binding(translate_ident(x.clone()), None)
                     .append(RcDoc::line())
-                    .append(make_put_binding(translate_ident(x.clone()), trans_e1))
+                    .append(make_put_binding(translate_ident(x.clone()), None, trans_e1))
                     .append(RcDoc::hardline())
-                    .append(trans_stmt)
+                    .append(trans_stmt),
             };
 
             ass_e1
@@ -1473,60 +1540,55 @@ fn translate_statements<'a>(
                 .append(expr)
         }
         Statement::ArrayUpdate((x, _), (e1, _), (e2, _), question_mark, typ) => {
-            let array_or_seq = array_or_seq(typ.unwrap(), top_ctx);
-            let (ass_e1, trans_e1) = translate_expression(e1.clone(), top_ctx);
-            let (ass_e2, trans_e2) = translate_expression(e2.clone(), top_ctx);
+            let array_or_seq = array_or_seq(typ.clone().unwrap(), top_ctx);
+            let (ass_e1, trans_e1) = translate_expression(e1.clone(), top_ctx, inline);
+            let (ass_e2, trans_e2) = translate_expression(e2.clone(), top_ctx, inline);
 
-            let trans_stmt = translate_statements(statements, top_ctx);
+            let trans_stmt = translate_statements(statements, top_ctx, inline);
 
-            let expr = if question_mark {
-                RcDoc::as_string("bind")
-                    .append(RcDoc::space())
-                    .append(make_paren(trans_e2))
-                    .append(RcDoc::space())
-                    .append(make_paren(
-                        RcDoc::as_string("fun")
-                            .append(RcDoc::space())
-                            .append(RcDoc::as_string("_temp"))
-                            .append(RcDoc::space())
-                            .append(RcDoc::as_string("=>"))
-                            .append(RcDoc::softline())
-                            .append(make_let_binding(
-                                translate_ident(x.clone()),
-                                None,
-                                array_or_seq
-                                    .append(RcDoc::as_string("_upd"))
-                                    .append(RcDoc::space())
-                                    .append(translate_ident(x.clone()))
-                                    .append(RcDoc::space())
-                                    .append(make_paren(trans_e1))
-                                    .append(RcDoc::space())
-                                    .append(RcDoc::as_string("_temp")),
-                                false,
-                                false,
-                            ))
-                            .append(RcDoc::hardline())
-                            .append(trans_stmt),
-                    ))
-            } else {
-                let array_upd_payload = array_or_seq
-                    .append(RcDoc::as_string("_upd"))
-                    .append(RcDoc::space())
-                    .append(translate_ident(x.clone()))
-                    .append(RcDoc::space())
-                    .append(make_paren(trans_e1))
-                    .append(RcDoc::space())
-                    .append(make_paren(trans_e2));
-
-                make_let_binding(
-                    translate_ident(x.clone()),
+            let expr = match question_mark {
+                Some(smv) => bind_code(
+                    trans_e2,
                     None,
-                    array_upd_payload,
-                    false,
-                    false,
-                )
-                .append(RcDoc::hardline())
-                .append(trans_stmt)
+                    RcDoc::as_string("_temp"),
+                    make_let_binding(
+                        translate_ident(x.clone()),
+                        None,
+                        array_or_seq
+                            .append(RcDoc::as_string("_upd"))
+                            .append(RcDoc::space())
+                            .append(translate_ident(x.clone()))
+                            .append(RcDoc::space())
+                            .append(make_paren(trans_e1))
+                            .append(RcDoc::space())
+                            .append(RcDoc::as_string("_temp")),
+                        false,
+                        false,
+                    )
+                    .append(RcDoc::hardline())
+                    .append(trans_stmt),
+                    smv,
+                ),
+                None => {
+                    let array_upd_payload = array_or_seq
+                        .append(RcDoc::as_string("_upd"))
+                        .append(RcDoc::space())
+                        .append(translate_ident(x.clone()))
+                        .append(RcDoc::space())
+                        .append(make_paren(trans_e1))
+                        .append(RcDoc::space())
+                        .append(make_paren(trans_e2));
+
+                    make_let_binding(
+                        translate_ident(x.clone()),
+                        typ.clone().map(|(_, (x, _))| translate_base_typ(x)),
+                        array_upd_payload,
+                        false,
+                        !inline,
+                    )
+                    .append(RcDoc::hardline())
+                    .append(trans_stmt)
+                }
             };
 
             (ass_e1.into_iter().fold(RcDoc::nil(), |rc, x| rc.append(x)))
@@ -1535,7 +1597,7 @@ fn translate_statements<'a>(
         }
 
         Statement::ReturnExp(e1, t1) => {
-            let (ass_e1, trans_e1) = translate_expression(e1.clone(), top_ctx);
+            let (ass_e1, trans_e1) = translate_expression(e1.clone(), top_ctx, inline);
 
             ass_e1
                 .into_iter()
@@ -1568,17 +1630,18 @@ fn translate_statements<'a>(
             b1.stmts.push(add_ok_if_result(
                 mutated_info.stmt.clone(),
                 mutated_info.early_return_type.clone(),
-                b1_question_mark,
+                if b1_question_mark { Some(b1.mutable_vars.clone()) } else { None },
             ));
 
-            let (ass_cond, trans_cond) = translate_expression(cond.clone(), top_ctx);
-            let block_1 = translate_block(b1.clone(), true, top_ctx);
+            let (ass_cond, trans_cond) = translate_expression(cond.clone(), top_ctx, inline);
+            let block_1 = translate_block(b1.clone(), true, top_ctx, inline);
 
             let else_expr = match b2.clone() {
                 None => {
                     let trans_stmt = translate_statements(
                         [(mutated_info.stmt.clone(), DUMMY_SP.into())].iter(),
                         top_ctx,
+                        inline,
                     );
                     RcDoc::space().append(make_paren(trans_stmt))
                 }
@@ -1586,16 +1649,16 @@ fn translate_statements<'a>(
                     b2.stmts.push(add_ok_if_result(
                         mutated_info.stmt.clone(),
                         mutated_info.early_return_type.clone(),
-                        b2_question_mark,
+                        if b2_question_mark { Some(b2.mutable_vars.clone()) } else { None },
                     ));
 
-                    let block2_expr = translate_block(b2, true, top_ctx);
+                    let block2_expr = translate_block(b2, true, top_ctx, inline);
 
                     RcDoc::space().append(make_paren(block2_expr))
                 }
             };
 
-            let trans_stmt = translate_statements(statements.clone(), top_ctx);
+            let trans_stmt = translate_statements(statements.clone(), top_ctx, inline);
 
             let either_expr = if either_blocks_contains_question_mark {
                 RcDoc::as_string("ifbnd")
@@ -1645,7 +1708,7 @@ fn translate_statements<'a>(
                     .append(RcDoc::as_string("else"))
                     .append(else_expr);
 
-                make_let_binding(pat, None, expr, false, true)
+                make_let_binding(pat, None, expr, false, !inline)
                     .append(RcDoc::hardline())
                     .append(trans_stmt)
             };
@@ -1662,7 +1725,7 @@ fn translate_statements<'a>(
             b.stmts.push(add_ok_if_result(
                 mutated_info.stmt.clone(),
                 mutated_info.early_return_type.clone(),
-                b_question_mark,
+                if b_question_mark { Some(b.mutable_vars.clone()) } else { None },
             ));
 
             let mut_tuple = |prefix: String| -> RcDoc<'a> {
@@ -1687,11 +1750,11 @@ fn translate_statements<'a>(
             };
 
             // TODO: Add ass_e1 and ass_e2 correctly to loop expression !
-            let (ass_e1, trans_e1) = translate_expression(e1.clone(), top_ctx);
-            let (ass_e2, trans_e2) = translate_expression(e2.clone(), top_ctx);
+            let (ass_e1, trans_e1) = translate_expression(e1.clone(), top_ctx, inline);
+            let (ass_e2, trans_e2) = translate_expression(e2.clone(), top_ctx, inline);
 
-            let block_expr = translate_block(b, true, top_ctx);
-            let trans_stmt = translate_statements(statements, top_ctx);
+            let block_expr = translate_block(b.clone(), true, top_ctx, inline);
+            let trans_stmt = translate_statements(statements, top_ctx, inline);
 
             let expr = if b_question_mark {
                 let loop_expr = RcDoc::as_string("foldibnd")
@@ -1720,23 +1783,17 @@ fn translate_statements<'a>(
                     .append(block_expr)
                     .append(RcDoc::as_string(")"));
 
-                RcDoc::as_string("bind")
-                    .append(RcDoc::space())
-                    .append(make_paren(loop_expr))
-                    .append(RcDoc::space())
-                    .append(make_paren(
-                        RcDoc::as_string("fun")
-                            .append(RcDoc::space())
-                            .append(if mutated_info.vars.0.iter().len() == 0 {
-                                RcDoc::as_string("_")
-                            } else {
-                                mut_tuple("'".to_string()).clone()
-                            }) // TODO: Issue here with patterns (eg. 'tt)
-                            .append(RcDoc::space())
-                            .append(RcDoc::as_string("=>"))
-                            .append(RcDoc::softline())
-                            .append(trans_stmt),
-                    ))
+                bind_code(
+                    loop_expr,
+                    None,
+                    if mutated_info.vars.0.iter().len() == 0 {
+                        RcDoc::as_string("_")
+                    } else {
+                        mut_tuple("'".to_string()).clone()
+                    }, // TODO: Issue here with patterns (eg. 'tt)
+                    trans_stmt,
+                    b.mutable_vars,
+                )
             } else {
                 let loop_expr = RcDoc::as_string("foldi")
                     .append(RcDoc::space())
@@ -1762,12 +1819,16 @@ fn translate_statements<'a>(
                     .append(RcDoc::line())
                     .append(mut_tuple("".to_string()).clone());
 
-                make_let_binding(mut_tuple("'".to_string()), None, loop_expr, false, true)
+                make_let_binding(mut_tuple("'".to_string()), None, loop_expr, false, !inline)
                     .append(RcDoc::hardline())
                     .append(trans_stmt)
             };
 
-            expr
+            ass_e1
+                .into_iter()
+                .fold(RcDoc::nil(), |rc, x| rc.append(x))
+                .append(ass_e2.into_iter().fold(RcDoc::nil(), |rc, x| rc.append(x)))
+                .append(expr)
         }
     }
     // .group()
@@ -1799,17 +1860,15 @@ fn fset_and_locations<'a>(smvars: ScopeMutableVars) -> (RcDoc<'a, ()>, RcDoc<'a,
                     make_let_binding(
                         translate_ident(i.clone()).append("_loc"),
                         Some(RcDoc::as_string("Location")),
-                        RcDoc::as_string("@ct")
-                            .append(RcDoc::space())
-                            .append(match typ {
-                                Some(typ) => translate_typ(typ),
-                                None => RcDoc::as_string("_"),
-                            })
-                            .append(RcDoc::space())
-                            .append(RcDoc::as_string(";"))
-                            .append(RcDoc::space())
-                            .append(RcDoc::as_string(fresh_codegen_id()))
-                            .append(RcDoc::as_string("%nat")),
+                        match typ {
+                            Some(typ) => translate_typ(typ),
+                            None => RcDoc::as_string("_"),
+                        }
+                        .append(RcDoc::space())
+                        .append(RcDoc::as_string(": choice_type ;"))
+                        .append(RcDoc::space())
+                        .append(RcDoc::as_string(fresh_codegen_id()))
+                        .append(RcDoc::as_string("%nat")),
                         true,
                         false,
                     )
@@ -1824,6 +1883,7 @@ fn translate_block<'a>(
     b: Block,
     omit_extra_unit: bool,
     top_ctx: &'a TopLevelContext,
+    inline: bool,
 ) -> RcDoc<'a, ()> {
     let mut statements = b.stmts;
     match (&b.return_typ, omit_extra_unit) {
@@ -1837,7 +1897,7 @@ fn translate_block<'a>(
         (Some(_), _) => (),
     }
 
-    let trans_stmt = translate_statements(statements.iter(), top_ctx);
+    let trans_stmt = translate_statements(statements.iter(), top_ctx, inline);
     let (local_vars, _location_definitions) = fset_and_locations(b.mutable_vars);
 
     RcDoc::as_string("{code")
@@ -1860,7 +1920,7 @@ fn translate_item<'a>(
 ) -> RcDoc<'a, ()> {
     match &item.item {
         Item::FnDecl((f, _), sig, (b, _)) => {
-            let block_exprs = translate_block(b.clone(), false, top_ctx);
+            let block_exprs = translate_block(b.clone(), false, top_ctx, false);
             let (block_vars, block_var_loc_defs) = fset_and_locations(sig.mutable_vars.clone());
 
             block_var_loc_defs
@@ -2223,14 +2283,15 @@ fn translate_item<'a>(
                  RcDoc::nil()
             }),
         Item::ArrayDecl(name, size, cell_t, index_typ) => {
-            let (ass_size_0, trans_size_0) = translate_expression(size.0.clone(), top_ctx);
+            let (ass_size_0, trans_size_0) = translate_expression(size.0.clone(), top_ctx, false);
             RcDoc::as_string("Definition")
             .append(RcDoc::space())
             .append(translate_ident(Ident::TopLevel(name.0.clone())))
             .append(RcDoc::space())
             .append(RcDoc::as_string(":="))
             .group()
-            .append(
+                .append(ass_size_0.into_iter().fold(RcDoc::nil(), |rc, x| rc.append(x)))
+                .append(
                 RcDoc::line()
                     .append(RcDoc::as_string("nseq"))
                     .append(RcDoc::space())
@@ -2261,13 +2322,33 @@ fn translate_item<'a>(
             })
         }
         Item::ConstDecl(name, ty, e) => {
-            let (ass_e_0, trans_e_0) = translate_expression(e.0.clone(), top_ctx);
+            let (ass_e_0, trans_e_0) = translate_expression(e.0.clone(), top_ctx, true);
             make_let_binding(
-            translate_ident(Ident::TopLevel(name.0.clone())),
-            Some(translate_base_typ(ty.0.clone())),
-            trans_e_0,
-            true,
-            false,
+                translate_ident(Ident::TopLevel(name.0.clone())),
+                Some(// RcDoc::as_string("code")
+                     // .append(RcDoc::space())
+                     // .append(RcDoc::as_string("fset.fset0"))
+                     // .append(RcDoc::space())
+                     // .append(RcDoc::as_string("[interface]"))
+                     // .append(RcDoc::space())
+                     // .append(make_paren(
+                     //     RcDoc::as_string("@ct")
+                     //         .append(RcDoc::space())
+                     //         .append(
+                     make_paren(translate_base_typ(ty.0.clone()))
+                     // )))
+                ),
+                // RcDoc::as_string("{code")
+                //     .append(RcDoc::line())
+                //     .append(
+                        ass_e_0.into_iter().fold(RcDoc::nil(), |rc, x| rc.append(x))// )
+                    // .append("pkg_core_definition.ret ")
+                    .append(make_paren(trans_e_0))
+                    // .append(RcDoc::line())
+                    // .append(RcDoc::as_string("}"))
+                    ,
+                true,
+                false,
             )
         },
         Item::NaturalIntegerDecl(nat_name, _secrecy, canvas_size, info) => {
@@ -2564,6 +2645,7 @@ pub fn translate_and_write_to_file(
          Require Import Hacspec_Lib.\n\
          From Coq Require Import ZArith.\n\
          Import List.ListNotations.\n\
+         Open Scope list_scope.\n\
          Open Scope Z_scope.\n\
          Open Scope bool_scope.\n\
          Open Scope hacspec_scope.\n\

@@ -1598,7 +1598,7 @@ fn translate_expr(
 }
 
 enum ExprTranslationResultMaybeQuestionMark {
-    TransExpr(Expression, bool), // true if ends with question mark
+    TransExpr(Expression, Option<ScopeMutableVars>), // true if ends with question mark
     TransStmt(Statement),
 }
 
@@ -1612,7 +1612,7 @@ fn translate_expr_accepts_question_mark(
             let (result, span) = translate_expr(sess, specials, &inner_e)?;
             match result {
                 ExprTranslationResult::TransExpr(e) => Ok((
-                    ExprTranslationResultMaybeQuestionMark::TransExpr(e, true),
+                    ExprTranslationResultMaybeQuestionMark::TransExpr(e, Some (ScopeMutableVars::new())),
                     span,
                 )),
                 ExprTranslationResult::TransStmt(_) => {
@@ -1629,7 +1629,7 @@ fn translate_expr_accepts_question_mark(
             let (result, span) = translate_expr(sess, specials, e)?;
             match result {
                 ExprTranslationResult::TransExpr(e) => Ok((
-                    ExprTranslationResultMaybeQuestionMark::TransExpr(e, false),
+                    ExprTranslationResultMaybeQuestionMark::TransExpr(e, None),
                     span,
                 )),
                 ExprTranslationResult::TransStmt(s) => {
