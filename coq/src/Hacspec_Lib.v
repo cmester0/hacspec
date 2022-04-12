@@ -248,6 +248,7 @@ Defined.
 Notation "A '× B" := (prod_ChoiceEquality A B) (at level 79, left associativity) : hacspec_scope.
 
 Program Instance nat_ChoiceEquality : ChoiceEquality := {| T := nat ; ct := 'nat |}.
+Program Instance bool_ChoiceEquality : ChoiceEquality := {| T := bool ; ct := 'bool |}.
 
 (*** Positive util *)
 
@@ -2375,6 +2376,417 @@ Next Obligation.
   reflexivity.
 Qed.
 
+Section Location.
+    Fixpoint Inb {A : Type} `{EqDec A} (a:A) (l:list A) : bool :=
+    match l with
+    | nil => false
+    | cons b m => (eqb b a) || Inb a m
+    end.
+  
+
+  Definition location_eqb (ℓ ℓ' : Location) :=
+    (eqb (ssrfun.tagged ℓ) (ssrfun.tagged ℓ')).
+  (* (@eqtype.eq_op *)
+  (* (@eqtype.tag_eqType choice_type_eqType *)
+  (*                     (fun _ : choice_type => ssrnat.nat_eqType)) ℓ ℓ'). *)
+
+  Axiom location_is_types : (forall l1 l2 : Location ,
+                                is_true (eqb (ssrfun.tagged l1) (ssrfun.tagged l2)) ->
+                                is_true (eqtype.eq_op (ssrfun.tag l1) (ssrfun.tag l2))).
+
+  Definition location_eqbP : forall (l1 l2 : Location),
+      eqb (ssrfun.tagged l1) (ssrfun.tagged l2)
+      = (@eqtype.eq_op
+           (@eqtype.tag_eqType choice_type_eqType
+                               (fun _ : choice_type => ssrnat.nat_eqType)) l1 l2).
+  Proof.
+    intros.
+    symmetry.
+    pose (location_is_types l1 l2).
+    destruct l1, l2.
+    unfold location_eqb.
+    cbn.
+    unfold eqtype.tag_eq.
+    unfold eqtype.tagged_as, ssrfun.tagged , ssrfun.tag , ".π1" , ".π2" in *.
+    
+    destruct (n =? n0) eqn:b.
+    - rewrite i by assumption.
+      destruct eqtype.eqP.
+      + cbn.
+        unfold eq_rect_r , eq_rect ; destruct eq_sym.      
+        assumption.
+      + rewrite eqtype.eq_refl.
+        reflexivity.
+    - destruct eqtype.eqP.
+      + cbn.
+        unfold eq_rect_r , eq_rect ; destruct eq_sym.      
+        assumption.
+      + rewrite eqtype.eq_refl.
+        reflexivity.
+  Qed.
+
+  Lemma location_eqb_sound : forall ℓ ℓ' : Location, is_true (location_eqb ℓ ℓ') <-> ℓ = ℓ'.
+  Proof.
+    intros.
+    unfold is_true.
+    replace (location_eqb ℓ ℓ' = true) with (true = location_eqb ℓ ℓ') by
+      (rewrite boolp.propeqE ; split ; symmetry ; assumption).
+    unfold location_eqb. rewrite location_eqbP.
+    split.
+    - symmetry ; apply lookup_hpv_r_obligation_1 ; assumption.
+    - intros ; subst. cbn. symmetry. rewrite eqtype.tag_eqE. apply eqtype.eq_refl.
+  Qed.
+
+  Global Program Instance location_eqdec: EqDec (Location) := {
+      eqb := location_eqb;
+      eqb_leibniz := location_eqb_sound;
+    }.
+
+  Definition location_ltb : Location -> Location -> bool :=
+    (fun l1 l2 : Location =>
+       let (_, n1) := l1 in
+       let (_, n2) := l2 in
+       ltb n1 n2).
+
+  Global Instance location_comparable : Comparable (Location) :=
+    eq_dec_lt_Comparable location_ltb.
+
+  Definition le_is_ord_leq : forall s s0 : nat_ordType,
+      eqtype.eq_op s s0 = false -> ltb s s0 = (s <= s0)%ord.
+  Proof.
+    intros s s0.
+    unfold ltb , nat_comparable , "<?".
+    intros e.
+    
+    generalize dependent s.
+    induction s0 ; intros.
+    * destruct s ; easy.
+    * destruct s. reflexivity.
+      (* unfold Nat.leb ; fold Nat.leb. *)
+      cbn.
+      cbn in IHs0.
+      rewrite IHs0.
+      reflexivity.
+      assumption.
+  Qed.
+Theorem is_true_split_or : forall a b, is_true (a || b) = (is_true a \/ is_true b).
+Proof.
+  intros.
+  rewrite boolp.propeqE.
+  symmetry.
+  apply (ssrbool.rwP ssrbool.orP).
+Qed.  
+Theorem is_true_split_and : forall a b, is_true (a && b) = (is_true a /\ is_true b).
+Proof.
+  intros.
+  rewrite boolp.propeqE.
+  symmetry.
+  apply (ssrbool.rwP ssrbool.andP).
+Qed.  
+  
+  
+
+    
+Theorem LocsSubset : (forall {A} (L1 L2 : list A) (a : A),
+     List.incl L1 L2 ->
+     List.In a L1 ->
+     List.In a L2).
+  intros.
+  induction L1 as [ | a0 L ] ; cbn in *.
+  - contradiction.
+  - destruct (List.incl_cons_inv H).
+    destruct H0.
+    + subst.
+      assumption.
+    + apply IHL ; assumption.
+Qed.
+Theorem in_bool_iff : forall {A : Type} `{EqDec A} (a:A) (l:list A), is_true (Inb a l) <-> List.In a l.
+  induction l ; cbn.
+  - rewrite boolp.falseE.
+    reflexivity.
+  - cbn.
+    rewrite is_true_split_or.    
+    apply ZifyClasses.or_morph.
+    apply eqb_leibniz.
+    apply IHl.
+Qed.
+
+Theorem loc_compute_b :
+  (forall l : (@sigT choice_type (fun _ : choice_type => nat)),
+    forall n : list (@sigT choice_type (fun _ : choice_type => nat)),
+      Inb l n = ssrbool.in_mem l (@ssrbool.mem _
+          (seq.seq_predType
+             (Ord.eqType
+                (@tag_ordType choice_type_ordType (fun _ : choice_type => nat_ordType))))
+          n)).
+  intros.
+  cbn.
+  unfold ssrbool.in_mem.
+  unfold ssrbool.pred_of_mem.
+  unfold ssrbool.mem ; cbn.
+  
+  induction n.
+  - cbn.
+    reflexivity.
+  - cbn.
+    unfold "||".
+    rewrite eqtype.tag_eqE ; rewrite eqtype.eq_sym ; rewrite <- eqtype.tag_eqE.
+    rewrite IHn.
+    rewrite location_eqbP.
+    reflexivity.
+Qed.
+Theorem loc_compute : (forall l : (@sigT choice_type (fun _ : choice_type => nat)), forall n : list (@sigT choice_type (fun _ : choice_type => nat)), List.In l n <-> is_true (ssrbool.in_mem l (@ssrbool.mem _
+          (seq.seq_predType
+             (Ord.eqType
+                (@tag_ordType choice_type_ordType (fun _ : choice_type => nat_ordType))))
+          n))).
+  intros.
+  rewrite <- loc_compute_b.
+  symmetry.
+  apply in_bool_iff.
+Qed.
+
+Lemma valid_injectLocations_b :
+  forall (import : Interface) (A : choice.Choice.type)
+    (L1 L2 : {fset tag_ordType (I:=choice_type_ordType) (fun _ : choice_type => nat_ordType)})
+    (v : raw_code A),
+    List.incl L1 L2 -> ValidCode L1 import v -> ValidCode L2 import v.
+Proof.
+    intros A L1 L2 v h incl p.
+    induction p.
+    all:
+      try solve [ constructor ; eauto ].
+    all: apply loc_compute in H 
+    ; constructor ; [ | eauto ]
+    ; apply loc_compute
+    ; eapply LocsSubset
+    ; eauto.
+Qed.
+
+Theorem in_bool_eq : forall {A : Type} `{EqDec A} (a:A) (l:list A), is_true (Inb a l) = List.In a l.
+  intros.
+  rewrite boolp.propeqE. apply in_bool_iff.
+Qed.
+
+  Definition incl_sort_compute A `{EqDec A} (l1 l2 : list A) : bool.
+  Proof.
+    induction l1.
+    - exact true.
+    - exact (andb (Inb a l2) (IHl1)).      
+  Defined.
+
+  Definition incl_fset_sort_compute (l1 l2 : {fset Location}) : bool.
+  Proof.
+    destruct l1 as [l1].
+    induction l1.
+    - exact true.
+    - assert (is_true (path.sorted Ord.lt l1)).
+      {
+        pose (path.drop_sorted).
+        specialize i0 with (n := 1) (s := a :: l1).
+        rewrite seq.drop1 in i0.
+        unfold seq.behead in i0.
+        apply i0.
+        apply i.
+      }.      
+      exact (andb (Inb a l2) (IHl1 H)).      
+  Defined.
+
+  Theorem list_incl_compute : forall a (l : list Location), List.In a l <-> List.In a (fset l).
+  Proof.
+    intros.
+    do 2 rewrite loc_compute.
+    unfold fset ; rewrite ssreflect.locked_withE.
+    cbn.
+    rewrite (@path.mem_sort (Ord.eqType
+                (@tag_ordType choice_type_ordType (fun _ : choice_type => nat_ordType))) (tag_leq (I:=choice_type_ordType) (T_:=fun _ : choice_type => nat_ordType)) (@seq.undup
+                (Ord.eqType
+                   (@tag_ordType choice_type_ordType (fun _ : choice_type => nat_ordType)))
+                l)).
+    
+    generalize dependent a.
+    induction l ; intros.
+    + easy.
+    + cbn.
+
+      rewrite (@seq.in_cons (Ord.eqType
+                               (@tag_ordType choice_type_ordType (fun _ : choice_type => nat_ordType))) a l).
+      rewrite is_true_split_or.
+
+      match goal with
+      | [ |- context[match ?x with | true => _ | false => _ end] ] =>
+          destruct x eqn:so
+      end.
+      * rewrite <- IHl.
+        split.
+        -- intros [].
+           ++ apply Couplings.reflection_nonsense in H.
+              subst.
+              apply so.
+           ++ apply H.
+        -- intros.
+           right.
+           apply H.
+      * split.
+        -- intros [].
+           ++ apply Couplings.reflection_nonsense in H.
+              subst.
+              apply seq.mem_head.
+           ++ apply seq.mem_drop with (n0 := 1).
+              cbn.
+              rewrite seq.drop0.
+              apply IHl.
+              apply H.
+        -- intros.
+           destruct (eqtype.eq_op) eqn:so2.
+           ++ left.
+              reflexivity.
+           ++ right.
+              unfold ssrbool.in_mem in H.
+              unfold ssrbool.pred_of_mem in H.
+              unfold ssrbool.mem in H.
+              cbn in H.
+              cbn in so2.
+              rewrite so2 in H.
+              cbn in H.
+
+              apply IHl.
+              apply H.
+Qed.              
+  
+  Theorem list_incl_compute : forall (l1 l2 : list Location), List.incl l1 l2 <-> List.incl (fset l1) (fset l2).
+  Proof.
+    intros.
+    induction l1.
+    - rewrite <- fset0E.
+      split.
+      intros. apply incl_nil_l.
+      intros. apply incl_nil_l.
+    - split.
+      + intros.
+        assert (List.incl (a :: l1) l2 <-> List.In a l2 /\ List.incl l1 l2).
+        {
+          split.
+          - apply List.incl_cons_inv.
+          - intros [].
+            apply List.incl_cons ; assumption.
+        }
+        apply H0 in H.
+        destruct H.
+        apply IHl1 in H1.
+        
+        pose (@incl_cons (Ord.sort (@tag_ordType choice_type_ordType (fun _ : choice_type => nat_ordType))) a (fset l1) (fset l2) ).
+
+        apply i.
+        replace (fset (a :: l1)) with (a |: fset l1).
+        Set Printing All.
+    
+ 
+  (*     rewrite H. *)
+  (*     rewrite loc_compute. *)
+  (*     destruct (@ssrbool.in_mem (@sigT choice_type (fun _ : choice_type => nat)) a *)
+  (*            (@ssrbool.mem *)
+  (*               (eqtype.Equality.sort *)
+  (*                  (Ord.eqType *)
+  (*                     (@tag_ordType choice_type_ordType *)
+  (*                        (fun _ : choice_type => nat_ordType)))) *)
+  (*               (seq.seq_predType *)
+  (*                  (Ord.eqType *)
+  (*                     (@tag_ordType choice_type_ordType *)
+  (*                                   (fun _ : choice_type => nat_ordType)))) l2)) eqn:so. *)
+
+  (*     replace (is_true true /\ incl l1 l2) with (incl l1 l2). *)
+  (*     rewrite IHl1. *)
+
+  (*     unfold  *)
+      
+      
+  (*     induction l2. *)
+  (*     + easy. *)
+
+    
+    
+  
+  (* Theorem list_incl_compute {A} `{EqDec A} : forall (l1 l2 : list Location), is_true (incl_sort_compute Location l1 l2) <-> List.incl (fset l1) (fset l2). *)
+  (* Proof. *)
+  (*   intros. *)
+  (*   induction l1. *)
+  (*   - rewrite <- fset0E. *)
+  (*     split ; easy. *)
+  (*   - *)
+  (*     cbn. *)
+  (*     destruct (Inb a l2). *)
+  (*     cbn. *)
+  (*     rewrite IHl1. *)
+
+      
+
+
+
+  (*     assert (List.incl (fset (a :: l1)) l2 <-> List.In a (fset l2) /\ List.incl (fset l1) l2). *)
+  (*     { *)
+  (*       unfold fset ; rewrite ssreflect.locked_withE. *)
+  (*       cbn. *)
+        
+  (*       rewrite <- loc_compute_b. *)
+  (*       enough (@Inb (@sigT choice_type (fun _ : choice_type => nat)) location_eqdec a l1 = false). *)
+  (*       rewrite H0. *)
+  (*       cbn. *)
+        
+        
+  (*       pose @path.sorted_sort. *)
+  (*       pose @path.sort_sorted. *)
+  (*       rewrite seq.undup_id. *)
+  (*       cbn. *)
+  (*       rewrite <- loc_compute_b. *)
+        
+        
+  (*       split. *)
+  (*       - unfold fset ; rewrite ssreflect.locked_withE. *)
+  (*         cbn. *)
+  (*         apply List.incl_cons_inv. *)
+  (*       - intros []. *)
+  (*         apply List.incl_cons ; assumption.           *)
+  (*     } *)
+      
+  (*     rewrite H0. *)
+  (*     rewrite <- in_bool_eq. *)
+  (*     unfold incl_fset_sort_compute. *)
+  (*     cbn. *)
+  (*     rewrite is_true_split_and. *)
+  (*     apply and_iff_compat_l. *)
+  (*     apply IHl1. *)
+    
+    
+
+  Theorem list_incl_compute {A} `{EqDec A} : forall (l1 l2 : {fset Location}), List.incl l1 l2 <-> is_true (incl_fset_sort_compute l1 l2).
+  Proof.
+    intros [l1] [l2].
+    pose (@incl_sort_compute A H).
+    
+    induction l1.
+    - split ; easy.
+    - assert (List.incl (a :: l1) l2 <-> List.In a l2 /\ List.incl l1 l2).
+      {
+        split.
+        - apply List.incl_cons_inv.
+        - intros [].
+          apply List.incl_cons ; assumption.          
+      }
+ 
+      rewrite H0.
+      rewrite <- in_bool_eq.
+      unfold incl_fset_sort_compute.
+      cbn.
+      rewrite is_true_split_and.
+      apply and_iff_compat_l.
+      apply IHl1.
+  Qed.
+
+  (* Theorem forall l1 l2, incl_sort_compute <-> list_incl_compute  *)
+
+End Location.
+
 Module ChoiceEqualityMonad.
   
   Class CEMonad (M : ChoiceEquality -> ChoiceEquality) : Type :=
@@ -2400,31 +2812,35 @@ Module ChoiceEqualityMonad.
     (* Existing Instance result_monad. *)
   End ResultMonad.
 
-  (* Definition foldi_bind {A : ChoiceEquality} `{mnd : CEMonad} (a : uint_size) (b : uint_size) {L I} (f : uint_size -> A -> M A) (init : M A) : code L I (@ct (M A)) :=     *)
-  (*   @foldi (M A) a b L I *)
-  (*  (fun (x : @T uint_size) (y : @T (M A)) => *)
-  (*   @lift_to_code (M A) L I (@bind M mnd A A y (f x))) init. *)
-
+  
   Class bind_through_code {M} (mon : CEMonad M) :=
     {
-      bind_code : forall {A B} {L I} (y : code L I (M A)) (f : A -> code L I (M B)) , code L I (M B)
+      bind_code : forall {A B} {L1 L2 : {fset Location}} `{is_true (incl_fset_sort_compute L1 L2)} {I} (y : code L1 I (M A)) (f : A -> code L2 I (M B)) , code L2 I (M B)
     }.
 
-  (* Class bind_through_code {M} (mon : CEMonad M) := *)
-  (*   {bind_code : forall {A B} {L I} (y : M A) (f : A -> code L I (M B)) , code L I (M B)}. *)
-  
-  Global Instance result_bind_code {C} : bind_through_code (@result_monad C) :=
+
+  Global Program Instance result_bind_code {C} : bind_through_code (@result_monad C) :=
     {|
-      bind_code A B L I y f :=
+      bind_code A B L1 L2 H I y f :=
       {code
          z ← y ;;
          match ct_T z with
          | @Ok_type _ _ a => f a
-         | @Err_type _ _ b => (@mkprog L I _ (pkg_core_definition.ret (Err b)) _)
+         | @Err_type _ _ b => (@mkprog L2 I _ (pkg_core_definition.ret (Err b)) (valid_ret L2 I (Err b)))
          end}
     |}.
+  Next Obligation.
+    intros.
+    apply valid_bind.
+    - apply (@valid_injectLocations_b I _ L1 L2 y (proj2 (list_incl_compute L1 L2) H)).
+      apply y.
+    - intros.
+      destruct ct_T.
+      + apply (f t).
+      + apply valid_ret.      
+  Qed.
 
-  Definition foldi_bind_code {A : ChoiceEquality} `{mnd : CEMonad} `{@bind_through_code _ mnd} (a : uint_size) (b : uint_size) {L I} (f : uint_size -> A -> code L I (@ct (M A))) (init : M A) : code L I (@ct (M A)) := (foldi a b (fun x y => bind_code (lift_to_code y) (f x)) init).
+  Definition foldi_bind_code {A : ChoiceEquality} `{mnd : CEMonad} `{@bind_through_code _ mnd} (a : uint_size) (b : uint_size) {L1 L2 : {fset Location}} `{is_true (incl_fset_sort_compute L1 L2)} {I} (f : uint_size -> A -> code L2 I (@ct (M A))) (init : M A) : code L2 I (@ct (M A)) := foldi a b (fun x y => bind_code (L1 := L1) (is_true0 := is_true0) (lift_to_code y) (f x)) init.
 
     (* @foldi (M A) a b L I *)
    (* (fun (x : @T uint_size) (y : @T (M A)) => *)
@@ -2570,131 +2986,10 @@ Proof.
 Qed.
   
 (* Notation "ct( x , y , .. , z )" := (pair_ChoiceEquality .. (pair_ChoiceEquality x y) .. z) : hacspec_scope. *)
-Fixpoint Inb {A : Type} `{EqDec A} (a:A) (l:list A) : bool :=
-  match l with
-  | nil => false
-  | cons b m => (eqb b a) || Inb a m
-  end.
 
-Theorem is_true_split_or : forall a b, is_true (a || b) = (is_true a \/ is_true b).
-Proof.
-  intros.
-  rewrite boolp.propeqE.
-  symmetry.
-  apply (ssrbool.rwP ssrbool.orP).
-Qed.  
-Theorem is_true_split_and : forall a b, is_true (a && b) = (is_true a /\ is_true b).
-Proof.
-  intros.
-  rewrite boolp.propeqE.
-  symmetry.
-  apply (ssrbool.rwP ssrbool.andP).
-Qed.  
-  
-  
-Theorem in_bool_iff : forall {A : Type} `{EqDec A} (a:A) (l:list A), is_true (Inb a l) <-> List.In a l.
-  induction l ; cbn.
-  - rewrite boolp.falseE.
-    reflexivity.
-  - cbn.
-    rewrite is_true_split_or.    
-    apply ZifyClasses.or_morph.
-    apply eqb_leibniz.
-    apply IHl.
-Qed.
 
-Theorem in_bool_eq : forall {A : Type} `{EqDec A} (a:A) (l:list A), is_true (Inb a l) = List.In a l.
-  intros.
-  rewrite boolp.propeqE. apply in_bool_iff.
-Qed.
 
 (* Locate "=.?". *)
-
-Definition location_eqb (ℓ ℓ' : Location) :=
-  (eqb (ssrfun.tagged ℓ) (ssrfun.tagged ℓ')).
-(* (@eqtype.eq_op *)
-(* (@eqtype.tag_eqType choice_type_eqType *)
-(*                     (fun _ : choice_type => ssrnat.nat_eqType)) ℓ ℓ'). *)
-
-Axiom location_is_types : (forall l1 l2 : Location ,
- is_true (eqb (ssrfun.tagged l1) (ssrfun.tagged l2)) ->
- is_true (eqtype.eq_op (ssrfun.tag l1) (ssrfun.tag l2))).
-
-Definition location_eqbP : forall (l1 l2 : Location),
-    eqb (ssrfun.tagged l1) (ssrfun.tagged l2)
-    = (@eqtype.eq_op
-         (@eqtype.tag_eqType choice_type_eqType
-                           (fun _ : choice_type => ssrnat.nat_eqType)) l1 l2).
-Proof.
-  intros.
-  symmetry.
-  pose (location_is_types l1 l2).
-  destruct l1, l2.
-  unfold location_eqb.
-  cbn.
-  unfold eqtype.tag_eq.
-  unfold eqtype.tagged_as, ssrfun.tagged , ssrfun.tag , ".π1" , ".π2" in *.
-  
-  destruct (n =? n0) eqn:b.
-  - rewrite i by assumption.
-    destruct eqtype.eqP.
-    + cbn.
-      unfold eq_rect_r , eq_rect ; destruct eq_sym.      
-      assumption.
-    + rewrite eqtype.eq_refl.
-      reflexivity.
-  - destruct eqtype.eqP.
-    + cbn.
-      unfold eq_rect_r , eq_rect ; destruct eq_sym.      
-      assumption.
-    + rewrite eqtype.eq_refl.
-      reflexivity.
-Qed.
-
-Lemma location_eqb_sound : forall ℓ ℓ' : Location, is_true (location_eqb ℓ ℓ') <-> ℓ = ℓ'.
-Proof.
-  intros.
-  unfold is_true.
-  replace (location_eqb ℓ ℓ' = true) with (true = location_eqb ℓ ℓ') by
-    (rewrite boolp.propeqE ; split ; symmetry ; assumption).
-  unfold location_eqb. rewrite location_eqbP.
-  split.
-  - symmetry ; apply lookup_hpv_r_obligation_1 ; assumption.
-  - intros ; subst. cbn. symmetry. rewrite eqtype.tag_eqE. apply eqtype.eq_refl.
-Qed.
-
-Global Program Instance location_eqdec: EqDec (Location) := {
-  eqb := location_eqb;
-  eqb_leibniz := location_eqb_sound;
-  }.
-
-Definition location_ltb : Location -> Location -> bool :=
-  (fun l1 l2 : Location =>
-     let (_, n1) := l1 in
-      let (_, n2) := l2 in
-      ltb n1 n2).
-
-Global Instance location_comparable : Comparable (Location) :=
-  eq_dec_lt_Comparable location_ltb.
-
-Definition le_is_ord_leq : forall s s0 : nat_ordType,
-    eqtype.eq_op s s0 = false -> ltb s s0 = (s <= s0)%ord.
-Proof.
-  intros s s0.
-  unfold "<.?" , nat_comparable , "<?".
-  intros e.
-  
-  generalize dependent s.
-  induction s0 ; intros.
-  * destruct s ; easy.
-  * destruct s. reflexivity.
-    (* unfold Nat.leb ; fold Nat.leb. *)
-    cbn.
-    cbn in IHs0.
-    rewrite IHs0.
-    reflexivity.
-    assumption.
-Qed.
 
 (* Definition le_is_ord_leq2 : forall (s s0 : Location), *)
 (*     eqb (ssrfun.tagged s) (ssrfun.tagged s0) = false ->  *)
@@ -2789,75 +3084,10 @@ Proof.
       admit.
 Admitted.
 
-Theorem loc_compute_b :
-  (forall l : (@sigT choice_type (fun _ : choice_type => nat)),
-    forall n : list (@sigT choice_type (fun _ : choice_type => nat)),
-      Inb l n = ssrbool.in_mem l (@ssrbool.mem _
-          (seq.seq_predType
-             (Ord.eqType
-                (@tag_ordType choice_type_ordType (fun _ : choice_type => nat_ordType))))
-          n)).
-  intros.
-  cbn.
-  unfold ssrbool.in_mem.
-  unfold ssrbool.pred_of_mem.
-  unfold ssrbool.mem ; cbn.
-  
-  induction n.
-  - cbn.
-    reflexivity.
-  - cbn.
-    unfold "||".
-    rewrite eqtype.tag_eqE ; rewrite eqtype.eq_sym ; rewrite <- eqtype.tag_eqE.
-    rewrite IHn.
-    rewrite location_eqbP.
-    reflexivity.
-Qed.
 
-Theorem loc_compute : (forall l : (@sigT choice_type (fun _ : choice_type => nat)), forall n : list (@sigT choice_type (fun _ : choice_type => nat)), List.In l n <-> is_true (ssrbool.in_mem l (@ssrbool.mem _
-          (seq.seq_predType
-             (Ord.eqType
-                (@tag_ordType choice_type_ordType (fun _ : choice_type => nat_ordType))))
-          n))).
-  intros.
-  rewrite <- loc_compute_b.
-  symmetry.
-  apply in_bool_iff.
-Qed.
 
 Ltac ssprove_valid_location' :=
   apply loc_compute ; repeat (try (left ; reflexivity) ; right) ; try reflexivity.
-
-Theorem LocsSubset : (forall {A} (L1 L2 : list A) (a : A),
-     List.incl L1 L2 ->
-     List.In a L1 ->
-     List.In a L2).
-  intros.
-  induction L1 as [ | a0 L ] ; cbn in *.
-  - contradiction.
-  - destruct (List.incl_cons_inv H).
-    destruct H0.
-    + subst.
-      assumption.
-    + apply IHL ; assumption.
-Qed.
-
-Lemma valid_injectLocations_b :
-  forall (import : Interface) (A : choice.Choice.type)
-    (L1 L2 : {fset tag_ordType (I:=choice_type_ordType) (fun _ : choice_type => nat_ordType)})
-    (v : raw_code A),
-    List.incl L1 L2 -> ValidCode L1 import v -> ValidCode L2 import v.
-Proof.
-    intros A L1 L2 v h incl p.
-    induction p.
-    all:
-      try solve [ constructor ; eauto ].
-    all: apply loc_compute in H 
-    ; constructor ; [ | eauto ]
-    ; apply loc_compute
-    ; eapply LocsSubset
-    ; eauto.
-Qed.
 
 Fixpoint uniqb {A} `{EqDec A} (s : list A) :=
   match s with
@@ -2997,17 +3227,20 @@ Proof.
       reflexivity.
 Qed.
 
-Ltac incl_b_compute :=
-  let H := fresh in
-  intro H ;
-  repeat rewrite is_true_split_or in H ;
-  decompose [and or] H ; clear H ;
-  [ repeat rewrite is_true_split_or ;
-    repeat (try (left ; assumption) ; right)
-  | discriminate ].
-
 Ltac incl_compute :=
-  now (unfold List.incl ; intros [] ; repeat rewrite <- in_bool_eq ; unfold Inb ; incl_b_compute).
+  now (apply list_incl_compute ; cbn ; reflexivity).
+
+(* Ltac incl_b_compute := *)
+(*   let H := fresh in *)
+(*   intro H ; *)
+(*   repeat rewrite is_true_split_or in H ; *)
+(*   decompose [and or] H ; clear H ; *)
+(*   [ repeat rewrite is_true_split_or ; *)
+(*     repeat (try (left ; assumption) ; right) *)
+(*   | discriminate ]. *)
+
+(* Ltac incl_compute := *)
+(*   now (unfold List.incl ; intros [] ; repeat rewrite <- in_bool_eq ; unfold Inb ; incl_b_compute). *)
 
 (* Lemma valid_inject_loc_b : *)
 (*   forall (import : Interface) (A : choiceType) *)
@@ -3043,14 +3276,15 @@ Ltac valid_program :=
       match goal with
       | H : (code ?fset _ _) |- _ =>          
           eapply (valid_injectLocations_b) with (L1 := fset) ;
-          [ valid_sorted_incl | apply program ]
+          [ | apply program ]
       end           
-  end.
+  end ; valid_sorted_incl .
 
 Ltac ssprove_valid' :=
   repeat (valid_program
           || (apply valid_bind ; [apply valid_scheme ; apply prog_valid | intros])
           || (apply valid_bind ; [ | intros ; ssprove_valid' ])
+          || (apply ChoiceEqualityMonad.bind_code) 
           || (apply valid_putr ; [ cbn ; ssprove_valid_location | ])
           || (apply valid_getr ; [ cbn ; ssprove_valid_location | intros])
           || (apply valid_foldi ; intros)
@@ -3081,3 +3315,104 @@ Ltac ssprove_valid'_2 :=
 
 (* Canonical pct (T1 T2 : choiceType) := *)
 (*   Eval hnf in ChoiceType (T1 * T2) (prod_choiceMixin T1 T2). *)
+ 
+
+Theorem list_incl_compute_fset : forall (l1 l2 : {fset Location}), incl_fset_sort_compute (fset l1) (fset l2) = incl_fset_sort_compute l1 l2.
+Proof.
+  Set Printing All.
+  (@fset (@tag_ordType choice_type_ordType (fun _ : choice_type => nat_ordType))
+          (@FSet.fsval
+             (@tag_ordType choice_type_ordType (fun _ : choice_type => nat_ordType)) l1)).
+  
+  unfold fset.
+  rewrite unlock_with.
+   unlock inE.
+  
+  rewrite fset. unlock inE /= mem_sort mem_undup.
+  ssrbool.in_mem x (ssrbool.mem (fset s))
+
+  
+  intros.
+  unfold fset ; rewrite ssreflect.locked_withE.
+  destruct l1 as [l1], l2 as [l2].
+  
+  induction l1.
+  - cbn.
+    reflexivity.
+  - 
+    cbn.
+    rewrite <- IHl1.
+    
+
+    ; replace (list_rec (fun _ : list (∑ _ : choice_type, nat) => bool) true
+    (fun (a0 : ∑ _ : choice_type, nat) (_ : list (∑ _ : choice_type, nat)) (IHl0 : bool)
+     => Inb a0 l2 && IHl0) l1) with (incl_fset_sort_compute l1 l2) by reflexivity.
+    unfold fset ; rewrite ssreflect.locked_withE.
+    pose @path.sorted_sort.
+    pose (path.undup_sorted ).
+    pose i.
+    cbn.
+
+    replace (@path.sort (@sigT choice_type (fun _ : choice_type => nat))
+                (@tag_leq choice_type_ordType (fun _ : choice_type => nat_ordType))
+                (@seq.undup
+                   (Ord.eqType
+                      (@tag_ordType choice_type_ordType
+                                    (fun _ : choice_type => nat_ordType))) l2)) with (seq.undup l2).
+    2 : {
+      destruct (tag_leqP (I:=choice_type_ordType) (fun _ : choice_type => nat_ordType)).
+
+      rewrite e. reflexivity.
+      apply H0.
+
+      specialize (i1 (Ord.eqType
+                      (@tag_ordType choice_type_ordType
+                                    (fun _ : choice_type => nat_ordType)))
+                     (@tag_leq choice_type_ordType (fun _ : choice_type => nat_ordType)) H0 l2).
+      apply i1.
+      unfold Ord.lt in i2.
+      cbn in *.
+      apply i2.
+      
+      rewrite path.undup_sorted.
+    
+    reflexivity.
+    
+    
+    cbn.
+    
+    
+    cbn.
+    
+    
+    pose in_bool_iff.
+    pose in_fset.
+    
+    rewrite <- seq.cat1s.
+    rewrite fset_cat.
+    rewrite IHl1.
+    unfold incl_fset_sort_compute.
+
+    rewrite seq.cat1s.
+    rewrite fset_cons ; unfold "|:" ; cbn.
+    
+   rewrite <- IHl1.
+    
+    
+          
+    split ; easy.
+  - assert (List.incl (a :: l1) l2 <-> List.In a l2 /\ List.incl l1 l2).
+    {
+      split.
+      - apply List.incl_cons_inv.
+      - intros [].
+        apply List.incl_cons ; assumption.
+        
+    }
+
+    rewrite H0.
+    cbn ; rewrite is_true_split_and ;  fold (incl_fset_sort_compute l1 l2).
+    rewrite in_bool_eq.
+    apply and_iff_compat_l.
+    assumption.
+Qed.

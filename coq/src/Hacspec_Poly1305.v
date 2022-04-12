@@ -9,6 +9,7 @@ Require Import ChoiceEquality.
 Require Import Hacspec_Lib.
 From Coq Require Import ZArith.
 Import List.ListNotations.
+Open Scope list_scope.
 Open Scope Z_scope.
 Open Scope bool_scope.
 Open Scope hacspec_scope.
@@ -22,8 +23,8 @@ Require Import Hacspec_Lib.
 
 Definition poly_key_t := nseq (uint8) (usize 32).
 
-Definition blocksize_v : uint_size :=
-  (usize 16).
+Definition blocksize_v : (uint_size) :=
+  ((usize 16)).
 
 Definition poly_block_t := nseq (uint8) (usize 16).
 
@@ -43,7 +44,7 @@ Notation "'poly_state_t'" := ((
 )) : hacspec_scope.
 
 Definition n_4_loc : Location :=
-  (@ct uint128 ; 8%nat).
+  (uint128 : choice_type ; 8%nat).
 Program Definition poly1305_encode_r
   (b_0 : poly_block_t)
   : code (fset (path.sort leb [ n_4_loc])) [interface] (@ct (
@@ -60,14 +61,18 @@ Program Definition poly1305_encode_r
     #put n_4_loc := 
       (temp_3) ;;
     n_4 ← get n_4_loc ;;
+    let n_4 : uint128 :=
+      (n_4) in
      temp_5 ←
       (secret (@repr U128 21267647620597763993911028882763415551)) ;;
     let temp_5 : int128 :=
       (temp_5) in
     n_4 ← get n_4_loc ;;
+    
     #put n_4_loc := 
       ((n_4) .& (temp_5)) ;;
     n_4 ← get n_4_loc ;;
+    
      temp_6 ←
       (nat_mod_from_secret_literal (n_4)) ;;
     @pkg_core_definition.ret field_element_t ( (temp_6))
@@ -88,12 +93,10 @@ Program Definition poly1305_encode_block
       (uint128_from_le_bytes (temp_11)) ;;
     let n_13 : uint128 :=
       (temp_12) in
-    
      temp_14 ←
       (nat_mod_from_secret_literal (n_13)) ;;
     let f_15 : field_element_t :=
       (temp_14) in
-    
      temp_16 ←
       (nat_mod_pow2 (0x03fffffffffffffffffffffffffffffffb) (usize 128)) ;;
     let temp_16 : field_element_t :=
@@ -115,14 +118,12 @@ Program Definition poly1305_encode_last
       (uint128_from_le_bytes (temp_19)) ;;
     let n_21 : uint128 :=
       (temp_20) in
-    
      temp_22 ←
       (nat_mod_from_secret_literal (n_21)) ;;
     let f_23 : field_element_t :=
       (temp_22) in
-    
      temp_25 ←
-      (nat_mod_pow2 (0x03fffffffffffffffffffffffffffffffb) ((usize 8) * (
+      (nat_mod_pow2 (0x03fffffffffffffffffffffffffffffffb) ((usize 8) .* (
             pad_len_24))) ;;
     let temp_25 : field_element_t :=
       (temp_25) in
@@ -144,7 +145,6 @@ Program Definition poly1305_init
       (poly1305_encode_r (temp_28)) ;;
     let r_31 : field_element_t :=
       (temp_29) in
-    
      temp_30 ←
       (nat_mod_zero ) ;;
     @pkg_core_definition.ret (field_element_t '× field_element_t '× poly_key_t
@@ -158,16 +158,14 @@ Program Definition poly1305_update_block
   : code fset.fset0 [interface] (@ct (poly_state_t)) :=
   ({code
     let '(acc_35, r_36, k_37) :=
-      (st_32) in
-    
+      (st_32) : (field_element_t '× field_element_t '× poly_key_t) in
      temp_34 ←
       (poly1305_encode_block (b_33)) ;;
     @pkg_core_definition.ret (field_element_t '× field_element_t '× poly_key_t
     ) ( ((((temp_34) +% (acc_35)) *% (r_36), r_36, k_37)))
     } : code (fset.fset0) [interface] _).
 
-Definition st_46_loc : Location :=
-  (@ct (field_element_t '× field_element_t '× poly_key_t) ; 50%nat).
+
 Program Definition poly1305_update_blocks
   (m_39 : byte_seq)
   (st_38 : poly_state_t)
@@ -176,27 +174,29 @@ Program Definition poly1305_update_blocks
     #put st_46_loc := 
       (st_38) ;;
     st_46 ← get st_46_loc ;;
+    let st_46 : (field_element_t '× field_element_t '× poly_key_t) :=
+      (st_46) in
      temp_40 ←
       (seq_len (m_39)) ;;
     let n_blocks_41 : uint_size :=
-      ((temp_40) / (blocksize_v) : uint_size_type) in
-    
+      ((temp_40) ./ (blocksize_v)) in
      st_46 ←
-      (foldi (usize 0) (n_blocks_41) (fun i_42 st_46 =>
+      (foldi (usize 0) (n_blocks_41) (fun i_42 (st_46 : _) =>
           {code
            temp_43 ←
-            (seq_get_exact_chunk (m_39) ( (blocksize_v)) ( (i_42))) ;;
+            (seq_get_exact_chunk (m_39) (blocksize_v) (i_42)) ;;
            temp_44 ←
-            (array_from_seq (16) (temp_43 : seq int8)) ;;
+            (array_from_seq (16) (temp_43)) ;;
           let block_45 : poly_block_t :=
             (temp_44) in
-          
            temp_47 ←
             (poly1305_update_block (block_45) (st_46)) ;;
           st_46 ← get st_46_loc ;;
+          
           #put st_46_loc := 
             (temp_47) ;;
           st_46 ← get st_46_loc ;;
+          
           @pkg_core_definition.ret _ ( ((st_46)))
           } : code ((fset (path.sort leb [ st_46_loc]))) [interface] _)
         st_46) ;;
@@ -205,127 +205,127 @@ Program Definition poly1305_update_blocks
     ) ( (st_46))
     } : code ((fset (path.sort leb [ st_46_loc]))) [interface] _).
 
-Definition st_52_loc : Location :=
-  (@ct (field_element_t '× field_element_t '× poly_key_t) ; 62%nat).
+
 Program Definition poly1305_update_last
-  (pad_len_55 : uint_size)
-  (b_53 : sub_block_t)
-  (st_51 : poly_state_t)
-  : code (fset (path.sort leb [ st_52_loc])) [interface] (@ct (poly_state_t)) :=
+  (pad_len_53 : uint_size)
+  (b_51 : sub_block_t)
+  (st_49 : poly_state_t)
+  : code (fset (path.sort leb [ st_50_loc])) [interface] (@ct (poly_state_t)) :=
   ({code
-    #put st_52_loc := 
-      (st_51) ;;
-    st_52 ← get st_52_loc ;;
-     temp_54 ←
-      (seq_len (b_53)) ;;
-     '(st_52) ←
-      (if (temp_54) !=.? (usize 0):bool then ({code
-          let '(acc_57, r_58, k_59) :=
-            (st_52) in
+    #put st_50_loc := 
+      (st_49) ;;
+    st_50 ← get st_50_loc ;;
+    let st_50 : (field_element_t '× field_element_t '× poly_key_t) :=
+      (st_50) in
+     temp_52 ←
+      (seq_len (b_51)) ;;
+     '(st_50) ←
+      (if (temp_52) !=.? (usize 0):bool then ({code
+          let '(acc_55, r_56, k_57) :=
+            (st_50) : (field_element_t '× field_element_t '× poly_key_t) in
+           temp_54 ←
+            (poly1305_encode_last (pad_len_53) (b_51)) ;;
+          st_50 ← get st_50_loc ;;
           
-           temp_56 ←
-            (poly1305_encode_last (pad_len_55) (b_53)) ;;
-          st_52 ← get st_52_loc ;;
-          #put st_52_loc := 
-            ((((temp_56) +% (acc_57)) *% (r_58), r_58, k_59)) ;;
-          st_52 ← get st_52_loc ;;
-          @pkg_core_definition.ret _ ( ((st_52)))
-          } : code ((fset (path.sort leb [ st_52_loc]))) [interface] _) else (
-          @pkg_core_definition.ret _ ( ((st_52))))) ;;
+          #put st_50_loc := 
+            ((((temp_54) +% (acc_55)) *% (r_56), r_56, k_57)) ;;
+          st_50 ← get st_50_loc ;;
+          
+          @pkg_core_definition.ret _ ( ((st_50)))
+          } : code ((fset (path.sort leb [ st_50_loc]))) [interface] _) else (
+          @pkg_core_definition.ret _ ( ((st_50))))) ;;
     
     @pkg_core_definition.ret (field_element_t '× field_element_t '× poly_key_t
-    ) ( (st_52))
-    } : code ((fset (path.sort leb [ st_52_loc]))) [interface] _).
+    ) ( (st_50))
+    } : code ((fset (path.sort leb [ st_50_loc]))) [interface] _).
 
 
 Program Definition poly1305_update
-  (m_63 : byte_seq)
-  (st_64 : poly_state_t)
-  : code (fset (path.sort leb [ st_52_loc ; st_46_loc])) [interface] (@ct (
+  (m_59 : byte_seq)
+  (st_60 : poly_state_t)
+  : code (fset (path.sort leb [ st_50_loc ; st_46_loc])) [interface] (@ct (
       poly_state_t)) :=
   ({code
-     temp_65 ←
-      (poly1305_update_blocks (m_63) (st_64)) ;;
-    let st_69 : (field_element_t '× field_element_t '× poly_key_t) :=
-      (temp_65) in
-    
+     temp_61 ←
+      (poly1305_update_blocks (m_59) (st_60)) ;;
+    let st_65 : (field_element_t '× field_element_t '× poly_key_t) :=
+      (temp_61) in
+     temp_62 ←
+      (seq_get_remainder_chunk (m_59) (blocksize_v)) ;;
+    let last_63 : seq uint8 :=
+      (temp_62) in
+     temp_64 ←
+      (seq_len (last_63)) ;;
      temp_66 ←
-      (seq_get_remainder_chunk (m_63) ( (blocksize_v))) ;;
-    let last_67 : seq uint8 :=
-      (temp_66) in
-    
-     temp_68 ←
-      (seq_len (last_67)) ;;
-     temp_70 ←
-      (poly1305_update_last (temp_68 : uint_size_type) (last_67) (st_69)) ;;
-    @pkg_core_definition.ret poly_state_t ( (temp_70))
-    } : code ((fset (path.sort leb [ st_52_loc ; st_46_loc]))) [interface] _).
+      (poly1305_update_last (temp_64) (last_63) (st_65)) ;;
+    @pkg_core_definition.ret poly_state_t ( (temp_66))
+    } : code ((fset (path.sort leb [ st_50_loc ; st_46_loc]))) [interface] _).
 
 
 Program Definition poly1305_finish
-  (st_71 : poly_state_t)
+  (st_67 : poly_state_t)
   : code fset.fset0 [interface] (@ct (poly1305_tag_t)) :=
   ({code
-    let '(acc_76, _, k_72) :=
-      (st_71) in
-    
+    let '(acc_72, _, k_68) :=
+      (st_67) : (field_element_t '× field_element_t '× poly_key_t) in
+     temp_69 ←
+      (array_to_seq (k_68)) ;;
+    let temp_69 : seq uint8 :=
+      (temp_69) in
+     temp_70 ←
+      (array_from_slice (default) (16) (temp_69) (usize 16) (usize 16)) ;;
+     temp_71 ←
+      (uint128_from_le_bytes (temp_70)) ;;
+    let n_78 : uint128 :=
+      (temp_71) in
      temp_73 ←
-      (array_to_seq (k_72)) ;;
-    let temp_73 : seq uint8 :=
+      (nat_mod_to_byte_seq_le (acc_72)) ;;
+    let aby_74 : seq uint8 :=
       (temp_73) in
-     temp_74 ←
-      (array_from_slice (default) (16) (temp_73) (usize 16) (usize 16)) ;;
      temp_75 ←
-      (uint128_from_le_bytes (temp_74)) ;;
-    let n_82 : uint128 :=
-      (temp_75) in
-    
-     temp_77 ←
-      (nat_mod_to_byte_seq_le (acc_76)) ;;
-    let aby_78 : seq uint8 :=
-      (temp_77) in
-    
+      (array_from_slice (default) (16) (aby_74) (usize 0) (usize 16)) ;;
+     temp_76 ←
+      (uint128_from_le_bytes (temp_75)) ;;
+    let a_77 : uint128 :=
+      (temp_76) in
      temp_79 ←
-      (array_from_slice (default) (16) (aby_78) (usize 0) (usize 16)) ;;
+      (uint128_to_le_bytes ((a_77) .+ (n_78))) ;;
      temp_80 ←
-      (uint128_from_le_bytes (temp_79)) ;;
-    let a_81 : uint128 :=
+      (array_to_seq (temp_79)) ;;
+    let temp_80 : seq uint8 :=
       (temp_80) in
-    
-     temp_83 ←
-      (uint128_to_le_bytes ((a_81) .+ (n_82))) ;;
-     temp_84 ←
-      (array_to_seq (temp_83 : nseq int8 16)) ;;
-    let temp_84 : seq uint8 :=
-      (temp_84) in
-     temp_85 ←
-      (array_from_seq (16) (temp_84)) ;;
-    @pkg_core_definition.ret poly1305_tag_t ( (temp_85))
+     temp_81 ←
+      (array_from_seq (16) (temp_80)) ;;
+    @pkg_core_definition.ret poly1305_tag_t ( (temp_81))
     } : code (fset.fset0) [interface] _).
 
-Definition st_89_loc : Location :=
-  (@ct (field_element_t '× field_element_t '× poly_key_t) ; 93%nat).
+Definition st_85_loc : Location :=
+  ((field_element_t '× field_element_t '× poly_key_t) : choice_type ; 89%nat).
 Program Definition poly1305
-  (m_88 : byte_seq)
-  (key_86 : poly_key_t)
+  (m_84 : byte_seq)
+  (key_82 : poly_key_t)
   : code (
-    fset (path.sort leb [ st_46_loc ; n_4_loc ; st_52_loc ; st_89_loc])) [interface] (
+    fset (path.sort leb [ st_50_loc ; st_85_loc ; st_46_loc ; n_4_loc])) [interface] (
     @ct (poly1305_tag_t)) :=
   ({code
+     temp_83 ←
+      (poly1305_init (key_82)) ;;
+    #put st_85_loc := 
+      (temp_83) ;;
+    st_85 ← get st_85_loc ;;
+    let st_85 : (field_element_t '× field_element_t '× poly_key_t) :=
+      (st_85) in
+     temp_86 ←
+      (poly1305_update (m_84) (st_85)) ;;
+    st_85 ← get st_85_loc ;;
+    
+    #put st_85_loc := 
+      (temp_86) ;;
+    st_85 ← get st_85_loc ;;
+    
      temp_87 ←
-      (poly1305_init (key_86)) ;;
-    #put st_89_loc := 
-      (temp_87) ;;
-    st_89 ← get st_89_loc ;;
-     temp_90 ←
-      (poly1305_update (m_88) (st_89)) ;;
-    st_89 ← get st_89_loc ;;
-    #put st_89_loc := 
-      (temp_90) ;;
-    st_89 ← get st_89_loc ;;
-     temp_91 ←
-      (poly1305_finish (st_89)) ;;
-    @pkg_core_definition.ret poly1305_tag_t ( (temp_91))
+      (poly1305_finish (st_85)) ;;
+    @pkg_core_definition.ret poly1305_tag_t ( (temp_87))
     } : code ((
-        fset (path.sort leb [ st_46_loc ; n_4_loc ; st_52_loc ; st_89_loc]))) [interface] _).
+        fset (path.sort leb [ st_50_loc ; st_85_loc ; st_46_loc ; n_4_loc]))) [interface] _).
 

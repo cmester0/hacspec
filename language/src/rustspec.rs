@@ -464,7 +464,11 @@ impl ScopeMutableVars {
     pub fn push(&mut self, value: MutableVar) {
         self.local_vars.insert(value);
     }
-    
+
+    pub fn push_external(&mut self, value: MutableVar) {
+        self.external_vars.insert(value);
+    }
+
     pub fn extend(&mut self, other: ScopeMutableVars) {
         for i in other.external_vars {
             self.external_vars.insert(i);
