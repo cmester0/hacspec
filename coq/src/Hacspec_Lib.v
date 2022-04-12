@@ -2592,7 +2592,7 @@ Qed.
       exact (andb (Inb a l2) (IHl1 H)).      
   Defined.
 
-  Theorem list_incl_compute : forall a (l : list Location), List.In a l <-> List.In a (fset l).
+  Theorem in_remove_fset : forall a (l : list Location), List.In a l <-> List.In a (fset l).
   Proof.
     intros.
     do 2 rewrite loc_compute.
@@ -2652,136 +2652,35 @@ Qed.
 
               apply IHl.
               apply H.
-Qed.              
-  
-  Theorem list_incl_compute : forall (l1 l2 : list Location), List.incl l1 l2 <-> List.incl (fset l1) (fset l2).
+  Qed.
+
+  Theorem list_incl_compute {A} `{EqDec A} : forall (l1 l2 : {fset Location}), List.incl l1 l2 <-> List.incl (fset l1) (fset l2).
   Proof.
-    intros.
-    induction l1.
-    - rewrite <- fset0E.
-      split.
-      intros. apply incl_nil_l.
-      intros. apply incl_nil_l.
-    - split.
-      + intros.
-        assert (List.incl (a :: l1) l2 <-> List.In a l2 /\ List.incl l1 l2).
-        {
-          split.
-          - apply List.incl_cons_inv.
-          - intros [].
-            apply List.incl_cons ; assumption.
-        }
-        apply H0 in H.
-        destruct H.
-        apply IHl1 in H1.
-        
-        pose (@incl_cons (Ord.sort (@tag_ordType choice_type_ordType (fun _ : choice_type => nat_ordType))) a (fset l1) (fset l2) ).
-
-        apply i.
-        replace (fset (a :: l1)) with (a |: fset l1).
-        Set Printing All.
+    pose in_bool_eq.
+    pose loc_compute_b.
     
- 
-  (*     rewrite H. *)
-  (*     rewrite loc_compute. *)
-  (*     destruct (@ssrbool.in_mem (@sigT choice_type (fun _ : choice_type => nat)) a *)
-  (*            (@ssrbool.mem *)
-  (*               (eqtype.Equality.sort *)
-  (*                  (Ord.eqType *)
-  (*                     (@tag_ordType choice_type_ordType *)
-  (*                        (fun _ : choice_type => nat_ordType)))) *)
-  (*               (seq.seq_predType *)
-  (*                  (Ord.eqType *)
-  (*                     (@tag_ordType choice_type_ordType *)
-  (*                                   (fun _ : choice_type => nat_ordType)))) l2)) eqn:so. *)
-
-  (*     replace (is_true true /\ incl l1 l2) with (incl l1 l2). *)
-  (*     rewrite IHl1. *)
-
-  (*     unfold  *)
-      
-      
-  (*     induction l2. *)
-  (*     + easy. *)
-
-    
-    
-  
-  (* Theorem list_incl_compute {A} `{EqDec A} : forall (l1 l2 : list Location), is_true (incl_sort_compute Location l1 l2) <-> List.incl (fset l1) (fset l2). *)
-  (* Proof. *)
-  (*   intros. *)
-  (*   induction l1. *)
-  (*   - rewrite <- fset0E. *)
-  (*     split ; easy. *)
-  (*   - *)
-  (*     cbn. *)
-  (*     destruct (Inb a l2). *)
-  (*     cbn. *)
-  (*     rewrite IHl1. *)
-
-      
-
-
-
-  (*     assert (List.incl (fset (a :: l1)) l2 <-> List.In a (fset l2) /\ List.incl (fset l1) l2). *)
-  (*     { *)
-  (*       unfold fset ; rewrite ssreflect.locked_withE. *)
-  (*       cbn. *)
-        
-  (*       rewrite <- loc_compute_b. *)
-  (*       enough (@Inb (@sigT choice_type (fun _ : choice_type => nat)) location_eqdec a l1 = false). *)
-  (*       rewrite H0. *)
-  (*       cbn. *)
-        
-        
-  (*       pose @path.sorted_sort. *)
-  (*       pose @path.sort_sorted. *)
-  (*       rewrite seq.undup_id. *)
-  (*       cbn. *)
-  (*       rewrite <- loc_compute_b. *)
-        
-        
-  (*       split. *)
-  (*       - unfold fset ; rewrite ssreflect.locked_withE. *)
-  (*         cbn. *)
-  (*         apply List.incl_cons_inv. *)
-  (*       - intros []. *)
-  (*         apply List.incl_cons ; assumption.           *)
-  (*     } *)
-      
-  (*     rewrite H0. *)
-  (*     rewrite <- in_bool_eq. *)
-  (*     unfold incl_fset_sort_compute. *)
-  (*     cbn. *)
-  (*     rewrite is_true_split_and. *)
-  (*     apply and_iff_compat_l. *)
-  (*     apply IHl1. *)
-    
-    
-
-  Theorem list_incl_compute {A} `{EqDec A} : forall (l1 l2 : {fset Location}), List.incl l1 l2 <-> is_true (incl_fset_sort_compute l1 l2).
-  Proof.
     intros [l1] [l2].
     pose (@incl_sort_compute A H).
+
+    cbn in *.
     
     induction l1.
-    - split ; easy.
-    - assert (List.incl (a :: l1) l2 <-> List.In a l2 /\ List.incl l1 l2).
-      {
-        split.
-        - apply List.incl_cons_inv.
-        - intros [].
-          apply List.incl_cons ; assumption.          
-      }
- 
-      rewrite H0.
-      rewrite <- in_bool_eq.
-      unfold incl_fset_sort_compute.
+    - rewrite <- fset0E. easy.
+    - cbn.
+      unfold incl.
       cbn.
-      rewrite is_true_split_and.
-      apply and_iff_compat_l.
-      apply IHl1.
-  Qed.
+      split.
+      + intros.
+        rewrite <- in_remove_fset.
+        rewrite <- in_remove_fset in H1.
+        apply H0.
+        apply H1.
+      + intros.        
+        rewrite -> in_remove_fset.
+        apply H0.
+        rewrite <- in_remove_fset.
+        apply H1.
+  Qed.        
 
   (* Theorem forall l1 l2, incl_sort_compute <-> list_incl_compute  *)
 
