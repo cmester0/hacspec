@@ -2654,12 +2654,12 @@ Qed.
               apply H.
   Qed.
 
-  Theorem list_incl_compute {A} `{EqDec A} : forall (l1 l2 : {fset Location}), List.incl l1 l2 <-> List.incl (fset l1) (fset l2).
+  Theorem list_incl_remove_fset {A} `{EqDec A} : forall (l1 l2 : list Location), List.incl l1 l2 <-> List.incl (fset l1) (fset l2).
   Proof.
     pose in_bool_eq.
     pose loc_compute_b.
     
-    intros [l1] [l2].
+    intros. (* [l1] [l2]. *)
     pose (@incl_sort_compute A H).
 
     cbn in *.
@@ -2680,6 +2680,32 @@ Qed.
         apply H0.
         rewrite <- in_remove_fset.
         apply H1.
+Qed.        
+
+  Theorem list_incl_compute {A} `{EqDec A} : forall (l1 l2 : list Location), List.incl l1 l2 <-> is_true (incl_sort_compute _ l1 l2).
+    induction l1.
+    - split ; intros.
+      reflexivity.
+      apply incl_nil_l.
+    - intros.
+      
+      assert (forall A (a : A) l1 l2, List.incl (a :: l1) l2 <-> (List.In a l2 /\ List.incl l1 l2)).
+      {
+        split.
+        - pose List.incl_cons_inv.
+          apply List.incl_cons_inv.
+        - intros [].
+          apply List.incl_cons ; assumption.          
+      }
+
+      rewrite H0.
+
+      cbn.
+      rewrite is_true_split_and.
+      rewrite in_bool_eq.
+
+      apply and_iff_compat_l.
+      apply IHl1.
   Qed.        
 
   (* Theorem forall l1 l2, incl_sort_compute <-> list_incl_compute  *)
@@ -2714,7 +2740,7 @@ Module ChoiceEqualityMonad.
   
   Class bind_through_code {M} (mon : CEMonad M) :=
     {
-      bind_code : forall {A B} {L1 L2 : {fset Location}} `{is_true (incl_fset_sort_compute L1 L2)} {I} (y : code L1 I (M A)) (f : A -> code L2 I (M B)) , code L2 I (M B)
+      bind_code : forall {A B} {L1 L2 : list Location} `{is_true (incl_sort_compute _ L1 L2)} {I} (y : code (fset L1) I (M A)) (f : A -> code (fset L2) I (M B)) , code (fset L2) I (M B)
     }.
 
 
@@ -2725,13 +2751,15 @@ Module ChoiceEqualityMonad.
          z ← y ;;
          match ct_T z with
          | @Ok_type _ _ a => f a
-         | @Err_type _ _ b => (@mkprog L2 I _ (pkg_core_definition.ret (Err b)) (valid_ret L2 I (Err b)))
+         | @Err_type _ _ b => (@mkprog (fset L2) I _ (pkg_core_definition.ret (Err b)) (valid_ret (fset L2) I (Err b)))
          end}
     |}.
   Next Obligation.
     intros.
     apply valid_bind.
-    - apply (@valid_injectLocations_b I _ L1 L2 y (proj2 (list_incl_compute L1 L2) H)).
+    - apply (@valid_injectLocations_b I _ (fset L1) (fset L2) y).
+      apply (list_incl_remove_fset L1 L2).      
+      apply (proj2 (list_incl_compute L1 L2) H).
       apply y.
     - intros.
       destruct ct_T.
@@ -2739,7 +2767,7 @@ Module ChoiceEqualityMonad.
       + apply valid_ret.      
   Qed.
 
-  Definition foldi_bind_code {A : ChoiceEquality} `{mnd : CEMonad} `{@bind_through_code _ mnd} (a : uint_size) (b : uint_size) {L1 L2 : {fset Location}} `{is_true (incl_fset_sort_compute L1 L2)} {I} (f : uint_size -> A -> code L2 I (@ct (M A))) (init : M A) : code L2 I (@ct (M A)) := foldi a b (fun x y => bind_code (L1 := L1) (is_true0 := is_true0) (lift_to_code y) (f x)) init.
+  Definition foldi_bind_code {A : ChoiceEquality} `{mnd : CEMonad} `{@bind_through_code _ mnd} (a : uint_size) (b : uint_size) {L1 L2 : list Location} `{is_true (incl_sort_compute _ L1 L2)} {I} (f : uint_size -> A -> code (fset L2) I (@ct (M A))) (init : M A) : code (fset L2) I (@ct (M A)) := foldi a b (fun x y => bind_code (L1 := L1) (is_true0 := is_true0) (lift_to_code y) (f x)) init.
 
     (* @foldi (M A) a b L I *)
    (* (fun (x : @T uint_size) (y : @T (M A)) => *)
@@ -3215,103 +3243,3 @@ Ltac ssprove_valid'_2 :=
 (* Canonical pct (T1 T2 : choiceType) := *)
 (*   Eval hnf in ChoiceType (T1 * T2) (prod_choiceMixin T1 T2). *)
  
-
-Theorem list_incl_compute_fset : forall (l1 l2 : {fset Location}), incl_fset_sort_compute (fset l1) (fset l2) = incl_fset_sort_compute l1 l2.
-Proof.
-  Set Printing All.
-  (@fset (@tag_ordType choice_type_ordType (fun _ : choice_type => nat_ordType))
-          (@FSet.fsval
-             (@tag_ordType choice_type_ordType (fun _ : choice_type => nat_ordType)) l1)).
-  
-  unfold fset.
-  rewrite unlock_with.
-   unlock inE.
-  
-  rewrite fset. unlock inE /= mem_sort mem_undup.
-  ssrbool.in_mem x (ssrbool.mem (fset s))
-
-  
-  intros.
-  unfold fset ; rewrite ssreflect.locked_withE.
-  destruct l1 as [l1], l2 as [l2].
-  
-  induction l1.
-  - cbn.
-    reflexivity.
-  - 
-    cbn.
-    rewrite <- IHl1.
-    
-
-    ; replace (list_rec (fun _ : list (∑ _ : choice_type, nat) => bool) true
-    (fun (a0 : ∑ _ : choice_type, nat) (_ : list (∑ _ : choice_type, nat)) (IHl0 : bool)
-     => Inb a0 l2 && IHl0) l1) with (incl_fset_sort_compute l1 l2) by reflexivity.
-    unfold fset ; rewrite ssreflect.locked_withE.
-    pose @path.sorted_sort.
-    pose (path.undup_sorted ).
-    pose i.
-    cbn.
-
-    replace (@path.sort (@sigT choice_type (fun _ : choice_type => nat))
-                (@tag_leq choice_type_ordType (fun _ : choice_type => nat_ordType))
-                (@seq.undup
-                   (Ord.eqType
-                      (@tag_ordType choice_type_ordType
-                                    (fun _ : choice_type => nat_ordType))) l2)) with (seq.undup l2).
-    2 : {
-      destruct (tag_leqP (I:=choice_type_ordType) (fun _ : choice_type => nat_ordType)).
-
-      rewrite e. reflexivity.
-      apply H0.
-
-      specialize (i1 (Ord.eqType
-                      (@tag_ordType choice_type_ordType
-                                    (fun _ : choice_type => nat_ordType)))
-                     (@tag_leq choice_type_ordType (fun _ : choice_type => nat_ordType)) H0 l2).
-      apply i1.
-      unfold Ord.lt in i2.
-      cbn in *.
-      apply i2.
-      
-      rewrite path.undup_sorted.
-    
-    reflexivity.
-    
-    
-    cbn.
-    
-    
-    cbn.
-    
-    
-    pose in_bool_iff.
-    pose in_fset.
-    
-    rewrite <- seq.cat1s.
-    rewrite fset_cat.
-    rewrite IHl1.
-    unfold incl_fset_sort_compute.
-
-    rewrite seq.cat1s.
-    rewrite fset_cons ; unfold "|:" ; cbn.
-    
-   rewrite <- IHl1.
-    
-    
-          
-    split ; easy.
-  - assert (List.incl (a :: l1) l2 <-> List.In a l2 /\ List.incl l1 l2).
-    {
-      split.
-      - apply List.incl_cons_inv.
-      - intros [].
-        apply List.incl_cons ; assumption.
-        
-    }
-
-    rewrite H0.
-    cbn ; rewrite is_true_split_and ;  fold (incl_fset_sort_compute l1 l2).
-    rewrite in_bool_eq.
-    apply and_iff_compat_l.
-    assumption.
-Qed.
