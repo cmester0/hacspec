@@ -1602,9 +1602,8 @@ Program Definition aes_counter_mode
   (iterations_457 : uint_size)
   : code (fset (
       path.sort leb [ out_439_loc ; out_318_loc ; out_279_loc ; ctr_452_loc ; result_375_loc ; st_306_loc ; st_274_loc ; k_374_loc ; blocks_out_459_loc ; out_342_loc ; input_421_loc ; key_ex_387_loc ; k_369_loc])) [interface] (
-           @ct (byte_seq_result_t)).
-Proof.
-  refine (({code #put ctr_452_loc := 
+           @ct (byte_seq_result_t)) :=
+  (({code #put ctr_452_loc := 
               (counter_442) ;;
               ctr_452 ← get ctr_452_loc ;;
               let ctr_452 : uint32 :=
@@ -1692,41 +1691,11 @@ temp_461 ←
                 (aes_ctr_key_block (key_450) (nonce_451) (ctr_452) (nk_453) (
                     nr_454) (key_schedule_length_455) (key_length_456) (
                                      iterations_457)) ;;
-               ChoiceEqualityMonad.bind_code (M := result2 int8) (L1 := path.sort leb [ ctr_452_loc ; out_279_loc ; out_439_loc ; k_369_loc ; input_421_loc ; blocks_out_459_loc ; key_ex_387_loc ; out_318_loc ; result_375_loc ; out_342_loc ; st_274_loc ; k_374_loc ; st_306_loc]) (L2 := path.sort leb [ st_306_loc ; key_ex_387_loc ; input_421_loc ; st_274_loc ; out_439_loc ; ctr_452_loc ; out_279_loc ; k_374_loc ; result_375_loc ; out_342_loc ; k_369_loc ; out_318_loc ; blocks_out_459_loc]) (is_true0 := _) (({code @pkg_core_definition.ret _ temp_473 } : code _ [interface] _)) _
-
-} : code (fset ( path.sort leb [ st_306_loc ; key_ex_387_loc ; input_421_loc ; st_274_loc ; out_439_loc ; ctr_452_loc ; out_279_loc ; k_374_loc ; result_375_loc ; out_342_loc ; k_369_loc ; out_318_loc ; blocks_out_459_loc])) [interface] _) (_) (_)
-  } : code _ [interface] _))
-         })).
-
-  Unshelve.
-  all: try exact int8_default.
-  all: try exact ChoiceEqualityMonad.result_monad.
-  all: try exact ChoiceEqualityMonad.result_bind_code.
-  all: try exact location_comparable.
-  all: try exact Z_uint_sizable.
-  all: try exact int_eqdec.
-  all: try reflexivity.
-  2: ssprove_valid'_2.
-  2: ssprove_valid'_2.
-  2: ssprove_valid'_2.
-  2: ssprove_valid'_2.
-  3: ssprove_valid'_2.
-  5: ssprove_valid'_2.
-
-  ssprove_valid'_2.
-
-
-  
-  (* code section *)
-  ssprove_valid'.
-  ssprove_valid'_2.
-  
-         ( 
-          ((     (
-                fun key_block_475 => ({code  temp_476 ←
+               ChoiceEqualityMonad.bind_code (M := result2 int8) (L1 := path.sort leb [ ctr_452_loc ; out_279_loc ; out_439_loc ; k_369_loc ; input_421_loc ; blocks_out_459_loc ; key_ex_387_loc ; out_318_loc ; result_375_loc ; out_342_loc ; st_274_loc ; k_374_loc ; st_306_loc]) (L2 := path.sort leb [ st_306_loc ; key_ex_387_loc ; input_421_loc ; st_274_loc ; out_439_loc ; ctr_452_loc ; out_279_loc ; k_374_loc ; result_375_loc ; out_342_loc ; k_369_loc ; out_318_loc ; blocks_out_459_loc]) (is_true0 := _) (({code @pkg_core_definition.ret _ temp_473 } : code _ [interface] _)) (
+      fun key_block_475 => ({code  temp_476 ←
                     (xor_block (last_block_474) (key_block_475)) ;;
                    temp_477 ←
-                    (array_slice_range (temp_476) ((usize 0, last_block_len_470
+                    (array_slice_range (temp_476 : block_t) ((usize 0, last_block_len_470
                         ))) ;;
                    temp_478 ←
                     (seq_set_chunk (blocks_out_459) (blocksize_v) (
@@ -1736,16 +1705,19 @@ temp_461 ←
                   #put blocks_out_459_loc := 
                     (temp_478) ;;
                   blocks_out_459 ← get blocks_out_459_loc ;;
-                  
-                  @pkg_core_definition.ret _ ( (Ok ((blocks_out_459
-                      )))) } : code _ [interface] _)) ))
-          (({code  (@pkg_core_definition.ret _ ( ((blocks_out_459
-                  )))) } : code _ [interface] _)) (fun '(blocks_out_459) =>
+                  let blocks_out_459 : seq uint8 :=
+                    (blocks_out_459) in
+                
+                  @pkg_core_definition.ret (result (seq uint8) uint8) ( (Ok ((blocks_out_459
+                          )))) } : code _ [interface] _))
+
+} : code (fset ( path.sort leb [ st_306_loc ; key_ex_387_loc ; input_421_loc ; st_274_loc ; out_439_loc ; ctr_452_loc ; out_279_loc ; k_374_loc ; result_375_loc ; out_342_loc ; k_369_loc ; out_318_loc ; blocks_out_459_loc])) [interface] _) (({code  (@pkg_core_definition.ret _ ( (Ok (blocks_out_459
+                  )))) } : code _ [interface] _)) ((fun '(blocks_out_459) =>
           ({code @pkg_core_definition.ret (result byte_seq int8) ( (
               @Ok byte_seq int8 (
-                blocks_out_459))) } : code _ [interface] _)) ) } : code (
-        fset (
-          path.sort leb [ out_318_loc ; st_274_loc ; k_374_loc ; result_375_loc ; st_306_loc ; out_279_loc ; key_ex_387_loc ; ctr_452_loc ; input_421_loc ; out_342_loc ; blocks_out_459_loc ; k_369_loc ; out_439_loc])) [interface] _)).
+                blocks_out_459))) } : code _ [interface] _)))
+  } : code _ [interface] _))
+         })).
 Fail Next Obligation.
 
 
@@ -1766,10 +1738,10 @@ Program Definition aes128_encrypt
        temp_487 ←
         (aes_counter_mode (temp_483) (nonce_484) (counter_485) (msg_486) (
             key_length_v) (rounds_v) (key_schedule_length_v) (key_length_v) (
-            iterations_v)) ;;
+                            iterations_v)) ;;
        temp_488 ←
-        (result_unwrap (temp_487)) ;;
-      @pkg_core_definition.ret seq uint8 ( (temp_488)) } : code (fset (
+        (result_unwrap (ct_T temp_487)) ;;
+      @pkg_core_definition.ret (seq uint8) ( (temp_488)) } : code (fset (
           path.sort leb [ out_318_loc ; k_374_loc ; k_369_loc ; st_274_loc ; key_ex_387_loc ; input_421_loc ; out_439_loc ; out_279_loc ; out_342_loc ; ctr_452_loc ; result_375_loc ; st_306_loc ; blocks_out_459_loc])) [interface] _)).
 Fail Next Obligation.
 
@@ -1793,8 +1765,8 @@ Program Definition aes128_decrypt
             key_length_v) (rounds_v) (key_schedule_length_v) (key_length_v) (
             iterations_v)) ;;
        temp_496 ←
-        (result_unwrap (temp_495)) ;;
-      @pkg_core_definition.ret seq uint8 ( (temp_496)) } : code (fset (
+        (result_unwrap (ct_T temp_495)) ;;
+      @pkg_core_definition.ret (seq uint8) ( (temp_496)) } : code (fset (
           path.sort leb [ st_306_loc ; out_439_loc ; key_ex_387_loc ; k_374_loc ; out_342_loc ; blocks_out_459_loc ; out_318_loc ; result_375_loc ; ctr_452_loc ; k_369_loc ; st_274_loc ; input_421_loc ; out_279_loc])) [interface] _)).
 Fail Next Obligation.
 

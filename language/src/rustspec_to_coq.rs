@@ -1662,10 +1662,10 @@ fn translate_statements<'a>(
                 .into_iter()
                 .fold(RcDoc::nil(), |rc, x| rc.append(x))
                 .append(RcDoc::as_string("@pkg_core_definition.ret "))
-                .append(match t1 {
+                .append(make_paren(match t1 {
                     Some((_, (x, _))) => translate_base_typ(x),
                     None => RcDoc::as_string("_"),
-                })
+                }))
                 .append(RcDoc::as_string(" ( "))
                 .append(make_paren(trans_e1))
                 .append(RcDoc::as_string(")"))
