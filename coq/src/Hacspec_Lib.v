@@ -1151,11 +1151,14 @@ Definition array_from_list
 
 
 
-Definition array_new_ {A: ChoiceEquality} (init:@T A) (len: nat) : @T (nseq A len).
+Definition array_new__pre {A: ChoiceEquality} (init:@T A) (len: nat) : @T (nseq A len).
   rewrite <- (repeat_length init len).
   intros.
   apply (@array_from_list_pre A (repeat init len)).
 Defined.
+Definition array_new_ {A: ChoiceEquality} (init:@T A) (len: nat) :
+  code fset.fset0 [interface] (@ct (nseq A len)) :=
+  lift_to_code (array_new__pre init len).
 
 
 Open Scope nat_scope.
@@ -1221,7 +1224,7 @@ Definition array_from_seq_pre
   (out_len:nat)
   (input: seq_type a)
   : nseq_type a out_len :=
-  let out := array_new_ default out_len in
+  let out := array_new__pre default out_len in
   update_sub_pre out 0 (out_len - 1) (@array_from_list_pre a (@seq_to_list a input)).
 
 Definition array_from_seq   {a: ChoiceEquality}
@@ -1345,7 +1348,7 @@ Definition array_from_slice_range_pre
   (start_fin: (@T uint_size * @T uint_size))
   : @T (nseq a out_len).
 Proof.
-  pose (out := array_new_ default_value out_len).
+  pose (out := array_new__pre default_value out_len).
   destruct start_fin as [start fin].
   refine (update_sub_pre out 0 ((from_uint_size fin) - (from_uint_size start)) _).
   apply (@lseq_slice a ((from_uint_size fin) - (from_uint_size start)) (array_from_seq_pre ((from_uint_size fin) - (from_uint_size start)) input) (from_uint_size start) (from_uint_size fin)).
@@ -1527,7 +1530,7 @@ Definition seq_from_slice_range_pre
   (input: (@T (seq a)))
   (start_fin: ((@T (uint_size)) * (@T (uint_size))))
   : (@T (seq a)) :=
-  let out := array_new_ (default) (seq_len_pre input) in
+  let out := array_new__pre (default) (seq_len_pre input) in
   let (start, fin) := start_fin in
     array_to_seq_pre (update_sub_pre out 0 ((from_uint_size fin) - (from_uint_size start)) ((lseq_slice (array_from_seq_pre (seq_len_pre input) input) (from_uint_size start) (from_uint_size fin)))).
 Definition seq_from_slice_range
@@ -1539,6 +1542,7 @@ Definition seq_from_slice_range
   lift_to_code (seq_from_slice_range_pre input start_fin).
 
 Definition seq_from_seq_pre {A} (l : @T (seq A)) := l.
+Definition seq_from_seq {A} (l : @T (seq A)) : code fset.fset0 [interface] (_) := lift_to_code (seq_from_seq_pre l).
 
 (**** Chunking *)
 
@@ -1599,10 +1603,20 @@ Definition seq_set_chunk_pre
  let idx_start := chunk_len * chunk_num in
  let out_len := seq_chunk_len_pre s chunk_len chunk_num in
   array_to_seq_pre (update_sub_pre (array_from_seq_pre (seq_len_pre s) s) idx_start out_len (array_from_seq_pre (seq_len_pre chunk) chunk)).
+Definition seq_set_chunk
+  {a: ChoiceEquality}
+ `{Default (@T (a))}
+  (s: (@T (seq a)))
+  (chunk_len: nat)
+  (chunk_num: nat)
+  (chunk: (@T (seq a)) ) : code fset.fset0 [interface] (@ct (seq a)) :=
+  lift_to_code (seq_set_chunk_pre s chunk_len chunk_num chunk).
 
+Definition seq_num_exact_chunks_pre {a} (l : (@T (seq a))) (chunk_size : (@T (uint_size))) : (@T (uint_size)) :=
+  (repr (Z.of_nat (length l))) ./ chunk_size.
+Definition seq_num_exact_chunks {a} (l : (@T (seq a))) (chunk_size : (@T (uint_size))) : (code fset.fset0 [interface] _) :=
+  lift_to_code (seq_num_exact_chunks_pre l chunk_size).
 
-(* Definition seq_num_exact_chunks_pre {a} (l : (@T (seq a))) (chunk_size : (@T (uint_size))) : (@T (uint_size)) := *)
-(*   divs (repr (Z.of_nat (length l))) chunk_size. *)
 
 (* Until #84 is fixed this returns an empty sequence if not enough *)
 Definition seq_get_exact_chunk_pre {a : ChoiceEquality} `{Default (@T (a))} (l : (@T (seq a))) (chunk_size chunk_num: (@T (uint_size))) : (@T (seq a)) :=
@@ -2368,6 +2382,19 @@ Definition Err {a b : ChoiceEquality} : b -> result a b := Err_type (@T a) (@T b
 Arguments Ok {_ _}.
 Arguments Err {_ _}.        
 
+Definition result_unwrap_pre {a b} (x : result a b) `{match x with @Ok_type _ _ _ => True | @Err_type _ _ _ => False end} : a.
+  destruct x.
+  apply t.
+  contradiction.
+Defined.
+Definition result_unwrap_safe {a b} (x : result a b) `{match x with @Ok_type _ _ _ => True | @Err_type _ _ _ => False end} : code fset.fset0 [interface] (a) :=
+  (lift_to_code (result_unwrap_pre x (H := ltac:(assumption)))).
+
+Axiom falso : False. Ltac admit := destruct falso.
+
+Definition result_unwrap {a b} (x : result a b) : code fset.fset0 [interface] (a) :=
+  let t := result_unwrap_pre x (H := ltac:(admit)) in lift_to_code t.
+
 Program Definition option_choice_equality (a : ChoiceEquality) :=
   {| ct := chOption a ; T := option a ; |}.
 Next Obligation.
@@ -2588,7 +2615,7 @@ Qed.
         unfold seq.behead in i0.
         apply i0.
         apply i.
-      }.      
+      }
       exact (andb (Inb a l2) (IHl1 H)).      
   Defined.
 
@@ -2767,8 +2794,6 @@ Module ChoiceEqualityMonad.
       + apply valid_ret.      
   Qed.
 
-  Definition foldi_bind_code {A : ChoiceEquality} `{mnd : CEMonad} `{@bind_through_code _ mnd} (a : uint_size) (b : uint_size) {L1 L2 : list Location} `{is_true (incl_sort_compute _ L1 L2)} {I} (f : uint_size -> A -> code (fset L2) I (@ct (M A))) (init : M A) : code (fset L2) I (@ct (M A)) := foldi a b (fun x y => bind_code (L1 := L1) (is_true0 := is_true0) (lift_to_code y) (f x)) init.
-
     (* @foldi (M A) a b L I *)
    (* (fun (x : @T uint_size) (y : @T (M A)) => *)
    (*  @lift_to_code (M A) L I (@bind M mnd A A y (f x))) init. *)
@@ -2798,12 +2823,20 @@ End ChoiceEqualityMonad.
 
 (*** Notation *)
 
-Global Notation "'ifbnd' b 'then' x 'else' y '>>' f" := (if b then f x else f y) (at level 200).
-Global Notation "'ifbnd' b 'thenbnd' x 'else' y '>>' f" := (if b then (ChoiceEqualityMonad.bind x) f else f y) (at level 200).
-Global Notation "'ifbnd' b 'then' x 'elsebnd' y '>>' f" := (if b then f x else (ChoiceEqualityMonad.bind y) f) (at level 200).
-Global Notation "'ifbnd' b 'thenbnd' x 'elsebnd' y '>>' f" := (if b then ChoiceEqualityMonad.bind x f else ChoiceEqualityMonad.bind y f) (at level 200).
+Program Definition if_bind_code {A : ChoiceEquality} `{mnd : ChoiceEqualityMonad.CEMonad} `{@ChoiceEqualityMonad.bind_through_code _ mnd} (b : bool_ChoiceEquality) {Lx Ly L2 : list Location}  `{it1 : is_true (incl_sort_compute _ Lx L2)} `{it2 : is_true (incl_sort_compute _ Ly L2)} {I} (x : code (fset Lx) I (M A)) (y : code (fset Ly) I (M A)) (f : A -> code (fset L2) I (@ct (M A))) : code (fset L2) I (@ct (M A)) :=
+  if b
+  then ChoiceEqualityMonad.bind_code (L1 := Lx) (is_true0 := it1) x f
+  else ChoiceEqualityMonad.bind_code (L1 := Ly) (is_true0 := it2) y f.
 
-Global Notation "'foldibnd' s 'to' e 'for' z '>>' f" := (ChoiceEqualityMonad.foldi_bind_code s e f (Ok z)) (at level 50).
+(* Global Notation "'ifbnd' b 'then' x 'else' y '>>' f" := (if b then f x else f y) (at level 200). *)
+(* Global Notation "'ifbnd' b 'thenbnd' x 'else' y '>>' f" := (if b then (ChoiceEqualityMonad.bind_code x) f else f y) (at level 200). *)
+(* Global Notation "'ifbnd' b 'then' x 'elsebnd' y '>>' f" := (if b then f x else (ChoiceEqualityMonad.bind_code y) f) (at level 200). *)
+(* Global Notation "'ifbnd' b 'thenbnd' x 'elsebnd' y '>>' f" := (if b then ChoiceEqualityMonad.bind x f else ChoiceEqualityMonad.bind y f) (at level 200). *)
+
+Definition foldi_bind_code {A : ChoiceEquality} `{mnd : ChoiceEqualityMonad.CEMonad} `{@ChoiceEqualityMonad.bind_through_code _ mnd} (a : uint_size) (b : uint_size) {L1 L2 : list Location} `{is_true (incl_sort_compute _ L1 L2)} {I}  (init : M A) (f : uint_size -> A -> code (fset L2) I (@ct (M A))) : code (fset L2) I (@ct (M A)) :=
+  foldi a b (fun x y => ChoiceEqualityMonad.bind_code (L1 := L1) (is_true0 := is_true0) (lift_to_code y) (f x)) init.
+
+Global Notation "'foldibnd' s 'to' e 'for' z '>>' f" := (foldi_bind_code s e (Ok z) f) (at level 50).
 
 Section TodoSection3.
 Axiom nat_mod_from_byte_seq_be : forall  {A n}, seq A -> nat_mod n.
@@ -3223,7 +3256,11 @@ Ltac ssprove_valid' :=
             | [ |- context[match ?x with | Ok_type _ => _ | Err_type _ => _ end] ] =>
                 destruct x
             end
-         || apply valid_ret).
+          || match goal with
+            | [ |- context[let _ := ct_T ?x in _] ] =>
+                destruct ct_T
+            end
+          || apply valid_ret).
 
 Ltac ssprove_valid'_2 :=
   destruct_choice_type_prod ;
@@ -3242,4 +3279,3 @@ Ltac ssprove_valid'_2 :=
 
 (* Canonical pct (T1 T2 : choiceType) := *)
 (*   Eval hnf in ChoiceType (T1 * T2) (prod_choiceMixin T1 T2). *)
- 

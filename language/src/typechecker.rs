@@ -1665,8 +1665,8 @@ fn typecheck_expression(
                 .union(external_mut_vars.external_vars)
             {
                 match (x, y) {
-                    (Ident::Local(LocalIdent { id, name, mutable }), Some(var)) => {
-                        var_context.1 = var_context.1.update(id, (var, name, mutable))
+                    (Ident::Local(LocalIdent { id, name, mutable: _ }), Some(var)) => { // TODO: mutable should always be true
+                        var_context.1 = var_context.1.update(id, (var, name, true))
                     }
                     _ => (),
                 }
@@ -1815,8 +1815,8 @@ fn typecheck_expression(
                 .union(external_mut_vars.external_vars)
             {
                 match (x, y) {
-                    (Ident::Local(LocalIdent { id, name, mutable }), Some(var)) => {
-                        var_context.1 = var_context.1.update(id, (var, name, mutable))
+                    (Ident::Local(LocalIdent { id, name, mutable: _ }), Some(var)) => { // TODO: mutable should always be true here
+                        var_context.1 = var_context.1.update(id, (var, name, true))
                     }
                     _ => (),
                 }
@@ -2311,8 +2311,6 @@ fn typecheck_statement(
                 &expr_typ,
                 top_level_context,
             )?;
-
-            println!("{:?}", new_var_context);
             
             let mut ret_var_context = (
                 new_var_context.clone().0.union(pat_var_context.0),
@@ -2325,14 +2323,12 @@ fn typecheck_statement(
 
             if let Pattern::IdentPat(x, true) = pat.clone() {
                 match (x, typ.clone().map(|t| t.0)) {
-                    (Ident::Local(LocalIdent { id, name, mutable }), Some(var)) => {
-                        ret_var_context.1 = ret_var_context.1.update(id, (var, name, mutable))
+                    (Ident::Local(LocalIdent { id, name, mutable: _ }), Some(var)) => { // mutable should always be true
+                        ret_var_context.1 = ret_var_context.1.update(id, (var, name, false))
                     }
                     _ => (),
                 }
             };
-
-            println!("{:?} {:?}", question_mark, translate_var_context_to_mut_vars(ret_var_context.clone()));
 
             Ok((
                 Statement::LetBinding(
