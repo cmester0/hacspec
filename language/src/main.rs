@@ -28,13 +28,13 @@ use itertools::Itertools;
 use rustc_driver::{Callbacks, Compilation, RunCompiler};
 use rustc_errors::emitter::{ColorConfig, HumanReadableErrorType};
 use rustc_errors::DiagnosticId;
+use rustc_errors::MultiSpan;
 use rustc_interface::{
     interface::{Compiler, Config},
     Queries,
 };
 use rustc_session::Session;
 use rustc_session::{config::ErrorOutputType, search_paths::SearchPath};
-use rustc_span::MultiSpan;
 use serde::Deserialize;
 use serde_json;
 use std::env;
@@ -648,7 +648,10 @@ impl Callbacks for HacspecCallbacks {
                         let new_crate: rustc_ast::ast::Crate = rustc_ast::ast::Crate {
                             attrs: vec![],
                             items: parse_mod_krate_items,
-                            span: rustc_span::DUMMY_SP,
+                            spans: rustc_ast::ModSpans {
+                                inner_span: rustc_span::DUMMY_SP,
+                                inject_use_span: rustc_span::DUMMY_SP,
+                            },
                             id: rustc_ast::DUMMY_NODE_ID,
                             is_placeholder: false,
                         };

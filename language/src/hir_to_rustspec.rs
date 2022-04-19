@@ -54,7 +54,7 @@ fn translate_base_typ(
         TyKind::Uint(UintTy::U32) => Ok((BaseTyp::UInt32, typ_ctx.clone())),
         TyKind::Uint(UintTy::U64) => Ok((BaseTyp::UInt64, typ_ctx.clone())),
         TyKind::Uint(UintTy::U128) => Ok((BaseTyp::UInt128, typ_ctx.clone())),
-        TyKind::Ref(region, inner_ty, mutability) => match region {
+        TyKind::Ref(region, inner_ty, mutability) => match region.kind() {
             RegionKind::ReStatic => match mutability {
                 Mutability::Not => match inner_ty.kind() {
                     TyKind::Str => Ok((BaseTyp::Str, typ_ctx.clone())),
@@ -65,7 +65,7 @@ fn translate_base_typ(
             _ => Err(()),
         },
         TyKind::Adt(adt, substs) => {
-            let adt_id = adt.did;
+            let adt_id = adt.did();
             let adt_def_path = tcx.def_path(adt_id);
             // We're looking at types from imported crates that can only be imported
             // with * blobs so the types have to be re-exported from inner modules,
@@ -245,11 +245,18 @@ fn translate_base_typ(
         },
         TyKind::Tuple(args) => {
             let mut new_args = Vec::new();
-            let typ_ctx = args.types().fold(Ok(typ_ctx.clone()), |typ_ctx, ty| {
-                let (new_ty, typ_ctx) = translate_base_typ(tcx, &ty, &typ_ctx?)?;
+            let mut typ_ctx = Ok(typ_ctx.clone());
+            for ty in args.clone() {
+                let (new_ty, typ_ctx_temp) = translate_base_typ(tcx, &ty, &typ_ctx?)?;
                 new_args.push((new_ty, DUMMY_SP.into()));
-                Ok(typ_ctx)
-            })?;
+                typ_ctx = Ok(typ_ctx_temp);
+            }
+            let typ_ctx = typ_ctx?;
+            // let typ_ctx = args.for().types().fold(Ok(typ_ctx.clone()), |typ_ctx, ty| {
+            //     let (new_ty, typ_ctx) = translate_base_typ(tcx, &ty, &typ_ctx?)?;
+            //     new_args.push((new_ty, DUMMY_SP.into()));
+            //     Ok(typ_ctx)
+            // })?;
             Ok((BaseTyp::Tuple(new_args), typ_ctx))
         }
         _ => Err(()),
@@ -439,10 +446,10 @@ fn check_non_enum_special_type_from_struct_shape(tcx: &TyCtxt, def: &ty::Ty) -> 
             if substs.len() > 0 {
                 return SpecialTypeReturn::NotSpecial;
             }
-            if adt.variants.len() != 1 {
+            if adt.variants().len() != 1 {
                 return SpecialTypeReturn::NotSpecial;
             }
-            let variant = adt.variants.iter().next().unwrap();
+            let variant = adt.variants().iter().next().unwrap();
             let maybe_abstract_int = match variant.fields.len() {
                 1 => false,
                 3 => true,
@@ -460,7 +467,7 @@ fn check_non_enum_special_type_from_struct_shape(tcx: &TyCtxt, def: &ty::Ty) -> 
                             return SpecialTypeReturn::NotSpecial;
                         }
                     };
-                    let new_size = match &size.val {
+                    let new_size = match &size.val() {
                         // We can only retrieve the actual size of the array
                         // when the size has been declared as a literal value,
                         // not a reference to another const value
@@ -525,7 +532,7 @@ fn check_special_type_from_struct_shape(tcx: &TyCtxt, def: &ty::Ty) -> SpecialTy
                 AdtKind::Enum => {
                     // TODO: check whether substs contains only unconstrained type parameters
                     let cases = check_vec(
-                        adt.variants
+                        adt.variants()
                             .iter()
                             .map(|variant| {
                                 let name = variant.ident(tcx.clone()).name.to_ident_string();
@@ -595,15 +602,15 @@ fn check_special_type_from_struct_shape(tcx: &TyCtxt, def: &ty::Ty) -> SpecialTy
                     if substs.len() > 0 {
                         return SpecialTypeReturn::NotSpecial;
                     }
-                    if adt.variants.len() != 1 {
+                    if adt.variants().len() != 1 {
                         return SpecialTypeReturn::NotSpecial;
                     }
-                    let variant = adt.variants.iter().next().unwrap();
+                    let variant = adt.variants().iter().next().unwrap();
                     let name = variant.ident(tcx.clone()).name.to_ident_string();
                     // Some wrapper structs are defined in std, core or
                     // hacspec_lib but we don't want to import them
                     // so we special case them out here
-                    let crate_name = tcx.crate_name(tcx.def_path(adt.did).krate);
+                    let crate_name = tcx.crate_name(tcx.def_path(adt.did()).krate);
                     let crate_name = &*crate_name.as_str();
                     match crate_name {
                         "core" | "std" | "hacspec_lib" | "secret_integers"

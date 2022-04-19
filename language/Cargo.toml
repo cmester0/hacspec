@@ -36,6 +36,7 @@ backtrace = { version = "0.3", optional = true }
 dev = [ "backtrace" ]
 
 pearlite-syn = { git = "https://github.com/xldenis/creusot", branch = "master" }
+
 syn = { version = "*", features = ["full", "extra-traits"] }
 quote = "*"
 proc-macro2 = "*"

@@ -2,7 +2,8 @@ use core::cmp::PartialEq;
 use core::hash::Hash;
 use im::HashSet;
 use itertools::Itertools;
-use rustc_span::{MultiSpan, Span};
+use rustc_errors::MultiSpan;
+use rustc_span::Span;
 use serde::{ser::SerializeSeq, Serialize, Serializer};
 use std::fmt;
 
