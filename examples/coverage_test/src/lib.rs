@@ -1,11 +1,78 @@
 // Import hacspec and all needed definitions.
 use hacspec_lib::*;
 
+pub fn numeric_test () {
+    // Numeric for u8
+    let _ : u8 = u8::max_val();
+
+    let _ : u8 = 3_u8.wrap_add(4_u8);
+    let _ : u8 = 3_u8.wrap_sub(4_u8);
+    let _ : u8 = 3_u8.wrap_mul(4_u8);
+    let _ : u8 = 3_u8.wrap_div(4_u8);
+
+    let _ : u8 = 3_u8.exp(4_u32);
+    let _ : u8 = 3_u8.pow_self(4_u8);
+    let _ : u8 = 3_u8.divide(4_u8);
+    let _ : u8 = 3_u8.inv(4_u8);
+    
+    let _ : bool = 3_u8 == 4_u8;
+    let _ : bool = 3_u8 > 4_u8;
+    let _ : bool = 3_u8 >= 4_u8;
+    let _ : bool = 3_u8 < 4_u8;
+    let _ : bool = 3_u8 <= 4_u8;
+    
+    let _ : u8 = 3_u8.not_equal_bm(4_u8);
+    let _ : u8 = 3_u8.equal_bm(4_u8);
+
+    let _ : u8 = 3_u8.greater_than_bm(4_u8);
+    let _ : u8 = 3_u8.greater_than_or_equal_bm(4_u8);
+    let _ : u8 = 3_u8.less_than_bm(4_u8);
+    let _ : u8 = 3_u8.less_than_or_equal_bm(4_u8);
+
+    let _ : u8 = 3_u8 / 4_u8;
+    let _ : u8 = 3_u8 % 4_u8;
+
+    // std::ops::Add (sub trait)
+    let _ : u8 = 3_u8 + 4_u8;
+    // std::ops::Sub (sub trait)
+    let _ : u8 = 4_u8 - 3_u8;
+    // std::ops::Mul (sub trait)
+    let _ : u8 = 3_u8 * 4_u8;
+    // std::ops::BitXor (sub trait)
+    let _ : u8 = 3_u8 ^ 4_u8;
+    // std::ops::BitOr (sub trait)
+    let _ : u8 = 3_u8 | 4_u8;
+    // std::ops::BitAnd (sub trait)
+    let _ : u8 = 3_u8 & 4_u8;
+    // std::ops::Shl (sub trait)
+    let _ : u8 = 3_u8 << 4_usize;
+    // std::ops::Shr (sub trait)
+    let _ : u8 = 3_u8 >> 4_usize;
+    // std::ops::Not (sub trait)
+    let _ : u8 = !3_u8;
+    // Default (sub trait)
+    let _ : u8 = u8::default();
+    // Clone (sub trait)
+    let _ : u8 = 4_u8.clone();
+
+    
+    // Mod numeric (sub trait)
+    let _ : u8 = 3_u8.sub_mod(4_u8, 7_u8);
+    let _ : u8 = 3_u8.add_mod(4_u8, 7_u8);
+    let _ : u8 = 3_u8.mul_mod(4_u8, 7_u8);
+    let _ : u8 = 3_u8.pow_mod(4_u8, 7_u8);
+    let _ : u8 = 3_u8.modulo(7_u8);
+    let _ : u8 = 3_u8.signed_modulo(7_u8);
+    let _ : u8 = 3_u8.absolute();
+}
+
 pub fn big_integer_test () {
     /////////////////////////
     // lib/big_integers.rs //
     /////////////////////////
 
+    // Integer
+    
     BigInt::ZERO();
     BigInt::ONE();
     BigInt::TWO();
@@ -147,108 +214,118 @@ pub fn seq_test () {
     ////////////////////////////////
     // lib/vec_integers_public.rs //
     ////////////////////////////////
+
+    // TODO: Numeric
     
-    let mut ps : PublicSeq<u8> = public_byte_seq!(8_u8, 5_u8, 18_u8);
-    let a : PublicSeq<u8> = public_byte_seq!(8_u8, 5_u8, 18_u8);
-    let n : PublicSeq<u8> = public_byte_seq!(5_u8, 18_u8);
+    // let mut ps : PublicSeq<u8> = public_byte_seq!(8_u8, 5_u8, 18_u8);
+    // let a : PublicSeq<u8> = public_byte_seq!(8_u8, 5_u8, 18_u8);
+    // let n : PublicSeq<u8> = public_byte_seq!(5_u8, 18_u8);
 
-    ps = ps.sub_mod(a.clone(), n.clone());
-    ps = ps.add_mod(a.clone(), n.clone());
-    ps = ps.mul_mod(a.clone(), n.clone());
-    ps = ps.pow_mod(a.clone(), n.clone());
-    ps = ps.absolute();
+    // ps = ps.sub_mod(a.clone(), n.clone());
+    // ps = ps.add_mod(a.clone(), n.clone());
+    // ps = ps.mul_mod(a.clone(), n.clone());
+    // ps = ps.pow_mod(a.clone(), n.clone());
+    // ps = ps.absolute();
 
-    PublicSeq::<u8>::max_val();
-    ps = ps.wrap_add(a.clone());
-    ps = ps.wrap_sub(a.clone());
-    ps = ps.wrap_mul(a.clone());
-    ps = ps.wrap_div(a.clone());
+    // PublicSeq::<u8>::max_val();
+    // ps = ps.wrap_add(a.clone());
+    // ps = ps.wrap_sub(a.clone());
+    // ps = ps.wrap_mul(a.clone());
+    // ps = ps.wrap_div(a.clone());
 
-    ps = ps.exp(2_u32);
-    ps = ps.pow_self(a.clone());
-    ps = ps.divide(a.clone());
-    ps = ps.inv(a.clone());
-    let _ : bool = ps.clone().equal(a.clone());
+    // ps = ps.exp(2_u32);
+    // ps = ps.pow_self(a.clone());
+    // ps = ps.divide(a.clone());
+    // ps = ps.inv(a.clone());
+    // let _ : bool = ps.clone().equal(a.clone());
     
-    let _ : bool = ps.clone().greater_than(a.clone());
-    let _ : bool = ps.clone().greater_than_or_equal(a.clone());
-    let _ : bool = ps.clone().less_than(a.clone());
-    let _ : bool = ps.clone().less_than_or_equal(a.clone());
+    // let _ : bool = ps.clone().greater_than(a.clone());
+    // let _ : bool = ps.clone().greater_than_or_equal(a.clone());
+    // let _ : bool = ps.clone().less_than(a.clone());
+    // let _ : bool = ps.clone().less_than_or_equal(a.clone());
 
-    ps = ps.not_equal_bm(a.clone());
-    ps = ps.equal_bm(a.clone());
-    ps = ps.greater_than_bm(a.clone());
-    ps = ps.greater_than_or_equal_bm(a.clone());
-    ps = ps.less_than_bm(a.clone());
-    ps = ps.less_than_or_equal_bm(a.clone());
+    // ps = ps.not_equal_bm(a.clone());
+    // ps = ps.equal_bm(a.clone());
+    // ps = ps.greater_than_bm(a.clone());
+    // ps = ps.greater_than_or_equal_bm(a.clone());
+    // ps = ps.less_than_bm(a.clone());
+    // ps = ps.less_than_or_equal_bm(a.clone());
 
-    ps = ps * a.clone();
-    ps = ps - a.clone();
-    ps = ps + a.clone();
-    ps = !ps;
-    ps = ps | a.clone();
-    ps = ps ^ a.clone();
-    ps = ps & a.clone();
-    ps = ps >> 3;
-    ps = ps << 3;
+    // ps = ps * a.clone();
+    // ps = ps - a.clone();
+    // ps = ps + a.clone();
+    // ps = !ps;
+    // ps = ps | a.clone();
+    // ps = ps ^ a.clone();
+    // ps = ps & a.clone();
+    // ps = ps >> 3;
+    // ps = ps << 3;
     
     ////////////////////////////////
     // lib/vec_integers_secret.rs //
     ////////////////////////////////
 
-    let mut ss : Seq<U8> = byte_seq!(8_u8, 5_u8, 18_u8);    
-    let a : Seq<U8> = byte_seq!(8_u8, 5_u8, 18_u8);
-    let n : Seq<U8> = byte_seq!(5_u8, 18_u8);
-
-    ss = ss.sub_mod(a.clone(), n.clone());
-    ss = ss.add_mod(a.clone(), n.clone());
-    ss = ss.mul_mod(a.clone(), n.clone());
-    ss = ss.pow_mod(a.clone(), n.clone());
-    ss = ss.absolute();
-
-    Seq::<U8>::max_val();
-    ss = ss.wrap_add(a.clone());
-    ss = ss.wrap_sub(a.clone());
-    ss = ss.wrap_mul(a.clone());
-    ss = ss.wrap_div(a.clone());
-
-    ss = ss.exp(2_u32);
-    ss = ss.pow_self(a.clone());
-    ss = ss.divide(a.clone());
-    ss = ss.inv(a.clone());
-    let _ : bool = ss.clone().equal(a.clone());
+    // TODO: Numeric
     
-    let _ : bool = ss.clone().greater_than(a.clone());
-    let _ : bool = ss.clone().greater_than_or_equal(a.clone());
-    let _ : bool = ss.clone().less_than(a.clone());
-    let _ : bool = ss.clone().less_than_or_equal(a.clone());
+    // let mut ss : Seq<U8> = byte_seq!(8_u8, 5_u8, 18_u8);    
+    // let a : Seq<U8> = byte_seq!(8_u8, 5_u8, 18_u8);
+    // let n : Seq<U8> = byte_seq!(5_u8, 18_u8);
 
-    ss = ss.not_equal_bm(a.clone());
-    ss = ss.equal_bm(a.clone());
-    ss = ss.greater_than_bm(a.clone());
-    ss = ss.greater_than_or_equal_bm(a.clone());
-    ss = ss.less_than_bm(a.clone());
-    ss = ss.less_than_or_equal_bm(a.clone());
+    // ss = ss.sub_mod(a.clone(), n.clone());
+    // ss = ss.add_mod(a.clone(), n.clone());
+    // ss = ss.mul_mod(a.clone(), n.clone());
+    // ss = ss.pow_mod(a.clone(), n.clone());
+    // ss = ss.absolute();
 
-    ss = ss.clone() + a.clone();
-    ss = ss.clone() * a.clone();
+    // Seq::<U8>::max_val();
+    // ss = ss.wrap_add(a.clone());
+    // ss = ss.wrap_sub(a.clone());
+    // ss = ss.wrap_mul(a.clone());
+    // ss = ss.wrap_div(a.clone());
+
+    // ss = ss.exp(2_u32);
+    // ss = ss.pow_self(a.clone());
+    // ss = ss.divide(a.clone());
+    // ss = ss.inv(a.clone());
+    // let _ : bool = ss.clone().equal(a.clone());
+    
+    // let _ : bool = ss.clone().greater_than(a.clone());
+    // let _ : bool = ss.clone().greater_than_or_equal(a.clone());
+    // let _ : bool = ss.clone().less_than(a.clone());
+    // let _ : bool = ss.clone().less_than_or_equal(a.clone());
+
+    // ss = ss.not_equal_bm(a.clone());
+    // ss = ss.equal_bm(a.clone());
+    // ss = ss.greater_than_bm(a.clone());
+    // ss = ss.greater_than_or_equal_bm(a.clone());
+    // ss = ss.less_than_bm(a.clone());
+    // ss = ss.less_than_or_equal_bm(a.clone());
+
+    // ss = ss.clone() + a.clone();
+    // ss = ss.clone() * a.clone();
  
-    ss = ss * a.clone();
-    ss = ss - a.clone();
-    ss = ss + a.clone();
-    ss = !ss;
-    ss = ss | a.clone();
-    ss = ss ^ a.clone();
-    ss = ss & a.clone();
-    ss = ss >> 3;
-    ss = ss << 3;
-
+    // ss = ss * a.clone();
+    // ss = ss - a.clone();
+    // ss = ss + a.clone();
+    // ss = !ss;
+    // ss = ss | a.clone();
+    // ss = ss ^ a.clone();
+    // ss = ss & a.clone();
+    // ss = ss >> 3;
+    // ss = ss << 3;
 
     /////////////////////////
     // lib/vec_integers.rs //
     /////////////////////////
 
-    // TODO: Fill in examples !
+    let mut ps : PublicSeq<u8> = public_byte_seq!(8_u8, 5_u8, 18_u8);
+    let a : PublicSeq<u8> = public_byte_seq!(8_u8, 5_u8, 18_u8);
+
+    ps = vec_poly_mul(ps, a.clone(), 8_u8);
+    ps = vec_poly_add(ps, a.clone(), 8_u8);
+    ps = vec_poly_sub(ps, a.clone(), 8_u8);
+    
+    // TODO: numeric
 }
 
 array!(ArrName, 8, U64);
@@ -372,3 +449,4 @@ pub fn array_test () {
     ByteArrName::from_seq(&hs);
     ByteArrName::from_seq(&ByteSeq::new(3));
 }
+

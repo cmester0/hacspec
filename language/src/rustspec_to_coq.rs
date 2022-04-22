@@ -321,16 +321,16 @@ fn translate_literal<'a>(lit: Literal) -> RcDoc<'a, ()> {
         Literal::Unit => RcDoc::as_string("tt"),
         Literal::Bool(true) => RcDoc::as_string("true"),
         Literal::Bool(false) => RcDoc::as_string("false"),
-        Literal::Int128(x) => RcDoc::as_string(format!("repr (i := U128) {}", x)),
-        Literal::UInt128(x) => RcDoc::as_string(format!("repr (i := U128) {}", x)),
-        Literal::Int64(x) => RcDoc::as_string(format!("repr (i := U64) {}", x)),
-        Literal::UInt64(x) => RcDoc::as_string(format!("repr (i := U64) {}", x)),
-        Literal::Int32(x) => RcDoc::as_string(format!("repr (i := U32) {}", x)),
-        Literal::UInt32(x) => RcDoc::as_string(format!("repr (i := U32) {}", x)),
-        Literal::Int16(x) => RcDoc::as_string(format!("repr (i := U16) {}", x)),
-        Literal::UInt16(x) => RcDoc::as_string(format!("repr (i := U16) {}", x)),
-        Literal::Int8(x) => RcDoc::as_string(format!("repr (i := U8) {}", x)),
-        Literal::UInt8(x) => RcDoc::as_string(format!("repr (i := U8) {}", x)),
+        Literal::Int128(x) => RcDoc::as_string(format!("(repr (i := U128) {} : int128)", x)),
+        Literal::UInt128(x) => RcDoc::as_string(format!("(repr (i := U128) {} : int128)", x)),
+        Literal::Int64(x) => RcDoc::as_string(format!("(repr (i := U64) {} : int64)", x)),
+        Literal::UInt64(x) => RcDoc::as_string(format!("(repr (i := U64) {} : int64)", x)),
+        Literal::Int32(x) => RcDoc::as_string(format!("(repr (i := U32) {} : int32)", x)),
+        Literal::UInt32(x) => RcDoc::as_string(format!("(repr (i := U32) {} : int32)", x)),
+        Literal::Int16(x) => RcDoc::as_string(format!("(repr (i := U16) {} : int16)", x)),
+        Literal::UInt16(x) => RcDoc::as_string(format!("(repr (i := U16) {} : int16)", x)),
+        Literal::Int8(x) => RcDoc::as_string(format!("(repr (i := U8) {} : int8)", x)),
+        Literal::UInt8(x) => RcDoc::as_string(format!("(repr (i := U8) {} : int8)", x)),
         Literal::Isize(x) => RcDoc::as_string(format!("isize {}", x)),
         Literal::Usize(x) => RcDoc::as_string(format!("usize {}", x)),
         Literal::Str(msg) => RcDoc::as_string(format!("\"{}\"", msg)),
@@ -687,10 +687,26 @@ fn translate_func_name<'a>(
                 _ => (),
             }
             (
-                module_name
-                    .clone()
-                    .append(RcDoc::as_string("_"))
-                    .append(func_ident.clone()),
+                match (
+                    format!("{}", module_name.pretty(0)).as_str(),
+                    format!("{}", func_ident.pretty(0)).as_str(),
+                ) {
+                    (_, "default") => func_ident,
+                    (_, "clone") => RcDoc::nil(),
+                    ("pub_uint8" | "pub_int8" |
+                     "pub_uint16" | "pub_int16" |
+                     "pub_uint32" | "pub_int32" |
+                     "pub_uint64" | "pub_int64" |
+                     "pub_uint128" | "pub_int128" |
+                     "big_int" , _) => func_ident
+                        .clone()
+                        .append(RcDoc::space())
+                        .append(module_name.clone()),
+                    _ => module_name.clone()
+                        .clone()
+                        .append(RcDoc::as_string("_"))
+                        .append(func_ident),
+                },
                 additional_args,
                 result_typ,
             )
@@ -813,37 +829,37 @@ fn translate_expression<'a>(e: Expression, top_ctx: &'a TopLevelContext) -> RcDo
         }
         Expression::MethodCall(sel_arg, sel_typ, (f, _), args) => {
             // Ignore "clone" // TODO: is this correct?
-            if f.string == "clone" {
+            // if f.string == "clone" {
+            //     // Then the self argument
+            //     make_paren(translate_expression((sel_arg.0).0, top_ctx))
+            //         // And finally the rest of the arguments
+            //         .append(RcDoc::concat(args.into_iter().map(|((arg, _), _)| {
+            //             RcDoc::space().append(make_paren(translate_expression(arg, top_ctx)))
+            //         })))
+            // } else {
+            let (func_name, additional_args, func_ret_ty) = translate_func_name(
+                sel_typ.clone().map(|x| x.1),
+                Ident::TopLevel(f.clone()),
+                top_ctx,
+            );
+            func_name // We append implicit arguments first
+                .append(RcDoc::concat(
+                    additional_args
+                        .into_iter()
+                        .map(|arg| RcDoc::space().append(make_paren(arg))),
+                ))
+                .append(RcDoc::space())
                 // Then the self argument
-                make_paren(translate_expression((sel_arg.0).0, top_ctx))
-                    // And finally the rest of the arguments
-                    .append(RcDoc::concat(args.into_iter().map(|((arg, _), _)| {
-                        RcDoc::space().append(make_paren(translate_expression(arg, top_ctx)))
-                    })))
-            } else {
-                let (func_name, additional_args, func_ret_ty) = translate_func_name(
-                    sel_typ.clone().map(|x| x.1),
-                    Ident::TopLevel(f.clone()),
-                    top_ctx,
-                );
-                func_name // We append implicit arguments first
-                    .append(RcDoc::concat(
-                        additional_args
-                            .into_iter()
-                            .map(|arg| RcDoc::space().append(make_paren(arg))),
-                    ))
-                    .append(RcDoc::space())
-                    // Then the self argument
-                    .append(make_paren(translate_expression((sel_arg.0).0, top_ctx)))
-                    // And finally the rest of the arguments
-                    .append(RcDoc::concat(args.into_iter().map(|((arg, _), _)| {
-                        RcDoc::space().append(make_paren(translate_expression(arg, top_ctx)))
-                    })))
-                    .append(match func_ret_ty {
-                        Some(ret_ty) => RcDoc::as_string(" : ").append(translate_base_typ(ret_ty)),
-                        None => RcDoc::nil(),
-                    })
-            }
+                .append(make_paren(translate_expression((sel_arg.0).0, top_ctx)))
+                // And finally the rest of the arguments
+                .append(RcDoc::concat(args.into_iter().map(|((arg, _), _)| {
+                    RcDoc::space().append(make_paren(translate_expression(arg, top_ctx)))
+                })))
+                .append(match func_ret_ty {
+                    Some(ret_ty) => RcDoc::as_string(" : ").append(translate_base_typ(ret_ty)),
+                    None => RcDoc::nil(),
+                })
+            // }
         }
         Expression::ArrayIndex(x, e2, typ) => {
             let e2 = e2.0;

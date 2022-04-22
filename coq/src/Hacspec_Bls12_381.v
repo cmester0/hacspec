@@ -336,8 +336,7 @@ Definition g1add_a (p_128 : g1_t) (q_129 : g1_t) : g1_t :=
   let xovery_136 : fp_t :=
     (y_diff_135) *% (nat_mod_inv (x_diff_134)) in 
   let x3_137 : fp_t :=
-    ((nat_mod_exp (xovery_136) (@repr WORDSIZE32 2)) -% (x1_130)) -% (
-      x2_132) in 
+    ((nat_mod_exp (xovery_136) (repr (i := U32) 2)) -% (x1_130)) -% (x2_132) in 
   let y3_138 : fp_t :=
     ((xovery_136) *% ((x1_130) -% (x3_137))) -% (y1_131) in 
   (x3_137, y3_138, false).
@@ -346,14 +345,14 @@ Definition g1double_a (p_139 : g1_t) : g1_t :=
   let '(x1_140, y1_141, _) :=
     p_139 in 
   let x12_142 : fp_t :=
-    nat_mod_exp (x1_140) (@repr WORDSIZE32 2) in 
+    nat_mod_exp (x1_140) (repr (i := U32) 2) in 
   let xovery_143 : fp_t :=
     ((nat_mod_from_literal (
           0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab) (
-          @repr WORDSIZE128 3) : fp_t) *% (x12_142)) *% (nat_mod_inv ((
+          repr (i := U128) 3) : fp_t) *% (x12_142)) *% (nat_mod_inv ((
           nat_mod_two ) *% (y1_141))) in 
   let x3_144 : fp_t :=
-    (nat_mod_exp (xovery_143) (@repr WORDSIZE32 2)) -% ((nat_mod_two ) *% (
+    (nat_mod_exp (xovery_143) (repr (i := U32) 2)) -% ((nat_mod_two ) *% (
         x1_140)) in 
   let y3_145 : fp_t :=
     ((xovery_143) *% ((x1_140) -% (x3_144))) -% (y1_141) in 
@@ -430,7 +429,7 @@ Definition g2double_a (p_181 : g2_t) : g2_t :=
   let t1_185 : (fp_t × fp_t) :=
     fp2mul (fp2fromfp (nat_mod_from_literal (
           0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab) (
-          @repr WORDSIZE128 3) : fp_t)) (x12_184) in 
+          repr (i := U128) 3) : fp_t)) (x12_184) in 
   let t2_186 : (fp_t × fp_t) :=
     fp2inv (fp2mul (fp2fromfp (nat_mod_two )) (y1_183)) in 
   let xovery_187 : (fp_t × fp_t) :=
@@ -501,7 +500,7 @@ Definition line_double_p (r_219 : g2_t) (p_220 : g1_t) : fp12_t :=
   let a_223 : (fp_t × fp_t) :=
     fp2mul (fp2fromfp (nat_mod_from_literal (
           0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab) (
-          @repr WORDSIZE128 3) : fp_t)) (fp2mul (r0_221) (r0_221)) in 
+          repr (i := U128) 3) : fp_t)) (fp2mul (r0_221) (r0_221)) in 
   let a_224 : (fp_t × fp_t) :=
     fp2mul (a_223) (fp2inv (fp2mul (fp2fromfp (nat_mod_two )) (r1_222))) in 
   let b_225 : (fp_t × fp_t) :=
@@ -549,12 +548,12 @@ Definition frobenius (f_243 : fp12_t) : fp12_t :=
   let c1_256 : array_fp_t :=
     array_from_list uint64 (let l :=
         [
-          secret (@repr WORDSIZE64 10162220747404304312) : int64;
-          secret (@repr WORDSIZE64 17761815663483519293) : int64;
-          secret (@repr WORDSIZE64 8873291758750579140) : int64;
-          secret (@repr WORDSIZE64 1141103941765652303) : int64;
-          secret (@repr WORDSIZE64 13993175198059990303) : int64;
-          secret (@repr WORDSIZE64 1802798568193066599) : int64
+          secret (repr (i := U64) 10162220747404304312) : int64;
+          secret (repr (i := U64) 17761815663483519293) : int64;
+          secret (repr (i := U64) 8873291758750579140) : int64;
+          secret (repr (i := U64) 1141103941765652303) : int64;
+          secret (repr (i := U64) 13993175198059990303) : int64;
+          secret (repr (i := U64) 1802798568193066599) : int64
         ] in  l) in 
   let c1_257 : seq uint8 :=
     array_to_le_bytes (c1_256) in 
@@ -563,12 +562,12 @@ Definition frobenius (f_243 : fp12_t) : fp12_t :=
   let c2_259 : array_fp_t :=
     array_from_list uint64 (let l :=
         [
-          secret (@repr WORDSIZE64 3240210268673559283) : int64;
-          secret (@repr WORDSIZE64 2895069921743240898) : int64;
-          secret (@repr WORDSIZE64 17009126888523054175) : int64;
-          secret (@repr WORDSIZE64 6098234018649060207) : int64;
-          secret (@repr WORDSIZE64 9865672654120263608) : int64;
-          secret (@repr WORDSIZE64 71000049454473266) : int64
+          secret (repr (i := U64) 3240210268673559283) : int64;
+          secret (repr (i := U64) 2895069921743240898) : int64;
+          secret (repr (i := U64) 17009126888523054175) : int64;
+          secret (repr (i := U64) 6098234018649060207) : int64;
+          secret (repr (i := U64) 9865672654120263608) : int64;
+          secret (repr (i := U64) 71000049454473266) : int64
         ] in  l) in 
   let c2_260 : seq uint8 :=
     array_to_le_bytes (c2_259) in 
@@ -610,7 +609,7 @@ Definition final_exponentiation (f_272 : fp12_t) : fp12_t :=
   let u_278 : scalar_t :=
     nat_mod_from_literal (
       0x8000000000000000000000000000000000000000000000000000000000000000) (
-      @repr WORDSIZE128 15132376222941642752) : scalar_t in 
+      repr (i := U128) 15132376222941642752) : scalar_t in 
   let t0_279 : (fp6_t × fp6_t) :=
     fp12mul (f_277) (f_277) in 
   let t1_280 : (fp6_t × fp6_t) :=
@@ -669,7 +668,7 @@ Definition pairing (p_305 : g1_t) (q_306 : g2_t) : fp12_t :=
   let t_307 : scalar_t :=
     nat_mod_from_literal (
       0x8000000000000000000000000000000000000000000000000000000000000000) (
-      @repr WORDSIZE128 15132376222941642752) : scalar_t in 
+      repr (i := U128) 15132376222941642752) : scalar_t in 
   let r_308 : (fp2_t × fp2_t × bool) :=
     q_306 in 
   let f_309 : (fp6_t × fp6_t) :=
