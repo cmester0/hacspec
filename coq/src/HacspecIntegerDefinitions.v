@@ -52,13 +52,13 @@ Section Numerics.
       signed_modulo : A -> A -> A ;
       absolute : A -> A ;
     }.
-  Arguments add_mod {_} ModNumeric.
-  Arguments sub_mod {_} ModNumeric.
-  Arguments mul_mod {_} ModNumeric.
-  Arguments pow_mod {_} ModNumeric.
-  Arguments modulo {_} ModNumeric.
-  Arguments signed_modulo {_} ModNumeric.
-  Arguments absolute {_} ModNumeric.
+  (* Global Arguments add_mod {_} ModNumeric. *)
+  (* Global Arguments sub_mod {_} ModNumeric. *)
+  (* Global Arguments mul_mod {_} ModNumeric. *)
+  (* Global Arguments pow_mod {_} ModNumeric. *)
+  (* Global Arguments modulo {_} ModNumeric. *)
+  (* Global Arguments signed_modulo {_} ModNumeric. *)
+  (* Global Arguments absolute {_} ModNumeric. *)
 
   (* + Add<Self, Output = Self> *)
   (* + Sub<Self, Output = Self> *)
@@ -73,8 +73,7 @@ Section Numerics.
   (* + Clone *)
   (* + Debug *)
 
-  Class Numeric (A : Type) `{Default A} `{EqDec A} `{Comparable A} `{ModNumeric A} : Type :=
-    {
+  Class Numeric (A : Type) `{Default A} `{EqDec A} `{Comparable A} `{ModNumeric A} := {
       max_val : Z ; (* max_val : A *)
       max_val_pos : (0 < max_val)%Z ;
       wrap_add : A -> A -> A ;
@@ -102,28 +101,37 @@ Section Numerics.
       less_than_or_equal_bm : A -> A -> A ;
     }.
 
-  Arguments max_val {_} {_} {_} {_} {_} Numeric.
-  Arguments wrap_add {_} {_} {_} {_} {_} Numeric.
-  Arguments wrap_sub {_} {_} {_} {_} {_} Numeric.
-  Arguments wrap_mul {_} {_} {_} {_} {_} Numeric.
-  Arguments wrap_div {_} {_} {_} {_} {_} Numeric.
-  Arguments exp {_} {_} {_} {_} {_} Numeric.
-  Arguments pow_self {_} {_} {_} {_} {_} Numeric.
-  Arguments divide {_} {_} {_} {_} {_} Numeric.
-  Arguments inv {_} {_} {_} {_} {_} Numeric.
+  Global Instance NumericComparable `(x : Numeric) : Comparable A := _.
+  Global Coercion NumericComparable : Numeric >-> Comparable.
 
-  Arguments equal {_} {_} {_} {_} {_} Numeric.
-  Arguments greater_than {_} {_} {_} {_} {_} Numeric.
-  Arguments greater_than_or_equal {_} {_} {_} {_} {_} Numeric.
-  Arguments less_than {_} {_} {_} {_} {_} Numeric.
-  Arguments less_than_or_equal {_} {_} {_} {_} {_} Numeric.
+  Global Instance NumericDefault `(x : Numeric) : Default A := _.
+  Global Coercion NumericDefault : Numeric >-> Default.
 
-  Arguments not_equal_bm {_} {_} {_} {_} {_} Numeric.
-  Arguments equal_bm {_} {_} {_} {_} {_} Numeric.
-  Arguments greater_than_bm {_} {_} {_} {_} {_} Numeric.
-  Arguments greater_than_or_equal_bm {_} {_} {_} {_} {_} Numeric.
-  Arguments less_than_bm {_} {_} {_} {_} {_} Numeric.
-  Arguments less_than_or_equal_bm {_} {_} {_} {_} {_} Numeric.
+  Global Instance NumericModNumeric `(x : Numeric) : ModNumeric A := _.
+  Global Coercion NumericModNumeric : Numeric >-> ModNumeric.
+  
+  Global Arguments max_val {_} {_} {_} {_} {_} Numeric.
+  Global Arguments wrap_add {_} {_} {_} {_} {_} Numeric.
+  Global Arguments wrap_sub {_} {_} {_} {_} {_} Numeric.
+  Global Arguments wrap_mul {_} {_} {_} {_} {_} Numeric.
+  Global Arguments wrap_div {_} {_} {_} {_} {_} Numeric.
+  Global Arguments exp {_} {_} {_} {_} {_} Numeric.
+  Global Arguments pow_self {_} {_} {_} {_} {_} Numeric.
+  Global Arguments divide {_} {_} {_} {_} {_} Numeric.
+  Global Arguments inv {_} {_} {_} {_} {_} Numeric.
+
+  Global Arguments equal {_} {_} {_} {_} {_} Numeric.
+  Global Arguments greater_than {_} {_} {_} {_} {_} Numeric.
+  Global Arguments greater_than_or_equal {_} {_} {_} {_} {_} Numeric.
+  Global Arguments less_than {_} {_} {_} {_} {_} Numeric.
+  Global Arguments less_than_or_equal {_} {_} {_} {_} {_} Numeric.
+
+  Global Arguments not_equal_bm {_} {_} {_} {_} {_} Numeric.
+  Global Arguments equal_bm {_} {_} {_} {_} {_} Numeric.
+  Global Arguments greater_than_bm {_} {_} {_} {_} {_} Numeric.
+  Global Arguments greater_than_or_equal_bm {_} {_} {_} {_} {_} Numeric.
+  Global Arguments less_than_bm {_} {_} {_} {_} {_} Numeric.
+  Global Arguments less_than_or_equal_bm {_} {_} {_} {_} {_} Numeric.
 
   Class Integer (A : Type) `(Numeric A) :=  {
       NUM_BITS: nat ; (* uint_size ; *)
@@ -139,16 +147,13 @@ Section Numerics.
       rotate_right : A -> uint_size -> A ;
     }.
 
-  Instance NumericModNumeric `(x : Numeric) : ModNumeric A := _.
-  Coercion NumericModNumeric : Numeric >-> ModNumeric.
-
+  Global Instance IntegerNumeric `(x : Integer) : Numeric A := _.
+  Global Coercion IntegerNumeric : Integer >-> Numeric.
 
   (*** Machine Integers *)
   
   Class MachineInteger T `(Integer T) :=
     {
-      (* T : Type := IntType (translate i) ; *)
-      
       repr : Z -> T ;
       unsigned : T -> Z ;
       signed : T -> Z ;
@@ -176,9 +181,9 @@ Section Numerics.
 
       (* zero : T ; *)
       (* one : T ; *)
-      modulus := (max_val _ + 1)%Z ;  (* two_power_nat NUM_BITS *)
+      modulus := (_.(max_val) + 1)%Z ;  (* two_power_nat NUM_BITS *)
 
-      unsigned_repr : forall z, (0 <= z <= max_val _)%Z -> unsigned (repr z) = z ;
+      unsigned_repr : forall z, (0 <= z <= _.(max_val))%Z -> unsigned (repr z) = z ;
       repr_unsigned : forall x, repr (unsigned x) = x ;
       unsigned_range : forall x, (0 <= unsigned x < modulus)%Z ;
 
@@ -194,7 +199,27 @@ Section Numerics.
       eq_leibniz_int : forall x y, eq_int x y = true <-> x = y ;
     }.
 
+  (* Record MachineIntegerRecord : Type := *)
+  (*   mkMachineIntegerRecord { *)
+  (*       T : Type ; *)
+  (*       d : Default T ; *)
+  (*       nm : ModNumeric T ; *)
+  (*       n : Numeric T ; *)
+  (*       i :> Integer T n ; *)
+  (*       mi :> MachineInteger T _ } . *)
+  
+  (* Global Coercion repr : Z >-> T. *)
+  
   Definition IntegerType `(MachineInteger) : Type := T.
+  Global Coercion IntegerType : MachineInteger >-> Sortclass.
+    
+  Global Instance MachineIntegerInteger `(x : MachineInteger) : Integer T _ := _.
+  Global Coercion MachineIntegerInteger : MachineInteger >-> Integer.
+  
+  Global Instance IntegerTypeMachineInteger `{mi : MachineInteger} `(x : IntegerType mi) :
+    MachineInteger mi _ := mi.
+  Global Coercion IntegerTypeMachineInteger : IntegerType >-> MachineInteger.
+  
 End Numerics.
 
 Global Infix "%%" := Z.rem (at level 40, left associativity) : Z_scope.
