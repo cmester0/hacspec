@@ -617,7 +617,8 @@ impl Callbacks for HacspecCallbacks {
         // Find module location using hir
         queries.global_ctxt().unwrap().peek_mut().enter(|tcx| {
             let hir_krate = tcx.hir();
-            for item in hir_krate.items() {
+            for item_id in hir_krate.items() {
+                let item = tcx.hir().item(item_id);
                 if let rustc_hir::ItemKind::Mod(_m) = &item.kind {
                     let (expra, exprb, _exprc) = &tcx.hir().get_module(item.def_id);
 
@@ -630,7 +631,7 @@ impl Callbacks for HacspecCallbacks {
                         )),
                         rustc_span::FileName::Real(rustc_span::RealFileName::LocalPath(root)),
                     ) = (
-                        sm.span_to_filename(expra.inner),
+                        sm.span_to_filename(expra.spans.inner_span),
                         sm.span_to_filename(*exprb),
                     ) {
                         // parse the file for the module

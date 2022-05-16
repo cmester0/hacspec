@@ -9,7 +9,7 @@ use rustc_ast::{
     },
     node_id::NodeId,
     ptr::P,
-    token::{DelimToken, LitKind as TokenLitKind, TokenKind},
+    token::{Delimiter, LitKind as TokenLitKind, TokenKind},
     tokenstream::{TokenStream, TokenTree},
 };
 use rustc_session::Session;
@@ -1564,6 +1564,7 @@ fn translate_expr(
             sess.span_rustspec_err(e.span.clone(), "underscores are not allowed in Hacspec");
             Err(())
         }
+        ExprKind::Yeet(_) => todo!(),
     }
 }
 
@@ -1839,7 +1840,7 @@ fn check_for_literal_array(
     arg: &TokenTree,
 ) -> TranslationResult<Vec<Spanned<Expression>>> {
     match arg {
-        TokenTree::Delimited(_, DelimToken::Bracket, inside) => {
+        TokenTree::Delimited(_, Delimiter::Bracket, inside) => {
             let commas_and_exprs: Vec<TranslationResult<Option<Spanned<Expression>>>> = inside
                 .trees()
                 .enumerate()
@@ -2294,10 +2295,10 @@ fn tokentree_text(x: TokenTree) -> String {
         },
         TokenTree::Delimited(_, delim_token, inner) => {
             let (left, right) = match delim_token {
-                DelimToken::Paren => ("(", ")"),
-                DelimToken::Bracket => ("[", "]"),
-                DelimToken::Brace => ("{", "}"),
-                DelimToken::NoDelim => ("", ""),
+                Delimiter::Parenthesis => ("(", ")"),
+                Delimiter::Bracket => ("[", "]"),
+                Delimiter::Brace => ("{", "}"),
+                Delimiter::Invisible => ("", ""),
             };
 
             left.to_string()

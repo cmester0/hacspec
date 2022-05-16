@@ -833,25 +833,26 @@ pub fn retrieve_external_data(
             }
         }
     }
-    for item in tcx.hir().items() {
-        let item_id = tcx.hir().local_def_id(item.hir_id()).to_def_id();
+    for item_id in tcx.hir().items() {
+        let item = tcx.hir().item(item_id);
+        let item_def_id = tcx.hir().local_def_id(item_id.hir_id()).to_def_id();
         match &item.kind {
             ItemKind::Fn(_, _, _) => process_fn_id(
                 sess,
                 tcx,
-                &item_id,
+                &item_def_id,
                 &LOCAL_CRATE,
                 &mut extern_funcs,
                 &mut extern_consts,
             ),
             ItemKind::Impl(i) => {
                 for item in i.items.iter() {
-                    let item_id = tcx.hir().local_def_id(item.id.hir_id()).to_def_id();
+                    let item_def_id = tcx.hir().local_def_id(item.id.hir_id()).to_def_id();
                     if let AssocItemKind::Fn { .. } = item.kind {
                         process_fn_id(
                             sess,
                             tcx,
-                            &item_id,
+                            &item_def_id,
                             &LOCAL_CRATE,
                             &mut extern_funcs,
                             &mut extern_consts,
