@@ -17,6 +17,7 @@ mod hir_to_rustspec;
 mod name_resolution;
 mod rustspec;
 mod rustspec_to_coq;
+mod rustspec_to_coq_concert;
 mod rustspec_to_easycrypt;
 mod rustspec_to_fstar;
 mod typechecker;
@@ -449,9 +450,9 @@ fn handle_crate<'tcx>(
                     // Compute file name as output directory with crate local path (file_name)
                     file_name.clone().to_title_case().replace(" ", ".") + "." + extension
                 }
-                "v" => {
+                "v" | "v_concert" => {
                     // Compute file name as output directory with crate local path (file_name)
-                    file_name.clone().to_title_case().replace(" ", "_") + "." + extension
+                    file_name.clone().to_title_case().replace(" ", "_") + ".v"
                 }
                 _ => {
                     compiler
@@ -514,6 +515,12 @@ fn handle_crate<'tcx>(
                     };
                 }
                 "v" => rustspec_to_coq::translate_and_write_to_file(
+                    &compiler.session(),
+                    &krate,
+                    &file,
+                    &top_ctx_map[&krate_path],
+                ),
+                "v_concert" => rustspec_to_coq_concert::translate_and_write_to_file(
                     &compiler.session(),
                     &krate,
                     &file,
