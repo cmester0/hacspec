@@ -2304,7 +2304,7 @@ fn tokentree_text(x: TokenTree) -> String {
             left.to_string()
                 + &inner
                     .trees()
-                    .fold("".to_string(), |s, x| s + &tokentree_text(x))
+                    .fold("".to_string(), |s, x| s + &tokentree_text(x.clone()))
                 + right
         }
     }
@@ -2321,7 +2321,7 @@ fn get_delimited_tree(attr: Attribute) -> Option<rustc_ast::tokenstream::TokenSt
     match first_token {
         TokenTree::Token(first_tok) => match first_tok.kind {
             TokenKind::Pound => {
-                let inner = get_delimited_inner_tree(second_token)?;
+                let inner = get_delimited_inner_tree(second_token.clone())?;
                 if inner.len() != 2 {
                     return None;
                 }
@@ -2352,7 +2352,7 @@ fn attribute_requires(attr: &Attribute) -> Option<String> {
             let inner = get_delimited_tree(attr.clone())?;
             let textify = inner
                 .trees()
-                .fold("".to_string(), |s, x| s + &tokentree_text(x));
+                .fold("".to_string(), |s, x| s + &tokentree_text(x.clone()));
             Some(textify)
         }
         _ => None,
@@ -2366,7 +2366,7 @@ fn attribute_ensures(attr: &Attribute) -> Option<String> {
             let inner = get_delimited_tree(attr.clone())?;
             let textify = inner
                 .trees()
-                .fold("".to_string(), |s, x| s + &tokentree_text(x));
+                .fold("".to_string(), |s, x| s + &tokentree_text(x.clone()));
             Some(textify)
         }
         _ => None,
@@ -2375,7 +2375,7 @@ fn attribute_ensures(attr: &Attribute) -> Option<String> {
 
 fn attribute_cfg_token_ident(
     ident: rustc_span::symbol::Symbol,
-    mut it: rustc_ast::tokenstream::Cursor,
+    mut it: rustc_ast::tokenstream::CursorRef,
 ) -> Option<Vec<String>> {
     let ident_string = ident.to_ident_string();
     match ident_string.as_str() {
@@ -2434,7 +2434,7 @@ fn attribute_tag(attr: &Attribute) -> Option<Vec<ItemTag>> {
                     TokenKind::Ident(ident, _) => {
                         if ident.to_ident_string() == "not" {
                             let second_token = it.next().unwrap();
-                            let inner = get_delimited_inner_tree(second_token)?;
+                            let inner = get_delimited_inner_tree(second_token.clone())?;
                             let mut it = inner.trees();
                             let first_token = it.next().unwrap();
                             match first_token {
