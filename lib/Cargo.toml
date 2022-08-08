@@ -14,13 +14,13 @@ num = { version = "0.4", default-features = false }
 secret_integers = { path = "../utils/secret-integers", optional = true, version = "0.1.7" } #FIXME: publish new version
 abstract_integers = { path = "../utils/abstract-integers", version = "0.1.5", default-features = false } #FIXME: publish new version
 hacspec-attributes = { path = "../utils/attributes",  optional = true, version = "0.1.0-beta.1" }
+quickcheck = "*"
 
 [dependencies.creusot-contracts]
 git = "https://github.com/xldenis/creusot/"
 # branch = "master"
 rev = "7763b3ae77205fba83182b9a6c3e69ad0b12fec7"
 package = "creusot-contracts"
-quickcheck = "1"
 
 [features]
 default = ["std"]

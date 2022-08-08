@@ -41,12 +41,6 @@ proc-macro2 = "*"
 [features]
 dev = [ "backtrace" ]
 
-# pearlite = "0.1.0"
-pearlite-syn = { path = "../../../creusot/pearlite-syn" }
-syn = { version = "*", features = ["full", "extra-traits"] }
-quote = "*"
-proc-macro2 = "*"
-
 [dev-dependencies]
 assert_cmd = "1.0.1"
 
