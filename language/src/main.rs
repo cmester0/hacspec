@@ -133,32 +133,54 @@ fn construct_handle_crate_queue<'tcx>(
 
     let mut krates = Vec::new();
 
-    // Parse over the crate, loading modules and filling top_level_ctx
-    for x in krate.items.clone().into_iter() {
-        match x.kind {                    
-            // Whenever a module statement is encountered, add it to the queue
-            rustc_ast::ast::ItemKind::Mod(
-                rustc_ast::ast::Unsafe::No,
-                rustc_ast::ast::ModKind::Unloaded,
-            ) => {
-                match construct_handle_crate_queue(
-                    compiler,
-                    handled,
-                    ast_crates_map,
-                    x.ident.name.to_ident_string(),
-                    krate_path.clone(),
-                ) {
-                    Ok(v) => krates.extend(v),
-                    Err(false) => {
-                        // If not able to handle module, stop compilation.
-                        return Err(false);
+    let krate = match krate {
+        rustc_ast::ast::Crate { items, .. } => {
+            // Parse over the crate, loading modules and filling top_level_ctx
+            for x in items.clone().into_iter() {
+                match x.kind {
+                    // Whenever a module statement is encountered, add it to the queue
+                    rustc_ast::ast::ItemKind::Mod(
+                        rustc_ast::ast::Unsafe::No,
+                        rustc_ast::ast::ModKind::Unloaded,
+                    ) => {
+                        match construct_handle_crate_queue(
+                            compiler,
+                            handled,
+                            ast_crates_map,
+                            x.ident.name.to_ident_string(),
+                            krate_path.clone(),
+                        ) {
+                            Ok(v) => krates.extend(v),
+                            Err(false) => {
+                                // If not able to handle module, stop compilation.
+                                return Err(false);
+                            }
+                            Err(true) => (),
+                        }
                     }
-                    Err(true) => (),
+                    _ => (),
                 }
             }
-            _ => (),
+
+            
+            // Remove the modules statements from the crate
+            rustc_ast::ast::Crate {
+                items: items
+                    .clone()
+                    .into_iter()
+                    .filter(|x| match x.kind {
+                        rustc_ast::ast::ItemKind::Mod(
+                            rustc_ast::ast::Unsafe::No,
+                            rustc_ast::ast::ModKind::Unloaded,
+                        ) => false,
+                        _ => true,
+                    })
+                    .collect(),
+                ..krate
+            }
+
         }
-    }
+    };
 
     krates.push((
         (
@@ -166,21 +188,10 @@ fn construct_handle_crate_queue<'tcx>(
             krate_dir.clone(),
             krate_module_string.clone(),
         ),
-        rustc_ast::ast::Crate {
-            items: krate.items
-                .clone()
-                .into_iter()
-                .filter(|x| match x.kind {
-                    rustc_ast::ast::ItemKind::Mod(
-                        rustc_ast::ast::Unsafe::No,
-                        rustc_ast::ast::ModKind::Unloaded,
-                    ) => false,
-                    _ => true,
-                })
-                .collect(),
-            ..krate
-        },
+        krate,
     ));
+
+    handled.insert(krate_module_string.clone());
 
     Ok(krates)
 }
@@ -646,8 +657,9 @@ impl Callbacks for HacspecCallbacks {
             .unwrap()
             .peek_mut()
             .enter(|tcx| {
-                let hir_krate = tcx.hir();
-                for item in hir_krate.items() {                    
+                let hir_krate = tcx.hir();            
+                for item_id in hir_krate.items() {
+                    let item = tcx.hir().item(item_id); 
                     if let rustc_hir::ItemKind::Mod(_m) = &item.kind {
                         let (expra, exprb, _exprc) = &tcx.hir().get_module(item.def_id);
 
@@ -660,7 +672,7 @@ impl Callbacks for HacspecCallbacks {
                             )),
                             rustc_span::FileName::Real(rustc_span::RealFileName::LocalPath(root)),
                         ) = (
-                            sm.span_to_filename(expra.inner),
+                            sm.span_to_filename(expra.spans.inner_span),
                             sm.span_to_filename(*exprb),
                         ) {
                             // parse the file for the module

@@ -2,12 +2,11 @@ use im::{HashMap, HashSet};
 use rustc_ast::{
     ast::{
         self, AngleBracketedArg, Async, AttrVec, Attribute, BindingMode, BlockCheckMode,
-        BorrowKind, Const, Crate, Defaultness, Expr, ExprKind, Extern, FnKind, // FnKind // Fn as 
-        FnRetTy,
+        BorrowKind, Const, Crate, Defaultness, Expr, ExprKind, Extern, Fn as FnKind, FnRetTy,
         GenericArg, GenericArgs, IntTy, ItemKind, LitIntType, LitKind, LocalKind, MacArgs, MacCall,
         Mutability, Pat, PatKind, Path, PathSegment, RangeLimits, Stmt, StmtKind, StrStyle, Ty,
-        TyAliasKind, TyKind, UintTy, UnOp, Unsafe, UseTreeKind, VariantData,
-    }, // TyAliasKind // TyAlias as 
+        TyAlias as TyAliasKind, TyKind, UintTy, UnOp, Unsafe, UseTreeKind, VariantData,
+    },
     node_id::NodeId,
     ptr::P,
     token::{Delimiter, LitKind as TokenLitKind, TokenKind},
@@ -2310,7 +2309,7 @@ fn tokentree_text(x: TokenTree) -> String {
         }
     }
 }
-                                                                             
+
 fn get_delimited_tree(attr: Attribute) -> Option<rustc_ast::tokenstream::TokenStream> {
     let inner_tokens = attr.clone().tokens().to_tokenstream();
     if inner_tokens.len() != 2 {
@@ -2406,105 +2405,11 @@ fn attribute_cfg_token_ident(
     }
 }
 
-fn binop_text(op: rustc_ast::token::BinOpToken) -> String {
-    match op {
-        rustc_ast::token::BinOpToken::Plus => "+".to_string(),
-        rustc_ast::token::BinOpToken::Minus => "-".to_string(),
-        rustc_ast::token::BinOpToken::Star => "*".to_string(),
-        rustc_ast::token::BinOpToken::Slash => "/".to_string(),
-        rustc_ast::token::BinOpToken::Percent => "%".to_string(),
-        rustc_ast::token::BinOpToken::Caret => "^".to_string(),
-        rustc_ast::token::BinOpToken::And => "&".to_string(),
-        rustc_ast::token::BinOpToken::Or => "|".to_string(),
-        rustc_ast::token::BinOpToken::Shl => "<<".to_string(),
-        rustc_ast::token::BinOpToken::Shr => ">>".to_string(),
-    }
-}
-
-fn tokentree_text(x: TokenTree) -> String {
-    match x {
-        TokenTree::Token(tok) => match tok.kind {
-            TokenKind::Eq => "=".to_string(),
-            TokenKind::Lt => "<".to_string(),
-            TokenKind::Le => "<=".to_string(),
-            TokenKind::EqEq => "==".to_string(),
-            TokenKind::Ne => "!=".to_string(),
-            TokenKind::Ge => ">=".to_string(),
-            TokenKind::Gt => ">".to_string(),
-            TokenKind::AndAnd => "&&".to_string(),
-            TokenKind::OrOr => "||".to_string(),
-            TokenKind::Not => "!".to_string(),
-            TokenKind::Tilde => "`".to_string(),
-            TokenKind::BinOp(op) => binop_text(op),
-            TokenKind::BinOpEq(op) => binop_text(op) + "=",
-            TokenKind::At => "@".to_string(),
-            TokenKind::Dot => ".".to_string(),
-            TokenKind::DotDot => "..".to_string(),
-            TokenKind::DotDotDot => "...".to_string(),
-            TokenKind::Comma => ",".to_string(),
-            TokenKind::Semi => ";".to_string(),
-            TokenKind::Colon => ":".to_string(),
-            TokenKind::ModSep => "::".to_string(),
-            TokenKind::RArrow => "->".to_string(),
-            TokenKind::LArrow => "<-".to_string(),
-            TokenKind::FatArrow => "=>".to_string(),
-            TokenKind::Pound => "€".to_string(),
-            TokenKind::Dollar => "$".to_string(),
-            TokenKind::Question => "$".to_string(),
-            TokenKind::Literal(x) => format!["{}", x].to_string(),
-            TokenKind::Ident(sym, _) => format!["{}", sym].to_string(),
-            y => {
-                panic!(" (TODO: {:?})", y);
-            }
-        },
-        TokenTree::Delimited(_, delim_token, inner) => {
-            let (left, right) = match delim_token {
-                DelimToken::Paren => ("(", ")"),
-                DelimToken::Bracket => ("[", "]"),
-                DelimToken::Brace => ("{", "}"),
-                DelimToken::NoDelim => ("", ""),
-            };
-
-            left.to_string()
-                + &inner
-                    .trees()
-                    .fold("".to_string(), |s, x| s + &tokentree_text(x))
-                + right
-        }
-    }
-}
-
-fn get_delimited_tree(attr: Attribute) -> Option<rustc_ast::tokenstream::TokenStream> {
-    let inner_tokens = attr.clone().tokens().to_tokenstream();
-    if inner_tokens.len() != 2 {
-        return None;
-    }
-    let mut it = inner_tokens.trees();
-    let first_token = it.next().unwrap();
-    let second_token = it.next().unwrap();
-    match first_token {
-        TokenTree::Token(first_tok) => match first_tok.kind {
-            TokenKind::Pound => {
-                let inner = get_delimited_inner_tree(second_token)?;
-                if inner.len() != 2 {
-                    return None;
-                }
-                let mut it = inner.trees();
-                let _first_token = it.next().unwrap();
-                // First is derive
-                let second_token = it.next().unwrap();
-                get_delimited_inner_tree(second_token.clone())
-            }
-            _ => None,
-        },
-        _ => None,
-    }
-}
-
-fn attribute_requires(attr: &Attribute) -> Option<String> {
+fn attribute_tag(attr: &Attribute) -> Option<Vec<ItemTag>> {
     let attr_name = attr.name_or_empty().to_ident_string();
     match attr_name.as_str() {
-        "quickcheck" | "proof" | "test" | "requires" | "ensures" | "creusot" => Some(vec![attr_name]),
+        "quickcheck" | "proof" | "test" | "requires" | "ensures" | "creusot" | "hacspec_unsafe"
+        | "unsafe_hacspec" => Some(vec![attr_name]),
         "derive" => {
             let inner = get_delimited_tree(attr.clone())?;
             Some(inner.trees().fold(Vec::new(), |mut a, x| match x {
@@ -3110,18 +3015,12 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
         ItemKind::Fn(fn_kind) => {
             // Foremost we check whether this function is a test, in which case
             // we ignore it
-            let FnKind (
+            let FnKind {
                 defaultness,
                 ref sig,
                 ref generics,
                 ref body,
-            ) = fn_kind.as_ref();
-            // let FnKind {
-            //     defaultness,
-            //     ref sig,
-            //     ref generics,
-            //     ref body,
-            // } = fn_kind.as_ref();
+            } = fn_kind.as_ref();
             // First, checking that no fancy function qualifier is here
             match defaultness {
                 Defaultness::Default(span) => {
@@ -3386,18 +3285,12 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
             Err(())
         }
         ItemKind::TyAlias(ty_alias_kind) => {
-            let TyAliasKind (
+            let TyAliasKind {
                 defaultness,
                 generics,
-                _,
                 ty,
-            ) = ty_alias_kind.as_ref();
-            // let TyAliasKind {
-            //     defaultness,
-            //     generics,
-            //     ty,
-            //     ..
-            // } = ty_alias_kind.as_ref();
+                ..
+            } = ty_alias_kind.as_ref();
             match defaultness {
                 Defaultness::Final => (),
                 Defaultness::Default(span) => {
