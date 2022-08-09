@@ -50,9 +50,9 @@ path = "src/piggybank.rs"
 
 [dependencies]
 hacspec-lib = { path = "../../lib" }
-hacspec-attributes = { path = "../../utils/attributes", version = "0.1.0-beta.1" , features = ["print_attributes"] } # , features = ["hacspec_unsafe"] , , optional = true
+# hacspec-attributes = { path = "../../utils/attributes", version = "0.1.0-beta.1" , features = ["print_attributes"] } # , features = ["hacspec_unsafe"] , , optional = true
 # pearlite-syn = { path = "../../../../creusot/pearlite-syn" }
-creusot-contracts = { path = "../../../../creusot/creusot-contracts" }
+creusot-contracts = { git = "https://github.com/xldenis/creusot", rev = "7763b3ae77205fba83182b9a6c3e69ad0b12fec7" }
 # hacspec = {optional = true}
 concordium-contracts-common = { path = "../../../../concordium-rust-smart-contracts/concordium-contracts-common" }
 hacspec-concordium = { path = "../concordium" }
@@ -83,11 +83,11 @@ extern crate hacspec_lib;
 use hacspec_lib::*;
 
 // #[cfg(feature = "hacspec_attributes")]
-#[cfg(feature = "hacspec")]
-use hacspec_attributes::*;
+// #[cfg(feature = "hacspec")]
+// use hacspec_attributes::*;
 // #[cfg(not(feature = "hacspec"))]
-#[cfg(test)]
-use hacspec_attributes::proof;
+// #[cfg(test)]
+// use hacspec_attributes::proof;
 
 #[cfg(test)]
 #[cfg(not(feature = "hacspec"))]

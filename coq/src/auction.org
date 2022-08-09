@@ -46,9 +46,9 @@ path = "src/auction.rs"
 
 [dependencies]
 hacspec-lib = { path = "../../lib" }
-hacspec-attributes = { path = "../../utils/attributes", version = "0.1.0-beta.1" , features = ["print_attributes"] } # , features = ["hacspec_unsafe"] , , optional = true
+# hacspec-attributes = { path = "../../utils/attributes", version = "0.1.0-beta.1" , features = ["print_attributes"] } # , features = ["hacspec_unsafe"] , , optional = true
 # pearlite-syn = { path = "../../../../creusot/pearlite-syn" }
-creusot-contracts = { path = "../../../../creusot/creusot-contracts" }
+creusot-contracts = { git = "https://github.com/xldenis/creusot", rev = "7763b3ae77205fba83182b9a6c3e69ad0b12fec7" }
 # hacspec = {optional = true}
 concordium-contracts-common = { path = "../../../../concordium-rust-smart-contracts/concordium-contracts-common" }
 hacspec-concordium = { path = "../concordium" }
@@ -79,11 +79,11 @@ extern crate hacspec_lib;
 use hacspec_lib::*;
 
 // #[cfg(feature = "hacspec_attributes")]
-#[cfg(feature = "hacspec")]
-use hacspec_attributes::*;
+// #[cfg(feature = "hacspec")]
+// use hacspec_attributes::*;
 // #[cfg(not(feature = "hacspec"))]
-#[cfg(test)]
-use hacspec_attributes::proof;
+// #[cfg(test)]
+// use hacspec_attributes::proof;
 
 // #[cfg(not(feature = "hacspec"))]
 // extern crate creusot_contracts;
@@ -728,7 +728,7 @@ extern crate quickcheck_macros;
 #[cfg(test)]
 use quickcheck::*;
 
-#[ensures(result === true)]
+#[ensures(result == true)]
 #[cfg(test)]
 #[proof]
 #[quickcheck]
@@ -821,7 +821,7 @@ fn useraddress_from_u8(i : u8) -> UserAddress {
 // TODO: Requires
 // #[requires(18446744073709551615u64 > time)]
 // #[requires(18446744073709551615u64 / 5u64 - 1u64 > input_amount)]
-#[ensures(result === true)]
+#[ensures(result == true)]
 #[quickcheck]
 fn test_auction_bid_and_finalize(item: PublicByteSeq, time : u64, input_amount : u64) -> bool {
     let time = if time == 18446744073709551615u64 { 18446744073709551614u64 } else { time }; // Can overflow !

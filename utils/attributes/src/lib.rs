@@ -55,8 +55,7 @@ macro_rules! declare_attribute {
                         .open(ITEM_LIST_LOCATION)
                         .expect("Error 1");
                     let key_s = String::from($key);
-                    let mut item_list: HashMap<String, HashSet<Signature>> =
-                        serde_json::from_reader(&file).unwrap();
+                    let mut item_list: HashMap<String, HashSet<Signature>> = HashMap::new(); // serde_json::from_reader(&file).unwrap();
                     let item_list_type = match item_list.get_mut(&key_s) {
                         None => {
                             item_list.insert(key_s.clone(), HashSet::new());

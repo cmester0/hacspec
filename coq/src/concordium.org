@@ -43,16 +43,16 @@ path = "src/concordium.rs"
 
 [dependencies]
 hacspec-lib = { path = "../../lib" }
-hacspec-attributes = { path = "../../utils/attributes", version = "0.1.0-beta.1" , features = ["print_attributes", "hacspec_unsafe"] } # , features = ["hacspec_unsafe"] , , optional = true
-creusot-contracts = { path = "../../../../creusot/creusot-contracts" }
+# hacspec-attributes = { path = "../../utils/attributes", version = "0.1.0-beta.1" , features = ["print_attributes", "hacspec_unsafe"] } # , features = ["hacspec_unsafe"] , , optional = true
+creusot-contracts = { git = "https://github.com/xldenis/creusot", rev = "7763b3ae77205fba83182b9a6c3e69ad0b12fec7" }
 concordium-contracts-common = { path = "../../../../concordium-rust-smart-contracts/concordium-contracts-common" ,  version = "=2.0.0" , default-features = false }
 hacspec-concordium-derive = { path = "../concordium-derive" }
 
 # Reduce code size, at the cost of performance in allocation heavy-code.
 wee_alloc="0.4.5"
 
-[features]
-use_attributes = ["hacspec-attributes/print_attributes", "hacspec-attributes/hacspec_unsafe"]
+# [features]
+# use_attributes = ["hacspec-attributes/print_attributes", "hacspec-attributes/hacspec_unsafe"]
 
 [dev-dependencies]
 hacspec-dev = { path = "../../utils/dev" }
@@ -182,8 +182,8 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 extern crate hacspec_lib;
 // pub use hacspec_lib::*;
 
-#[cfg(feature = "hacspec")]
-use hacspec_attributes::*;
+// #[cfg(feature = "hacspec")]
+// use hacspec_attributes::*;
 
 #[cfg(not(feature = "hacspec"))]
 extern crate creusot_contracts;
@@ -1724,7 +1724,7 @@ use crate::{
     trap,
     vec::Vec,
     String,
-    *
+    ,*
 };
 
 use hacspec_lib::*;
@@ -1759,7 +1759,7 @@ We define the coercion function for Reject, and implement the traits
 #+begin_src rust
 #[cfg(not(feature = "hacspec"))]
 #[trusted]
-#[ensures(!(result === 0i32))]
+#[ensures(!(result == 0i32))]
 pub fn non_zero_i32(v : i32) -> NonZeroI32 {
     unsafe { NonZeroI32::new_unchecked(v) }
 }
@@ -1775,12 +1775,12 @@ pub fn coerce_hacspec_to_rust_reject(hacspec_reject: RejectHacspec) -> Reject {
 **** Reject - From trait
 We modle the unsafe block with unchecked non zero as a precondition using requires giving us the hacspec equivalent
 #+begin_src rust
-  #[ensures(!(result === 0i32))] // !=
+  #[ensures(!(result == 0i32))] // !=
   pub fn reject_impl_convert_from_unit() -> RejectHacspec {
       i32::MIN + 1i32
   }
 
-  #[ensures(!(result === 0i32))] // !=
+  #[ensures(!(result == 0i32))] // !=
   pub fn reject_impl_convert_from_parse_error() -> RejectHacspec {
       i32::MIN + 2i32
   }
@@ -1805,7 +1805,7 @@ We then implement the traits
 #+end_src
 We define a log error type and function converting from it to the reject type
 #+begin_src rust
-  #[ensures(!(result === 0i32))] // !=
+  #[ensures(!(result == 0i32))] // !=
   pub fn reject_impl_from_log_error(le: LogError) -> RejectHacspec {
       match le {
           LogError::Full => i32::MIN + 3i32,
@@ -1836,7 +1836,7 @@ We define a type for new contract name errors and conversion from it to reject
       NewContractNameErrorInvalidCharacters,
   }
 
-  #[ensures(!(result === 0i32))] // !=
+  #[ensures(!(result == 0i32))] // !=
   pub fn reject_impl_from_new_contract_name_error(nre: NewContractNameError) -> RejectHacspec {
       match nre {
           NewContractNameError::NewContractNameErrorMissingInitPrefix => i32::MIN + 5i32,
@@ -1870,7 +1870,7 @@ We define a type for new receive name errors and conversion from it to reject
       NewReceiveNameErrorInvalidCharacters,
   }
 
-  #[ensures(!(result === 0i32))] // !=
+  #[ensures(!(result == 0i32))] // !=
   pub fn reject_impl_from_new_receive_name_error(nre: NewReceiveNameError) -> RejectHacspec {
       match nre {
           NewReceiveNameError::NewReceiveNameErrorMissingDotSeparator => i32::MIN + 7i32,
@@ -1896,7 +1896,7 @@ We then implement the traits
 
 We then implement the traits
 #+begin_src rust
-#[ensures(!(result === 0i32))] // !=
+#[ensures(!(result == 0i32))] // !=
 pub fn reject_impl_from_not_payable_error() -> RejectHacspec {
     i32::MIN + 12i32
 }
@@ -2721,6 +2721,10 @@ impl HasActions for Action {
 #+end_src
 
 *** Remaining todo
+:PROPERTIES:
+:header-args: rust :tangle no :eval never
+:END:
+
 # TODO: Get functionlity of everything into hacspec
 #+begin_src rust
 // TODO: Define functionality in hacspec instead!
@@ -2791,6 +2795,7 @@ impl<A, E> UnwrapAbort for Result<A, E> {
 use std::fmt;
 
 #[cfg(not(feature = "hacspec"))]
+#[cfg(feature = "std")]
 impl<A, E: fmt::Debug> ExpectReport for Result<A, E> {
     type Unwrap = A;
 
@@ -2805,18 +2810,19 @@ impl<A, E: fmt::Debug> ExpectReport for Result<A, E> {
 #+end_src
 
 #+begin_src rust
-  // TODO:
-  #[cfg(not(feature = "hacspec"))]
-  impl<A: fmt::Debug, E> ExpectErrReport for Result<A, E> {
-      type Unwrap = E;
+// TODO:
+#[cfg(not(feature = "hacspec"))]
+#[cfg(feature = "std")]
+impl<A: fmt::Debug, E> ExpectErrReport for Result<A, E> {
+    type Unwrap = E;
 
-      fn expect_err_report(self, msg: &str) -> Self::Unwrap {
-          match self {
-              Ok(a) => fail!("{}: {:?}", msg, a),
-              Err(e) => e,
-          }
-      }
-  }
+    fn expect_err_report(self, msg: &str) -> Self::Unwrap {
+        match self {
+            Ok(a) => fail!("{}: {:?}", msg, a),
+            Err(e) => e,
+        }
+    }
+}
 
 #+end_src
 
@@ -2850,15 +2856,16 @@ impl<A, E: fmt::Debug> ExpectReport for Result<A, E> {
 #+end_src
 
 #+begin_src rust
-  // TODO:
-  #[cfg(not(feature = "hacspec"))]
-  impl<A: fmt::Debug> ExpectNoneReport for Option<A> {
-      fn expect_none_report(self, msg: &str) {
-          if let Some(x) = self {
-              fail!("{}: {:?}", msg, x)
-          }
-      }
-  }
+// TODO:
+#[cfg(not(feature = "hacspec"))]
+#[cfg(feature = "std")]
+impl<A: fmt::Debug> ExpectNoneReport for Option<A> {
+    fn expect_none_report(self, msg: &str) {
+        if let Some(x) = self {
+            fail!("{}: {:?}", msg, x)
+        }
+    }
+}
 
 #+end_src
 

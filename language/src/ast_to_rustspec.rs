@@ -3130,7 +3130,7 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
                     Some(a) => {
                         let expr = translate_pearlite(
                             sess,
-                            syn::parse_str(a.clone().as_str()).unwrap(),
+                            syn::parse_str(a.clone().as_str()).expect(a.clone().as_str()),
                             attr.span,
                         );
 
@@ -3148,7 +3148,7 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
                         Some(a) => {
                             let expr = translate_pearlite(
                                 sess,
-                                syn::parse_str(a.clone().as_str()).unwrap(),
+                                syn::parse_str(a.clone().as_str()).expect(a.clone().as_str()),
                                 attr.span,
                             );
 
@@ -3186,6 +3186,7 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
                 if krate_name == "hacspec_attributes" {
                     return Ok((ItemTranslationResult::Ignored, specials.clone()));
                 }
+                println!("Use {:?}", krate_name);
 
                 let data = external_data(&vec![(krate_name.clone(), i.span.into())]);
                 let mut specials = specials.clone();

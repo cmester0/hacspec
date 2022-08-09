@@ -2186,6 +2186,7 @@ fn translate_item<'a>(
             )
         }
         Item::ImportedCrate((TopLevelIdent { string: kr, .. }, _)) => {
+            println!("Import Crate: {}", kr);
             RcDoc::as_string(format!(
             "Require Import {}.",
                 str::replace(&kr.to_title_case(), " ", "_"),
