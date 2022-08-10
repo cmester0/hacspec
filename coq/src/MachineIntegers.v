@@ -19,7 +19,9 @@ Require Import Eqdep_dec Zquot Zwf.
 From compcert Require Import Coqlib Zbits.
 From compcert Require Archi.
 Require Import Lia.
-(** * Comparisons *)
+(** * Comparisons  *)
+
+
 
 Inductive comparison : Type :=
   | Ceq : comparison               (**r same *)

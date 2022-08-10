@@ -165,7 +165,7 @@ Infix ".|" := (MachineIntegers.or) (at level 77) : hacspec_scope.
 Infix "==" := (MachineIntegers.eq) (at level 32) : hacspec_scope.
 (* Definition one := (@one WORDSIZE32). *)
 (* Definition zero := (@zero WORDSIZE32). *)
-Notation "A × B" := (prod A B) (at level 79, left associativity) : hacspec_scope.
+Notation "A ∏ B" := (prod A B) (at level 79, left associativity) : hacspec_scope.
 
 (*** Positive util *)
 
@@ -346,7 +346,7 @@ Proof.
 
   destruct (uint_size_as_positive a) as [ [ _ | b ] y ] ; [ subst | destruct y as [ya yb] ; subst ].
   - apply H_zero.
-  - pose proof (pos_succ_b := positive_to_positive_succs b)
+  - set (pos_succ_b := positive_to_positive_succs b)
     ; symmetry in pos_succ_b
     ; rewrite pos_succ_b in *
     ; clear pos_succ_b.
@@ -526,7 +526,7 @@ Proof.
   clear Heqn.
   induction n.
   - reflexivity.
-  - pose proof (H_max_bound := modulus_range_helper _ (range_of_nat_succ _ H_bound)).
+  - set (H_max_bound := modulus_range_helper _ (range_of_nat_succ _ H_bound)).
     rewrite <- foldi__nat_move_S_fuel by apply H_max_bound.
     cbn.
     rewrite SuccNat2Pos.id_succ.
@@ -774,6 +774,34 @@ Definition array_from_seq
 
 Definition slice {A} (l : seq A) (i j : nat) : seq A :=
   if j <=? i then [] else firstn (j-i+1) (skipn i l).
+
+Lemma slice_len : forall {A} a b (l : list A),
+    b < length l
+    -> a < b
+    -> length (slice l a b) = b - a + 1.
+Proof.
+  intros.
+  unfold slice.
+  rewrite leb_correct_conv by apply H0.
+  rewrite firstn_length_le.
+  - reflexivity.
+  - generalize dependent b.
+    generalize dependent a.
+    induction l as [ | x xs ] ; intros.
+    + inversion H.
+    + destruct a.
+      * cbn.
+        cbn in H.
+        rewrite Nat.sub_0_r.
+        rewrite Nat.add_1_r.
+        apply H.
+      * destruct b.
+        -- inversion H0.
+        -- rewrite Nat.sub_succ.
+           apply lt_S_n in H.
+           apply lt_S_n in H0.
+           apply IHxs ; assumption.
+Qed.
 
 Definition lseq_slice {A n} (l : nseq A n) (i j : nat) : nseq A _ :=
   VectorDef.of_list (slice (VectorDef.to_list l) i j).
@@ -1118,6 +1146,26 @@ Axiom u128_to_le_bytes : int128 -> nseq int8 16.
 Axiom u128_to_be_bytes : int128 -> nseq int8 16.
 Axiom u128_from_le_bytes : nseq int8 16 -> int128.
 Axiom u128_from_be_bytes : nseq int8 16 -> int128.
+
+Axiom nat_from_be_bytes : forall {p}, nseq int8 p -> nat.
+Axiom nat_from_le_bytes : forall {p}, nseq int8 p -> nat.
+
+(* unfold user_address_t in u. *)
+(*     replace (uint_size_to_nat (usize 32%Z)) with 32%nat in u by reflexivity. *)
+(*     destruct (16 <=? #|VectorDef.to_list u|) eqn:leq_16_u. *)
+(*     + pose (@array_slice_range int8 32 u (0, 15)). *)
+(*       replace (from_uint_size _.1) with 0 in n by reflexivity. *)
+(*       replace (from_uint_size _.2) with 15 in n by reflexivity. *)
+(*       rewrite slice_len in n by auto using leb_complete. *)
+(*       destruct (32 <=? #|VectorDef.to_list u|) eqn:leq_32_u. *)
+(*       * pose (@array_slice_range int8 32 u (16, 31)). *)
+(*         replace (from_uint_size _.1) with 16 in n0 by reflexivity. *)
+(*         replace (from_uint_size _.2) with 31 in n0 by reflexivity. *)
+(*         rewrite slice_len in n0 by auto using leb_complete. *)
+(*         apply (int128_to_nat (uint128_from_le_bytes n) + int128_to_nat (uint128_from_le_bytes n0) * 2 ^ 128). *)
+(*       * apply (int128_to_nat (uint128_from_le_bytes n)). *)
+(*     + apply u. *)
+
 
 (*** Nats *)
 
@@ -1770,7 +1818,7 @@ Definition u64_to_be_bytes' : int64 -> nseq int8 8 :=
 
 Open Scope hacspec_scope.
 
-Definition u64_from_be_bytes_fold_fun (i : int8) (s : nat × int64) : nat × int64 :=
+Definition u64_from_be_bytes_fold_fun (i : int8) (s : nat ∏ int64) : nat ∏ int64 :=
   let (n,v) := s in
   (S n, v .+ (@repr WORDSIZE64 ((int8_to_nat i) * 2 ^ (4 * n)))).
 
@@ -1874,7 +1922,7 @@ Global Instance uint8_default : Default uint8 := _.
 Global Instance nat_mod_default {p : Z} : Default (nat_mod p) := {
   default := nat_mod_zero
 }.
-Global Instance prod_default {A B} `{Default A} `{Default B} : Default (A × B) := {
+Global Instance prod_default {A B} `{Default A} `{Default B} : Default (A ∏ B) := {
   default := (default, default)
 }.
 

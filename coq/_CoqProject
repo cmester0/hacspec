@@ -33,5 +33,5 @@ src/Concordium_Impls.v
 
 src/Hacspec_Concordium.v
 
-src/Piggybank.v
-# src/Auction.v
+src/Hacspec_Piggybank.v
+# src/Hacspec_Auction.v
