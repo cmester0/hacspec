@@ -2337,7 +2337,6 @@ fn get_delimited_tree(attr: Attribute) -> Option<rustc_ast::tokenstream::TokenSt
     }
 }
 
-
 fn get_delimited_inner_tree(delim: TokenTree) -> Option<rustc_ast::tokenstream::TokenStream> {
     match delim {
         TokenTree::Delimited(_, _, inner) => Some(inner),
@@ -2368,6 +2367,85 @@ fn attribute_ensures(attr: &Attribute) -> Option<String> {
                 .trees()
                 .fold("".to_string(), |s, x| s + &tokentree_text(x.clone()));
             Some(textify)
+        }
+        _ => None,
+    }
+}
+
+fn attribute_init(attr: &Attribute) -> Option<String> {
+    let attr_name = attr.name_or_empty().to_ident_string();
+    match attr_name.as_str() {
+        "init" => {
+            match attr.kind.clone() {
+                rustc_ast::ast::AttrKind::Normal(p, o) => {
+                    match p.args {
+                        rustc_ast::MacArgs::Delimited(_, _, t) => {
+                            let inner_tokens = t;
+
+                            let mut it = inner_tokens.trees();
+                            it.next();
+                            it.next();
+                            match it.next().unwrap() {
+                                TokenTree::Token(third_tok) => match third_tok.kind {
+                                    TokenKind::Literal(l) => {
+                                        Some(l.symbol.to_string())
+                                    }
+                                    _ => None,
+                                },
+                                _ => None,
+                            }
+                        }
+                        _ => None,
+                    }
+                },
+                _ => None,
+            }
+        }
+        _ => None,
+    }
+}
+
+fn attribute_receive(attr: &Attribute) -> Option<(String, String, bool)> {
+    let attr_name = attr.name_or_empty().to_ident_string();
+    match attr_name.as_str() {
+        "receive" => {
+            match attr.kind.clone() {
+                rustc_ast::ast::AttrKind::Normal(p, o) => {
+                    match p.args {
+                        rustc_ast::MacArgs::Delimited(_, _, t) => {
+                            let inner_tokens = t;
+
+                            let mut it = inner_tokens.trees();
+                            it.next();
+                            it.next();
+                            let temp = match it.next().unwrap() {
+                                TokenTree::Token(third_tok) => match third_tok.kind {
+                                    TokenKind::Literal(l) => {
+                                        Some(l.symbol.to_string())
+                                    }
+                                    _ => None,
+                                },
+                                _ => None,
+                            }?;
+                            it.next();
+                            it.next();
+                            it.next();
+                            let temp2 = match it.next().unwrap() {
+                                TokenTree::Token(third_tok) => match third_tok.kind {
+                                    TokenKind::Literal(l) => {
+                                        Some(l.symbol.to_string())
+                                    }
+                                    _ => None,
+                                },
+                                _ => None,
+                            }?;
+                            Some ((temp, temp2, it.next().is_some()))
+                        }
+                        _ => None,
+                    }
+                },
+                _ => None,
+            }
         }
         _ => None,
     }
@@ -2409,7 +2487,7 @@ fn attribute_tag(attr: &Attribute) -> Option<Vec<ItemTag>> {
     let attr_name = attr.name_or_empty().to_ident_string();
     match attr_name.as_str() {
         "quickcheck" | "proof" | "test" | "requires" | "ensures" | "creusot" | "hacspec_unsafe"
-        | "unsafe_hacspec" => Some(vec![attr_name]),
+        | "unsafe_hacspec" | "init" | "receive" => Some(vec![attr_name]),
         "derive" => {
             let inner = get_delimited_tree(attr.clone())?;
             Some(inner.trees().fold(Vec::new(), |mut a, x| match x {
@@ -2869,10 +2947,12 @@ pub fn translate_pearlite(
         //         pearlite_syn::term::Term::Repeat(_) => RcDoc::as_string("TODORepeat"),
         //         pearlite_syn::term::Term::Struct(_) => RcDoc::as_string("TODOStruct"),
         pearlite_syn::term::Term::Tuple(pearlite_syn::term::TermTuple { elems, .. }) => {
-            ExprKind::Tup(elems
-                        .into_iter()
-                          .map(|x| P(translate_pearlite_unquantified(sess, x, span).unwrap()))
-                          .collect())
+            ExprKind::Tup(
+                elems
+                    .into_iter()
+                    .map(|x| P(translate_pearlite_unquantified(sess, x, span).unwrap()))
+                    .collect(),
+            )
         }
         //         pearlite_syn::term::Term::Type(ty) => RcDoc::as_string("TODOType"),
         pearlite_syn::term::Term::Unary(pearlite_syn::term::TermUnary { op, expr }) => {
@@ -2986,7 +3066,6 @@ fn translate_quantified_expr(
     }
 }
 
-
 fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
     sess: &Session,
     i: &ast::Item,
@@ -2996,10 +3075,17 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
     log::trace!("translate_items ({:?})", i);
     let mut tags = HashSet::new();
     tags.insert("code".to_string());
-    i
-        .attrs
+    i.attrs
         .iter()
         .fold((), |(), attr| match attribute_tag(attr) {
+            Some(a) if a[0].as_str() == "init" => {
+                println!("TODO: handle 'init' with ConCert");
+                tags.extend(a.iter());
+            }
+            Some(a) if a[0].as_str() == "receive" => {
+                println!("TODO: handle 'receive' with ConCert");
+                tags.extend(a.iter());
+            }
             Some(a) => {
                 tags.extend(a.iter());
             }
@@ -3011,6 +3097,7 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
     {
         return Ok((ItemTranslationResult::Ignored, specials.clone()));
     }
+
     match &i.kind {
         ItemKind::Fn(fn_kind) => {
             // Foremost we check whether this function is a test, in which case
@@ -3153,8 +3240,29 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
                             );
 
                             let expression = translate_quantified_expr(sess, specials, expr);
-
                             v.push(expression);
+                            v
+                        }
+                        None => v,
+                    });
+
+            let init =
+                i.attrs
+                    .iter()
+                    .fold(Vec::new(), |mut v, attr| match attribute_init(attr) {
+                        Some(a) => {
+                            v.push(a);
+                            v
+                        }
+                        None => v,
+                    });
+            
+            let receive =
+                i.attrs
+                    .iter()
+                    .fold(Vec::new(), |mut v, attr| match attribute_receive(attr) {
+                        Some(a) => {
+                            v.push(a);
                             v
                         }
                         None => v,
@@ -3170,6 +3278,8 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
                 fn_body,
                 requires,
                 ensures,
+                init,
+                receive
             );
 
             Ok((
@@ -3353,8 +3463,8 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
             Err(())
         }
         ItemKind::Mod(a, b) => {
-            println!("mod '{:?}' '{:?}' '{:?}'", i, a , b);
-            
+            println!("mod '{:?}' '{:?}' '{:?}'", i, a, b);
+
             sess.span_rustspec_err(i.span.clone(), "sub-modules not allowed in Hacspec");
             Err(())
         }

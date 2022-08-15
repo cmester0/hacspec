@@ -471,8 +471,10 @@ pub enum Item {
         Spanned<TopLevelIdent>,
         FuncSig,
         Spanned<Block>,
-        Vec<Quantified<(Ident, Spanned<BaseTyp>), Spanned<Expression>>>,
-        Vec<Quantified<(Ident, Spanned<BaseTyp>), Spanned<Expression>>>,
+        Vec<Quantified<(Ident, Spanned<BaseTyp>), Spanned<Expression>>>, // requires
+        Vec<Quantified<(Ident, Spanned<BaseTyp>), Spanned<Expression>>>, // ensures
+        Vec<String>, // init
+        Vec<(String, String, bool)>, // receive
     ),
     EnumDecl(
         Spanned<TopLevelIdent>,

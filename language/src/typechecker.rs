@@ -2834,7 +2834,7 @@ fn typecheck_item(
             ))
         }
         Item::AliasDecl(_, _) | Item::ImportedCrate(_) | Item::EnumDecl(_, _) => Ok(i.clone()),
-        Item::FnDecl((f, f_span), sig, (b, b_span), requires, ensures) => {
+        Item::FnDecl((f, f_span), sig, (b, b_span), requires, ensures, init, receive) => {
             log::trace!("   Item::FnDecl");
             let var_context = HashMap::new();
             let var_context = sig
@@ -2912,6 +2912,8 @@ fn typecheck_item(
                 (new_b, b_span.clone()),
                 new_requires,
                 new_ensures,
+                init.clone(),
+                receive.clone()
             );
             Ok(out)
         }

@@ -4,6 +4,7 @@
 
 src/MachineIntegers.v
 src/Hacspec_Lib.v
+src/ConCertLib.v
 src/QuickChickLib.v
 
 # src/Hacspec_Aes.v # TODO: not currently working ?

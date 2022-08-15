@@ -1,0 +1,30 @@
+[package]
+name = "hacspec-piggybank"
+version = "0.1.0"
+authors = [""]
+edition = "2018"
+
+[lib]
+path = "src/piggybank.rs"
+
+[dependencies]
+hacspec-lib = { path = "../../lib" }
+# hacspec-attributes = { path = "../../utils/attributes", version = "0.1.0-beta.1" , features = ["print_attributes"] } # , features = ["hacspec_unsafe"] , , optional = true
+# pearlite-syn = { path = "../../../../creusot/pearlite-syn" }
+creusot-contracts = { git = "https://github.com/xldenis/creusot", rev = "7763b3ae77205fba83182b9a6c3e69ad0b12fec7" }
+creusot-contracts-dummy = { git = "https://github.com/xldenis/creusot", rev = "7763b3ae77205fba83182b9a6c3e69ad0b12fec7" }
+# hacspec = {optional = true}
+concordium-contracts-common = { path = "../../../../concordium-rust-smart-contracts/concordium-contracts-common" }
+hacspec-concordium = { path = "../concordium" }
+hacspec-concordium-derive = { path = "../concordium-derive" }
+
+[features]
+hacspec = []
+# use_attributes = ["hacspec-attributes", "hacspec-attributes/print_attributes"]
+
+[dev-dependencies]
+hacspec-dev = { path = "../../utils/dev" }
+criterion = "0.3"
+rand = "0.8"
+quickcheck = "1"
+quickcheck_macros = "1"

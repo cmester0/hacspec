@@ -1150,6 +1150,11 @@ Axiom u128_from_be_bytes : nseq int8 16 -> int128.
 Axiom nat_from_be_bytes : forall {p}, nseq int8 p -> nat.
 Axiom nat_from_le_bytes : forall {p}, nseq int8 p -> nat.
 
+Axiom nat_to_be_bytes : forall {p}, nat -> nseq int8 p.
+Axiom nat_to_le_bytes : forall {p}, nat -> nseq int8 p.
+
+Axiom nat_to_from_be_bytes : forall {p} x, @nat_to_be_bytes p (nat_from_be_bytes x) = x.
+
 (* unfold user_address_t in u. *)
 (*     replace (uint_size_to_nat (usize 32%Z)) with 32%nat in u by reflexivity. *)
 (*     destruct (16 <=? #|VectorDef.to_list u|) eqn:leq_16_u. *)
@@ -1505,6 +1510,19 @@ Class EqDec (A : Type) :=
 Infix "=.?" := eqb (at level 40) : hacspec_scope.
 Infix "!=.?" := (fun a b => negb (eqb a b)) (at level 40) : hacspec_scope.
 
+Theorem eqb_refl : forall {A} {H : EqDec A} (x : A), @eqb A H x x = true.
+Proof.
+  intros. now rewrite eqb_leibniz.
+Qed.
+
+Theorem EqDecIsDecidable {A : Type} `{EqDec A} : forall (x y : A), {x = y} + {x <> y}.
+Proof.
+  intros.
+  destruct (eqb x y) eqn:x_eq_y.
+  - left. apply eqb_leibniz, x_eq_y.
+  - right. red. intros. subst. rewrite (eqb_refl y) in x_eq_y. discriminate x_eq_y.
+Qed.
+
 Class Comparable (A : Type) := {
   ltb : A -> A -> bool;
   leb : A -> A -> bool;
@@ -1515,12 +1533,6 @@ Infix "<.?" := ltb (at level 42) : hacspec_scope.
 Infix "<=.?" := leb (at level 42) : hacspec_scope.
 Infix ">.?" := gtb (at level 42) : hacspec_scope.
 Infix ">=.?" := geb (at level 42) : hacspec_scope.
-
-Theorem eqb_refl : forall {A} {H : EqDec A} (x : A), @eqb A H x x = true.
-Proof.
-  intros.
-  now rewrite eqb_leibniz.
-Qed.
 
 Global Program Instance nat_eqdec : EqDec nat := {
   eqb := Nat.eqb;

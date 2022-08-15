@@ -597,7 +597,7 @@ fn resolve_item(
                 i_span,
             ))
         }
-        Item::FnDecl((f, f_span), mut sig, (b, b_span), requires, ensures) => {
+        Item::FnDecl((f, f_span), mut sig, (b, b_span), requires, ensures, init, receive) => {
             let name_context = HashMap::new();
             let (new_sig_args, name_context) = sig.args.iter().fold(
                 (Vec::new(), name_context),
@@ -648,7 +648,7 @@ fn resolve_item(
             sig.args = new_sig_args;
             let new_b = resolve_block(sess, (b, b_span), &name_context, top_level_ctx)?;
             Ok((
-                Item::FnDecl((f, f_span), sig, new_b, new_requires, new_ensures),
+                Item::FnDecl((f, f_span), sig, new_b, new_requires, new_ensures, init, receive),
                 i_span,
             ))
         }
@@ -828,7 +828,7 @@ fn process_decl_item(
             // Foreign items already imported at this point
             Ok(())
         }
-        Item::FnDecl((f, _f_span), sig, _b, _requires, _ensures) => {
+        Item::FnDecl((f, _f_span), sig, _b, _requires, _ensures, _init, _receive) => {
             log::trace!("   Item::FnDecl");
             top_level_context
                 .functions
