@@ -56,6 +56,7 @@ fn coerce_rust_to_hacspec_piggybank_state(pbs : &PiggyBankState) -> PiggyBankSta
 array!(UserAddress, 32, u8);
 
 pub type Context = (UserAddress, UserAddress, u64);
+pub type ContextStateHacspec = (Context, PiggyBankStateHacspec);
 
 pub fn piggy_init_hacspec() -> PiggyBankStateHacspec {
     // Always succeeds
@@ -68,15 +69,16 @@ pub fn piggy_init_hacspec() -> PiggyBankStateHacspec {
 //         piggyState := Intact |}.
 #[cfg(feature = "hacspec")]
 #[init(contract = "PiggyBank")]
-pub fn piggy_init() -> PiggyBankStateHacspec {
+pub fn piggy_init(ctx : Context) -> ContextStateHacspec { // , actions
     // Always succeeds
-    piggy_init_hacspec()
+    (ctx, piggy_init_hacspec())
 }
 
 #[cfg(not(feature = "hacspec"))]
 /// Setup a new Intact piggy bank.
 #[init(contract = "PiggyBank")]
-fn piggy_init(_ctx: &impl HasInitContext) -> InitResult<PiggyBankState> {
+fn piggy_init(ctx: &impl HasInitContext) -> InitResult<PiggyBankState> {
+    // let ctx_hacspec = coerce_rust_to_hacspec_context(ctx)?;
     // Always succeeds
     Ok(coerce_hacspec_to_rust_piggybank_state(piggy_init_hacspec()))
 }
@@ -102,9 +104,10 @@ pub fn piggy_insert_hacspec(ctx: Context, amount: u64, state: PiggyBankStateHacs
 //         piggyState := st.(piggyState) |}.
 #[cfg(feature = "hacspec")]
 #[receive(contract = "PiggyBank", name = "insert", payable)]
-pub fn piggy_insert(ctx: Context, amount: u64, state: PiggyBankStateHacspec) -> u64 {
-    let (_, _, balance) = ctx;
-    balance + amount
+pub fn piggy_insert(ctx: Context, amount: u64, state: PiggyBankStateHacspec) -> ContextStateHacspec {
+    let (a, c, balance) = ctx;
+    accept_hacspec();
+    ((a, c, balance + amount), state)
 }
 
 #[cfg(not(feature = "hacspec"))]
@@ -142,6 +145,7 @@ fn coerce_rust_to_hacspec_context(ctx: &impl HasReceiveContext) -> Result<Contex
         match ctx.self_balance() {
             Amount { micro_ccd } => micro_ccd,
         },
+        
     ))
 }
 
@@ -173,8 +177,10 @@ fn piggy_smash_hacspec(ctx: Context, state: PiggyBankStateHacspec) -> PiggySmash
 //         piggyState := Smashed |}.
 #[cfg(feature = "hacspec")]
 #[receive(contract = "PiggyBank", name = "smash")]
-fn piggy_smash(ctx: Context, state: PiggyBankStateHacspec) -> u64 {
-    0u64
+fn piggy_smash(ctx: Context, state: PiggyBankStateHacspec) -> ContextStateHacspec {
+    let (a, c, _) = ctx;
+    accept_hacspec();
+    ((a, c, 0u64), state)
     // piggy_smash_hacspec(ctx, state)
 }
 

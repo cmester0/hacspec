@@ -1409,25 +1409,25 @@ Section Coercions.
 
   (* coercions int8 >-> int16 >-> ... int128 *)
 
-  Definition int8_to_int16 (n : int8) : int16 := repr n.
+  Definition int8_to_int16 (n : int8) : int16 := repr (unsigned n).
   Global Coercion int8_to_int16 : int8 >-> int16.
 
-  Definition int8_to_int32 (n : int8) : int32 := repr n.
+  Definition int8_to_int32 (n : int8) : int32 := repr (unsigned n).
   Global Coercion int8_to_int32 : int8 >-> int32.
 
-  Definition int16_to_int32 (n : int16) : int32 := repr n.
+  Definition int16_to_int32 (n : int16) : int32 := repr (unsigned n).
   Global Coercion int16_to_int32 : int16 >-> int32.
 
-  Definition int32_to_int64 (n : int32) : int64 := repr n.
+  Definition int32_to_int64 (n : int32) : int64 := repr (unsigned n).
   Global Coercion int32_to_int64 : int32 >-> int64.
 
-  Definition int64_to_int128 (n : int64) : int128 := repr n.
+  Definition int64_to_int128 (n : int64) : int128 := repr (unsigned n).
   Global Coercion int64_to_int128 : int64 >-> int128.
 
-  Definition int32_to_int128 (n : int32) : int128 := repr n.
+  Definition int32_to_int128 (n : int32) : int128 := repr (unsigned n).
   Global Coercion int32_to_int128 : int32 >-> int128.
 
-  Definition uint_size_to_int64 (n : uint_size) : int64 := repr n.
+  Definition uint_size_to_int64 (n : uint_size) : int64 := repr (unsigned n).
   Global Coercion uint_size_to_int64 : uint_size >-> int64.
 
 

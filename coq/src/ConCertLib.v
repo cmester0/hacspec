@@ -43,3 +43,10 @@ Instance BaseTypes : ChainBase := {|
     address_countable := nseq_countable _;
     address_serializable := nseq_serializable _;
     address_is_contract := (fun x => Nat.even (nat_from_be_bytes x)); |}.
+
+Definition 
+
+(* Definition context_t_from_context (ctx : ContractCallContext) : context_t := *)
+(*   (ctx.(ctx_from), ctx.(ctx_origin), repr (ctx.(ctx_amount))). *)
+
+Definition accept (ctx : ContractCallContext) := act_transfer ctx.(ctx_origin) ctx.(ctx_amount).

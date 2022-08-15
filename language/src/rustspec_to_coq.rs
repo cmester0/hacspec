@@ -1816,17 +1816,19 @@ fn translate_item<'a>(
                         .append(RcDoc::as_string(" : Serializable "))
                         .append(translate_enum_name(name.0.clone()))
                         .append(RcDoc::as_string(" :="))
-                        .append(RcDoc::line())
-                        .append(RcDoc::as_string("Derive Serializable "))
-                        .append(translate_enum_name(name.0.clone()))
-                        .append(RcDoc::as_string("_rect<"))
-                        .append(RcDoc::intersperse(
-                            cases.into_iter().map(|(case_name, case_typ)| {
-                                let name_ty = BaseTyp::Named(name.clone(), None);
-                                translate_enum_case_name(name_ty, case_name.0.clone(), false)
-                            }),
-                            RcDoc::as_string(",")))
-                        .append(RcDoc::as_string(">.")))
+                        .append(RcDoc::line()
+                                .append(RcDoc::as_string("Derive Serializable "))
+                                .append(translate_enum_name(name.0.clone()))
+                                .append(RcDoc::as_string("_rect<"))
+                                .append(RcDoc::intersperse(
+                                    cases.into_iter().map(|(case_name, case_typ)| {
+                                        let name_ty = BaseTyp::Named(name.clone(), None);
+                                        translate_enum_case_name(name_ty, case_name.0.clone(), false)
+                                    }),
+                                    RcDoc::as_string(",")))
+                                .append(RcDoc::as_string(">."))
+                                .nest(2))
+                )
                 .append(if item.tags.0.contains(&"PartialEq".to_string()) {
                     RcDoc::hardline()
                         .append(RcDoc::hardline())
@@ -1929,9 +1931,8 @@ fn translate_item<'a>(
                     .append(RcDoc::as_string("EqDec ("))
                     .append(translate_enum_name(name.0.clone()))
                     .append(RcDoc::as_string(") :="))
-                    .append(RcDoc::hardline())
-                    .append(
-                        RcDoc::as_string("Build_EqDec (")
+                    .append(RcDoc::hardline()
+                            .append(RcDoc::as_string("Build_EqDec ("))
                             .append(translate_enum_name(name.0.clone()))
                             .append(RcDoc::as_string(") (eqb_"))
                             .append(translate_enum_name(name.0.clone()))
@@ -2266,10 +2267,15 @@ fn translate_item<'a>(
         }
         Item::ImportedCrate((TopLevelIdent { string: kr, .. }, _)) => {
             println!("Import Crate: {}", kr);
+            // if (str::replace(&kr.to_title_case(), " ", "_") == "Hacspec_Lib") {
+            //     RcDoc::nil()
+            // } else {
             RcDoc::as_string(format!(
-            "Require Import {}.",
+                "Require Import {0}.\n\
+                 Export {0}.",
                 str::replace(&kr.to_title_case(), " ", "_"),
             ))
+            // }
         }
         // Aliases are translated to Coq Notations
         Item::AliasDecl((ident, _), (ty, _)) =>
@@ -2426,11 +2432,81 @@ fn translate_program<'a>(
     org_file: Option<(String, String)>,
     export_quick_check: bool,
 ) -> RcDoc<'a, ()> {
+    let receives: Vec<_> = p
+        .items
+        .iter()
+        .filter_map(|(x, _)| match &x.item {
+            Item::FnDecl(_, _, _, _, _, _, receive) if !receive.is_empty() => Some(receive),
+            _ => None,
+        })
+        .collect();
+
     RcDoc::concat(p.items.iter().map(|(i, _)| {
         translate_item(i, top_ctx, org_file.clone(), export_quick_check)
             .append(RcDoc::hardline())
             .append(RcDoc::hardline())
     }))
+    .append(if !receives.is_empty() {
+        RcDoc::as_string("Inductive Msg :=")
+          .append(RcDoc::line())
+          .append(RcDoc::intersperse(
+              receives
+                  .iter()
+                  .map(|x| {
+                      RcDoc::intersperse(x.iter().map(|(x, y, b)| {
+                          RcDoc::as_string("| ").append(RcDoc::as_string(y.to_uppercase()))
+                      }),
+                        RcDoc::line())
+                }),
+            RcDoc::line(),
+        ))
+        .append(RcDoc::as_string("."))
+            .append(RcDoc::line())
+            .append(RcDoc::as_string("Global Instance Msg_serializable : Serializable Msg :="))
+            .append(RcDoc::line().append(RcDoc::as_string("Derive Serializable Msg_rect<")).nest(2))
+            .append(RcDoc::intersperse(
+              receives
+                  .iter()
+                  .map(|x| {
+                      RcDoc::intersperse(x.iter().map(|(x, y, b)| {
+                          RcDoc::as_string(y.to_uppercase())
+                      }),
+                        RcDoc::as_string(","))
+                }),
+            RcDoc::as_string(",")),
+            )
+            .append(RcDoc::as_string(">."))
+        .append(RcDoc::line())
+        .append(RcDoc::as_string("Definition Isome_nameI_receive (chain : Chain) (ctx : ContractCallContext) (state : State) (msg : option Msg) : option (State * list ActionBody) :="))
+        .append(RcDoc::line()
+                .append(RcDoc::as_string("match msg with"))
+                .append(RcDoc::line())
+                .append(RcDoc::concat(
+                    p.items
+                        .iter()
+                        .filter_map(|(x, _)| match &x.item {
+                            Item::FnDecl((f, _), _, _, _, _, _, receive) if !receive.is_empty() => {
+                                Some((f, receive))
+                            }
+                            _ => None,
+                        })
+                        .map(|(f, x)| {
+                            RcDoc::concat(x.iter().map(|(x, y, b)| {
+                                RcDoc::as_string("| Some ").append(RcDoc::as_string(y.to_uppercase())).append(RcDoc::as_string(" => Some (")).append(RcDoc::as_string(y)).append(if b.clone() { RcDoc::as_string(" (ctx.(ctx_amount))") } else { RcDoc::nil() }).append(RcDoc::as_string(" state (ctx.(ctx_from), ctx.(ctx_origin), repr (ctx.(ctx_amount))), [])")).append(RcDoc::line())}))})
+                ))
+                .append(RcDoc::as_string("| None => None"))
+                .append(RcDoc::line())
+                .append(RcDoc::as_string("end."))
+                .group()
+                .nest(2))
+            .append(RcDoc::line())
+            .append(RcDoc::line())
+            .append(RcDoc::as_string("Definition piggyBank_contract : Contract Setup Msg State :="))
+            .append(RcDoc::line().append(RcDoc::as_string("build_contract PiggyBank_State Isome_nameI_receive.")).nest(2))
+            .append(RcDoc::line())
+    } else {
+        RcDoc::nil()
+    })
 }
 
 pub fn translate_and_write_to_file(
@@ -2480,7 +2556,6 @@ pub fn translate_and_write_to_file(
         From Coq Require Import Morphisms ZArith Basics.\n\
         Open Scope Z.\n\
         Set Nonrecursive Elimination Schemes.\n\
-        Context {{BaseTypes : ChainBase}}.\n\
         Definition Setup := unit.\n",
         match org_file.clone() {
             Some((f, s)) => format!(

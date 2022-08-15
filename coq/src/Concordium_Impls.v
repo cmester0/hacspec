@@ -2,29 +2,44 @@
 
 Require Import Hacspec_Lib MachineIntegers.
 From Coq Require Import ZArith.
-Import List.ListNotations.
+From Coq Require Import List.
+Import ListNotations.
 Open Scope Z_scope.
 Open Scope bool_scope.
 Open Scope hacspec_scope.
 
+Require Import ConCertLib.
+From ConCert.Utils Require Import Extras.
+From ConCert.Utils Require Import Automation.
+From ConCert.Execution Require Import Serializable.
+From ConCert.Execution Require Import Blockchain.
+From ConCert.Execution Require Import ContractCommon.
+From Coq Require Import Morphisms ZArith Basics.
+Open Scope Z.
+Set Nonrecursive Elimination Schemes.
+Definition Setup := unit.
 Require Import Hacspec_Lib.
+Export Hacspec_Lib.
 
 Require Import Concordium_Prims.
+Export Concordium_Prims.
 
 Require Import Concordium_Types.
+Export Concordium_Types.
 
 Require Import Concordium_Traits.
+Export Concordium_Traits.
 
 Notation "'reject_hacspec_t'" := (int32) : hacspec_scope.
 
-Definition reject_impl_deafult  : reject_hacspec_t :=
+Definition reject_impl_deafult : reject_hacspec_t :=
   min_v.
 
-Definition new_reject_impl (x_25 : int32) : (option int32) :=
+Definition new_reject_impl (x_25 : int32): (option int32) :=
   (if ((x_25) <.? (@repr WORDSIZE32 0)):bool then (@Some int32 (x_25)) else (
       @None int32)).
 
-Definition reject_impl_convert_from_unit  : reject_hacspec_t :=
+Definition reject_impl_convert_from_unit : reject_hacspec_t :=
   (min_v) .+ (@repr WORDSIZE32 1).
 
 Theorem ensures_reject_impl_convert_from_unit : forall result_26 ,
@@ -32,7 +47,7 @@ Theorem ensures_reject_impl_convert_from_unit : forall result_26 ,
  ~ ((result_26) =.? (@repr WORDSIZE32 0)).
  Proof. Admitted.
 
-Definition reject_impl_convert_from_parse_error  : reject_hacspec_t :=
+Definition reject_impl_convert_from_parse_error : reject_hacspec_t :=
   (min_v) .+ (@repr WORDSIZE32 2).
 
 Theorem ensures_reject_impl_convert_from_parse_error : forall result_26 ,
@@ -40,9 +55,7 @@ Theorem ensures_reject_impl_convert_from_parse_error : forall result_26 ,
  ~ ((result_26) =.? (@repr WORDSIZE32 0)).
  Proof. Admitted.
 
-Definition reject_impl_from_log_error
-  (le_27 : log_error_t)
-  : reject_hacspec_t :=
+Definition reject_impl_from_log_error (le_27 : log_error_t): reject_hacspec_t :=
   match le_27 with
   | Full => (min_v) .+ (@repr WORDSIZE32 3)
   | Malformed => (min_v) .+ (@repr WORDSIZE32 4)
@@ -59,10 +72,11 @@ Inductive new_contract_name_error_t :=
 | NewContractNameErrorTooLong : new_contract_name_error_t
 | NewContractNameErrorContainsDot : new_contract_name_error_t
 | NewContractNameErrorInvalidCharacters : new_contract_name_error_t.
+Global Instance serializable_new_contract_name_error_t : Serializable new_contract_name_error_t :=
+Derive Serializable new_contract_name_error_t_rect<NewContractNameErrorMissingInitPrefix,NewContractNameErrorTooLong,NewContractNameErrorContainsDot,NewContractNameErrorInvalidCharacters>.
 
 Definition reject_impl_from_new_contract_name_error
-  (nre_28 : new_contract_name_error_t)
-  : reject_hacspec_t :=
+  (nre_28 : new_contract_name_error_t): reject_hacspec_t :=
   match nre_28 with
   | NewContractNameErrorMissingInitPrefix => (min_v) .+ (@repr WORDSIZE32 5)
   | NewContractNameErrorTooLong => (min_v) .+ (@repr WORDSIZE32 6)
@@ -80,10 +94,11 @@ Inductive new_receive_name_error_t :=
 | NewReceiveNameErrorMissingDotSeparator : new_receive_name_error_t
 | NewReceiveNameErrorTooLong : new_receive_name_error_t
 | NewReceiveNameErrorInvalidCharacters : new_receive_name_error_t.
+Global Instance serializable_new_receive_name_error_t : Serializable new_receive_name_error_t :=
+Derive Serializable new_receive_name_error_t_rect<NewReceiveNameErrorMissingDotSeparator,NewReceiveNameErrorTooLong,NewReceiveNameErrorInvalidCharacters>.
 
 Definition reject_impl_from_new_receive_name_error
-  (nre_29 : new_receive_name_error_t)
-  : reject_hacspec_t :=
+  (nre_29 : new_receive_name_error_t): reject_hacspec_t :=
   match nre_29 with
   | NewReceiveNameErrorMissingDotSeparator => (min_v) .+ (@repr WORDSIZE32 7)
   | NewReceiveNameErrorTooLong => (min_v) .+ (@repr WORDSIZE32 8)
@@ -96,7 +111,7 @@ Theorem ensures_reject_impl_from_new_receive_name_error : forall result_26 (
  ~ ((result_26) =.? (@repr WORDSIZE32 0)).
  Proof. Admitted.
 
-Definition reject_impl_from_not_payable_error  : reject_hacspec_t :=
+Definition reject_impl_from_not_payable_error : reject_hacspec_t :=
   (min_v) .+ (@repr WORDSIZE32 12).
 
 Theorem ensures_reject_impl_from_not_payable_error : forall result_26 ,
@@ -110,6 +125,8 @@ Inductive seek_from_hacspec_t :=
 | Start : int64 -> seek_from_hacspec_t
 | End : int64 -> seek_from_hacspec_t
 | Current : int64 -> seek_from_hacspec_t.
+Global Instance serializable_seek_from_hacspec_t : Serializable seek_from_hacspec_t :=
+Derive Serializable seek_from_hacspec_t_rect<Start,End,Current>.
 
 Notation "'uint32_option_t'" := ((option int32)) : hacspec_scope.
 
@@ -118,8 +135,8 @@ Notation "'iint64_option_t'" := ((option int64)) : hacspec_scope.
 Definition contract_state_impl_seek
   (current_position_30 : contract_state_hacspec_t)
   (end_31 : int32)
-  (pos_32 : seek_from_hacspec_t)
-  : (result (contract_state_hacspec_t ∏ int64) unit) :=
+  (pos_32 : seek_from_hacspec_t): (result (contract_state_hacspec_t ∏ int64
+    ) unit) :=
   match pos_32 with
   | Start offset_33 => @Ok (contract_state_hacspec_t ∏ int64) unit ((
       @cast _ uint32 _ (offset_33),
@@ -164,15 +181,16 @@ Definition contract_state_impl_seek
 
 Definition contract_state_impl_read_read
   (current_position_41 : contract_state_hacspec_t)
-  (buf_42 : public_byte_seq)
-  : (contract_state_hacspec_t ∏ uint_size) :=
+  (buf_42 : public_byte_seq): (contract_state_hacspec_t ∏ uint_size) :=
   let '(buf_43, num_read_44) :=
     load_state_hacspec (buf_42) (current_position_41) in 
   ((current_position_41) .+ (num_read_44), @cast _ uint32 _ (num_read_44)).
 
 Definition contract_state_impl_read_read_u64
-  (current_position_45 : contract_state_hacspec_t)
-  : (contract_state_hacspec_t ∏ (result int64 unit)) :=
+  (current_position_45 : contract_state_hacspec_t): (
+    contract_state_hacspec_t ∏
+    (result int64 unit)
+  ) :=
   let buf_46 : seq int8 :=
     seq_new_ (default) (usize 8) in 
   let '(buf_47, num_read_48) :=
@@ -185,8 +203,10 @@ Definition contract_state_impl_read_read_u64
   ).
 
 Definition contract_state_impl_read_read_u32
-  (current_position_49 : contract_state_hacspec_t)
-  : (contract_state_hacspec_t ∏ (result int32 unit)) :=
+  (current_position_49 : contract_state_hacspec_t): (
+    contract_state_hacspec_t ∏
+    (result int32 unit)
+  ) :=
   let buf_50 : seq int8 :=
     seq_new_ (default) (usize 4) in 
   let '(buf_51, num_read_52) :=
@@ -199,8 +219,10 @@ Definition contract_state_impl_read_read_u32
   ).
 
 Definition contract_state_impl_read_read_u8
-  (current_position_53 : contract_state_hacspec_t)
-  : (contract_state_hacspec_t ∏ (result int8 unit)) :=
+  (current_position_53 : contract_state_hacspec_t): (
+    contract_state_hacspec_t ∏
+    (result int8 unit)
+  ) :=
   let buf_54 : seq int8 :=
     seq_new_ (default) (usize 1) in 
   let '(buf_55, num_read_56) :=
@@ -213,8 +235,8 @@ Definition contract_state_impl_read_read_u8
 
 Definition contract_state_impl_write
   (current_position_57 : contract_state_hacspec_t)
-  (buf_58 : public_byte_seq)
-  : (result (contract_state_hacspec_t ∏ uint_size) unit) :=
+  (buf_58 : public_byte_seq): (result (contract_state_hacspec_t ∏ uint_size
+    ) unit) :=
   ifbnd option_is_none (pub_uint32_checked_add (current_position_57) (pub_u32 (
         seq_len (buf_58)))) : bool
   thenbnd (bind (@Err (contract_state_hacspec_t ∏ uint_size) unit (tt)) (
@@ -228,13 +250,11 @@ Definition contract_state_impl_write
     ))).
 
 Definition has_contract_state_impl_for_contract_state_open
-  
   : contract_state_hacspec_t :=
   @repr WORDSIZE32 0.
 
 Definition has_contract_state_impl_for_contract_state_reserve
-  (len_61 : int32)
-  : bool :=
+  (len_61 : int32): bool :=
   let cur_size_62 : int32 :=
     state_size_hacspec  in 
   (if ((cur_size_62) <.? (len_61)):bool then ((resize_state_hacspec (
@@ -243,8 +263,7 @@ Definition has_contract_state_impl_for_contract_state_reserve
 Definition has_contract_state_impl_for_contract_state_truncate
   (current_position_63 : contract_state_hacspec_t)
   (cur_size_64 : int32)
-  (new_size_65 : int32)
-  : contract_state_hacspec_t :=
+  (new_size_65 : int32): contract_state_hacspec_t :=
   let 'tt :=
     if (cur_size_64) >.? (new_size_65):bool then (let _ : int32 :=
         resize_state_hacspec (new_size_65) in 
@@ -256,8 +275,7 @@ Notation "'parameter_hacspec_t'" := (int32) : hacspec_scope.
 
 Definition read_impl_for_parameter_read
   (current_position_66 : parameter_hacspec_t)
-  (buf_67 : public_byte_seq)
-  : (parameter_hacspec_t ∏ uint_size) :=
+  (buf_67 : public_byte_seq): (parameter_hacspec_t ∏ uint_size) :=
   let '(buf_68, num_read_69) :=
     get_parameter_section_hacspec (buf_67) (current_position_66) in 
   ((current_position_66) .+ (num_read_69), @cast _ uint32 _ (num_read_69)).
@@ -266,8 +284,10 @@ Notation "'attributes_cursor_hacspec_t'" := ((int32 ∏ int16)) : hacspec_scope.
 
 Definition has_policy_impl_for_policy_attributes_cursor_next_item
   (policy_attribute_items_70 : attributes_cursor_hacspec_t)
-  (buf_71 : public_byte_seq)
-  : (option (attributes_cursor_hacspec_t ∏ (int8 ∏ int8))) :=
+  (buf_71 : public_byte_seq): (option (
+      attributes_cursor_hacspec_t ∏
+      (int8 ∏ int8)
+    )) :=
   let '(current_position_72, remaining_items_73) :=
     policy_attribute_items_70 in 
   ifbnd (remaining_items_73) =.? (@repr WORDSIZE16 0) : bool
@@ -307,8 +327,9 @@ Notation "'policy_attributes_cursor_hacspec_t'" := ((
 )) : hacspec_scope.
 
 Definition iterator_impl_for_policies_iterator_next
-  (policies_iterator_78 : policies_iterator_hacspec_t)
-  : (option (policies_iterator_hacspec_t ∏ policy_attributes_cursor_hacspec_t
+  (policies_iterator_78 : policies_iterator_hacspec_t): (option (
+      policies_iterator_hacspec_t ∏
+      policy_attributes_cursor_hacspec_t
     )) :=
   let '(pos_79, remaining_items_80) :=
     policies_iterator_78 in 
