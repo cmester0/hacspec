@@ -1576,31 +1576,7 @@ fn translate_item<'a>(
 ) -> RcDoc<'a, ()> {
     let item_rcdoc = match &item.item {
         Item::FnDecl((f, _), sig, (b, _), requires, ensures, init, receive) =>
-            RcDoc::intersperse(
-                init.into_iter()
-                    .map(|x| {
-                        RcDoc::as_string("Record ")
-                            // .append(x)
-                            .append(RcDoc::as_string("State := "))
-                            .append(RcDoc::line())
-                            .append(RcDoc::as_string("build_state { balance : int64 ; owner : Address ; state : ")
-                                    .append(translate_base_typ(sig.ret.0.clone()))
-                                    .append(RcDoc::as_string("}."))
-                                    .nest(2))
-                            .append(RcDoc::line())
-                            .append(RcDoc::as_string("Global Instance State_serializable : Serializable State := Derive Serializable State_rect<build_state>."))
-                            .append(RcDoc::line())
-                            .append(RcDoc::as_string("Definition "))
-                            .append(RcDoc::as_string(x))
-                            .append(RcDoc::as_string("_State (chain : Chain) (ctx : ContractCallContext) (_ : Setup) : option State :="))
-                            .append(RcDoc::line())
-                            .append(RcDoc::as_string("Some {| balance := 0 ; owner := ctx.(ctx_from); state := "))
-                            .nest(2)
-                            .append(translate_block(b.clone(), false, top_ctx).group())
-                            .append(RcDoc::as_string(" |}.\n"))
-                    }),
-                RcDoc::nil())
-            .append(make_let_binding(
+            make_let_binding(
                 translate_ident(Ident::TopLevel(f.clone()))
                     .append(RcDoc::line())
                     .append(if sig.args.len() > 0 {
@@ -1638,7 +1614,29 @@ fn translate_item<'a>(
                 None,
                 translate_block(b.clone(), false, top_ctx).group(),
                 true,
-            ))
+            )
+            .append(RcDoc::line())
+            .append(RcDoc::intersperse(
+                init.into_iter()
+                    .map(|x| {
+                        RcDoc::as_string("Definition ")
+                            // .append(x)
+                            .append(RcDoc::as_string("State := "))
+                            .append(RcDoc::line()
+                                    .append(translate_base_typ(sig.ret.0.clone()))
+                                    .append(RcDoc::as_string("."))
+                                    .nest(2))
+                            .append(RcDoc::line())
+                            .append(RcDoc::as_string("Definition "))
+                            .append(RcDoc::as_string(x))
+                            .append(RcDoc::as_string("_State (chain : Chain) (ctx : ContractCallContext) (_ : Setup) : option State :="))
+                            .append(RcDoc::line())
+                            .append(RcDoc::as_string("Some ("))
+                            .nest(2)
+                            .append(translate_ident(Ident::TopLevel(f.clone())).group())
+                            .append(RcDoc::as_string(" (ctx.(ctx_from), ctx.(ctx_origin), repr ctx.(ctx_amount))).\n"))
+                    }),
+                RcDoc::nil()))
             .append(RcDoc::intersperse(
                 receive.into_iter()
                     .map(|(x, y, b)| {
@@ -1651,19 +1649,18 @@ fn translate_item<'a>(
                             } else {
                                 RcDoc::nil()
                             })
-                            .append(RcDoc::as_string("(st : State) (ctx : context_t)"))
+                            .append(RcDoc::as_string("(st : State)"))
                             .append(RcDoc::as_string(" :="))
-                            .append(RcDoc::line())
-                            .append(RcDoc::as_string("{| balance := "))
-                            .append(translate_ident(Ident::TopLevel(f.clone())))
-                            .append(RcDoc::as_string(" ctx"))
-                            .append(if b.clone() {
-                                RcDoc::as_string(" amount")
-                            } else {
-                                RcDoc::nil()
-                            })
-                            .append(RcDoc::as_string(" st.(state) ; owner := st.(owner); state := st.(state) |}."))
-                            .nest(2)
+                            .append(RcDoc::line()
+                                    .append(translate_ident(Ident::TopLevel(f.clone())))
+                                    .append(RcDoc::as_string(" st"))
+                                    .append(if b.clone() {
+                                        RcDoc::as_string(" amount")
+                                    } else {
+                                        RcDoc::nil()
+                                    })
+                                    .append(RcDoc::as_string("."))
+                                    .nest(2))
                             .append(RcDoc::line())
                     }),
                 RcDoc::nil()))
@@ -2447,6 +2444,7 @@ fn translate_program<'a>(
             .append(RcDoc::hardline())
     }))
     .append(if !receives.is_empty() {
+        let (name, _, _) = receives.first().unwrap().first().unwrap();
         RcDoc::as_string("Inductive Msg :=")
           .append(RcDoc::line())
           .append(RcDoc::intersperse(
@@ -2477,7 +2475,9 @@ fn translate_program<'a>(
             )
             .append(RcDoc::as_string(">."))
         .append(RcDoc::line())
-        .append(RcDoc::as_string("Definition Isome_nameI_receive (chain : Chain) (ctx : ContractCallContext) (state : State) (msg : option Msg) : option (State * list ActionBody) :="))
+            .append(RcDoc::as_string("Definition "))
+            .append(RcDoc::as_string(name))
+            .append(RcDoc::as_string("_receive (chain : Chain) (ctx : ContractCallContext) (state : State) (msg : option Msg) : option (State * list ActionBody) :="))
         .append(RcDoc::line()
                 .append(RcDoc::as_string("match msg with"))
                 .append(RcDoc::line())
@@ -2492,7 +2492,7 @@ fn translate_program<'a>(
                         })
                         .map(|(f, x)| {
                             RcDoc::concat(x.iter().map(|(x, y, b)| {
-                                RcDoc::as_string("| Some ").append(RcDoc::as_string(y.to_uppercase())).append(RcDoc::as_string(" => Some (")).append(RcDoc::as_string(y)).append(if b.clone() { RcDoc::as_string(" (ctx.(ctx_amount))") } else { RcDoc::nil() }).append(RcDoc::as_string(" state (ctx.(ctx_from), ctx.(ctx_origin), repr (ctx.(ctx_amount))), [])")).append(RcDoc::line())}))})
+                                RcDoc::as_string("| Some ").append(RcDoc::as_string(y.to_uppercase())).append(RcDoc::as_string(" => ")).append(RcDoc::as_string(y)).append(if b.clone() { RcDoc::as_string(" (repr ctx.(ctx_amount))") } else { RcDoc::nil() }).append(RcDoc::as_string(" state")).append(RcDoc::line())}))})
                 ))
                 .append(RcDoc::as_string("| None => None"))
                 .append(RcDoc::line())
@@ -2502,7 +2502,11 @@ fn translate_program<'a>(
             .append(RcDoc::line())
             .append(RcDoc::line())
             .append(RcDoc::as_string("Definition piggyBank_contract : Contract Setup Msg State :="))
-            .append(RcDoc::line().append(RcDoc::as_string("build_contract PiggyBank_State Isome_nameI_receive.")).nest(2))
+            .append(RcDoc::line()
+                    .append(RcDoc::as_string("build_contract PiggyBank_State "))
+                    .append(RcDoc::as_string(name))
+                    .append(RcDoc::as_string("_receive."))
+                    .nest(2))
             .append(RcDoc::line())
     } else {
         RcDoc::nil()

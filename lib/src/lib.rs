@@ -100,5 +100,6 @@ mod vec_integers;
 mod vec_integers_public;
 mod vec_integers_secret;
 mod vec_util;
+pub mod concert;
 
 pub use crate::prelude::*;

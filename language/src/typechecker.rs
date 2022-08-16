@@ -2191,6 +2191,7 @@ fn typecheck_question_mark(
         dealias_type(return_typ.0.clone(), top_level_context),
         return_typ.1.clone(),
     );
+    
     if question_mark {
         match expr_typ {
             (

@@ -62,7 +62,7 @@ Definition piggy_init (ctx_0 : context_t): context_state_hacspec_t :=
 Definition State := 
     context_state_hacspec_t.
   Definition PiggyBank_State (chain : Chain) (ctx : ContractCallContext) (_ : Setup) : option State :=
-  Some (piggy_init (ctx.(ctx_from), ctx.(ctx_origin), repr ctx.(ctx_amount))).
+  Some (piggy_init (ctx.(ctx_from), ctx.(ctx_origin), repr (ctx.(ctx_amount)))).
 
 
 Notation "'piggy_insert_result_t'" := ((result unit unit)) : hacspec_scope.
@@ -79,7 +79,7 @@ Definition piggy_insert_hacspec
 
 Definition piggy_insert
   (ctx_state_4 : context_state_hacspec_t)
-  (amount_5 : int64): (option (context_state_hacspec_t ∏ list_action_t)) :=
+  (amount_5 : int64): (option context_state_hacspec_t) :=
   let '(ctx_6, state_7) :=
     ctx_state_4 in 
   let '(a_8, c_9, balance_10) :=
@@ -91,14 +91,9 @@ Definition piggy_insert
   bind (match temp_11 with
     | Ok _ => @Some unit (tt)
     | Err _ => @None unit
-    end) (fun _ =>  let s_12 : seq action_body_t :=
-      seq_new_ (default) (usize 1) in 
-    let s_12 :=
-      seq_upd s_12 (usize 0) (ACT_TRANSFER ((a_8, (balance_10) .+ (amount_5)
-          ))) in 
-    @Some (context_state_hacspec_t ∏ list_action_t) ((
-        ((a_8, c_9, (balance_10) .+ (amount_5)), state_7),
-        s_12
+    end) (fun _ =>  @Some context_state_hacspec_t ((
+        (a_8, c_9, (balance_10) .+ (amount_5)),
+        state_7
       ))).
 
 Definition insert (amount : int64)(st : State) :=
@@ -128,15 +123,15 @@ Notation "'piggy_smash_result_t'" := ((
   result piggy_bank_state_hacspec_t smash_error_t)) : hacspec_scope.
 
 Definition piggy_smash_hacspec
-  (ctx_13 : context_t)
-  (state_14 : piggy_bank_state_hacspec_t): piggy_smash_result_t :=
-  let '(owner_15, sender_16, balance_17) :=
-    ctx_13 in 
-  ifbnd negb ((owner_15) array_eq (sender_16)) : bool
+  (ctx_12 : context_t)
+  (state_13 : piggy_bank_state_hacspec_t): piggy_smash_result_t :=
+  let '(owner_14, sender_15, balance_16) :=
+    ctx_12 in 
+  ifbnd negb ((owner_14) array_eq (sender_15)) : bool
   thenbnd (bind (@Err piggy_bank_state_hacspec_t smash_error_t (NotOwner)) (
       fun _ =>  Ok (tt)))
   else (tt) >> (fun 'tt =>
-  ifbnd negb ((state_14) =.? (Intact)) : bool
+  ifbnd negb ((state_13) =.? (Intact)) : bool
   thenbnd (bind (@Err piggy_bank_state_hacspec_t smash_error_t (
         AlreadySmashed)) (fun _ =>  Ok (tt)))
   else (tt) >> (fun 'tt =>
@@ -144,28 +139,21 @@ Definition piggy_smash_hacspec
 
 
 Definition piggy_smash
-  (ctx_state_18 : context_state_hacspec_t): (option (
-      context_state_hacspec_t ∏
-      list_action_t
-    )) :=
-  let '(ctx_19, state_20) :=
-    ctx_state_18 in 
-  let '(a_21, c_22, balance_23) :=
-    ctx_19 in 
+  (ctx_state_17 : context_state_hacspec_t): (option context_state_hacspec_t) :=
+  let '(ctx_18, state_19) :=
+    ctx_state_17 in 
+  let '(a_20, c_21, _) :=
+    ctx_18 in 
   let _ : int32 :=
     accept_hacspec  in 
-  let smash_24 : (result piggy_bank_state_hacspec_t smash_error_t) :=
-    piggy_smash_hacspec (ctx_19) (state_20) in 
-  bind (match smash_24 with
-    | Ok a_25 => @Some piggy_bank_state_hacspec_t (a_25)
-    | Err b_26 => @None piggy_bank_state_hacspec_t
-    end) (fun new_state_27 =>  let s_28 : seq action_body_t :=
-      seq_new_ (default) (usize 1) in 
-    let s_28 :=
-      seq_upd s_28 (usize 0) (ACT_TRANSFER ((a_21, balance_23))) in 
-    @Some (context_state_hacspec_t ∏ list_action_t) ((
-        ((a_21, c_22, @repr WORDSIZE64 0), new_state_27),
-        s_28
+  let smash_22 : (result piggy_bank_state_hacspec_t smash_error_t) :=
+    piggy_smash_hacspec (ctx_18) (state_19) in 
+  bind (match smash_22 with
+    | Ok a_23 => @Some piggy_bank_state_hacspec_t (a_23)
+    | Err b_24 => @None piggy_bank_state_hacspec_t
+    end) (fun new_state_25 =>  @Some context_state_hacspec_t ((
+        (a_20, c_21, @repr WORDSIZE64 0),
+        new_state_25
       ))).
 
 Definition smash (st : State) :=
@@ -179,10 +167,48 @@ Global Instance Msg_serializable : Serializable Msg :=
   Derive Serializable Msg_rect<INSERT,SMASH>.
 Definition PiggyBank_receive (chain : Chain) (ctx : ContractCallContext) (state : State) (msg : option Msg) : option (State * list ActionBody) :=
   match msg with
-  | Some INSERT => insert (repr ctx.(ctx_amount)) state
-  | Some SMASH => smash state
+  | Some INSERT => option_map (fun x => (x , [])) (insert (repr (ctx.(ctx_amount))) state)
+  | Some SMASH => option_map (fun x => (x , [act_transfer (fst (fst (fst state))) (snd (fst state))])) (smash state)
   | None => None
   end.
 
 Definition piggyBank_contract : Contract Setup Msg State :=
   build_contract PiggyBank_State PiggyBank_receive.
+
+  
+(** * Functional correctness *)
+Lemma piggybank_correct {prev_state next_state acts msg chain ctx} :
+  snd prev_state = Intact -> PiggyBank_receive chain ctx prev_state msg = Some (next_state, acts) ->
+  match msg with
+    | Some m => 
+      match m with
+      | INSERT => ( (snd (fst prev_state)) .+ repr ctx.(ctx_amount)) = (snd (fst next_state))
+      | SMASH =>
+          fst (fst (fst prev_state)) = ctx.(ctx_from)
+          -> snd next_state = Smashed
+            /\ snd (fst next_state) = 0
+            /\ acts = [act_transfer (fst (fst (fst prev_state))) (snd (fst prev_state))]
+      end
+    | None => False
+  end.
+Proof.
+  intros H1 H2. 
+  unfold PiggyBank_receive in H2. 
+  destruct msg(* ;  *)
+  (* unfold piggyBank in H2 *).
+  destruct m.
+  - destruct prev_state. cbn in *. rewrite H1 in H2. unfold insert in *.
+    cbn in H2. destruct p as [[]]. cbn in *. destruct next_state as [[]].
+    cbn in *.
+    inversion H2. subst.
+    Set Printing Coercions.
+    reflexivity.    
+  - intros H3. destruct prev_state as [[[]]]. cbn in *. rewrite H1 in H2. destruct next_state as [[[]]]. cbn in H2. subst. cbn in *.
+    destruct negb in H2.
+    + cbn in *.
+      discriminate.
+    + cbn in *.
+      inversion H2. subst.
+      repeat split.
+  - discriminate.
+Qed.
