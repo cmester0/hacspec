@@ -101,8 +101,7 @@ pub fn piggy_insert(ctx_state: ContextStateHacspec, amount: u64) -> Option<(Cont
         PiggyInsertResult::Ok(_) => Option::<()>::Some(()),
         PiggyInsertResult::Err(_) => Option::<()>::None
     }?;
-    let s = ListAction::new(1);
-    s[0] = ActionBody::ACT_TRANSFER( a, balance + amount );
+    let s = ListAction::new(0);
     Option::<(ContextStateHacspec, ListAction)>::Some ((((a, c, balance + amount), state), s))
 }
 

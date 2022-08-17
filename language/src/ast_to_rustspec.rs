@@ -2372,7 +2372,7 @@ fn attribute_ensures(attr: &Attribute) -> Option<String> {
     }
 }
 
-fn attribute_init(attr: &Attribute) -> Option<String> {
+fn attribute_init(attr: &Attribute) -> Option<InitData> {
     let attr_name = attr.name_or_empty().to_ident_string();
     match attr_name.as_str() {
         "init" => {
@@ -2385,7 +2385,7 @@ fn attribute_init(attr: &Attribute) -> Option<String> {
                             let mut it = inner_tokens.trees();
                             it.next();
                             it.next();
-                            match it.next().unwrap() {
+                            let temp1 = match it.next().unwrap() {
                                 TokenTree::Token(third_tok) => match third_tok.kind {
                                     TokenKind::Literal(l) => {
                                         Some(l.symbol.to_string())
@@ -2393,7 +2393,23 @@ fn attribute_init(attr: &Attribute) -> Option<String> {
                                     _ => None,
                                 },
                                 _ => None,
-                            }
+                            }?;
+                            it.next();
+                            it.next();
+                            it.next();
+                            let temp2 = match it.next().unwrap() {
+                                TokenTree::Token(third_tok) => match third_tok.kind {
+                                    TokenKind::Literal(l) => {
+                                        Some(l.symbol.to_string())
+                                    }
+                                    _ => None,
+                                },
+                                _ => None,
+                            };
+                            Some (InitData {
+                                contract: temp1,
+                                parameter: temp2,
+                            })
                         }
                         _ => None,
                     }
@@ -2405,7 +2421,7 @@ fn attribute_init(attr: &Attribute) -> Option<String> {
     }
 }
 
-fn attribute_receive(attr: &Attribute) -> Option<(String, String, bool)> {
+fn attribute_receive(attr: &Attribute) -> Option<ReceiveData> {
     let attr_name = attr.name_or_empty().to_ident_string();
     match attr_name.as_str() {
         "receive" => {
@@ -2439,7 +2455,11 @@ fn attribute_receive(attr: &Attribute) -> Option<(String, String, bool)> {
                                 },
                                 _ => None,
                             }?;
-                            Some ((temp, temp2, it.next().is_some()))
+                            Some (ReceiveData {
+                                contract: temp,
+                                name: temp2,
+                                payable: it.next().is_some()
+                            })
                         }
                         _ => None,
                     }

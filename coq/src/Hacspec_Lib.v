@@ -675,7 +675,7 @@ Definition seq_index {A: Type} `{Default A} (s: seq A) (i : nat) :=
 Definition seq_len {A: Type} (s: seq A) : N := N.of_nat (length s).
 
 Definition seq_new_ {A: Type} (init : A) (len: nat) : seq A :=
-  Vector.to_list (VectorDef.const init len).
+  VectorDef.to_list (VectorDef.const init len).
 
 Definition seq_new {A: Type} `{Default A} (len: nat) : seq A :=
   seq_new_ default len.
@@ -768,7 +768,7 @@ Definition array_from_seq
   (input: seq a)
     : nseq a out_len :=
     let out := VectorDef.const default out_len in
-    update_sub out 0 (out_len - 1) (Vector.of_list input).
+    update_sub out 0 (out_len - 1) (VectorDef.of_list input).
 
 (* Global Coercion array_from_seq : seq >-> nseq. *)
 

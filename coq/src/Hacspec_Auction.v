@@ -2,14 +2,25 @@
 
 Require Import Hacspec_Lib MachineIntegers.
 From Coq Require Import ZArith.
-Import List.ListNotations.
+From Coq Require Import List.
+Import ListNotations.
 Open Scope Z_scope.
 Open Scope bool_scope.
 Open Scope hacspec_scope.
 From QuickChick Require Import QuickChick.
 Require Import QuickChickLib.
 
+Require Import ConCertLib.
+From ConCert.Utils Require Import Extras.
+From ConCert.Utils Require Import Automation.
+From ConCert.Execution Require Import Serializable.
+From ConCert.Execution Require Import Blockchain.
+From ConCert.Execution Require Import ContractCommon.
+From Coq Require Import Morphisms.
+Open Scope Z.
+Set Nonrecursive Elimination Schemes.
 Require Import Hacspec_Lib.
+Export Hacspec_Lib.
 
 Definition user_address_t := nseq (int8) (usize 32).
 Instance show_user_address_t : Show (user_address_t) := Build_Show (user_address_t) show.
@@ -19,6 +30,8 @@ Instance gen_user_address_t : Gen (user_address_t) := Build_Gen user_address_t g
 Inductive auction_state_hacspec_t :=
 | NotSoldYet : auction_state_hacspec_t
 | Sold : user_address_t -> auction_state_hacspec_t.
+Global Instance serializable_auction_state_hacspec_t : Serializable auction_state_hacspec_t :=
+  Derive Serializable auction_state_hacspec_t_rect<NotSoldYet,Sold>.
 
 Definition eqb_auction_state_hacspec_t (x y : auction_state_hacspec_t) : bool :=
 match x with
@@ -30,7 +43,7 @@ Definition eqb_leibniz_auction_state_hacspec_t (x y : auction_state_hacspec_t) :
 Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. intros ; subst ; destruct y ; try reflexivity ; try (apply eqb_refl). Qed.
 
 Instance eq_dec_auction_state_hacspec_t : EqDec (auction_state_hacspec_t) :=
-Build_EqDec (auction_state_hacspec_t) (eqb_auction_state_hacspec_t) (eqb_leibniz_auction_state_hacspec_t).
+  Build_EqDec (auction_state_hacspec_t) (eqb_auction_state_hacspec_t) (eqb_leibniz_auction_state_hacspec_t).
 
 Global Instance show_auction_state_hacspec_t : Show (auction_state_hacspec_t) :=
  @Build_Show (auction_state_hacspec_t) (fun x =>
@@ -43,7 +56,9 @@ Global Instance gen_auction_state_hacspec_t : Gen (auction_state_hacspec_t) := B
 
 
 Inductive seq_map_t :=
-| SeqMap : (public_byte_seq × public_byte_seq) -> seq_map_t.
+| SeqMap : (public_byte_seq ∏ public_byte_seq) -> seq_map_t.
+Global Instance serializable_seq_map_t : Serializable seq_map_t :=
+  Derive Serializable seq_map_t_rect<SeqMap>.
 
 Definition eqb_seq_map_t (x y : seq_map_t) : bool :=
 match x with
@@ -54,7 +69,7 @@ Definition eqb_leibniz_seq_map_t (x y : seq_map_t) : eqb_seq_map_t x y = true <-
 Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. intros ; subst ; destruct y ; try reflexivity ; try (apply eqb_refl). Qed.
 
 Instance eq_dec_seq_map_t : EqDec (seq_map_t) :=
-Build_EqDec (seq_map_t) (eqb_seq_map_t) (eqb_leibniz_seq_map_t).
+  Build_EqDec (seq_map_t) (eqb_seq_map_t) (eqb_leibniz_seq_map_t).
 
 Global Instance show_seq_map_t : Show (seq_map_t) :=
  @Build_Show (seq_map_t) (fun x =>
@@ -67,12 +82,14 @@ Global Instance gen_seq_map_t : Gen (seq_map_t) := Build_Gen seq_map_t g_seq_map
 
 Inductive state_hacspec_t :=
 | StateHacspec : (
-  auction_state_hacspec_t ×
-  int64 ×
-  public_byte_seq ×
-  int64 ×
+  auction_state_hacspec_t ∏
+  int64 ∏
+  public_byte_seq ∏
+  int64 ∏
   seq_map_t
 ) -> state_hacspec_t.
+Global Instance serializable_state_hacspec_t : Serializable state_hacspec_t :=
+  Derive Serializable state_hacspec_t_rect<StateHacspec>.
 
 Definition eqb_state_hacspec_t (x y : state_hacspec_t) : bool :=
 match x with
@@ -83,7 +100,7 @@ Definition eqb_leibniz_state_hacspec_t (x y : state_hacspec_t) : eqb_state_hacsp
 Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. intros ; subst ; destruct y ; try reflexivity ; try (apply eqb_refl). Qed.
 
 Instance eq_dec_state_hacspec_t : EqDec (state_hacspec_t) :=
-Build_EqDec (state_hacspec_t) (eqb_state_hacspec_t) (eqb_leibniz_state_hacspec_t).
+  Build_EqDec (state_hacspec_t) (eqb_state_hacspec_t) (eqb_leibniz_state_hacspec_t).
 
 Global Instance show_state_hacspec_t : Show (state_hacspec_t) :=
  @Build_Show (state_hacspec_t) (fun x =>
@@ -96,8 +113,7 @@ Global Instance gen_state_hacspec_t : Gen (state_hacspec_t) := Build_Gen state_h
 
 Definition fresh_state_hacspec
   (itm_0 : public_byte_seq)
-  (exp_1 : int64)
-  : state_hacspec_t :=
+  (exp_1 : int64): state_hacspec_t :=
   StateHacspec ((
       NotSoldYet,
       @repr WORDSIZE64 0,
@@ -106,38 +122,94 @@ Definition fresh_state_hacspec
       SeqMap ((seq_new_ (default) (usize 0), seq_new_ (default) (usize 0)))
     )).
 
+
+Inductive init_parameter_t :=
+| InitParameter : (public_byte_seq ∏ int64) -> init_parameter_t.
+Global Instance serializable_init_parameter_t : Serializable init_parameter_t :=
+  Derive Serializable init_parameter_t_rect<InitParameter>.
+Global Instance show_init_parameter_t : Show (init_parameter_t) :=
+ @Build_Show (init_parameter_t) (fun x =>
+ match x with
+ InitParameter a => ("InitParameter" ++ show a)%string
+ end).
+Definition g_init_parameter_t : G (init_parameter_t) := oneOf_ (bindGen arbitrary (fun a => returnGen (InitParameter a))) [bindGen arbitrary (fun a => returnGen (InitParameter a))].
+Global Instance gen_init_parameter_t : Gen (init_parameter_t) := Build_Gen init_parameter_t g_init_parameter_t.
+
+
+Inductive context_t :=
+| Context : (user_address_t ∏ user_address_t ∏ int64 ∏ int64
+) -> context_t.
+Global Instance serializable_context_t : Serializable context_t :=
+  Derive Serializable context_t_rect<Context>.
+Global Instance show_context_t : Show (context_t) :=
+ @Build_Show (context_t) (fun x =>
+ match x with
+ Context a => ("Context" ++ show a)%string
+ end).
+Definition g_context_t : G (context_t) := oneOf_ (bindGen arbitrary (fun a => returnGen (Context a))) [bindGen arbitrary (fun a => returnGen (Context a))].
+Global Instance gen_context_t : Gen (context_t) := Build_Gen context_t g_context_t.
+
+
+Notation "'context_state_hacspec_t'" := ((context_t ∏ state_hacspec_t
+)) : hacspec_scope.
+Instance show_context_state_hacspec_t : Show (context_state_hacspec_t) :=
+Build_Show context_state_hacspec_t (fun x =>
+  let (x, x0) := x in
+  (("(") ++ ((show x) ++ ((",") ++ ((show x0) ++ (")"))))))%string.
+Definition g_context_state_hacspec_t : G (context_state_hacspec_t) :=
+bindGen arbitrary (fun x0 : context_t =>
+  bindGen arbitrary (fun x1 : state_hacspec_t =>
+  returnGen (x0,x1))).
+Instance gen_context_state_hacspec_t : Gen (context_state_hacspec_t) := Build_Gen context_state_hacspec_t g_context_state_hacspec_t.
+
+Definition auction_init
+  (ctx_2 : context_t)
+  (init_parameter_3 : init_parameter_t): context_state_hacspec_t :=
+  (
+    ctx_2,
+    fresh_state_hacspec (seq_new_ (default) (usize 0)) (@repr WORDSIZE64 0)
+  ).
+Definition State := 
+    context_state_hacspec_t.
+  Definition Setup := init_parameter_t.
+  Definition auction_State (chain : Chain) (ctx : ContractCallContext) (setup : Setup) : option State :=
+  Some (auction_init (Context (ctx.(ctx_from), ctx.(ctx_origin), repr ctx.(ctx_amount), 0 (* TODO *))) setup).
+
+
 Definition seq_map_entry
-  (m_2 : seq_map_t)
-  (sender_address_3 : user_address_t)
-  : (int64 × seq_map_t) :=
-  let 'SeqMap ((m0_4, m1_5)) :=
-    m_2 in 
-  let res_6 : (int64 × seq_map_t) :=
+  (m_4 : seq_map_t)
+  (sender_address_5 : user_address_t): (int64 ∏ seq_map_t) :=
+  let 'SeqMap ((m0_6, m1_7)) :=
+    m_4 in 
+  let res_8 : (int64 ∏ seq_map_t) :=
     (
       @repr WORDSIZE64 0,
       SeqMap ((
-          seq_concat ((m0_4)) (array_to_seq (sender_address_3)),
-          seq_concat ((m1_5)) (array_to_seq (u64_to_be_bytes (
+          seq_concat ((m0_6)) (array_to_seq (sender_address_5)),
+          seq_concat ((m1_7)) (array_to_seq (u64_to_be_bytes (
               @repr WORDSIZE64 0)))
         ))
     ) in 
-  let res_6 :=
-    foldi (usize 0) ((seq_len ((m0_4))) / (usize 32)) (fun x_7 res_6 =>
-      let '(res_6) :=
-        if (array_from_seq (32) (seq_slice ((m0_4)) ((x_7) * (usize 32)) (
-              usize 32))) array_eq (sender_address_3):bool then (let res_6 :=
+  let res_8 :=
+    foldi (usize 0) ((seq_len ((m0_6))) / (usize 32)) (fun x_9 res_8 =>
+      let '(res_8) :=
+        if (array_from_seq (32) (seq_slice ((m0_6)) ((x_9) * (usize 32)) (
+              usize 32))) array_eq (sender_address_5):bool then (let res_8 :=
             (
-              u64_from_be_bytes (array_from_seq (8) (seq_slice ((m1_5)) ((
-                      x_7) * (usize 8)) (usize 8))),
-              SeqMap (((m0_4), (m1_5)))
+              u64_from_be_bytes (array_from_seq (8) (seq_slice ((m1_7)) ((
+                      x_9) * (usize 8)) (usize 8))),
+              SeqMap (((m0_6), (m1_7)))
             ) in 
-          (res_6)) else ((res_6)) in 
-      (res_6))
-    res_6 in 
-  res_6.
+          (res_8)) else ((res_8)) in 
+      (res_8))
+    res_8 in 
+  res_8.
+
 
 Inductive map_update_t :=
-| Update : (int64 × seq_map_t) -> map_update_t.
+| Update : (int64 ∏ seq_map_t) -> map_update_t.
+Global Instance serializable_map_update_t : Serializable map_update_t :=
+  Derive Serializable map_update_t_rect<Update>.
 
 Definition eqb_map_update_t (x y : map_update_t) : bool :=
 match x with
@@ -148,7 +220,7 @@ Definition eqb_leibniz_map_update_t (x y : map_update_t) : eqb_map_update_t x y 
 Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. intros ; subst ; destruct y ; try reflexivity ; try (apply eqb_refl). Qed.
 
 Instance eq_dec_map_update_t : EqDec (map_update_t) :=
-Build_EqDec (map_update_t) (eqb_map_update_t) (eqb_leibniz_map_update_t).
+  Build_EqDec (map_update_t) (eqb_map_update_t) (eqb_leibniz_map_update_t).
 
 Global Instance show_map_update_t : Show (map_update_t) :=
  @Build_Show (map_update_t) (fun x =>
@@ -160,44 +232,46 @@ Global Instance gen_map_update_t : Gen (map_update_t) := Build_Gen map_update_t 
 
 
 Definition seq_map_update_entry
-  (m_8 : seq_map_t)
-  (sender_address_9 : user_address_t)
-  (amount_10 : int64)
-  : map_update_t :=
-  let 'SeqMap ((m0_11, m1_12)) :=
-    m_8 in 
-  let res_13 : map_update_t :=
+  (m_10 : seq_map_t)
+  (sender_address_11 : user_address_t)
+  (amount_12 : int64): map_update_t :=
+  let 'SeqMap ((m0_13, m1_14)) :=
+    m_10 in 
+  let res_15 : map_update_t :=
     Update ((
-        amount_10,
+        amount_12,
         SeqMap ((
-            seq_concat ((m0_11)) (array_to_seq (sender_address_9)),
-            seq_concat ((m1_12)) (array_to_seq (u64_to_be_bytes (amount_10)))
+            seq_concat ((m0_13)) (array_to_seq (sender_address_11)),
+            seq_concat ((m1_14)) (array_to_seq (u64_to_be_bytes (amount_12)))
           ))
       )) in 
-  let res_13 :=
-    foldi (usize 0) ((seq_len ((m0_11))) / (usize 32)) (fun x_14 res_13 =>
-      let '(res_13) :=
-        if (array_from_seq (32) (seq_slice ((m0_11)) ((x_14) * (usize 32)) (
-              usize 32))) array_eq (sender_address_9):bool then (let res_13 :=
+  let res_15 :=
+    foldi (usize 0) ((seq_len ((m0_13))) / (usize 32)) (fun x_16 res_15 =>
+      let '(res_15) :=
+        if (array_from_seq (32) (seq_slice ((m0_13)) ((x_16) * (usize 32)) (
+              usize 32))) array_eq (sender_address_11):bool then (let res_15 :=
             Update ((
-                amount_10,
+                amount_12,
                 SeqMap ((
-                    seq_update ((m0_11)) ((x_14) * (usize 32)) (
-                      array_to_seq (sender_address_9)),
-                    seq_update ((m1_12)) ((x_14) * (usize 8)) (
-                      array_to_seq (u64_to_be_bytes (amount_10)))
+                    seq_update ((m0_13)) ((x_16) * (usize 32)) (
+                      array_to_seq (sender_address_11)),
+                    seq_update ((m1_14)) ((x_16) * (usize 8)) (
+                      array_to_seq (u64_to_be_bytes (amount_12)))
                   ))
               )) in 
-          (res_13)) else ((res_13)) in 
-      (res_13))
-    res_13 in 
-  res_13.
+          (res_15)) else ((res_15)) in 
+      (res_15))
+    res_15 in 
+  res_15.
+
 
 Inductive bid_error_hacspec_t :=
 | ContractSender : bid_error_hacspec_t
 | BidTooLow : bid_error_hacspec_t
 | BidsOverWaitingForAuctionFinalization : bid_error_hacspec_t
 | AuctionIsFinalized : bid_error_hacspec_t.
+Global Instance serializable_bid_error_hacspec_t : Serializable bid_error_hacspec_t :=
+  Derive Serializable bid_error_hacspec_t_rect<ContractSender,BidTooLow,BidsOverWaitingForAuctionFinalization,AuctionIsFinalized>.
 
 Definition eqb_bid_error_hacspec_t (x y : bid_error_hacspec_t) : bool :=
 match x with
@@ -219,7 +293,7 @@ Definition eqb_leibniz_bid_error_hacspec_t (x y : bid_error_hacspec_t) : eqb_bid
 Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. intros ; subst ; destruct y ; try reflexivity ; try (apply eqb_refl). Qed.
 
 Instance eq_dec_bid_error_hacspec_t : EqDec (bid_error_hacspec_t) :=
-Build_EqDec (bid_error_hacspec_t) (eqb_bid_error_hacspec_t) (eqb_leibniz_bid_error_hacspec_t).
+  Build_EqDec (bid_error_hacspec_t) (eqb_bid_error_hacspec_t) (eqb_leibniz_bid_error_hacspec_t).
 
 Global Instance show_bid_error_hacspec_t : Show (bid_error_hacspec_t) :=
  @Build_Show (bid_error_hacspec_t) (fun x =>
@@ -234,140 +308,69 @@ Definition g_bid_error_hacspec_t : G (bid_error_hacspec_t) := oneOf_ (returnGen 
 Global Instance gen_bid_error_hacspec_t : Gen (bid_error_hacspec_t) := Build_Gen bid_error_hacspec_t g_bid_error_hacspec_t.
 
 
-Inductive user_address_set_t :=
-| UserAddressSome : user_address_t -> user_address_set_t
-| UserAddressNone : user_address_set_t.
-
-Definition eqb_user_address_set_t (x y : user_address_set_t) : bool :=
-match x with
-   | UserAddressSome a =>
-       match y with
-       | UserAddressSome b => a =.? b
-       | _ => false
-       end
-   | UserAddressNone => match y with | UserAddressNone=> true | _ => false end
-   end.
-
-Definition eqb_leibniz_user_address_set_t (x y : user_address_set_t) : eqb_user_address_set_t x y = true <-> x = y.
-Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. intros ; subst ; destruct y ; try reflexivity ; try (apply eqb_refl). Qed.
-
-Instance eq_dec_user_address_set_t : EqDec (user_address_set_t) :=
-Build_EqDec (user_address_set_t) (eqb_user_address_set_t) (eqb_leibniz_user_address_set_t).
-
-Global Instance show_user_address_set_t : Show (user_address_set_t) :=
- @Build_Show (user_address_set_t) (fun x =>
- match x with
- UserAddressSome a => ("UserAddressSome" ++ show a)%string
- | UserAddressNone => ("UserAddressNone")%string
- end).
-Definition g_user_address_set_t : G (user_address_set_t) := oneOf_ (bindGen arbitrary (fun a => returnGen (UserAddressSome a))) [bindGen arbitrary (fun a => returnGen (UserAddressSome a));returnGen UserAddressNone].
-Global Instance gen_user_address_set_t : Gen (user_address_set_t) := Build_Gen user_address_set_t g_user_address_set_t.
-
-
-Notation "'context_t'" := ((int64 × user_address_set_t)) : hacspec_scope.
-Instance show_context_t : Show (context_t) :=
-Build_Show context_t (fun x =>
-  let (x, x0) := x in
-  (("(") ++ ((show x) ++ ((",") ++ ((show x0) ++ (")"))))))%string.
-Definition g_context_t : G (context_t) :=
-bindGen arbitrary (fun x0 : int64 =>
-  bindGen arbitrary (fun x1 : user_address_set_t =>
-  returnGen (x0,x1))).
-Instance gen_context_t : Gen (context_t) := Build_Gen context_t g_context_t.
-
 Notation "'auction_bid_result_t'" := ((
   result state_hacspec_t bid_error_hacspec_t)) : hacspec_scope.
 
 Definition auction_bid_hacspec
-  (ctx_15 : context_t)
-  (amount_16 : int64)
-  (state_17 : state_hacspec_t)
-  : auction_bid_result_t :=
+  (ctx_17 : context_t)
+  (amount_18 : int64)
+  (state_19 : state_hacspec_t): auction_bid_result_t :=
   let 'StateHacspec ((
-        auction_state_18,
-        highest_bid_19,
-        st2_20,
-        expiry_21,
-        st4_22
+        auction_state_20,
+        highest_bid_21,
+        st2_22,
+        expiry_23,
+        st4_24
       )) :=
-    (state_17) in 
-  ifbnd negb ((auction_state_18) =.? (NotSoldYet)) : bool
+    (state_19) in 
+  ifbnd negb ((auction_state_20) =.? (NotSoldYet)) : bool
   thenbnd (bind (@Err state_hacspec_t bid_error_hacspec_t (
         AuctionIsFinalized)) (fun _ =>  Ok (tt)))
   else (tt) >> (fun 'tt =>
-  let '(slot_time_23, sender_24) :=
-    ctx_15 in 
-  ifbnd negb ((slot_time_23) <=.? (expiry_21)) : bool
+  let 'Context ((owner_25, sender_26, balance_27, slot_time_28)) :=
+    ctx_17 in 
+  ifbnd negb ((slot_time_28) <=.? (expiry_23)) : bool
   thenbnd (bind (@Err state_hacspec_t bid_error_hacspec_t (
         BidsOverWaitingForAuctionFinalization)) (fun _ =>  Ok (tt)))
   else (tt) >> (fun 'tt =>
-  ifbnd (sender_24) =.? (UserAddressNone) : bool
-  thenbnd (bind (@Err state_hacspec_t bid_error_hacspec_t (ContractSender)) (
-      fun _ =>  Ok (tt)))
-  else (tt) >> (fun 'tt =>
-  let sender_address_25 : user_address_t :=
-    match sender_24 with
-    | UserAddressNone => array_from_list int8 (let l :=
-        [
-          @repr WORDSIZE8 5;
-          @repr WORDSIZE8 5;
-          @repr WORDSIZE8 5;
-          @repr WORDSIZE8 5;
-          @repr WORDSIZE8 5;
-          @repr WORDSIZE8 5;
-          @repr WORDSIZE8 5;
-          @repr WORDSIZE8 5;
-          @repr WORDSIZE8 5;
-          @repr WORDSIZE8 5;
-          @repr WORDSIZE8 5;
-          @repr WORDSIZE8 5;
-          @repr WORDSIZE8 5;
-          @repr WORDSIZE8 5;
-          @repr WORDSIZE8 5;
-          @repr WORDSIZE8 5;
-          @repr WORDSIZE8 5;
-          @repr WORDSIZE8 5;
-          @repr WORDSIZE8 5;
-          @repr WORDSIZE8 5;
-          @repr WORDSIZE8 5;
-          @repr WORDSIZE8 5;
-          @repr WORDSIZE8 5;
-          @repr WORDSIZE8 5;
-          @repr WORDSIZE8 5;
-          @repr WORDSIZE8 5;
-          @repr WORDSIZE8 5;
-          @repr WORDSIZE8 5;
-          @repr WORDSIZE8 5;
-          @repr WORDSIZE8 5;
-          @repr WORDSIZE8 5;
-          @repr WORDSIZE8 5
-        ] in  l)
-    | UserAddressSome account_address_26 => account_address_26
-    end in 
-  let '(bid_to_update_27, new_map_28) :=
-    seq_map_entry ((st4_22)) (sender_address_25) in 
-  let '(updated_bid_29, updated_map_30) :=
-    match seq_map_update_entry ((st4_22)) (sender_address_25) ((
-        bid_to_update_27) .+ (amount_16)) with
-    | Update (updated_bid_31, updated_map_32) => (updated_bid_31, updated_map_32
+  let '(bid_to_update_29, new_map_30) :=
+    seq_map_entry ((st4_24)) (sender_26) in 
+  let '(updated_bid_31, updated_map_32) :=
+    match seq_map_update_entry ((st4_24)) (sender_26) ((bid_to_update_29) .+ (
+        amount_18)) with
+    | Update (updated_bid_33, updated_map_34) => (updated_bid_33, updated_map_34
     )
     end in 
-  ifbnd negb ((updated_bid_29) >.? (highest_bid_19)) : bool
+  ifbnd negb ((updated_bid_31) >.? (highest_bid_21)) : bool
   thenbnd (bind (@Err state_hacspec_t bid_error_hacspec_t (BidTooLow)) (
       fun _ =>  Ok (tt)))
   else (tt) >> (fun 'tt =>
   @Ok state_hacspec_t bid_error_hacspec_t (StateHacspec ((
-        auction_state_18,
-        updated_bid_29,
-        st2_20,
-        expiry_21,
-        updated_map_30
-      ))))))).
+        auction_state_20,
+        updated_bid_31,
+        st2_22,
+        expiry_23,
+        updated_map_32
+      )))))).
+
+
+Definition auction_bid
+  (ctx_35 : context_state_hacspec_t)
+  (amount_36 : int64): (option (context_state_hacspec_t ∏ list_action_t)) :=
+  let s_37 : seq action_body_t :=
+    seq_new_ (default) (usize 0) in
+  @Some (context_state_hacspec_t ∏ list_action_t) ((ctx_35, s_37)).
+
+Definition bid (amount : int64)(st : State) :=
+  auction_bid st amount.
+
 
 Inductive finalize_error_hacspec_t :=
 | BidMapError : finalize_error_hacspec_t
 | AuctionStillActive : finalize_error_hacspec_t
 | AuctionFinalized : finalize_error_hacspec_t.
+Global Instance serializable_finalize_error_hacspec_t : Serializable finalize_error_hacspec_t :=
+  Derive Serializable finalize_error_hacspec_t_rect<BidMapError,AuctionStillActive,AuctionFinalized>.
 
 Definition eqb_finalize_error_hacspec_t (x y : finalize_error_hacspec_t) : bool :=
 match x with
@@ -384,7 +387,7 @@ Definition eqb_leibniz_finalize_error_hacspec_t (x y : finalize_error_hacspec_t)
 Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. intros ; subst ; destruct y ; try reflexivity ; try (apply eqb_refl). Qed.
 
 Instance eq_dec_finalize_error_hacspec_t : EqDec (finalize_error_hacspec_t) :=
-Build_EqDec (finalize_error_hacspec_t) (eqb_finalize_error_hacspec_t) (eqb_leibniz_finalize_error_hacspec_t).
+  Build_EqDec (finalize_error_hacspec_t) (eqb_finalize_error_hacspec_t) (eqb_leibniz_finalize_error_hacspec_t).
 
 Global Instance show_finalize_error_hacspec_t : Show (finalize_error_hacspec_t) :=
  @Build_Show (finalize_error_hacspec_t) (fun x =>
@@ -397,7 +400,7 @@ Definition g_finalize_error_hacspec_t : G (finalize_error_hacspec_t) := oneOf_ (
 Global Instance gen_finalize_error_hacspec_t : Gen (finalize_error_hacspec_t) := Build_Gen finalize_error_hacspec_t g_finalize_error_hacspec_t.
 
 
-Notation "'finalize_context_t'" := ((int64 × user_address_t × int64
+Notation "'finalize_context_t'" := ((int64 ∏ user_address_t ∏ int64
 )) : hacspec_scope.
 Instance show_finalize_context_t : Show (finalize_context_t) :=
 Build_Show finalize_context_t (fun x =>
@@ -415,6 +418,8 @@ Instance gen_finalize_context_t : Gen (finalize_context_t) := Build_Gen finalize
 Inductive finalize_action_t :=
 | Accept : finalize_action_t
 | SimpleTransfer : public_byte_seq -> finalize_action_t.
+Global Instance serializable_finalize_action_t : Serializable finalize_action_t :=
+  Derive Serializable finalize_action_t_rect<Accept,SimpleTransfer>.
 
 Definition eqb_finalize_action_t (x y : finalize_action_t) : bool :=
 match x with
@@ -430,7 +435,7 @@ Definition eqb_leibniz_finalize_action_t (x y : finalize_action_t) : eqb_finaliz
 Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. intros ; subst ; destruct y ; try reflexivity ; try (apply eqb_refl). Qed.
 
 Instance eq_dec_finalize_action_t : EqDec (finalize_action_t) :=
-Build_EqDec (finalize_action_t) (eqb_finalize_action_t) (eqb_leibniz_finalize_action_t).
+  Build_EqDec (finalize_action_t) (eqb_finalize_action_t) (eqb_leibniz_finalize_action_t).
 
 Global Instance show_finalize_action_t : Show (finalize_action_t) :=
  @Build_Show (finalize_action_t) (fun x =>
@@ -445,6 +450,8 @@ Global Instance gen_finalize_action_t : Gen (finalize_action_t) := Build_Gen fin
 Inductive bid_remain_t :=
 | BidNone : bid_remain_t
 | BidSome : int64 -> bid_remain_t.
+Global Instance serializable_bid_remain_t : Serializable bid_remain_t :=
+  Derive Serializable bid_remain_t_rect<BidNone,BidSome>.
 
 Definition eqb_bid_remain_t (x y : bid_remain_t) : bool :=
 match x with
@@ -456,7 +463,7 @@ Definition eqb_leibniz_bid_remain_t (x y : bid_remain_t) : eqb_bid_remain_t x y 
 Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. intros ; subst ; destruct y ; try reflexivity ; try (apply eqb_refl). Qed.
 
 Instance eq_dec_bid_remain_t : EqDec (bid_remain_t) :=
-Build_EqDec (bid_remain_t) (eqb_bid_remain_t) (eqb_leibniz_bid_remain_t).
+  Build_EqDec (bid_remain_t) (eqb_bid_remain_t) (eqb_leibniz_bid_remain_t).
 
 Global Instance show_bid_remain_t : Show (bid_remain_t) :=
  @Build_Show (bid_remain_t) (fun x =>
@@ -469,314 +476,344 @@ Global Instance gen_bid_remain_t : Gen (bid_remain_t) := Build_Gen bid_remain_t 
 
 
 Notation "'auction_finalize_result_t'" := ((result (
-    state_hacspec_t ×
+    state_hacspec_t ∏
     finalize_action_t
   ) finalize_error_hacspec_t)) : hacspec_scope.
 
 Definition auction_finalize_hacspec
-  (ctx_33 : finalize_context_t)
-  (state_34 : state_hacspec_t)
-  : auction_finalize_result_t :=
+  (ctx_38 : finalize_context_t)
+  (state_39 : state_hacspec_t): auction_finalize_result_t :=
   let 'StateHacspec ((
-        auction_state_35,
-        highest_bid_36,
-        st2_37,
-        expiry_38,
-        SeqMap ((m0_39, m1_40))
+        auction_state_40,
+        highest_bid_41,
+        st2_42,
+        expiry_43,
+        SeqMap ((m0_44, m1_45))
       )) :=
-    (state_34) in 
-  let result_41 : (result (state_hacspec_t × finalize_action_t
+    (state_39) in 
+  let result_46 : (result (state_hacspec_t ∏ finalize_action_t
       ) finalize_error_hacspec_t) :=
-    @Ok (state_hacspec_t × finalize_action_t) finalize_error_hacspec_t ((
-        (state_34),
+    @Ok (state_hacspec_t ∏ finalize_action_t) finalize_error_hacspec_t ((
+        (state_39),
         Accept
       )) in 
-  ifbnd negb ((auction_state_35) =.? (NotSoldYet)) : bool
-  thenbnd (bind (@Err (state_hacspec_t × finalize_action_t
+  ifbnd negb ((auction_state_40) =.? (NotSoldYet)) : bool
+  thenbnd (bind (@Err (state_hacspec_t ∏ finalize_action_t
       ) finalize_error_hacspec_t (AuctionFinalized)) (fun _ =>  Ok (tt)))
   else (tt) >> (fun 'tt =>
-  let '(slot_time_42, owner_43, balance_44) :=
-    ctx_33 in 
-  ifbnd negb ((slot_time_42) >.? (expiry_38)) : bool
-  thenbnd (bind (@Err (state_hacspec_t × finalize_action_t
+  let '(slot_time_47, owner_48, balance_49) :=
+    ctx_38 in 
+  ifbnd negb ((slot_time_47) >.? (expiry_43)) : bool
+  thenbnd (bind (@Err (state_hacspec_t ∏ finalize_action_t
       ) finalize_error_hacspec_t (AuctionStillActive)) (fun _ =>  Ok (tt)))
   else (tt) >> (fun 'tt =>
-  ifbnd (balance_44) !=.? (@repr WORDSIZE64 0) : bool
-  thenbnd (let return_action_45 : finalize_action_t :=
+  ifbnd (balance_49) !=.? (@repr WORDSIZE64 0) : bool
+  thenbnd (let return_action_50 : finalize_action_t :=
       SimpleTransfer (seq_concat (seq_concat (seq_new_ (default) (usize 0)) (
-            array_to_seq (owner_43))) (array_to_seq (u64_to_be_bytes (
-            highest_bid_36)))) in 
-    let remaining_bid_46 : bid_remain_t :=
+            array_to_seq (owner_48))) (array_to_seq (u64_to_be_bytes (
+            highest_bid_41)))) in 
+    let remaining_bid_51 : bid_remain_t :=
       BidNone in 
-    bind (foldibnd (usize 0) to ((seq_len ((m0_39))) / (usize 32)) for (
-        auction_state_35,
-        return_action_45,
-        remaining_bid_46
-      ) >> (fun x_47 '(auction_state_35, return_action_45, remaining_bid_46) =>
-      let addr_48 : user_address_t :=
-        array_from_seq (32) (seq_slice ((m0_39)) ((x_47) * (usize 32)) (
+    bind (foldibnd (usize 0) to ((seq_len ((m0_44))) / (usize 32)) for (
+        auction_state_40,
+        return_action_50,
+        remaining_bid_51
+      ) >> (fun x_52 '(auction_state_40, return_action_50, remaining_bid_51) =>
+      let addr_53 : user_address_t :=
+        array_from_seq (32) (seq_slice ((m0_44)) ((x_52) * (usize 32)) (
             usize 32)) in 
-      let amnt_49 : int64 :=
-        u64_from_be_bytes (array_from_seq (8) (seq_slice ((m1_40)) ((x_47) * (
+      let amnt_54 : int64 :=
+        u64_from_be_bytes (array_from_seq (8) (seq_slice ((m1_45)) ((x_52) * (
                 usize 8)) (usize 8))) in 
-      ifbnd (amnt_49) <.? (highest_bid_36) : bool
-      then (let return_action_45 :=
-          match return_action_45 with
+      ifbnd (amnt_54) <.? (highest_bid_41) : bool
+      then (let return_action_50 :=
+          match return_action_50 with
           | Accept => Accept
-          | SimpleTransfer m_50 => SimpleTransfer (seq_concat (seq_concat (
-                m_50) (array_to_seq (addr_48))) (array_to_seq (u64_to_be_bytes (
-                amnt_49))))
+          | SimpleTransfer m_55 => SimpleTransfer (seq_concat (seq_concat (
+                m_55) (array_to_seq (addr_53))) (array_to_seq (u64_to_be_bytes (
+                amnt_54))))
           end in 
-        (auction_state_35, return_action_45, remaining_bid_46))
-      elsebnd(ifbnd negb ((remaining_bid_46) =.? (BidNone)) : bool
-        thenbnd (bind (@Err (state_hacspec_t × finalize_action_t
+        (auction_state_40, return_action_50, remaining_bid_51))
+      elsebnd(ifbnd negb ((remaining_bid_51) =.? (BidNone)) : bool
+        thenbnd (bind (@Err (state_hacspec_t ∏ finalize_action_t
             ) finalize_error_hacspec_t (BidMapError)) (fun _ =>  Ok (tt)))
         else (tt) >> (fun 'tt =>
-        let auction_state_35 :=
-          Sold (addr_48) in 
-        let remaining_bid_46 :=
-          BidSome (amnt_49) in 
-        Ok ((auction_state_35, return_action_45, remaining_bid_46)))) >> (fun '(
-        auction_state_35,
-        return_action_45,
-        remaining_bid_46
+        let auction_state_40 :=
+          Sold (addr_53) in 
+        let remaining_bid_51 :=
+          BidSome (amnt_54) in 
+        Ok ((auction_state_40, return_action_50, remaining_bid_51)))) >> (fun '(
+        auction_state_40,
+        return_action_50,
+        remaining_bid_51
       ) =>
-      Ok ((auction_state_35, return_action_45, remaining_bid_46))))) (fun '(
-        auction_state_35,
-        return_action_45,
-        remaining_bid_46
-      ) => let result_41 :=
-        match remaining_bid_46 with
-        | BidSome amount_51 => (if (negb ((amount_51) =.? (
-                highest_bid_36))):bool then (@Err (
-              state_hacspec_t ×
+      Ok ((auction_state_40, return_action_50, remaining_bid_51))))) (fun '(
+        auction_state_40,
+        return_action_50,
+        remaining_bid_51
+      ) => let result_46 :=
+        match remaining_bid_51 with
+        | BidSome amount_56 => (if (negb ((amount_56) =.? (
+                highest_bid_41))):bool then (@Err (
+              state_hacspec_t ∏
               finalize_action_t
             ) finalize_error_hacspec_t (BidMapError)) else (@Ok (
-              state_hacspec_t ×
+              state_hacspec_t ∏
               finalize_action_t
             ) finalize_error_hacspec_t ((
                 StateHacspec ((
-                    auction_state_35,
-                    highest_bid_36,
-                    st2_37,
-                    expiry_38,
-                    SeqMap (((m0_39), (m1_40)))
+                    auction_state_40,
+                    highest_bid_41,
+                    st2_42,
+                    expiry_43,
+                    SeqMap (((m0_44), (m1_45)))
                   )),
-                return_action_45
+                return_action_50
               ))))
-        | BidNone => @Err (state_hacspec_t × finalize_action_t
+        | BidNone => @Err (state_hacspec_t ∏ finalize_action_t
         ) finalize_error_hacspec_t (BidMapError)
         end in 
-      bind ((result_41)) (fun _ =>  Ok ((auction_state_35, result_41)))))
-  else ((auction_state_35, result_41)) >> (fun '(auction_state_35, result_41) =>
-  result_41))).
+      bind ((result_46)) (fun _ =>  Ok ((auction_state_40, result_46)))))
+  else ((auction_state_40, result_46)) >> (fun '(auction_state_40, result_46) =>
+  result_46))).
+
+
+Definition auction_finalize
+  (ctx_57 : context_state_hacspec_t): (option (
+      context_state_hacspec_t ∏
+      list_action_t
+    )) :=
+  let s_58 : seq action_body_t :=
+    seq_new_ (default) (usize 0) in
+  @Some (context_state_hacspec_t ∏ list_action_t) ((ctx_57, s_58)).
+
+Definition finalize (st : State) :=
+  auction_finalize st.
+
 
 Definition auction_test_init
-  (item_52 : public_byte_seq)
-  (time_53 : int64)
-  : bool :=
-  (fresh_state_hacspec ((item_52)) (time_53)) =.? (StateHacspec ((
+  (item_59 : public_byte_seq)
+  (time_60 : int64): bool :=
+  (fresh_state_hacspec ((item_59)) (time_60)) =.? (StateHacspec ((
         NotSoldYet,
         @repr WORDSIZE64 0,
-        (item_52),
-        time_53,
+        (item_59),
+        time_60,
         SeqMap ((seq_new_ (default) (usize 0), seq_new_ (default) (usize 0)))
       ))).
 
-Theorem ensures_auction_test_init : forall result_54 (
-  item_52 : public_byte_seq) (time_53 : int64),
- @auction_test_init item_52 time_53 = result_54 ->
- (result_54) =.? (true).
- Proof. Admitted.
-QuickChick (
-  forAll g_public_byte_seq (fun item_52 : public_byte_seq => forAll g_int64 (fun time_53 : int64 => auction_test_init item_52 time_53))).
+
+Theorem ensures_auction_test_init : forall result_61 (
+  item_59 : public_byte_seq) (time_60 : int64),
+ @auction_test_init item_59 time_60 = result_61 ->
+ (result_61) =.? (true).
+Proof. intros. subst. apply eqb_leibniz. apply eqb_leibniz. reflexivity. Qed.
+QuickChick (forAll g_public_byte_seq (fun item_59 : public_byte_seq =>
+  forAll g_int64 (fun time_60 : int64 =>
+  auction_test_init item_59 time_60))).
 
 Definition verify_bid
-  (item_55 : public_byte_seq)
-  (state_56 : state_hacspec_t)
-  (account_57 : user_address_t)
-  (ctx_58 : context_t)
-  (amount_59 : int64)
-  (bid_map_60 : seq_map_t)
-  (highest_bid_61 : int64)
-  (time_62 : int64)
-  : (state_hacspec_t × seq_map_t × bool × bool) :=
-  let t_63 : (result state_hacspec_t bid_error_hacspec_t) :=
-    auction_bid_hacspec (ctx_58) (amount_59) ((state_56)) in 
-  let '(state_64, res_65) :=
-    match t_63 with
-    | Err e_66 => (state_56, false)
-    | Ok s_67 => (s_67, true)
+  (item_62 : public_byte_seq)
+  (state_63 : state_hacspec_t)
+  (account_64 : user_address_t)
+  (ctx_65 : context_t)
+  (amount_66 : int64)
+  (bid_map_67 : seq_map_t)
+  (highest_bid_68 : int64)
+  (time_69 : int64): (state_hacspec_t ∏ seq_map_t ∏ bool ∏ bool) :=
+  let t_70 : (result state_hacspec_t bid_error_hacspec_t) :=
+    auction_bid_hacspec (ctx_65) (amount_66) ((state_63)) in 
+  let '(state_71, res_72) :=
+    match t_70 with
+    | Err e_73 => (state_63, false)
+    | Ok s_74 => (s_74, true)
     end in 
-  let bid_map_68 : seq_map_t :=
-    match seq_map_update_entry ((bid_map_60)) (account_57) (highest_bid_61) with
-    | Update (_, updated_map_69) => updated_map_69
+  let bid_map_75 : seq_map_t :=
+    match seq_map_update_entry ((bid_map_67)) (account_64) (highest_bid_68) with
+    | Update (_, updated_map_76) => updated_map_76
     end in 
   (
-    (state_64),
-    (bid_map_68),
-    res_65,
-    ((state_64)) =.? (StateHacspec ((
+    (state_71),
+    (bid_map_75),
+    res_72,
+    ((state_71)) =.? (StateHacspec ((
           NotSoldYet,
-          highest_bid_61,
-          (item_55),
-          time_62,
-          (bid_map_68)
+          highest_bid_68,
+          (item_62),
+          time_69,
+          (bid_map_75)
         )))
   ).
 
-Definition useraddress_from_u8 (i_70 : int8) : user_address_t :=
+
+Definition useraddress_from_u8 (i_77 : int8): user_address_t :=
   array_from_list int8 (let l :=
       [
-        i_70;
-        i_70;
-        i_70;
-        i_70;
-        i_70;
-        i_70;
-        i_70;
-        i_70;
-        i_70;
-        i_70;
-        i_70;
-        i_70;
-        i_70;
-        i_70;
-        i_70;
-        i_70;
-        i_70;
-        i_70;
-        i_70;
-        i_70;
-        i_70;
-        i_70;
-        i_70;
-        i_70;
-        i_70;
-        i_70;
-        i_70;
-        i_70;
-        i_70;
-        i_70;
-        i_70;
-        i_70
+        i_77;
+        i_77;
+        i_77;
+        i_77;
+        i_77;
+        i_77;
+        i_77;
+        i_77;
+        i_77;
+        i_77;
+        i_77;
+        i_77;
+        i_77;
+        i_77;
+        i_77;
+        i_77;
+        i_77;
+        i_77;
+        i_77;
+        i_77;
+        i_77;
+        i_77;
+        i_77;
+        i_77;
+        i_77;
+        i_77;
+        i_77;
+        i_77;
+        i_77;
+        i_77;
+        i_77;
+        i_77
       ] in  l).
 
+
 Definition new_account
-  (time_71 : int64)
-  (i_72 : int8)
-  : (user_address_t × context_t) :=
-  let addr_73 : user_address_t :=
-    useraddress_from_u8 (i_72) in 
-  let ctx_74 : (int64 × user_address_set_t) :=
-    (time_71, UserAddressSome (addr_73)) in 
-  (addr_73, ctx_74).
+  (time_78 : int64)
+  (i_79 : int8): (user_address_t ∏ context_t) :=
+  let addr_80 : user_address_t :=
+    useraddress_from_u8 (i_79) in 
+  let ctx_81 : context_t :=
+    Context ((addr_80, addr_80, @repr WORDSIZE64 0, time_78)) in 
+  (addr_80, ctx_81).
+
 
 Definition test_auction_bid_and_finalize
-  (item_75 : public_byte_seq)
-  (time_76 : int64)
-  (input_amount_77 : int64)
-  : bool :=
-  let time_78 : int64 :=
-    (if ((time_76) =.? (@repr WORDSIZE64 18446744073709551615)):bool then (
-        @repr WORDSIZE64 18446744073709551614) else (time_76)) in 
-  let input_amount_79 : int64 :=
-    (if ((input_amount_77) >.? (((@repr WORDSIZE64 18446744073709551615) ./ (
+  (item_82 : public_byte_seq)
+  (time_83 : int64)
+  (input_amount_84 : int64): bool :=
+  let time_85 : int64 :=
+    (if ((time_83) =.? (@repr WORDSIZE64 18446744073709551615)):bool then (
+        @repr WORDSIZE64 18446744073709551614) else (time_83)) in 
+  let input_amount_86 : int64 :=
+    (if ((input_amount_84) >.? (((@repr WORDSIZE64 18446744073709551615) ./ (
               @repr WORDSIZE64 5)) .- (@repr WORDSIZE64 1))):bool then (
-        @repr WORDSIZE64 100) else (input_amount_77)) in 
-  let amount_80 : int64 :=
-    (input_amount_79) .+ (@repr WORDSIZE64 1) in 
-  let winning_amount_81 : int64 :=
-    (amount_80) .* (@repr WORDSIZE64 3) in 
-  let big_amount_82 : int64 :=
-    (amount_80) .* (@repr WORDSIZE64 5) in 
-  let bid_map_83 : seq_map_t :=
+        @repr WORDSIZE64 100) else (input_amount_84)) in 
+  let amount_87 : int64 :=
+    (input_amount_86) .+ (@repr WORDSIZE64 1) in 
+  let winning_amount_88 : int64 :=
+    (amount_87) .* (@repr WORDSIZE64 3) in 
+  let big_amount_89 : int64 :=
+    (amount_87) .* (@repr WORDSIZE64 5) in 
+  let bid_map_90 : seq_map_t :=
     SeqMap ((seq_new_ (default) (usize 0), seq_new_ (default) (usize 0))) in 
-  let state_84 : state_hacspec_t :=
-    fresh_state_hacspec ((item_75)) (time_78) in 
-  let '(alice_85, alice_ctx_86) :=
-    new_account (time_78) (@repr WORDSIZE8 0) in 
-  let '(ac0_87, ac1_88) :=
-    alice_ctx_86 in 
-  let '(state_89, bid_map_90, res_0_91, result_0_92) :=
-    verify_bid ((item_75)) (state_84) (alice_85) (((ac0_87), (ac1_88))) (
-      amount_80) (bid_map_83) (amount_80) (time_78) in 
-  let '(state_93, bid_map_94, res_1_95, result_1_96) :=
-    verify_bid ((item_75)) (state_89) (alice_85) (((ac0_87), (ac1_88))) (
-      amount_80) (bid_map_90) ((amount_80) .+ (amount_80)) (time_78) in 
-  let '(bob_97, bob_ctx_98) :=
-    new_account (time_78) (@repr WORDSIZE8 1) in 
-  let '(bc1_99, bc2_100) :=
-    bob_ctx_98 in 
-  let '(state_101, bid_map_102, res_2_103, result_2_104) :=
-    verify_bid ((item_75)) (state_93) (bob_97) (((bc1_99), (bc2_100))) (
-      winning_amount_81) (bid_map_94) (winning_amount_81) (time_78) in 
-  let owner_105 : user_address_t :=
+  let state_91 : state_hacspec_t :=
+    fresh_state_hacspec ((item_82)) (time_85) in 
+  let '(alice_92, alice_ctx_93) :=
+    new_account (time_85) (@repr WORDSIZE8 0) in 
+  let 'Context ((_, ac0_94, _, ac1_95)) :=
+    alice_ctx_93 in 
+  let '(state_96, bid_map_97, res_0_98, result_0_99) :=
+    verify_bid ((item_82)) (state_91) (alice_92) (alice_ctx_93) (amount_87) (
+      bid_map_90) (amount_87) (time_85) in 
+  let '(state_100, bid_map_101, res_1_102, result_1_103) :=
+    verify_bid ((item_82)) (state_96) (alice_92) (alice_ctx_93) (amount_87) (
+      bid_map_97) ((amount_87) .+ (amount_87)) (time_85) in 
+  let '(bob_104, bob_ctx_105) :=
+    new_account (time_85) (@repr WORDSIZE8 1) in 
+  let 'Context ((_, bc1_106, _, bc2_107)) :=
+    bob_ctx_105 in 
+  let '(state_108, bid_map_109, res_2_110, result_2_111) :=
+    verify_bid ((item_82)) (state_100) (bob_104) (bob_ctx_105) (
+      winning_amount_88) (bid_map_101) (winning_amount_88) (time_85) in 
+  let owner_112 : user_address_t :=
     useraddress_from_u8 (@repr WORDSIZE8 0) in 
-  let balance_106 : int64 :=
+  let balance_113 : int64 :=
     @repr WORDSIZE64 100 in 
-  let ctx4_107 : (int64 × user_address_t × int64) :=
-    (time_78, owner_105, balance_106) in 
-  let finres_108 : (result (state_hacspec_t × finalize_action_t
+  let ctx4_114 : (int64 ∏ user_address_t ∏ int64) :=
+    (time_85, owner_112, balance_113) in 
+  let finres_115 : (result (state_hacspec_t ∏ finalize_action_t
       ) finalize_error_hacspec_t) :=
-    auction_finalize_hacspec (ctx4_107) ((state_101)) in 
-  let '(state_109, result_3_110) :=
-    match finres_108 with
-    | Err err_111 => ((state_101), (err_111) =.? (AuctionStillActive))
-    | Ok (state_112, _) => (state_112, false)
+    auction_finalize_hacspec (ctx4_114) ((state_108)) in 
+  let '(state_116, result_3_117) :=
+    match finres_115 with
+    | Err err_118 => ((state_108), (err_118) =.? (AuctionStillActive))
+    | Ok (state_119, _) => (state_119, false)
     end in 
-  let '(carol_113, carol_ctx_114) :=
-    new_account (time_78) (@repr WORDSIZE8 2) in 
-  let ctx5_115 : (int64 × user_address_t × int64) :=
-    ((time_78) .+ (@repr WORDSIZE64 1), carol_113, winning_amount_81) in 
-  let finres2_116 : (result (state_hacspec_t × finalize_action_t
+  let '(carol_120, carol_ctx_121) :=
+    new_account (time_85) (@repr WORDSIZE8 2) in 
+  let ctx5_122 : (int64 ∏ user_address_t ∏ int64) :=
+    ((time_85) .+ (@repr WORDSIZE64 1), carol_120, winning_amount_88) in 
+  let finres2_123 : (result (state_hacspec_t ∏ finalize_action_t
       ) finalize_error_hacspec_t) :=
-    auction_finalize_hacspec (ctx5_115) ((state_109)) in 
-  let '(state_117, result_4_118) :=
-    match finres2_116 with
-    | Err _ => ((state_109), false)
-    | Ok (state_119, action_120) => (
-      state_119,
-      (action_120) =.? (SimpleTransfer (seq_concat (seq_concat (seq_concat (
+    auction_finalize_hacspec (ctx5_122) ((state_116)) in 
+  let '(state_124, result_4_125) :=
+    match finres2_123 with
+    | Err _ => ((state_116), false)
+    | Ok (state_126, action_127) => (
+      state_126,
+      (action_127) =.? (SimpleTransfer (seq_concat (seq_concat (seq_concat (
                 seq_concat (seq_new_ (default) (usize 0)) (
-                  array_to_seq (carol_113))) (array_to_seq (u64_to_be_bytes (
-                  winning_amount_81)))) (array_to_seq (alice_85))) (
-            array_to_seq (u64_to_be_bytes ((amount_80) .+ (amount_80))))))
+                  array_to_seq (carol_120))) (array_to_seq (u64_to_be_bytes (
+                  winning_amount_88)))) (array_to_seq (alice_92))) (
+            array_to_seq (u64_to_be_bytes ((amount_87) .+ (amount_87))))))
     )
     end in 
-  let result_5_121 : bool :=
-    ((state_117)) =.? (StateHacspec ((
-          Sold (bob_97),
-          winning_amount_81,
-          (item_75),
-          time_78,
-          (bid_map_102)
+  let result_5_128 : bool :=
+    ((state_124)) =.? (StateHacspec ((
+          Sold (bob_104),
+          winning_amount_88,
+          (item_82),
+          time_85,
+          (bid_map_109)
         ))) in 
-  let finres3_122 : (result (state_hacspec_t × finalize_action_t
+  let finres3_129 : (result (state_hacspec_t ∏ finalize_action_t
       ) finalize_error_hacspec_t) :=
-    auction_finalize_hacspec (ctx5_115) ((state_117)) in 
-  let '(state_123, result_6_124) :=
-    match finres3_122 with
-    | Err err_125 => (state_117, (err_125) =.? (AuctionFinalized))
-    | Ok (state_126, action_127) => (state_126, false)
+    auction_finalize_hacspec (ctx5_122) ((state_124)) in 
+  let '(state_130, result_6_131) :=
+    match finres3_129 with
+    | Err err_132 => (state_124, (err_132) =.? (AuctionFinalized))
+    | Ok (state_133, action_134) => (state_133, false)
     end in 
-  let t_128 : (result state_hacspec_t bid_error_hacspec_t) :=
-    auction_bid_hacspec (((bc1_99), (bc2_100))) (big_amount_82) ((
-        state_123)) in 
-  let result_7_129 : bool :=
-    match t_128 with
-    | Err e_130 => (e_130) =.? (AuctionIsFinalized)
+  let t_135 : (result state_hacspec_t bid_error_hacspec_t) :=
+    auction_bid_hacspec (bob_ctx_105) (big_amount_89) ((state_130)) in 
+  let result_7_136 : bool :=
+    match t_135 with
+    | Err e_137 => (e_137) =.? (AuctionIsFinalized)
     | Ok _ => false
     end in 
-  (((((((result_0_92) && (result_1_96)) && (result_2_104)) && (
-            result_3_110)) && (result_4_118)) && (result_5_121)) && (
-      result_6_124)) && (result_7_129).
+  (((((((result_0_99) && (result_1_103)) && (result_2_111)) && (
+            result_3_117)) && (result_4_125)) && (result_5_128)) && (
+      result_6_131)) && (result_7_136).
 
-Theorem ensures_test_auction_bid_and_finalize : forall result_54 (
-  item_75 : public_byte_seq) (time_76 : int64) (input_amount_77 : int64),
- @test_auction_bid_and_finalize item_75 time_76 input_amount_77 = result_54 ->
- (result_54) =.? (true).
- Proof. Admitted.
-QuickChick (
-  forAll g_public_byte_seq (fun item_75 : public_byte_seq => forAll g_int64 (fun time_76 : int64 => forAll g_int64 (fun input_amount_77 : int64 => test_auction_bid_and_finalize item_75 time_76 input_amount_77)))).
 
+Theorem ensures_test_auction_bid_and_finalize : forall result_61 (
+  item_82 : public_byte_seq) (time_83 : int64) (input_amount_84 : int64),
+ @test_auction_bid_and_finalize item_82 time_83 input_amount_84 = result_61 ->
+ (result_61) =.? (true).
+Proof. intros. subst. Admitted.
+QuickChick (forAll g_public_byte_seq (fun item_82 : public_byte_seq =>
+  forAll g_int64 (fun time_83 : int64 =>
+  forAll g_int64 (fun input_amount_84 : int64 =>
+  test_auction_bid_and_finalize item_82 time_83 input_amount_84)))).
+
+Inductive Msg :=
+| BID
+| FINALIZE.
+Global Instance Msg_serializable : Serializable Msg :=
+  Derive Serializable Msg_rect<BID,FINALIZE>.
+Definition auction_receive (chain : Chain) (ctx : ContractCallContext) (state : State) (msg : option Msg) : option (State * list ActionBody) :=
+  match msg with
+  | Some BID => bid (repr ctx.(ctx_amount)) state
+  | Some FINALIZE => finalize state
+  | None => None
+  end.
+
+Definition auction_contract : Contract Setup Msg State :=
+  build_contract auction_State auction_receive.

@@ -466,6 +466,19 @@ pub enum Quantified<I, T> {
 }
 
 #[derive(Clone, Serialize, Debug)]
+pub struct ReceiveData {
+    pub contract : String,
+    pub name : String,
+    pub payable: bool,
+}
+
+#[derive(Clone, Serialize, Debug)]
+pub struct InitData {
+    pub contract : String,
+    pub parameter: Option<String>,
+}
+
+#[derive(Clone, Serialize, Debug)]
 pub enum Item {
     FnDecl(
         Spanned<TopLevelIdent>,
@@ -473,8 +486,8 @@ pub enum Item {
         Spanned<Block>,
         Vec<Quantified<(Ident, Spanned<BaseTyp>), Spanned<Expression>>>, // requires
         Vec<Quantified<(Ident, Spanned<BaseTyp>), Spanned<Expression>>>, // ensures
-        Vec<String>, // init
-        Vec<(String, String, bool)>, // receive
+        Vec<InitData>, // init
+        Vec<ReceiveData>, // receive
     ),
     EnumDecl(
         Spanned<TopLevelIdent>,

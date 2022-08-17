@@ -3,6 +3,8 @@ use crate::prelude::*;
 // Concordium library types
 array!(UserAddress, 32, u8);
 
+// pub type Context = (u64, UserAddressSet);
+
 // ActionBody
 pub enum ActionBody {
     ACT_TRANSFER (UserAddress , u64),
