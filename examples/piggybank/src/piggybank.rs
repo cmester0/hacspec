@@ -51,7 +51,7 @@ fn coerce_rust_to_hacspec_piggybank_state(pbs : &PiggyBankState) -> PiggyBankSta
 
 array!(UserAddress, 32, u8);
 
-pub type Context = (UserAddress, UserAddress, u64);
+pub struct Context(pub UserAddress, pub UserAddress, pub u64, pub u64);
 pub type ContextStateHacspec = (Context, PiggyBankStateHacspec);
 
 pub fn piggy_init_hacspec() -> PiggyBankStateHacspec {
@@ -94,7 +94,7 @@ pub fn piggy_insert_hacspec(ctx: Context, amount: u64, state: PiggyBankStateHacs
 #[receive(contract = "PiggyBank", name = "insert", payable)]
 pub fn piggy_insert(ctx_state: ContextStateHacspec, amount: u64) -> Option<(ContextStateHacspec, ListAction)> {
     let (ctx, state) = ctx_state;
-    let (a, c, balance) = ctx;
+    let Context(a, c, balance, d) = ctx;
     accept_hacspec();
     let temp = piggy_insert_hacspec(ctx, amount, state);
     match temp {
@@ -102,7 +102,7 @@ pub fn piggy_insert(ctx_state: ContextStateHacspec, amount: u64) -> Option<(Cont
         PiggyInsertResult::Err(_) => Option::<()>::None
     }?;
     let s = ListAction::new(0);
-    Option::<(ContextStateHacspec, ListAction)>::Some ((((a, c, balance + amount), state), s))
+    Option::<(ContextStateHacspec, ListAction)>::Some (((Context(a, c, balance + amount, d), state), s))
 }
 
 #[cfg(not(feature = "hacspec"))]
@@ -129,7 +129,7 @@ enum SmashError {
 
 #[cfg(not(feature = "hacspec"))]
 fn coerce_rust_to_hacspec_context(ctx: &impl HasReceiveContext) -> Result<Context, SmashError> {
-    Ok((
+    Ok(Context(
         coerce_rust_to_hacspec_account_address(&ctx.owner()),
         coerce_rust_to_hacspec_account_address(
             &(match ctx.sender() {
@@ -140,7 +140,7 @@ fn coerce_rust_to_hacspec_context(ctx: &impl HasReceiveContext) -> Result<Contex
         match ctx.self_balance() {
             Amount { micro_ccd } => micro_ccd,
         },
-        
+        0u64
     ))
 }
 
@@ -148,7 +148,7 @@ type PiggySmashResult = Result<PiggyBankStateHacspec, SmashError>;
 
 fn piggy_smash_hacspec(ctx: Context, state: PiggyBankStateHacspec) -> PiggySmashResult {
     // Get the contract owner, i.e. the account who initialized the contract.
-    let (owner, sender, _balance) = ctx;
+    let Context(owner, sender, _balance, _metadata) = ctx;
 
     if !(owner == sender) {
         PiggySmashResult::Err(SmashError::NotOwner)?;
@@ -165,7 +165,7 @@ fn piggy_smash_hacspec(ctx: Context, state: PiggyBankStateHacspec) -> PiggySmash
 #[receive(contract = "PiggyBank", name = "smash")]
 fn piggy_smash(ctx_state: ContextStateHacspec) -> Option<(ContextStateHacspec, ListAction)> {
     let (ctx, state) = ctx_state;
-    let (a, c, balance) = ctx;
+    let Context(a, c, balance, d) = ctx;
     accept_hacspec();
     let smash = piggy_smash_hacspec(ctx, state);
     let new_state = match smash {
@@ -174,7 +174,7 @@ fn piggy_smash(ctx_state: ContextStateHacspec) -> Option<(ContextStateHacspec, L
     }?;
     let s = ListAction::new(1);
     s[0] = ActionBody::ACT_TRANSFER( a, balance );
-    Option::<(ContextStateHacspec, ListAction)>::Some((((a, c, 0u64), new_state), s))
+    Option::<(ContextStateHacspec, ListAction)>::Some(((Context(a, c, 0u64, d), new_state), s))
     // piggy_smash_hacspec(ctx, state)
 }
 

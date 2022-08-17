@@ -2397,8 +2397,8 @@ fn attribute_init(attr: &Attribute) -> Option<InitData> {
                             it.next();
                             it.next();
                             it.next();
-                            let temp2 = match it.next().unwrap() {
-                                TokenTree::Token(third_tok) => match third_tok.kind {
+                            let temp2 = match it.next() {
+                                Some(TokenTree::Token(third_tok)) => match third_tok.kind {
                                     TokenKind::Literal(l) => {
                                         Some(l.symbol.to_string())
                                     }

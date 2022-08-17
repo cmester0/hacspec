@@ -16,7 +16,7 @@ From ConCert.Utils Require Import Automation.
 From ConCert.Execution Require Import Serializable.
 From ConCert.Execution Require Import Blockchain.
 From ConCert.Execution Require Import ContractCommon.
-From Coq Require Import Morphisms.
+From Coq Require Import Morphisms ZArith Basics.
 Open Scope Z.
 Set Nonrecursive Elimination Schemes.
 Require Import Hacspec_Lib.
@@ -358,7 +358,7 @@ Definition auction_bid
   (ctx_35 : context_state_hacspec_t)
   (amount_36 : int64): (option (context_state_hacspec_t ∏ list_action_t)) :=
   let s_37 : seq action_body_t :=
-    seq_new_ (default) (usize 0) in
+    seq_new_ (default) (usize 0) in 
   @Some (context_state_hacspec_t ∏ list_action_t) ((ctx_35, s_37)).
 
 Definition bid (amount : int64)(st : State) :=
@@ -584,7 +584,7 @@ Definition auction_finalize
       list_action_t
     )) :=
   let s_58 : seq action_body_t :=
-    seq_new_ (default) (usize 0) in
+    seq_new_ (default) (usize 0) in 
   @Some (context_state_hacspec_t ∏ list_action_t) ((ctx_57, s_58)).
 
 Definition finalize (st : State) :=
@@ -607,7 +607,7 @@ Theorem ensures_auction_test_init : forall result_61 (
   item_59 : public_byte_seq) (time_60 : int64),
  @auction_test_init item_59 time_60 = result_61 ->
  (result_61) =.? (true).
-Proof. intros. subst. apply eqb_leibniz. apply eqb_leibniz. reflexivity. Qed.
+ Proof. Admitted.
 QuickChick (forAll g_public_byte_seq (fun item_59 : public_byte_seq =>
   forAll g_int64 (fun time_60 : int64 =>
   auction_test_init item_59 time_60))).
@@ -797,7 +797,7 @@ Theorem ensures_test_auction_bid_and_finalize : forall result_61 (
   item_82 : public_byte_seq) (time_83 : int64) (input_amount_84 : int64),
  @test_auction_bid_and_finalize item_82 time_83 input_amount_84 = result_61 ->
  (result_61) =.? (true).
-Proof. intros. subst. Admitted.
+ Proof. Admitted.
 QuickChick (forAll g_public_byte_seq (fun item_82 : public_byte_seq =>
   forAll g_int64 (fun time_83 : int64 =>
   forAll g_int64 (fun input_amount_84 : int64 =>
