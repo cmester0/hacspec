@@ -47,9 +47,11 @@ Instance BaseTypes : ChainBase := {|
 (* Definition context_t_from_context (ctx : ContractCallContext) : context_t := *)
 (*   (ctx.(ctx_from), ctx.(ctx_origin), repr (ctx.(ctx_amount))). *)
 
-Definition accept (ctx : ContractCallContext) := act_transfer ctx.(ctx_origin) ctx.(ctx_amount).
+(* Definition accept (ctx : ContractCallContext) := act_transfer ctx.(ctx_origin) ctx.(ctx_amount). *)
 
-Definition action_body_t := ActionBody.
-Definition list_action_t := list ActionBody.
-Definition ACT_TRANSFER (p : Address ∏ int64) := act_transfer (fst p) (unsigned (snd p)).  
-Instance d_ab : Default ActionBody := {| default := act_transfer (array_new_ (default : int8) 32) 0 |}.
+(* Definition has_action_t := ActionBody. *)
+
+(* Definition action_body_t := ActionBody. *)
+(* Definition list_action_t := list ActionBody. *)
+(* Definition ACT_TRANSFER (p : Address ∏ int64) := act_transfer (fst p) (unsigned (snd p)).   *)
+(* Instance d_ab : Default ActionBody := {| default := act_transfer (array_new_ (default : int8) 32) 0 |}. *)

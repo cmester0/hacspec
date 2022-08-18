@@ -3313,11 +3313,10 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
         ItemKind::Use(ref tree) => match tree.kind {
             UseTreeKind::Glob => {
                 let krate_name = translate_use_path(sess, &tree.prefix)?;
-                if krate_name == "hacspec_attributes" {
-                    return Ok((ItemTranslationResult::Ignored, specials.clone()));
-                }
-                println!("Use {:?}", krate_name);
-
+                // if krate_name == "hacspec_attributes" {
+                //     return Ok((ItemTranslationResult::Ignored, specials.clone()));
+                // }
+                
                 let data = external_data(&vec![(krate_name.clone(), i.span.into())]);
                 let mut specials = specials.clone();
                 for (enum_name, _) in data.enums.into_iter() {

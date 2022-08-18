@@ -17,7 +17,6 @@ From ConCert.Execution Require Import ContractCommon.
 From Coq Require Import Morphisms ZArith Basics.
 Open Scope Z.
 Set Nonrecursive Elimination Schemes.
-Definition Setup := unit.
 Require Import Hacspec_Lib.
 Export Hacspec_Lib.
 
@@ -35,12 +34,15 @@ Notation "'reject_hacspec_t'" := (int32) : hacspec_scope.
 Definition reject_impl_deafult : reject_hacspec_t :=
   min_v.
 
+
 Definition new_reject_impl (x_25 : int32): (option int32) :=
   (if ((x_25) <.? (@repr WORDSIZE32 0)):bool then (@Some int32 (x_25)) else (
       @None int32)).
 
+
 Definition reject_impl_convert_from_unit : reject_hacspec_t :=
   (min_v) .+ (@repr WORDSIZE32 1).
+
 
 Theorem ensures_reject_impl_convert_from_unit : forall result_26 ,
  @reject_impl_convert_from_unit  = result_26 ->
@@ -49,6 +51,7 @@ Theorem ensures_reject_impl_convert_from_unit : forall result_26 ,
 
 Definition reject_impl_convert_from_parse_error : reject_hacspec_t :=
   (min_v) .+ (@repr WORDSIZE32 2).
+
 
 Theorem ensures_reject_impl_convert_from_parse_error : forall result_26 ,
  @reject_impl_convert_from_parse_error  = result_26 ->
@@ -60,6 +63,7 @@ Definition reject_impl_from_log_error (le_27 : log_error_t): reject_hacspec_t :=
   | Full => (min_v) .+ (@repr WORDSIZE32 3)
   | Malformed => (min_v) .+ (@repr WORDSIZE32 4)
   end.
+
 
 Theorem ensures_reject_impl_from_log_error : forall result_26 (
   le_27 : log_error_t),
@@ -73,7 +77,7 @@ Inductive new_contract_name_error_t :=
 | NewContractNameErrorContainsDot : new_contract_name_error_t
 | NewContractNameErrorInvalidCharacters : new_contract_name_error_t.
 Global Instance serializable_new_contract_name_error_t : Serializable new_contract_name_error_t :=
-Derive Serializable new_contract_name_error_t_rect<NewContractNameErrorMissingInitPrefix,NewContractNameErrorTooLong,NewContractNameErrorContainsDot,NewContractNameErrorInvalidCharacters>.
+  Derive Serializable new_contract_name_error_t_rect<NewContractNameErrorMissingInitPrefix,NewContractNameErrorTooLong,NewContractNameErrorContainsDot,NewContractNameErrorInvalidCharacters>.
 
 Definition reject_impl_from_new_contract_name_error
   (nre_28 : new_contract_name_error_t): reject_hacspec_t :=
@@ -83,6 +87,7 @@ Definition reject_impl_from_new_contract_name_error
   | NewContractNameErrorContainsDot => (min_v) .+ (@repr WORDSIZE32 9)
   | NewContractNameErrorInvalidCharacters => (min_v) .+ (@repr WORDSIZE32 10)
   end.
+
 
 Theorem ensures_reject_impl_from_new_contract_name_error : forall result_26 (
   nre_28 : new_contract_name_error_t),
@@ -95,7 +100,7 @@ Inductive new_receive_name_error_t :=
 | NewReceiveNameErrorTooLong : new_receive_name_error_t
 | NewReceiveNameErrorInvalidCharacters : new_receive_name_error_t.
 Global Instance serializable_new_receive_name_error_t : Serializable new_receive_name_error_t :=
-Derive Serializable new_receive_name_error_t_rect<NewReceiveNameErrorMissingDotSeparator,NewReceiveNameErrorTooLong,NewReceiveNameErrorInvalidCharacters>.
+  Derive Serializable new_receive_name_error_t_rect<NewReceiveNameErrorMissingDotSeparator,NewReceiveNameErrorTooLong,NewReceiveNameErrorInvalidCharacters>.
 
 Definition reject_impl_from_new_receive_name_error
   (nre_29 : new_receive_name_error_t): reject_hacspec_t :=
@@ -105,6 +110,7 @@ Definition reject_impl_from_new_receive_name_error
   | NewReceiveNameErrorInvalidCharacters => (min_v) .+ (@repr WORDSIZE32 11)
   end.
 
+
 Theorem ensures_reject_impl_from_new_receive_name_error : forall result_26 (
   nre_29 : new_receive_name_error_t),
  @reject_impl_from_new_receive_name_error nre_29 = result_26 ->
@@ -113,6 +119,7 @@ Theorem ensures_reject_impl_from_new_receive_name_error : forall result_26 (
 
 Definition reject_impl_from_not_payable_error : reject_hacspec_t :=
   (min_v) .+ (@repr WORDSIZE32 12).
+
 
 Theorem ensures_reject_impl_from_not_payable_error : forall result_26 ,
  @reject_impl_from_not_payable_error  = result_26 ->
@@ -126,7 +133,7 @@ Inductive seek_from_hacspec_t :=
 | End : int64 -> seek_from_hacspec_t
 | Current : int64 -> seek_from_hacspec_t.
 Global Instance serializable_seek_from_hacspec_t : Serializable seek_from_hacspec_t :=
-Derive Serializable seek_from_hacspec_t_rect<Start,End,Current>.
+  Derive Serializable seek_from_hacspec_t_rect<Start,End,Current>.
 
 Notation "'uint32_option_t'" := ((option int32)) : hacspec_scope.
 
@@ -179,12 +186,14 @@ Definition contract_state_impl_seek
       end))
   end.
 
+
 Definition contract_state_impl_read_read
   (current_position_41 : contract_state_hacspec_t)
   (buf_42 : public_byte_seq): (contract_state_hacspec_t ∏ uint_size) :=
   let '(buf_43, num_read_44) :=
     load_state_hacspec (buf_42) (current_position_41) in 
   ((current_position_41) .+ (num_read_44), @cast _ uint32 _ (num_read_44)).
+
 
 Definition contract_state_impl_read_read_u64
   (current_position_45 : contract_state_hacspec_t): (
@@ -202,6 +211,7 @@ Definition contract_state_impl_read_read_u64
         @Err int64 unit (tt)))
   ).
 
+
 Definition contract_state_impl_read_read_u32
   (current_position_49 : contract_state_hacspec_t): (
     contract_state_hacspec_t ∏
@@ -218,6 +228,7 @@ Definition contract_state_impl_read_read_u32
         @Err int32 unit (tt)))
   ).
 
+
 Definition contract_state_impl_read_read_u8
   (current_position_53 : contract_state_hacspec_t): (
     contract_state_hacspec_t ∏
@@ -232,6 +243,7 @@ Definition contract_state_impl_read_read_u8
     (if ((num_read_56) =.? (@repr WORDSIZE32 1)):bool then (@Ok int8 unit (
           seq_index (buf_55) (usize 0))) else (@Err int8 unit (tt)))
   ).
+
 
 Definition contract_state_impl_write
   (current_position_57 : contract_state_hacspec_t)
@@ -249,9 +261,11 @@ Definition contract_state_impl_write
       @cast _ uint32 _ (num_bytes_60)
     ))).
 
+
 Definition has_contract_state_impl_for_contract_state_open
   : contract_state_hacspec_t :=
   @repr WORDSIZE32 0.
+
 
 Definition has_contract_state_impl_for_contract_state_reserve
   (len_61 : int32): bool :=
@@ -259,6 +273,7 @@ Definition has_contract_state_impl_for_contract_state_reserve
     state_size_hacspec  in 
   (if ((cur_size_62) <.? (len_61)):bool then ((resize_state_hacspec (
           len_61)) =.? (@repr WORDSIZE32 1)) else (true)).
+
 
 Definition has_contract_state_impl_for_contract_state_truncate
   (current_position_63 : contract_state_hacspec_t)
@@ -271,6 +286,7 @@ Definition has_contract_state_impl_for_contract_state_truncate
   (if ((new_size_65) <.? (current_position_63)):bool then (new_size_65) else (
       current_position_63)).
 
+
 Notation "'parameter_hacspec_t'" := (int32) : hacspec_scope.
 
 Definition read_impl_for_parameter_read
@@ -279,6 +295,7 @@ Definition read_impl_for_parameter_read
   let '(buf_68, num_read_69) :=
     get_parameter_section_hacspec (buf_67) (current_position_66) in 
   ((current_position_66) .+ (num_read_69), @cast _ uint32 _ (num_read_69)).
+
 
 Notation "'attributes_cursor_hacspec_t'" := ((int32 ∏ int16)) : hacspec_scope.
 
@@ -316,6 +333,7 @@ Definition has_policy_impl_for_policy_attributes_cursor_next_item
         seq_index (tag_value_len_74) (usize 1)
       )
     )))).
+
 
 Notation "'policies_iterator_hacspec_t'" := ((int32 ∏ int16)) : hacspec_scope.
 
@@ -387,4 +405,20 @@ Definition iterator_impl_for_policies_iterator_next
         (attributes_start_91, remaining_items_90)
       )
     ))).
+
+
+Definition user_address_t := nseq (int8) (usize 32).
+
+Inductive has_action_t :=
+| Accept : unit -> has_action_t
+| SimpleTransfer : (user_address_t ∏ int64) -> has_action_t.
+Global Instance serializable_has_action_t : Serializable has_action_t :=
+  Derive Serializable has_action_t_rect<Accept,SimpleTransfer>.
+Instance default_has_action_t : Default has_action_t := {| default := Accept tt |}.
+
+Notation "'list_action_t'" := (seq has_action_t) : hacspec_scope.
+
+Definition accept_action : has_action_t :=
+  Accept (tt).
+
 

@@ -17,7 +17,6 @@ From ConCert.Execution Require Import ContractCommon.
 From Coq Require Import Morphisms ZArith Basics.
 Open Scope Z.
 Set Nonrecursive Elimination Schemes.
-Definition Setup := unit.
 Definition max_contract_state_size_v : int32 :=
   @repr WORDSIZE32 16384.
 

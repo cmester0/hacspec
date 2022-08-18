@@ -80,7 +80,7 @@ Definition piggy_insert_hacspec
   end.
 
 
-Definition piggy_insert
+Program Definition piggy_insert
   (ctx_state_4 : context_state_hacspec_t)
   (amount_5 : int64): (option (context_state_hacspec_t ∏ list_action_t)) :=
   let '(ctx_6, state_7) :=
@@ -94,8 +94,10 @@ Definition piggy_insert
   bind (match temp_12 with
     | Ok _ => @Some unit (tt)
     | Err _ => @None unit
-    end) (fun _ =>  let s_13 : seq action_body_t :=
-      seq_new_ (default) (usize 0) in 
+    end) (fun _ =>  let s_13 : seq has_action_t :=
+      seq_new_ (default : has_action_t) (usize 0) in 
+    let s_13 :=
+      seq_upd s_13 (usize 0) (accept_action ) in 
     @Some (context_state_hacspec_t ∏ list_action_t) ((
         (Context ((a_8, c_9, (balance_10) .+ (amount_5), d_11)), state_7),
         s_13
@@ -159,10 +161,8 @@ Definition piggy_smash
   bind (match smash_27 with
     | Ok a_28 => @Some piggy_bank_state_hacspec_t (a_28)
     | Err b_29 => @None piggy_bank_state_hacspec_t
-    end) (fun new_state_30 =>  let s_31 : seq action_body_t :=
+    end) (fun new_state_30 =>  let s_31 : seq has_action_t :=
       seq_new_ (default) (usize 1) in 
-    let s_31 :=
-      seq_upd s_31 (usize 0) (ACT_TRANSFER ((a_23, balance_25))) in 
     @Some (context_state_hacspec_t ∏ list_action_t) ((
         (Context ((a_23, c_24, @repr WORDSIZE64 0, d_26)), new_state_30),
         s_31
@@ -177,10 +177,21 @@ Inductive Msg :=
 | SMASH.
 Global Instance Msg_serializable : Serializable Msg :=
   Derive Serializable Msg_rect<INSERT,SMASH>.
+
+Definition to_action_body (ctx : ContractCallContext) (y : has_action_t) : ActionBody :=
+  match y with
+  | (Accept _) => act_transfer (ctx.(ctx_from)) (ctx.(ctx_amount))
+  | (SimpleTransfer (ua, i)) => act_transfer (ua) (i)
+  end.
+
 Definition PiggyBank_receive (chain : Chain) (ctx : ContractCallContext) (state : State) (msg : option Msg) : option (State * list ActionBody) :=
   match msg with
-  | Some INSERT => insert (repr ctx.(ctx_amount)) state
-  | Some SMASH => smash state
+  | Some INSERT =>
+      option_map (fun '(x, y) => (x, List.map (to_action_body ctx) y))
+                 (insert (repr ctx.(ctx_amount)) state)
+  | Some SMASH =>
+      option_map (fun '(x, y) => (x, List.map (to_action_body ctx) y))
+                 (smash state)
   | None => None
   end.
 

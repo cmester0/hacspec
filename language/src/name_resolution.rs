@@ -823,7 +823,7 @@ fn process_decl_item(
             );
             Ok(())
         }
-        Item::ImportedCrate(_) => {
+        Item::ImportedCrate((ident, _)) => {
             log::trace!("   Item::ImportedCrate");
             // Foreign items already imported at this point
             Ok(())

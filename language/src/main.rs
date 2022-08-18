@@ -97,6 +97,11 @@ fn construct_module_string<T>(
     {
         Some(krate_dir.clone() + "/" + krate_path.clone().as_str() + "/mod")
     } else {
+        println!("krate: {} -- {}", krate_path, ast_crates_map.len());
+        // for key in ast_crates_map.keys() {
+        //     println!("Key: {}", key);
+        // }
+        // panic!("Could not construct module string");
         None
     }
 }
@@ -127,8 +132,8 @@ fn construct_handle_crate_queue<'tcx>(
     }
     handled.insert(krate_module_string.clone());
 
-    println!("Module {}", krate_module_string);
-    
+    // println!("Module {}", krate_module_string);
+
     let krate = ast_crates_map[&krate_module_string].clone();
 
     let mut krates = Vec::new();
@@ -162,7 +167,6 @@ fn construct_handle_crate_queue<'tcx>(
                 }
             }
 
-            
             // Remove the modules statements from the crate
             rustc_ast::ast::Crate {
                 items: items
@@ -178,7 +182,6 @@ fn construct_handle_crate_queue<'tcx>(
                     .collect(),
                 ..krate
             }
-
         }
     };
 
@@ -194,6 +197,81 @@ fn construct_handle_crate_queue<'tcx>(
     handled.insert(krate_module_string.clone());
 
     Ok(krates)
+}
+
+fn is_not_hacspec_attribute(attr: rustc_ast::ast::Attribute) -> bool {
+    match &attr.kind {
+        rustc_ast::ast::AttrKind::Normal(
+            rustc_ast::ast::AttrItem {
+                path:
+                    rustc_ast::ast::Path {
+                        segments: segments, ..
+                    },
+                args:
+                    rustc_ast::ast::MacArgs::Delimited(_, rustc_ast::ast::MacDelimiter::Parenthesis, ts),
+                ..
+            },
+            _,
+        ) => {
+            if let rustc_ast::ast::PathSegment { ident: id, .. } = segments[0] {
+                if ts.trees().count() < 2 {
+                    return false;
+                }
+
+                let mut tokens = ts.trees();
+                match tokens.next().unwrap() {
+                    rustc_ast::tokenstream::TokenTree::Token(rustc_ast::token::Token {
+                        kind: rustc_ast::token::TokenKind::Ident(s, _),
+                        ..
+                    }) => match s.as_str() {
+                        "not" => (),
+                        _ => return false,
+                    },
+                    _ => return false,
+                };
+
+                match tokens.next().unwrap() {
+                    rustc_ast::tokenstream::TokenTree::Delimited(
+                        _,
+                        rustc_ast::token::Delimiter::Parenthesis,
+                        ts,
+                    ) => {
+                        if ts.trees().count() < 3 {
+                            return false;
+                        }
+                        let mut tokens = ts.trees();
+                        match tokens.next().unwrap() {
+                            rustc_ast::tokenstream::TokenTree::Token(rustc_ast::token::Token {
+                                kind: rustc_ast::token::TokenKind::Ident(s, _),
+                                ..
+                            }) => match s.as_str() {
+                                "feature" => (),
+                                _ => return false,
+                            },
+                            _ => return false,
+                        };
+
+                        tokens.next();
+
+                        match tokens.next().unwrap() {
+                            rustc_ast::tokenstream::TokenTree::Token(rustc_ast::token::Token {
+                                kind: rustc_ast::token::TokenKind::Literal(l),
+                                ..
+                            }) => match l.symbol.as_str() {
+                                "hacspec" => return true,
+                                _ => return false,
+                            },
+                            _ => return false,
+                        };
+                    }
+                    _ => return false,
+                };
+            } else {
+                return false;
+            }
+        }
+        _ => return false,
+    }
 }
 
 fn handle_crate<'tcx>(
@@ -226,26 +304,38 @@ fn handle_crate<'tcx>(
     let krate_use_paths: &mut HashMap<String, Vec<String>> = &mut HashMap::new();
 
     // Get all 'use' dependencies per module
-    let mut krate_queue_no_module_statements = Vec::new();
-    for ((krate_path, krate_dir, krate_module_string), krate) in krate_queue {
+    for ((krate_path, krate_dir, krate_module_string), krate) in krate_queue.clone() {
         krate_use_paths.insert(krate_path.clone(), Vec::new());
 
         match krate {
             rustc_ast::ast::Crate { items, .. } => {
                 // Parse over the crate, loading modules and filling top_level_ctx
-                for x in items.clone().into_iter() {
+                for x in &items.clone() {
+                    
+                    if x.attrs
+                        .iter()
+                        .any(|attr| is_not_hacspec_attribute(attr.clone()))
+                    {
+                        continue;
+                    };
+
                     match x.kind {
                         // Load the top_ctx from the module specified in the use statement
                         rustc_ast::ast::ItemKind::Use(ref tree) => {
+                            println!(
+                                "{}, {:?} USE: {:?}",
+                                krate_path.clone(),
+                                tree.kind,
+                                (&tree.prefix)
+                                    .segments
+                                    .last()
+                                    .unwrap()
+                                    .ident
+                                    .name
+                                    .to_ident_string()
+                            );
                             match tree.kind {
                                 rustc_ast::ast::UseTreeKind::Glob => {
-                                    println!("{} USE: {}", krate_path, (&tree.prefix)
-                                            .segments
-                                            .last()
-                                            .unwrap()
-                                            .ident
-                                            .name
-                                            .to_ident_string());
                                     krate_use_paths[&krate_path].push(
                                         (&tree.prefix)
                                             .segments
@@ -262,25 +352,6 @@ fn handle_crate<'tcx>(
                         _ => (),
                     }
                 }
-
-                // Remove the modules statements from the crate
-                krate_queue_no_module_statements.push((
-                    (krate_path, krate_dir, krate_module_string),
-                    rustc_ast::ast::Crate {
-                        items: items
-                            .clone()
-                            .into_iter()
-                            .filter(|x| match x.kind {
-                                rustc_ast::ast::ItemKind::Mod(
-                                    rustc_ast::ast::Unsafe::No,
-                                    rustc_ast::ast::ModKind::Unloaded,
-                                ) => false,
-                                _ => true,
-                            })
-                            .collect(),
-                        ..krate
-                    },
-                ))
             }
         }
     }
@@ -300,7 +371,7 @@ fn handle_crate<'tcx>(
     ///////////////////////////////////////////////////////////////////////////
 
     let mut krate_queue_programs = Vec::new();
-    for ((krate_path, krate_dir, krate_module_string), krate) in krate_queue_no_module_statements {
+    for ((krate_path, krate_dir, krate_module_string), krate) in krate_queue {
         // Generate an empty context then fill it whenever an Use statement is encountered
         let new_specials = &mut ast_to_rustspec::SpecialNames {
             arrays: HashSet::new(),
@@ -309,6 +380,7 @@ fn handle_crate<'tcx>(
         };
 
         for krate_use_path_string in &krate_use_paths[&krate_path] {
+            println!("{} , construct 1: {}", krate_path, krate_use_path_string);
             if let Some(krate_use_string) = construct_module_string(
                 krate_use_path_string.clone(),
                 krate_dir.clone(),
@@ -374,6 +446,7 @@ fn handle_crate<'tcx>(
         // );
 
         for krate_use_path_string in &krate_use_paths[&krate_path] {
+            println!("construct 2");
             if let Some(krate_use_string) = construct_module_string(
                 krate_use_path_string.clone(),
                 krate_dir.clone(),
@@ -494,16 +567,16 @@ fn handle_crate<'tcx>(
                     let file_temp_dir = file_temp_dir.to_str().unwrap();
 
                     std::fs::create_dir_all(file_temp_dir.clone()).expect("Failed to create dir");
-                    
+
                     original_file.join("_temp").join(join_path.clone())
                 }
                 _ => {
                     std::fs::create_dir_all(original_file.clone()).expect("Failed to create dir");
                     original_file.join(join_path.clone())
-                },
+                }
             };
             let file = file.to_str().unwrap();
-            
+
             match extension.as_str() {
                 "fst" => rustspec_to_fstar::translate_and_write_to_file(
                     &compiler.session(),
@@ -567,8 +640,8 @@ fn handle_crate<'tcx>(
 
                 let file_vc_dir = original_file.join("_vc");
                 let file_vc_dir = file_vc_dir.to_str().unwrap();
-                std::fs::create_dir_all(file_vc_dir.clone()).expect("Failed to crate dir");
- 
+                std::fs::create_dir_all(file_vc_dir.clone()).expect("Failed to create dir");
+
                 match callback.version_control {
                     VersionControlArg::Initialize => {
                         std::fs::copy(file_destination.clone(), file_vc.clone()).expect(
@@ -657,9 +730,9 @@ impl Callbacks for HacspecCallbacks {
             .unwrap()
             .peek_mut()
             .enter(|tcx| {
-                let hir_krate = tcx.hir();            
+                let hir_krate = tcx.hir();
                 for item_id in hir_krate.items() {
-                    let item = tcx.hir().item(item_id); 
+                    let item = tcx.hir().item(item_id);
                     if let rustc_hir::ItemKind::Mod(_m) = &item.kind {
                         let (expra, exprb, _exprc) = &tcx.hir().get_module(item.def_id);
 
@@ -693,9 +766,9 @@ impl Callbacks for HacspecCallbacks {
                             //     span: rustc_span::DUMMY_SP,
                             // };
 
+                            let parse_mod_krate: rustc_ast::ast::Crate =
+                                parser.parse_crate_mod().unwrap();
 
-                            let parse_mod_krate: rustc_ast::ast::Crate = parser.parse_crate_mod().unwrap();
-                            
                             // Calculate the local path from the crate root file
                             let crate_local_path = module_path
                                 .strip_prefix(root.parent().unwrap())
@@ -704,7 +777,7 @@ impl Callbacks for HacspecCallbacks {
                                 .to_str()
                                 .unwrap()
                                 .to_string();
-                            
+
                             // Add to map from module path to crate data
                             analysis_crates.insert(crate_local_path, parse_mod_krate);
                         }
@@ -803,7 +876,7 @@ impl Callbacks for HacspecCallbacks {
 
             krate.items = items;
         }
-        
+
         let crate_origin_file = compiler
             .build_output_filenames(compiler.session(), &[])
             .with_extension("")
@@ -872,6 +945,17 @@ impl Callbacks for HacspecCallbacks {
                 }
             }
         });
+
+        // analysis_crates.insert(String::from("crate"), rustc_ast::ast::Crate {
+        //     attrs: vec![],
+        //     items: vec![],
+        //     spans: rustc_ast::ModSpans {
+        //         inner_span: rustc_span::DUMMY_SP,
+        //         inject_use_span: rustc_span::DUMMY_SP,
+        //     },
+        //     id: rustc_ast::DUMMY_NODE_ID,
+        //     is_placeholder: false,
+        // });
 
         // Do depth first handling of modules starting search at crate root
         handle_crate(

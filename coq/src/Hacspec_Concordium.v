@@ -17,7 +17,15 @@ From ConCert.Execution Require Import ContractCommon.
 From Coq Require Import Morphisms ZArith Basics.
 Open Scope Z.
 Set Nonrecursive Elimination Schemes.
-Definition Setup := unit.
 Require Import Concordium_Prims.
 Export Concordium_Prims.
+
+Require Import Concordium_Types.
+Export Concordium_Types.
+
+Require Import Concordium_Traits.
+Export Concordium_Traits.
+
+Require Import Concordium_Impls.
+Export Concordium_Impls.
 

@@ -9,7 +9,8 @@ array!(UserAddress, 32, u8);
 pub enum ActionBody {
     ACT_TRANSFER (UserAddress , u64),
 }
-pub type ListAction = Seq<ActionBody>;
+// pub type ListAction = Seq<ActionBody>;
+// pub type ListAction = Seq<HasAction>;
 // {
 //     act_transfer (to : Address) (amount : Amount);
 //     act_call (to : Address) (amount : Amount) (msg : SerializedValue);

@@ -12,6 +12,7 @@ extern crate creusot_contracts;
 use creusot_contracts::{ensures, requires};
 
 use hacspec_concordium::*;
+// use concordium_impls::*;
 
 #[cfg(not(feature = "hacspec"))]
 /// The state of the piggy bank
@@ -101,7 +102,8 @@ pub fn piggy_insert(ctx_state: ContextStateHacspec, amount: u64) -> Option<(Cont
         PiggyInsertResult::Ok(_) => Option::<()>::Some(()),
         PiggyInsertResult::Err(_) => Option::<()>::None
     }?;
-    let s = ListAction::new(0);
+    let s = Seq::<HasAction>::new(0);
+    s[0] = accept_action();
     Option::<(ContextStateHacspec, ListAction)>::Some (((Context(a, c, balance + amount, d), state), s))
 }
 
@@ -172,8 +174,8 @@ fn piggy_smash(ctx_state: ContextStateHacspec) -> Option<(ContextStateHacspec, L
         PiggySmashResult::Ok(a) => Option::<PiggyBankStateHacspec>::Some(a),
         PiggySmashResult::Err(b) => Option::<PiggyBankStateHacspec>::None,
     }?;
-    let s = ListAction::new(1);
-    s[0] = ActionBody::ACT_TRANSFER( a, balance );
+    let s = Seq::<HasAction>::new(1);
+    // s[0] = HasAction::SIMPLE_TRANSFER( a, balance );
     Option::<(ContextStateHacspec, ListAction)>::Some(((Context(a, c, 0u64, d), new_state), s))
     // piggy_smash_hacspec(ctx, state)
 }

@@ -17,12 +17,11 @@ From ConCert.Execution Require Import ContractCommon.
 From Coq Require Import Morphisms ZArith Basics.
 Open Scope Z.
 Set Nonrecursive Elimination Schemes.
-Definition Setup := unit.
 Inductive log_error_t :=
 | Full : log_error_t
 | Malformed : log_error_t.
 Global Instance serializable_log_error_t : Serializable log_error_t :=
-Derive Serializable log_error_t_rect<Full,Malformed>.
+  Derive Serializable log_error_t_rect<Full,Malformed>.
 
 Definition eqb_log_error_t (x y : log_error_t) : bool :=
 match x with
@@ -34,6 +33,6 @@ Definition eqb_leibniz_log_error_t (x y : log_error_t) : eqb_log_error_t x y = t
 Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz) ; easy. intros ; subst ; destruct y ; try reflexivity ; try (apply eqb_refl). Qed.
 
 Instance eq_dec_log_error_t : EqDec (log_error_t) :=
-Build_EqDec (log_error_t) (eqb_log_error_t) (eqb_leibniz_log_error_t).
+  Build_EqDec (log_error_t) (eqb_log_error_t) (eqb_leibniz_log_error_t).
 
 
