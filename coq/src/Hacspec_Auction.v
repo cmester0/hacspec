@@ -10,7 +10,6 @@ Open Scope hacspec_scope.
 From QuickChick Require Import QuickChick.
 Require Import QuickChickLib.
 
-Require Import ConCertLib.
 From ConCert.Utils Require Import Extras.
 From ConCert.Utils Require Import Automation.
 From ConCert.Execution Require Import Serializable.
@@ -21,6 +20,9 @@ Open Scope Z.
 Set Nonrecursive Elimination Schemes.
 Require Import Hacspec_Lib.
 Export Hacspec_Lib.
+
+Require Import Concert_Lib.
+Export Concert_Lib.
 
 Definition user_address_t := nseq (int8) (usize 32).
 Instance show_user_address_t : Show (user_address_t) := Build_Show (user_address_t) show.
@@ -357,7 +359,7 @@ Definition auction_bid_hacspec
 Definition auction_bid
   (ctx_35 : context_state_hacspec_t)
   (amount_36 : int64): (option (context_state_hacspec_t ∏ list_action_t)) :=
-  let s_37 : seq action_body_t :=
+  let s_37 : seq has_action_t :=
     seq_new_ (default) (usize 0) in 
   @Some (context_state_hacspec_t ∏ list_action_t) ((ctx_35, s_37)).
 
@@ -583,7 +585,7 @@ Definition auction_finalize
       context_state_hacspec_t ∏
       list_action_t
     )) :=
-  let s_58 : seq action_body_t :=
+  let s_58 : seq has_action_t :=
     seq_new_ (default) (usize 0) in 
   @Some (context_state_hacspec_t ∏ list_action_t) ((ctx_57, s_58)).
 
@@ -810,8 +812,8 @@ Global Instance Msg_serializable : Serializable Msg :=
   Derive Serializable Msg_rect<BID,FINALIZE>.
 Definition auction_receive (chain : Chain) (ctx : ContractCallContext) (state : State) (msg : option Msg) : option (State * list ActionBody) :=
   match msg with
-  | Some BID => bid (repr ctx.(ctx_amount)) state
-  | Some FINALIZE => finalize state
+  | Some BID => to_action_body_list ctx (bid (repr ctx.(ctx_amount)) state)
+  | Some FINALIZE => to_action_body_list ctx (finalize state)
   | None => None
   end.
 

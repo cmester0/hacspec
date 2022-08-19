@@ -8,20 +8,10 @@ Open Scope Z_scope.
 Open Scope bool_scope.
 Open Scope hacspec_scope.
 
-(* Require Import ConCertLib. *)
-From ConCert.Utils Require Import Extras.
-From ConCert.Utils Require Import Automation.
-From ConCert.Execution Require Import Serializable.
-From ConCert.Execution Require Import Blockchain.
-From ConCert.Execution Require Import ContractCommon.
-From Coq Require Import Morphisms ZArith Basics.
-Open Scope Z.
-Set Nonrecursive Elimination Schemes.
+
 Inductive log_error_t :=
 | Full : log_error_t
 | Malformed : log_error_t.
-Global Instance serializable_log_error_t : Serializable log_error_t :=
-  Derive Serializable log_error_t_rect<Full,Malformed>.
 
 Definition eqb_log_error_t (x y : log_error_t) : bool :=
 match x with

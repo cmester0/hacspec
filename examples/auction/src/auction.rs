@@ -3,13 +3,6 @@ extern crate hacspec_lib;
 
 use hacspec_lib::*;
 
-// #[cfg(feature = "hacspec_attributes")]
-#[cfg(feature = "hacspec")]
-use hacspec_attributes::*;
-// #[cfg(not(feature = "hacspec"))]
-#[cfg(test)]
-use hacspec_attributes::proof;
-
 // #[cfg(not(feature = "hacspec"))]
 // extern crate creusot_contracts;
 #[cfg(test)]
@@ -19,6 +12,9 @@ use creusot_contracts::{ensures, requires};
 // // Rust-hacspec Interface
 #[cfg(not(feature = "hacspec"))]
 use hacspec_concordium::{collections::BTreeMap, *};
+
+#[cfg(feature = "hacspec")]
+use concert_lib::*;
 
 array!(UserAddress, 32, u8); // U8
 
@@ -398,7 +394,7 @@ fn auction_bid(
     ctx: ContextStateHacspec,
     amount: u64,
 ) -> Option<(ContextStateHacspec, ListAction)> {
-    let s = ListAction::new(0);
+    let s = Seq::<HasAction>::new(0);
     Option::<(ContextStateHacspec, ListAction)>::Some((ctx, s))
 }
 
@@ -590,7 +586,7 @@ fn simple_transfer_from_index_and_seq<A: HasActions>(x: usize, s: PublicByteSeq)
 fn auction_finalize(
     ctx: ContextStateHacspec,
 ) -> Option<(ContextStateHacspec, ListAction)> {
-    let s = ListAction::new(0);
+    let s = Seq::<HasAction>::new(0);
     Option::<(ContextStateHacspec, ListAction)>::Some((ctx, s))
 }
 

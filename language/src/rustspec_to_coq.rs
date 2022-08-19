@@ -1573,6 +1573,7 @@ fn translate_item<'a>(
     top_ctx: &'a TopLevelContext,
     org_file: Option<(String, String)>,
     export_quick_check: bool,
+    serializable: bool,
 ) -> RcDoc<'a, ()> {
     let item_rcdoc = match &item.item {
         Item::FnDecl((f, _), sig, (b, _), requires, ensures, init, receive) =>
@@ -1825,7 +1826,8 @@ fn translate_item<'a>(
                     RcDoc::line(),
                 ))
                 .append(RcDoc::as_string("."))
-                .append(RcDoc::hardline()
+                .append(if serializable {
+                    RcDoc::hardline()
                         .append(RcDoc::as_string("Global Instance serializable_"))
                         .append(translate_enum_name(name.0.clone()))
                         .append(RcDoc::as_string(" : Serializable "))
@@ -1843,7 +1845,9 @@ fn translate_item<'a>(
                                     RcDoc::as_string(",")))
                                 .append(RcDoc::as_string(">."))
                                 .nest(2))
-                )
+                } else {
+                    RcDoc::nil()
+                })
                 .append(if item.tags.0.contains(&"PartialEq".to_string()) {
                     RcDoc::hardline()
                         .append(RcDoc::hardline())
@@ -2446,6 +2450,7 @@ fn translate_program<'a>(
     top_ctx: &'a TopLevelContext,
     org_file: Option<(String, String)>,
     export_quick_check: bool,
+    serializable: bool,
 ) -> RcDoc<'a, ()> {
     let receives: Vec<_> = p
         .items
@@ -2457,7 +2462,7 @@ fn translate_program<'a>(
         .collect();
 
     RcDoc::concat(p.items.iter().map(|(i, _)| {
-        translate_item(i, top_ctx, org_file.clone(), export_quick_check)
+        translate_item(i, top_ctx, org_file.clone(), export_quick_check, serializable)
             .append(RcDoc::hardline())
             .append(RcDoc::hardline())
     }))
@@ -2569,7 +2574,12 @@ pub fn translate_and_write_to_file(
     let export_quick_check = p
         .items
         .iter()
-        .any(|i| i.0.tags.0.contains(&"quickcheck".to_string()));
+        .any(|(i, _)| i.tags.0.contains(&"quickcheck".to_string()));
+
+    let serializable = p.items.iter().any(|(x, _)| match &x.item {
+        Item::ImportedCrate((TopLevelIdent { string: kr, .. }, _)) => kr == "concert_lib",
+        _ => false,
+    });
 
     TANGLE_COUNTER.store(2, Ordering::SeqCst);
 
@@ -2584,15 +2594,8 @@ pub fn translate_and_write_to_file(
         Open Scope Z_scope.\n\
         Open Scope bool_scope.\n\
         Open Scope hacspec_scope.\n\
-        {}{}\n\
-        From ConCert.Utils Require Import Extras.\n\
-        From ConCert.Utils Require Import Automation.\n\
-        From ConCert.Execution Require Import Serializable.\n\
-        From ConCert.Execution Require Import Blockchain.\n\
-        From ConCert.Execution Require Import ContractCommon.\n\
-        From Coq Require Import Morphisms ZArith Basics.\n\
-        Open Scope Z.\n\
-        Set Nonrecursive Elimination Schemes.\n",
+        {}\n\
+        {}{}\n",
         match org_file.clone() {
             Some((f, s)) => format!(
                 "(* [[file:{}::* {} - Coq code][{} - Coq code:1]] *)\n",
@@ -2608,14 +2611,32 @@ pub fn translate_and_write_to_file(
         } else {
             ""
         },
+        if serializable {
+            "From ConCert.Utils Require Import Extras.\n\
+             From ConCert.Utils Require Import Automation.\n\
+             From ConCert.Execution Require Import Serializable.\n\
+             From ConCert.Execution Require Import Blockchain.\n\
+             From ConCert.Execution Require Import ContractCommon.\n\
+             From Coq Require Import Morphisms ZArith Basics.\n\
+             Open Scope Z.\n\
+             Set Nonrecursive Elimination Schemes."
+        } else {
+            ""
+        },
         match org_file.clone() {
             Some((_, s)) => format!("(* {} - Coq code:1 ends here *)\n", s),
             None => "".to_string(),
         },
     )
     .unwrap();
-    translate_program(p, top_ctx, org_file.clone(), export_quick_check)
-        .render(width, &mut w)
-        .unwrap();
+    translate_program(
+        p,
+        top_ctx,
+        org_file.clone(),
+        export_quick_check,
+        serializable,
+    )
+    .render(width, &mut w)
+    .unwrap();
     write!(file, "{}", String::from_utf8(w).unwrap()).unwrap()
 }

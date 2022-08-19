@@ -64,6 +64,7 @@ Definition to_action_body (ctx : ContractCallContext) (y : has_action_t) : Actio
   | (Accept _) => act_transfer (ctx.(ctx_from)) (ctx.(ctx_amount))
   | (SimpleTransfer (ua, i)) => act_transfer (ua) (i)
   end.
+Instance default_has_action : Default has_action_t := {| default := Accept tt |}.
 
 Definition to_action_body_list (ctx : ContractCallContext) {X} : option (X ∏ list has_action_t) -> option (X ∏ list ActionBody)  :=
   option_map (fun '(x, y) => (x, List.map (to_action_body ctx) y)).
