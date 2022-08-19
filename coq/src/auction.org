@@ -1,3 +1,4 @@
+
 #+TITLE: Auction Smartcontract
 #+AUTHOR: Lasse Letager Hansen
 
@@ -46,7 +47,6 @@ path = "src/auction.rs"
 
 [dependencies]
 hacspec-lib = { path = "../../lib" }
-# hacspec-attributes = { path = "../../utils/attributes", version = "0.1.0-beta.1" , features = ["print_attributes"] } # , features = ["hacspec_unsafe"] , , optional = true
 # pearlite-syn = { path = "../../../../creusot/pearlite-syn" }
 creusot-contracts = { git = "https://github.com/xldenis/creusot", rev = "7763b3ae77205fba83182b9a6c3e69ad0b12fec7" }
 # hacspec = {optional = true}
@@ -78,13 +78,6 @@ extern crate hacspec_lib;
 
 use hacspec_lib::*;
 
-// #[cfg(feature = "hacspec_attributes")]
-// #[cfg(feature = "hacspec")]
-// use hacspec_attributes::*;
-// #[cfg(not(feature = "hacspec"))]
-// #[cfg(test)]
-// use hacspec_attributes::proof;
-
 // #[cfg(not(feature = "hacspec"))]
 // extern crate creusot_contracts;
 #[cfg(test)]
@@ -94,9 +87,13 @@ use creusot_contracts::{ensures, requires};
 #+end_src
 
 #+begin_src rust :eval never
-  // // Rust-hacspec Interface
-  #[cfg(not(feature = "hacspec"))]
-  use hacspec_concordium::{collections::BTreeMap, *};
+// // Rust-hacspec Interface
+#[cfg(not(feature = "hacspec"))]
+use hacspec_concordium::{collections::BTreeMap, *};
+
+#[cfg(feature = "hacspec")]
+use concert_lib::*;
+
 #+end_src
 
 *** Types
@@ -270,47 +267,73 @@ use creusot_contracts::{ensures, requires};
 
 *** Fresh state function
 #+begin_src rust :eval never
-  pub fn fresh_state_hacspec(itm: PublicByteSeq, exp: u64) -> StateHacspec {
-      StateHacspec(
-	  AuctionStateHacspec::NotSoldYet,
-	  0_u64,
-	  itm,
-	  exp,
-	  SeqMap(PublicByteSeq::new(0_usize), PublicByteSeq::new(0_usize)),
-      )
-  }
+pub fn fresh_state_hacspec(itm: PublicByteSeq, exp: u64) -> StateHacspec {
+    StateHacspec(
+	AuctionStateHacspec::NotSoldYet,
+	0_u64,
+	itm,
+	exp,
+	SeqMap(PublicByteSeq::new(0_usize), PublicByteSeq::new(0_usize)),
+    )
+}
 
-  #[cfg(not(feature = "hacspec"))]
-  /// A helper function to create a state for a new auction.
-  fn fresh_state(itm: Vec<u8>, exp: Timestamp) -> State {
-      coerce_hacspec_to_rust_state(fresh_state_hacspec(
-	  PublicByteSeq::from_vec(itm),
-	  exp.timestamp_millis(),
-      ))
-  }
-#+end_src
-
-#+begin_src rust :eval never
-  #[cfg(not(feature = "hacspec"))]
-  /// Type of the parameter to the `init` function.
-  #[derive(Serialize, SchemaType)]
-  struct InitParameter {
-      /// The item to be sold, as a sequence of ASCII codes.
-      item: Vec<u8>,
-      /// Time of the auction end in the RFC 3339 format (https://tools.ietf.org/html/rfc3339)
-      expiry: Timestamp,
-  }
+#[cfg(not(feature = "hacspec"))]
+/// A helper function to create a state for a new auction.
+fn fresh_state(itm: Vec<u8>, exp: Timestamp) -> State {
+    coerce_hacspec_to_rust_state(fresh_state_hacspec(
+	PublicByteSeq::from_vec(itm),
+	exp.timestamp_millis(),
+    ))
+}
 
 #+end_src
 
 #+begin_src rust :eval never
-  #[cfg(not(feature = "hacspec"))]
-  /// Init function that creates a new auction
-  #[init(contract = "auction", parameter = "InitParameter")]
-  fn auction_init(ctx: &impl HasInitContext) -> InitResult<State> {
-      let parameter: InitParameter = ctx.parameter_cursor().get()?;
-      Ok(fresh_state(parameter.item, parameter.expiry))
-  }
+#[cfg(not(feature = "hacspec"))]
+/// Type of the parameter to the `init` function.
+#[derive(Serialize, SchemaType)]
+struct InitParameter {
+    /// The item to be sold, as a sequence of ASCII codes.
+    item: Vec<u8>,
+    /// Time of the auction end in the RFC 3339 format (https://tools.ietf.org/html/rfc3339)
+    expiry: Timestamp,
+}
+
+#+end_src
+
+#+begin_src rust :eval never
+#[cfg(feature = "hacspec")]
+struct InitParameter(
+    /// The item to be sold, as a sequence of ASCII codes.
+    PublicByteSeq,
+    /// Time of the auction end in the RFC 3339 format (https://tools.ietf.org/html/rfc3339)
+    u64,
+);
+
+#+end_src
+
+#+begin_src rust :eval never
+pub struct Context(UserAddress, UserAddress, u64, u64);
+pub type ContextStateHacspec = (Context, StateHacspec);
+
+#[cfg(feature = "hacspec")]
+#[init(contract = "auction", parameter = "InitParameter")]
+pub fn auction_init(ctx : Context, init_parameter: InitParameter) -> ContextStateHacspec {
+    // Always succeeds
+    (ctx, fresh_state_hacspec(PublicByteSeq::new(0), 0u64))
+}
+
+#+end_src
+
+#+begin_src rust :eval never
+#[cfg(not(feature = "hacspec"))]
+/// Init function that creates a new auction
+#[init(contract = "auction", parameter = "InitParameter")]
+fn auction_init(ctx: &impl HasInitContext) -> InitResult<State> {
+    let parameter: InitParameter = ctx.parameter_cursor().get()?;
+    Ok(fresh_state(parameter.item, parameter.expiry))
+}
+
 #+end_src
 
 *** Seq map entry
@@ -427,13 +450,7 @@ fn coerce_hacspec_to_rust_bid_error(b: BidErrorHacspec) -> BidError {
 #+end_src
 
 #+begin_src rust
-// pub type UserAddressSet = Option<UserAddress>;
-#[derive(Clone, PartialEq)]
-pub enum UserAddressSet {
-    UserAddressSome(UserAddress),
-    UserAddressNone,
-}
-pub type Context = (u64, UserAddressSet);
+// #[derive(Clone, PartialEq)]
 pub type AuctionBidResult = Result<StateHacspec, BidErrorHacspec>;
 
 pub fn auction_bid_hacspec(ctx: Context, amount: u64, state: StateHacspec) -> AuctionBidResult {
@@ -443,32 +460,32 @@ pub fn auction_bid_hacspec(ctx: Context, amount: u64, state: StateHacspec) -> Au
 	AuctionBidResult::Err(BidErrorHacspec::AuctionIsFinalized)?;
     }
 
-    let (slot_time, sender) = ctx;
+    let Context(owner, sender, balance, slot_time) = ctx;
     if !(slot_time <= expiry) {
 	AuctionBidResult::Err(BidErrorHacspec::BidsOverWaitingForAuctionFinalization)?;
     }
 
-    if sender == UserAddressSet::UserAddressNone {
-	AuctionBidResult::Err(BidErrorHacspec::ContractSender)?;
-    }
+    // if sender == UserAddressSet::UserAddressNone {
+    //     AuctionBidResult::Err(BidErrorHacspec::ContractSender)?;
+    // }
 
-    let sender_address = match sender {
-	UserAddressSet::UserAddressNone => UserAddress([
-	    5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8,
-	    5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8,
-	    5_u8, 5_u8, 5_u8, 5_u8,
-	]), // should never happen
-	UserAddressSet::UserAddressSome(account_address) => account_address,
-    };
+    // let sender_address = match sender {
+    //     UserAddressSet::UserAddressNone => UserAddress([
+    //         5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8,
+    //         5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8, 5_u8,
+    //         5_u8, 5_u8, 5_u8, 5_u8,
+    //     ]), // should never happen
+    //     UserAddressSet::UserAddressSome(account_address) => account_address,
+    // };
 
     let (bid_to_update, _new_map) = // match
-	  seq_map_entry(st4.clone(), sender_address) // {
+	  seq_map_entry(st4.clone(), sender) // {
       //     MapEntry::Entry(bid_to_update, new_map) => (bid_to_update, new_map),
       // }
       ;
 
     let (updated_bid, updated_map) =
-	match seq_map_update_entry(st4.clone(), sender_address, bid_to_update + amount) {
+	match seq_map_update_entry(st4.clone(), sender, bid_to_update + amount) {
 	    MapUpdate::Update(updated_bid, updated_map) => (updated_bid, updated_map),
 	};
 
@@ -487,15 +504,26 @@ pub fn auction_bid_hacspec(ctx: Context, amount: u64, state: StateHacspec) -> Au
 
 #[cfg(not(feature = "hacspec"))]
 pub fn coerce_rust_to_hacspec_context(ctx: &impl HasReceiveContext) -> Context {
-    (
-	ctx.metadata().slot_time().timestamp_millis(),
+    Context(
+        coerce_rust_to_hacspec_account_address(&ctx.owner()),
 	match ctx.sender() {
-	    Address::Contract(_) => UserAddressSet::UserAddressNone,
-	    Address::Account(account_address) => {
-		UserAddressSet::UserAddressSome(coerce_rust_to_hacspec_account_address(&account_address))
-	    }
+	    Address::Contract(_) => panic!(),
+	    Address::Account(account_address) => coerce_rust_to_hacspec_account_address(&account_address),
 	},
+        ctx.self_balance().micro_ccd,
+        ctx.metadata().slot_time().timestamp_millis(),
     )
+}
+
+#[cfg(feature = "hacspec")]
+/// Receive function in which accounts can bid before the auction end time
+#[receive(contract = "auction", name = "bid", payable)]
+fn auction_bid(
+    ctx: ContextStateHacspec,
+    amount: u64,
+) -> Option<(ContextStateHacspec, ListAction)> {
+    let s = Seq::<HasAction>::new(0);
+    Option::<(ContextStateHacspec, ListAction)>::Some((ctx, s))
 }
 
 #[cfg(not(feature = "hacspec"))]
@@ -689,6 +717,16 @@ fn simple_transfer_from_index_and_seq<A: HasActions>(x: usize, s: PublicByteSeq)
     )
 }
 
+#[cfg(feature = "hacspec")]
+/// Receive function in which accounts can bid before the auction end time
+#[receive(contract = "auction", name = "finalize")]
+fn auction_finalize(
+    ctx: ContextStateHacspec,
+) -> Option<(ContextStateHacspec, ListAction)> {
+    let s = Seq::<HasAction>::new(0);
+    Option::<(ContextStateHacspec, ListAction)>::Some((ctx, s))
+}
+
 #[cfg(not(feature = "hacspec"))]
 /// Receive function used to finalize the auction, returning all bids to their
 /// senders, except for the winning bid
@@ -795,12 +833,11 @@ fn useraddress_from_u8(i : u8) -> UserAddress {
     ])
 }
 
-
 #[cfg(test)]
 #[proof]
-  fn new_account(time : u64, i : u8) -> (UserAddress, Context) {
+fn new_account(time : u64, i : u8) -> (UserAddress, Context) {
     let addr = useraddress_from_u8(i);
-    let ctx = (time, UserAddressSet::UserAddressSome(addr));
+    let ctx = Context(addr, addr, 0u64, time);
     (addr, ctx)
 }
 
@@ -839,13 +876,13 @@ fn test_auction_bid_and_finalize(item: PublicByteSeq, time : u64, input_amount :
     // 1st bid: account1 bids amount1
     let (alice, alice_ctx) = new_account(time, 0_u8);
 
-    let (ac0, ac1) = alice_ctx;
+    let Context(_, ac0, _, ac1) = alice_ctx;
 
     let (state, bid_map, _res_0, result_0) = verify_bid(
 	item.clone(),
 	state,
 	alice,
-	(ac0.clone(), ac1.clone()),
+	alice_ctx,
 	amount,
 	bid_map,
 	amount,
@@ -859,7 +896,7 @@ fn test_auction_bid_and_finalize(item: PublicByteSeq, time : u64, input_amount :
 	item.clone(),
 	state,
 	alice,
-	(ac0.clone(), ac1.clone()),
+	alice_ctx,
 	amount,
 	bid_map,
 	amount + amount,
@@ -868,13 +905,13 @@ fn test_auction_bid_and_finalize(item: PublicByteSeq, time : u64, input_amount :
 
     // // 3rd bid: second account
     let (bob, bob_ctx) = new_account(time, 1_u8); // first argument is slot time
-    let (bc1, bc2) = bob_ctx;
+    let Context(_, bc1, _, bc2) = bob_ctx;
 
     let (state, bid_map, _res_2, result_2) = verify_bid(
 	item.clone(),
 	state,
 	bob,
-	(bc1.clone(), bc2.clone()),
+	bob_ctx,
 	winning_amount,
 	bid_map,
 	winning_amount,
@@ -935,7 +972,7 @@ fn test_auction_bid_and_finalize(item: PublicByteSeq, time : u64, input_amount :
 	AuctionFinalizeResult::Ok((state, _action)) => (state, false),
     };
 
-    let t = auction_bid_hacspec((bc1.clone(), bc2.clone()), big_amount, state.clone());
+    let t = auction_bid_hacspec(bob_ctx, big_amount, state.clone());
 
     // let result_7 = t == AuctionBidResult::Err (BidErrorHacspec::AuctionIsFinalized);
     let result_7 = match t {

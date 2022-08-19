@@ -145,6 +145,19 @@ pub use alloc::collections;
 #[cfg(feature = "std")]
 pub use std::collections;
 
+pub mod constants;
+mod concordium_prims;
+mod concordium_types;
+mod concordium_traits;
+mod concordium_impls;
+
+pub mod test_infrastructure;
+
+use concordium_prims::*; // TODO: Does not re-export anything, nothing is public enough (removed pub)
+pub use concordium_types::*;
+pub use concordium_traits::*;
+pub use concordium_impls::*;
+
 // TODO: Package into module
 // #[cfg(not(feature = "hacspec"))]
 // pub mod collections {
@@ -189,19 +202,6 @@ extern crate hacspec_lib;
 extern crate creusot_contracts;
 #[cfg(not(feature = "hacspec"))]
 use creusot_contracts::*; // {ensures, trusted}; // requires, 
-
-pub mod constants;
-mod concordium_prims;
-mod concordium_types;
-mod concordium_traits;
-mod concordium_impls;
-
-pub mod test_infrastructure;
-
-use concordium_prims::*; // TODO: Does not re-export anything, nothing is public enough (removed pub)
-pub use concordium_types::*;
-pub use concordium_traits::*;
-pub use concordium_impls::*;
 #+END_SRC
 
 ** Coq code
@@ -1717,20 +1717,28 @@ Definition combine_or_hacspec (l_23 : int32) (r_24 : int32) : int32 :=
 #+BEGIN_SRC rust
 #[cfg(not(feature = "hacspec"))]
 use crate::{
-    collections::{BTreeMap, BTreeSet},
+    // collections::{BTreeMap, BTreeSet},
     convert::{self}, // , TryFrom, TryInto
-    hash::Hash,
+    // hash::Hash,
     num::NonZeroI32,
     trap,
     vec::Vec,
-    String,
+    // String,
     ,*
 };
 
+#[cfg(not(feature = "hacspec"))]
+extern crate hacspec_lib;
+
 use hacspec_lib::*;
+
+#[cfg(not(feature = "hacspec"))]
+use hacspec_lib::Seq; // TODO: fix name collision
+
 use concordium_prims::*;
 use concordium_types::*;
 use concordium_traits::*;
+
 #+END_SRC
 
 *** Reject
@@ -2669,6 +2677,32 @@ impl HasReceiveContext for ExternContext<ReceiveContextExtern> {
 #+end_src
 *** Action
 #+begin_src rust
+// #[cfg(feature = "hacspec")]
+array!(UserAddress, 32, u8);
+
+// #[cfg(feature = "hacspec")]
+// #[cfg_attr(feature = "use_attributes", in_hacspec(Action))]
+pub enum HasAction {
+    Accept(),
+    SimpleTransfer(UserAddress, u64),
+    // TODO: add send_raw
+    // SEND_RAW(
+    //     UserAddress,
+    //     u64, // TODO: Should be ReceiveName => string
+    //     u64,
+    //     PublicByteSeq,
+    // ),
+    // AND_THEN(HasAction, HasAction),
+    // OR_ELSE(HasAction, HasAction)
+}
+#[cfg(feature = "hacspec")]
+pub type ListAction = Seq<HasAction>;
+
+// #[cfg(feature = "hacspec")]
+pub fn accept_action() -> HasAction {
+    HasAction::Accept()
+}
+
 #[cfg(not(feature = "hacspec"))]
 /// #Implementation of actions.
 /// These actions are implemented by direct calls to host functions.

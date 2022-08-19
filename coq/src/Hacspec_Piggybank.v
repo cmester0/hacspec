@@ -7,6 +7,8 @@ Import ListNotations.
 Open Scope Z_scope.
 Open Scope bool_scope.
 Open Scope hacspec_scope.
+From QuickChick Require Import QuickChick.
+Require Import QuickChickLib.
 
 From ConCert.Utils Require Import Extras.
 From ConCert.Utils Require Import Automation.
@@ -43,19 +45,48 @@ Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz
 Instance eq_dec_piggy_bank_state_hacspec_t : EqDec (piggy_bank_state_hacspec_t) :=
   Build_EqDec (piggy_bank_state_hacspec_t) (eqb_piggy_bank_state_hacspec_t) (eqb_leibniz_piggy_bank_state_hacspec_t).
 
+Global Instance show_piggy_bank_state_hacspec_t : Show (piggy_bank_state_hacspec_t) :=
+ @Build_Show (piggy_bank_state_hacspec_t) (fun x =>
+ match x with
+ Intact => ("Intact")%string
+ | Smashed => ("Smashed")%string
+ end).
+Definition g_piggy_bank_state_hacspec_t : G (piggy_bank_state_hacspec_t) := oneOf_ (returnGen Intact) [returnGen Intact;returnGen Smashed].
+Global Instance gen_piggy_bank_state_hacspec_t : Gen (piggy_bank_state_hacspec_t) := Build_Gen piggy_bank_state_hacspec_t g_piggy_bank_state_hacspec_t.
+
 
 Definition user_address_t := nseq (int8) (usize 32).
+Instance show_user_address_t : Show (user_address_t) := Build_Show (user_address_t) show.
+Definition g_user_address_t : G (user_address_t) := arbitrary.
+Instance gen_user_address_t : Gen (user_address_t) := Build_Gen user_address_t g_user_address_t.
 
 Inductive context_t :=
 | Context : (user_address_t ∏ user_address_t ∏ int64 ∏ int64
 ) -> context_t.
 Global Instance serializable_context_t : Serializable context_t :=
   Derive Serializable context_t_rect<Context>.
+Global Instance show_context_t : Show (context_t) :=
+ @Build_Show (context_t) (fun x =>
+ match x with
+ Context a => ("Context" ++ show a)%string
+ end).
+Definition g_context_t : G (context_t) := oneOf_ (bindGen arbitrary (fun a => returnGen (Context a))) [bindGen arbitrary (fun a => returnGen (Context a))].
+Global Instance gen_context_t : Gen (context_t) := Build_Gen context_t g_context_t.
+
 
 Notation "'context_state_hacspec_t'" := ((
   context_t ∏
   piggy_bank_state_hacspec_t
 )) : hacspec_scope.
+Instance show_context_state_hacspec_t : Show (context_state_hacspec_t) :=
+Build_Show context_state_hacspec_t (fun x =>
+  let (x, x0) := x in
+  (("(") ++ ((show x) ++ ((",") ++ ((show x0) ++ (")"))))))%string.
+Definition g_context_state_hacspec_t : G (context_state_hacspec_t) :=
+bindGen arbitrary (fun x0 : context_t =>
+  bindGen arbitrary (fun x1 : piggy_bank_state_hacspec_t =>
+  returnGen (x0,x1))).
+Instance gen_context_state_hacspec_t : Gen (context_state_hacspec_t) := Build_Gen context_state_hacspec_t g_context_state_hacspec_t.
 
 Definition piggy_init_hacspec : piggy_bank_state_hacspec_t :=
   Intact.
@@ -127,6 +158,15 @@ Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz
 Instance eq_dec_smash_error_t : EqDec (smash_error_t) :=
   Build_EqDec (smash_error_t) (eqb_smash_error_t) (eqb_leibniz_smash_error_t).
 
+Global Instance show_smash_error_t : Show (smash_error_t) :=
+ @Build_Show (smash_error_t) (fun x =>
+ match x with
+ NotOwner => ("NotOwner")%string
+ | AlreadySmashed => ("AlreadySmashed")%string
+ end).
+Definition g_smash_error_t : G (smash_error_t) := oneOf_ (returnGen NotOwner) [returnGen NotOwner;returnGen AlreadySmashed].
+Global Instance gen_smash_error_t : Gen (smash_error_t) := Build_Gen smash_error_t g_smash_error_t.
+
 
 Notation "'piggy_smash_result_t'" := ((
   result piggy_bank_state_hacspec_t smash_error_t)) : hacspec_scope.
@@ -173,6 +213,74 @@ Definition piggy_smash
 Definition smash (st : State) :=
   piggy_smash st.
 
+
+Definition test_init_hacspec : bool :=
+  (piggy_init_hacspec ) =.? (Intact).
+
+
+Definition test_insert_intact (ctx_32 : context_t) (amount_33 : int64): bool :=
+  (piggy_insert_hacspec (ctx_32) (amount_33) (Intact)) =.? (@Ok unit unit (tt)).
+
+QuickChick (forAll g_context_t (fun ctx_32 : context_t =>
+  forAll g_int64 (fun amount_33 : int64 =>
+  test_insert_intact ctx_32 amount_33))).
+
+Definition test_insert_smashed (ctx_34 : context_t) (amount_35 : int64): bool :=
+  (piggy_insert_hacspec (ctx_34) (amount_35) (Smashed)) =.? (@Err unit unit (
+      tt)).
+
+QuickChick (forAll g_context_t (fun ctx_34 : context_t =>
+  forAll g_int64 (fun amount_35 : int64 =>
+  test_insert_smashed ctx_34 amount_35))).
+
+Definition test_smash_intact
+  (owner_36 : user_address_t)
+  (balance_37 : int64)
+  (metadata_38 : int64): bool :=
+  let sender_39 : user_address_t :=
+    owner_36 in 
+  let ctx_40 : context_t :=
+    Context ((owner_36, sender_39, balance_37, metadata_38)) in 
+  (piggy_smash_hacspec (ctx_40) (Intact)) =.? (
+    @Ok piggy_bank_state_hacspec_t smash_error_t (Smashed)).
+
+QuickChick (forAll g_user_address_t (fun owner_36 : user_address_t =>
+  forAll g_int64 (fun balance_37 : int64 =>
+  forAll g_int64 (fun metadata_38 : int64 =>
+  test_smash_intact owner_36 balance_37 metadata_38)))).
+
+Definition test_smash_intact_not_owner
+  (owner_41 : user_address_t)
+  (sender_42 : user_address_t)
+  (balance_43 : int64)
+  (metadata_44 : int64): bool :=
+  let ctx_45 : context_t :=
+    Context ((owner_41, sender_42, balance_43, metadata_44)) in 
+  ((owner_41) array_eq (sender_42)) || ((piggy_smash_hacspec (ctx_45) (
+        Intact)) =.? (@Err piggy_bank_state_hacspec_t smash_error_t (
+        NotOwner))).
+
+QuickChick (forAll g_user_address_t (fun owner_41 : user_address_t =>
+  forAll g_user_address_t (fun sender_42 : user_address_t =>
+  forAll g_int64 (fun balance_43 : int64 =>
+  forAll g_int64 (fun metadata_44 : int64 =>
+  test_smash_intact_not_owner owner_41 sender_42 balance_43 metadata_44))))).
+
+Definition test_smash_smashed
+  (owner_46 : user_address_t)
+  (balance_47 : int64)
+  (metadata_48 : int64): bool :=
+  let sender_49 : user_address_t :=
+    owner_46 in 
+  let ctx_50 : context_t :=
+    Context ((owner_46, sender_49, balance_47, metadata_48)) in 
+  (piggy_smash_hacspec (ctx_50) (Smashed)) =.? (
+    @Err piggy_bank_state_hacspec_t smash_error_t (AlreadySmashed)).
+
+QuickChick (forAll g_user_address_t (fun owner_46 : user_address_t =>
+  forAll g_int64 (fun balance_47 : int64 =>
+  forAll g_int64 (fun metadata_48 : int64 =>
+  test_smash_smashed owner_46 balance_47 metadata_48)))).
 
 Inductive Msg :=
 | INSERT
