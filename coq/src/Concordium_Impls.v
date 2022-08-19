@@ -8,7 +8,7 @@ Open Scope Z_scope.
 Open Scope bool_scope.
 Open Scope hacspec_scope.
 
-Require Import ConCertLib.
+(* Require Import ConCertLib. *)
 From ConCert.Utils Require Import Extras.
 From ConCert.Utils Require Import Automation.
 From ConCert.Execution Require Import Serializable.
@@ -76,8 +76,8 @@ Inductive new_contract_name_error_t :=
 | NewContractNameErrorTooLong : new_contract_name_error_t
 | NewContractNameErrorContainsDot : new_contract_name_error_t
 | NewContractNameErrorInvalidCharacters : new_contract_name_error_t.
-Global Instance serializable_new_contract_name_error_t : Serializable new_contract_name_error_t :=
-  Derive Serializable new_contract_name_error_t_rect<NewContractNameErrorMissingInitPrefix,NewContractNameErrorTooLong,NewContractNameErrorContainsDot,NewContractNameErrorInvalidCharacters>.
+(* Global Instance serializable_new_contract_name_error_t : Serializable new_contract_name_error_t := *)
+(*   Derive Serializable new_contract_name_error_t_rect<NewContractNameErrorMissingInitPrefix,NewContractNameErrorTooLong,NewContractNameErrorContainsDot,NewContractNameErrorInvalidCharacters>. *)
 
 Definition reject_impl_from_new_contract_name_error
   (nre_28 : new_contract_name_error_t): reject_hacspec_t :=
@@ -99,8 +99,8 @@ Inductive new_receive_name_error_t :=
 | NewReceiveNameErrorMissingDotSeparator : new_receive_name_error_t
 | NewReceiveNameErrorTooLong : new_receive_name_error_t
 | NewReceiveNameErrorInvalidCharacters : new_receive_name_error_t.
-Global Instance serializable_new_receive_name_error_t : Serializable new_receive_name_error_t :=
-  Derive Serializable new_receive_name_error_t_rect<NewReceiveNameErrorMissingDotSeparator,NewReceiveNameErrorTooLong,NewReceiveNameErrorInvalidCharacters>.
+(* Global Instance serializable_new_receive_name_error_t : Serializable new_receive_name_error_t := *)
+(*   Derive Serializable new_receive_name_error_t_rect<NewReceiveNameErrorMissingDotSeparator,NewReceiveNameErrorTooLong,NewReceiveNameErrorInvalidCharacters>. *)
 
 Definition reject_impl_from_new_receive_name_error
   (nre_29 : new_receive_name_error_t): reject_hacspec_t :=
@@ -132,8 +132,8 @@ Inductive seek_from_hacspec_t :=
 | Start : int64 -> seek_from_hacspec_t
 | End : int64 -> seek_from_hacspec_t
 | Current : int64 -> seek_from_hacspec_t.
-Global Instance serializable_seek_from_hacspec_t : Serializable seek_from_hacspec_t :=
-  Derive Serializable seek_from_hacspec_t_rect<Start,End,Current>.
+(* Global Instance serializable_seek_from_hacspec_t : Serializable seek_from_hacspec_t := *)
+(*   Derive Serializable seek_from_hacspec_t_rect<Start,End,Current>. *)
 
 Notation "'uint32_option_t'" := ((option int32)) : hacspec_scope.
 
@@ -412,8 +412,8 @@ Definition user_address_t := nseq (int8) (usize 32).
 Inductive has_action_t :=
 | Accept : unit -> has_action_t
 | SimpleTransfer : (user_address_t ∏ int64) -> has_action_t.
-Global Instance serializable_has_action_t : Serializable has_action_t :=
-  Derive Serializable has_action_t_rect<Accept,SimpleTransfer>.
+(* Global Instance serializable_has_action_t : Serializable has_action_t := *)
+(*   Derive Serializable has_action_t_rect<Accept,SimpleTransfer>. *)
 Instance default_has_action_t : Default has_action_t := {| default := Accept tt |}.
 
 Notation "'list_action_t'" := (seq has_action_t) : hacspec_scope.

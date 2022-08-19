@@ -14,6 +14,9 @@ use creusot_contracts::{ensures, requires};
 use hacspec_concordium::*;
 // use concordium_impls::*;
 
+#[cfg(feature = "hacspec")]
+use concert_lib::*;
+
 #[cfg(not(feature = "hacspec"))]
 /// The state of the piggy bank
 #[derive(Debug, Serialize, PartialEq, Eq)]

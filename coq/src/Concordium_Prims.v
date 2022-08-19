@@ -8,7 +8,7 @@ Open Scope Z_scope.
 Open Scope bool_scope.
 Open Scope hacspec_scope.
 
-Require Import ConCertLib.
+(* Require Import ConCertLib. *)
 From ConCert.Utils Require Import Extras.
 From ConCert.Utils Require Import Automation.
 From ConCert.Execution Require Import Serializable.

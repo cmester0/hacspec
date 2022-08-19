@@ -8,7 +8,6 @@ Open Scope Z_scope.
 Open Scope bool_scope.
 Open Scope hacspec_scope.
 
-Require Import ConCertLib.
 From ConCert.Utils Require Import Extras.
 From ConCert.Utils Require Import Automation.
 From ConCert.Execution Require Import Serializable.
@@ -22,6 +21,9 @@ Export Hacspec_Lib.
 
 Require Import Hacspec_Concordium.
 Export Hacspec_Concordium.
+
+Require Import Concert_Lib.
+Export Concert_Lib.
 
 Inductive piggy_bank_state_hacspec_t :=
 | Intact : piggy_bank_state_hacspec_t
@@ -80,7 +82,7 @@ Definition piggy_insert_hacspec
   end.
 
 
-Program Definition piggy_insert
+Definition piggy_insert
   (ctx_state_4 : context_state_hacspec_t)
   (amount_5 : int64): (option (context_state_hacspec_t ∏ list_action_t)) :=
   let '(ctx_6, state_7) :=
@@ -95,7 +97,7 @@ Program Definition piggy_insert
     | Ok _ => @Some unit (tt)
     | Err _ => @None unit
     end) (fun _ =>  let s_13 : seq has_action_t :=
-      seq_new_ (default : has_action_t) (usize 0) in 
+      seq_new_ (default) (usize 0) in 
     let s_13 :=
       seq_upd s_13 (usize 0) (accept_action ) in 
     @Some (context_state_hacspec_t ∏ list_action_t) ((
@@ -177,21 +179,11 @@ Inductive Msg :=
 | SMASH.
 Global Instance Msg_serializable : Serializable Msg :=
   Derive Serializable Msg_rect<INSERT,SMASH>.
-
-Definition to_action_body (ctx : ContractCallContext) (y : has_action_t) : ActionBody :=
-  match y with
-  | (Accept _) => act_transfer (ctx.(ctx_from)) (ctx.(ctx_amount))
-  | (SimpleTransfer (ua, i)) => act_transfer (ua) (i)
-  end.
-
 Definition PiggyBank_receive (chain : Chain) (ctx : ContractCallContext) (state : State) (msg : option Msg) : option (State * list ActionBody) :=
   match msg with
-  | Some INSERT =>
-      option_map (fun '(x, y) => (x, List.map (to_action_body ctx) y))
-                 (insert (repr ctx.(ctx_amount)) state)
-  | Some SMASH =>
-      option_map (fun '(x, y) => (x, List.map (to_action_body ctx) y))
-                 (smash state)
+  | Some INSERT => to_action_body_list ctx (
+    insert (repr ctx.(ctx_amount)) state)
+  | Some SMASH => to_action_body_list ctx (smash state)
   | None => None
   end.
 

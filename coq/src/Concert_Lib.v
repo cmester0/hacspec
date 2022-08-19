@@ -9,6 +9,9 @@ Open Scope hacspec_scope.
 From ConCert.Execution Require Import Serializable.
 From ConCert.Execution Require Import Blockchain.
 
+Require Import Hacspec_Concordium.
+Export Hacspec_Concordium.
+
 Global Program Instance int_serializable {ws : WORDSIZE} : Serializable int :=
   {| serialize m := (serialize (unsigned m)) ;
     deserialize l := option_map (fun (x : Z) => @repr ws x) (deserialize l) |}.
@@ -55,3 +58,12 @@ Instance BaseTypes : ChainBase := {|
 (* Definition list_action_t := list ActionBody. *)
 (* Definition ACT_TRANSFER (p : Address ∏ int64) := act_transfer (fst p) (unsigned (snd p)).   *)
 (* Instance d_ab : Default ActionBody := {| default := act_transfer (array_new_ (default : int8) 32) 0 |}. *)
+
+Definition to_action_body (ctx : ContractCallContext) (y : has_action_t) : ActionBody :=
+  match y with
+  | (Accept _) => act_transfer (ctx.(ctx_from)) (ctx.(ctx_amount))
+  | (SimpleTransfer (ua, i)) => act_transfer (ua) (i)
+  end.
+
+Definition to_action_body_list (ctx : ContractCallContext) {X} : option (X ∏ list has_action_t) -> option (X ∏ list ActionBody)  :=
+  option_map (fun '(x, y) => (x, List.map (to_action_body ctx) y)).

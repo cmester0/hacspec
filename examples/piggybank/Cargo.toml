@@ -17,6 +17,7 @@ creusot-contracts-dummy = { git = "https://github.com/xldenis/creusot", rev = "7
 concordium-contracts-common = { path = "../../../../concordium-rust-smart-contracts/concordium-contracts-common" }
 hacspec-concordium = { path = "../concordium" }
 hacspec-concordium-derive = { path = "../concordium-derive" }
+concert-lib = { path = "../concert-lib" }
 
 [features]
 hacspec = []

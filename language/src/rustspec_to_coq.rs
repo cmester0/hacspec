@@ -2512,14 +2512,16 @@ fn translate_program<'a>(
                             RcDoc::concat(x.iter().map(|ReceiveData {contract: x, name: y, payable: b}| {
                                 RcDoc::as_string("| Some ")
                                     .append(RcDoc::as_string(y.to_uppercase()))
-                                    .append(RcDoc::as_string(" => "))
-                                    .append(RcDoc::as_string(y))
-                                    .append(if b.clone() {
-                                        RcDoc::as_string(" (repr ctx.(ctx_amount))")
-                                    } else {
-                                        RcDoc::nil()
-                                    })
-                                    .append(RcDoc::as_string(" state"))
+                                    .append(RcDoc::as_string(" => to_action_body_list ctx "))
+                                    .append(make_paren(
+                                        RcDoc::as_string(y)
+                                            .append(if b.clone() {
+                                                RcDoc::as_string(" (repr ctx.(ctx_amount))")
+                                            } else {
+                                                RcDoc::nil()
+                                            })
+                                            .append(RcDoc::as_string(" state"))
+                                    ))
                                     .append(RcDoc::line())}))})
                 ))
                 .append(RcDoc::as_string("| None => None"))
@@ -2583,7 +2585,6 @@ pub fn translate_and_write_to_file(
         Open Scope bool_scope.\n\
         Open Scope hacspec_scope.\n\
         {}{}\n\
-        Require Import ConCertLib.\n\
         From ConCert.Utils Require Import Extras.\n\
         From ConCert.Utils Require Import Automation.\n\
         From ConCert.Execution Require Import Serializable.\n\
