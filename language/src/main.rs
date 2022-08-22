@@ -58,6 +58,7 @@ struct HacspecCallbacks {
     org_file: Option<String>,
     target_directory: String,
     version_control: VersionControlArg,
+    version_control_dir: Option<String>,
     crate_root_directory: String,
 }
 
@@ -311,7 +312,6 @@ fn handle_crate<'tcx>(
             rustc_ast::ast::Crate { items, .. } => {
                 // Parse over the crate, loading modules and filling top_level_ctx
                 for x in &items.clone() {
-                    
                     if x.attrs
                         .iter()
                         .any(|attr| is_not_hacspec_attribute(attr.clone()))
@@ -635,10 +635,15 @@ fn handle_crate<'tcx>(
                 let file_destination = original_file.join(join_path.clone());
                 let file_destination = file_destination.to_str().unwrap();
 
-                let file_vc = original_file.join("_vc").join(join_path.clone());
+                let file_vc_dir = match &callback.version_control_dir {
+                    Some(f) => Path::new(f),
+                    None => original_file,
+                }
+                .join("_vc");
+
+                let file_vc = file_vc_dir.join(join_path.clone());
                 let file_vc = file_vc.to_str().unwrap();
 
-                let file_vc_dir = original_file.join("_vc");
                 let file_vc_dir = file_vc_dir.to_str().unwrap();
                 std::fs::create_dir_all(file_vc_dir.clone()).expect("Failed to create dir");
 
@@ -1162,6 +1167,13 @@ fn main() -> Result<(), usize> {
         }
         None => vc,
     };
+    let vc_dir = match args.iter().position(|a| a == "--vc-dir") {
+        Some(i) => {
+            args.remove(i);
+            Some(args.remove(i))
+        }
+        None => None,
+    };
 
     // Read the --manifest-path argument if present.
     let manifest = match args.iter().position(|a| a == "--manifest-path") {
@@ -1197,6 +1209,7 @@ fn main() -> Result<(), usize> {
         target_directory: env::current_dir().unwrap().to_str().unwrap().to_owned()
             + "/../target/debug/deps",
         version_control: vc,
+        version_control_dir: vc_dir,
         crate_root_directory: "".to_string(),
     };
 

@@ -26,7 +26,7 @@ cargo build
 #+end_src
 
 #+begin_src sh
-cargo hacspec -e v --dir coq/src --org-file concordium.org hacspec-concordium
+cargo hacspec -e v --dir coq/src --org-file concordium.org hacspec-concordium --vc-update --vc-dir coq/_vc
 #+end_src
 
 * Concordium specification

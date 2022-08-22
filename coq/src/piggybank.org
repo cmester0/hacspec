@@ -29,11 +29,11 @@ cargo build
 #+end_src
 
 #+begin_src sh
-cargo hacspec -e v --dir coq/src/ hacspec-piggybank --vc-init --org-file piggybank.org
+cargo hacspec -e v --dir coq/src/ hacspec-piggybank --org-file piggybank.org --vc-init --vc-dir coq/_vc
 #+end_src
 
 #+begin_src sh
-cargo hacspec -e v --dir coq/src/ hacspec-piggybank --vc-update --org-file piggybank.org
+cargo hacspec -e v --dir coq/src/ hacspec-piggybank --org-file piggybank.org --vc-update --vc-dir coq/_vc
 #+end_src
 
 * Piggybank smart contract specification

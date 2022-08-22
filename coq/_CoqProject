@@ -1,10 +1,8 @@
--R src/ Hacspec
--arg -w
--arg all
+-R src Hacspec
+-arg "-w all"
 
 src/MachineIntegers.v
 src/Hacspec_Lib.v
-src/Concert_Lib.v
 src/QuickChickLib.v
 
 # src/Hacspec_Aes.v # TODO: not currently working ?
@@ -25,14 +23,14 @@ src/QuickChickLib.v
 # src/Hacspec_Sha3.v # Issues with operations with different types eg ".*" vs "*"
 # src/Hacspec_Sha256.v
 
-# src/Hacspec_Concordium_Derive.v
-
 src/Concordium_Prims.v
 src/Concordium_Types.v
 src/Concordium_Traits.v
 src/Concordium_Impls.v
 
 src/Hacspec_Concordium.v
+
+src/Concert_Lib.v
 
 src/Hacspec_Piggybank.v
 src/Hacspec_Auction.v
