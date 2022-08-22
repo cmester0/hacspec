@@ -3747,11 +3747,11 @@ Notation "'policies_iterator_hacspec_t'" := ((int32 ∏ int16)) : hacspec_scope.
 
 #+begin_src coq
 Notation "'policy_attributes_cursor_hacspec_t'" := ((
-  int32 ∏
-  int64 ∏
-  int64 ∏
-  attributes_cursor_hacspec_t
-)) : hacspec_scope.
+    int32 ∏
+    int64 ∏
+    int64 ∏
+    attributes_cursor_hacspec_t
+  )) : hacspec_scope.
 #+end_src
 
 #+begin_src coq

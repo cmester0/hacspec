@@ -1,5 +1,6 @@
-(** This file was automatically generated using Hacspec **)
+(* [[file:auction.org::* auction - Coq code][auction - Coq code:1]] *)
 
+(** This file was automatically generated using Hacspec **)
 Require Import Hacspec_Lib MachineIntegers.
 From Coq Require Import ZArith.
 From Coq Require Import List.
@@ -18,17 +19,26 @@ From ConCert.Execution Require Import ContractCommon.
 From Coq Require Import Morphisms ZArith Basics.
 Open Scope Z.
 Set Nonrecursive Elimination Schemes.
+(* auction - Coq code:1 ends here *)
+
+(* [[file:auction.org::* auction - Coq code][auction - Coq code:2]] *)
 Require Import Hacspec_Lib.
 Export Hacspec_Lib.
+(* auction - Coq code:2 ends here *)
 
+(* [[file:auction.org::* auction - Coq code][auction - Coq code:3]] *)
 Require Import Concert_Lib.
 Export Concert_Lib.
+(* auction - Coq code:3 ends here *)
 
+(* [[file:auction.org::* auction - Coq code][auction - Coq code:4]] *)
 Definition user_address_t := nseq (int8) (usize 32).
 Instance show_user_address_t : Show (user_address_t) := Build_Show (user_address_t) show.
 Definition g_user_address_t : G (user_address_t) := arbitrary.
 Instance gen_user_address_t : Gen (user_address_t) := Build_Gen user_address_t g_user_address_t.
+(* auction - Coq code:4 ends here *)
 
+(* [[file:auction.org::* auction - Coq code][auction - Coq code:5]] *)
 Inductive auction_state_hacspec_t :=
 | NotSoldYet : auction_state_hacspec_t
 | Sold : user_address_t -> auction_state_hacspec_t.
@@ -56,7 +66,9 @@ Global Instance show_auction_state_hacspec_t : Show (auction_state_hacspec_t) :=
 Definition g_auction_state_hacspec_t : G (auction_state_hacspec_t) := oneOf_ (returnGen NotSoldYet) [returnGen NotSoldYet;bindGen arbitrary (fun a => returnGen (Sold a))].
 Global Instance gen_auction_state_hacspec_t : Gen (auction_state_hacspec_t) := Build_Gen auction_state_hacspec_t g_auction_state_hacspec_t.
 
+(* auction - Coq code:5 ends here *)
 
+(* [[file:auction.org::* auction - Coq code][auction - Coq code:6]] *)
 Inductive seq_map_t :=
 | SeqMap : (public_byte_seq ∏ public_byte_seq) -> seq_map_t.
 Global Instance serializable_seq_map_t : Serializable seq_map_t :=
@@ -81,7 +93,9 @@ Global Instance show_seq_map_t : Show (seq_map_t) :=
 Definition g_seq_map_t : G (seq_map_t) := oneOf_ (bindGen arbitrary (fun a => returnGen (SeqMap a))) [bindGen arbitrary (fun a => returnGen (SeqMap a))].
 Global Instance gen_seq_map_t : Gen (seq_map_t) := Build_Gen seq_map_t g_seq_map_t.
 
+(* auction - Coq code:6 ends here *)
 
+(* [[file:auction.org::* auction - Coq code][auction - Coq code:7]] *)
 Inductive state_hacspec_t :=
 | StateHacspec : (
   auction_state_hacspec_t ∏
@@ -112,7 +126,9 @@ Global Instance show_state_hacspec_t : Show (state_hacspec_t) :=
 Definition g_state_hacspec_t : G (state_hacspec_t) := oneOf_ (bindGen arbitrary (fun a => returnGen (StateHacspec a))) [bindGen arbitrary (fun a => returnGen (StateHacspec a))].
 Global Instance gen_state_hacspec_t : Gen (state_hacspec_t) := Build_Gen state_hacspec_t g_state_hacspec_t.
 
+(* auction - Coq code:7 ends here *)
 
+(* [[file:auction.org::* auction - Coq code][auction - Coq code:8]] *)
 Definition fresh_state_hacspec
   (itm_0 : public_byte_seq)
   (exp_1 : int64): state_hacspec_t :=
@@ -124,7 +140,9 @@ Definition fresh_state_hacspec
       SeqMap ((seq_new_ (default) (usize 0), seq_new_ (default) (usize 0)))
     )).
 
+(* auction - Coq code:8 ends here *)
 
+(* [[file:auction.org::* auction - Coq code][auction - Coq code:9]] *)
 Inductive init_parameter_t :=
 | InitParameter : (public_byte_seq ∏ int64) -> init_parameter_t.
 Global Instance serializable_init_parameter_t : Serializable init_parameter_t :=
@@ -137,7 +155,9 @@ Global Instance show_init_parameter_t : Show (init_parameter_t) :=
 Definition g_init_parameter_t : G (init_parameter_t) := oneOf_ (bindGen arbitrary (fun a => returnGen (InitParameter a))) [bindGen arbitrary (fun a => returnGen (InitParameter a))].
 Global Instance gen_init_parameter_t : Gen (init_parameter_t) := Build_Gen init_parameter_t g_init_parameter_t.
 
+(* auction - Coq code:9 ends here *)
 
+(* [[file:auction.org::* auction - Coq code][auction - Coq code:10]] *)
 Inductive context_t :=
 | Context : (user_address_t ∏ user_address_t ∏ int64 ∏ int64
 ) -> context_t.
@@ -151,9 +171,11 @@ Global Instance show_context_t : Show (context_t) :=
 Definition g_context_t : G (context_t) := oneOf_ (bindGen arbitrary (fun a => returnGen (Context a))) [bindGen arbitrary (fun a => returnGen (Context a))].
 Global Instance gen_context_t : Gen (context_t) := Build_Gen context_t g_context_t.
 
+(* auction - Coq code:10 ends here *)
 
+(* [[file:auction.org::* auction - Coq code][auction - Coq code:11]] *)
 Notation "'context_state_hacspec_t'" := ((context_t ∏ state_hacspec_t
-)) : hacspec_scope.
+  )) : hacspec_scope.
 Instance show_context_state_hacspec_t : Show (context_state_hacspec_t) :=
 Build_Show context_state_hacspec_t (fun x =>
   let (x, x0) := x in
@@ -163,7 +185,9 @@ bindGen arbitrary (fun x0 : context_t =>
   bindGen arbitrary (fun x1 : state_hacspec_t =>
   returnGen (x0,x1))).
 Instance gen_context_state_hacspec_t : Gen (context_state_hacspec_t) := Build_Gen context_state_hacspec_t g_context_state_hacspec_t.
+(* auction - Coq code:11 ends here *)
 
+(* [[file:auction.org::* auction - Coq code][auction - Coq code:12]] *)
 Definition auction_init
   (ctx_2 : context_t)
   (init_parameter_3 : init_parameter_t): context_state_hacspec_t :=
@@ -171,13 +195,14 @@ Definition auction_init
     ctx_2,
     fresh_state_hacspec (seq_new_ (default) (usize 0)) (@repr WORDSIZE64 0)
   ).
-Definition State := 
-    context_state_hacspec_t.
+Definition State := context_state_hacspec_t.
   Definition Setup := init_parameter_t.
   Definition auction_State (chain : Chain) (ctx : ContractCallContext) (setup : Setup) : option State :=
   Some (auction_init (Context (ctx.(ctx_from), ctx.(ctx_origin), repr ctx.(ctx_amount), 0 (* TODO *))) setup).
 
+(* auction - Coq code:12 ends here *)
 
+(* [[file:auction.org::* auction - Coq code][auction - Coq code:13]] *)
 Definition seq_map_entry
   (m_4 : seq_map_t)
   (sender_address_5 : user_address_t): (int64 ∏ seq_map_t) :=
@@ -207,7 +232,9 @@ Definition seq_map_entry
     res_8 in 
   res_8.
 
+(* auction - Coq code:13 ends here *)
 
+(* [[file:auction.org::* auction - Coq code][auction - Coq code:14]] *)
 Inductive map_update_t :=
 | Update : (int64 ∏ seq_map_t) -> map_update_t.
 Global Instance serializable_map_update_t : Serializable map_update_t :=
@@ -232,7 +259,9 @@ Global Instance show_map_update_t : Show (map_update_t) :=
 Definition g_map_update_t : G (map_update_t) := oneOf_ (bindGen arbitrary (fun a => returnGen (Update a))) [bindGen arbitrary (fun a => returnGen (Update a))].
 Global Instance gen_map_update_t : Gen (map_update_t) := Build_Gen map_update_t g_map_update_t.
 
+(* auction - Coq code:14 ends here *)
 
+(* [[file:auction.org::* auction - Coq code][auction - Coq code:15]] *)
 Definition seq_map_update_entry
   (m_10 : seq_map_t)
   (sender_address_11 : user_address_t)
@@ -266,7 +295,9 @@ Definition seq_map_update_entry
     res_15 in 
   res_15.
 
+(* auction - Coq code:15 ends here *)
 
+(* [[file:auction.org::* auction - Coq code][auction - Coq code:16]] *)
 Inductive bid_error_hacspec_t :=
 | ContractSender : bid_error_hacspec_t
 | BidTooLow : bid_error_hacspec_t
@@ -309,10 +340,14 @@ Global Instance show_bid_error_hacspec_t : Show (bid_error_hacspec_t) :=
 Definition g_bid_error_hacspec_t : G (bid_error_hacspec_t) := oneOf_ (returnGen ContractSender) [returnGen ContractSender;returnGen BidTooLow;returnGen BidsOverWaitingForAuctionFinalization;returnGen AuctionIsFinalized].
 Global Instance gen_bid_error_hacspec_t : Gen (bid_error_hacspec_t) := Build_Gen bid_error_hacspec_t g_bid_error_hacspec_t.
 
+(* auction - Coq code:16 ends here *)
 
+(* [[file:auction.org::* auction - Coq code][auction - Coq code:17]] *)
 Notation "'auction_bid_result_t'" := ((
-  result state_hacspec_t bid_error_hacspec_t)) : hacspec_scope.
+    result state_hacspec_t bid_error_hacspec_t)) : hacspec_scope.
+(* auction - Coq code:17 ends here *)
 
+(* [[file:auction.org::* auction - Coq code][auction - Coq code:18]] *)
 Definition auction_bid_hacspec
   (ctx_17 : context_t)
   (amount_18 : int64)
@@ -355,7 +390,9 @@ Definition auction_bid_hacspec
         updated_map_32
       )))))).
 
+(* auction - Coq code:18 ends here *)
 
+(* [[file:auction.org::* auction - Coq code][auction - Coq code:19]] *)
 Definition auction_bid
   (ctx_35 : context_state_hacspec_t)
   (amount_36 : int64): (option (context_state_hacspec_t ∏ list_action_t)) :=
@@ -366,7 +403,9 @@ Definition auction_bid
 Definition bid (amount : int64)(st : State) :=
   auction_bid st amount.
 
+(* auction - Coq code:19 ends here *)
 
+(* [[file:auction.org::* auction - Coq code][auction - Coq code:20]] *)
 Inductive finalize_error_hacspec_t :=
 | BidMapError : finalize_error_hacspec_t
 | AuctionStillActive : finalize_error_hacspec_t
@@ -401,9 +440,11 @@ Global Instance show_finalize_error_hacspec_t : Show (finalize_error_hacspec_t) 
 Definition g_finalize_error_hacspec_t : G (finalize_error_hacspec_t) := oneOf_ (returnGen BidMapError) [returnGen BidMapError;returnGen AuctionStillActive;returnGen AuctionFinalized].
 Global Instance gen_finalize_error_hacspec_t : Gen (finalize_error_hacspec_t) := Build_Gen finalize_error_hacspec_t g_finalize_error_hacspec_t.
 
+(* auction - Coq code:20 ends here *)
 
+(* [[file:auction.org::* auction - Coq code][auction - Coq code:21]] *)
 Notation "'finalize_context_t'" := ((int64 ∏ user_address_t ∏ int64
-)) : hacspec_scope.
+  )) : hacspec_scope.
 Instance show_finalize_context_t : Show (finalize_context_t) :=
 Build_Show finalize_context_t (fun x =>
   let (x, x0) := x in
@@ -416,7 +457,9 @@ bindGen arbitrary (fun x0 : int64 =>
   bindGen arbitrary (fun x2 : int64 =>
   returnGen (x0,x1,x2)))).
 Instance gen_finalize_context_t : Gen (finalize_context_t) := Build_Gen finalize_context_t g_finalize_context_t.
+(* auction - Coq code:21 ends here *)
 
+(* [[file:auction.org::* auction - Coq code][auction - Coq code:22]] *)
 Inductive finalize_action_t :=
 | Accept : finalize_action_t
 | SimpleTransfer : public_byte_seq -> finalize_action_t.
@@ -448,7 +491,9 @@ Global Instance show_finalize_action_t : Show (finalize_action_t) :=
 Definition g_finalize_action_t : G (finalize_action_t) := oneOf_ (returnGen Accept) [returnGen Accept;bindGen arbitrary (fun a => returnGen (SimpleTransfer a))].
 Global Instance gen_finalize_action_t : Gen (finalize_action_t) := Build_Gen finalize_action_t g_finalize_action_t.
 
+(* auction - Coq code:22 ends here *)
 
+(* [[file:auction.org::* auction - Coq code][auction - Coq code:23]] *)
 Inductive bid_remain_t :=
 | BidNone : bid_remain_t
 | BidSome : int64 -> bid_remain_t.
@@ -476,12 +521,16 @@ Global Instance show_bid_remain_t : Show (bid_remain_t) :=
 Definition g_bid_remain_t : G (bid_remain_t) := oneOf_ (returnGen BidNone) [returnGen BidNone;bindGen arbitrary (fun a => returnGen (BidSome a))].
 Global Instance gen_bid_remain_t : Gen (bid_remain_t) := Build_Gen bid_remain_t g_bid_remain_t.
 
+(* auction - Coq code:23 ends here *)
 
+(* [[file:auction.org::* auction - Coq code][auction - Coq code:24]] *)
 Notation "'auction_finalize_result_t'" := ((result (
-    state_hacspec_t ∏
-    finalize_action_t
-  ) finalize_error_hacspec_t)) : hacspec_scope.
+      state_hacspec_t ∏
+      finalize_action_t
+    ) finalize_error_hacspec_t)) : hacspec_scope.
+(* auction - Coq code:24 ends here *)
 
+(* [[file:auction.org::* auction - Coq code][auction - Coq code:25]] *)
 Definition auction_finalize_hacspec
   (ctx_38 : finalize_context_t)
   (state_39 : state_hacspec_t): auction_finalize_result_t :=
@@ -579,7 +628,9 @@ Definition auction_finalize_hacspec
   else ((auction_state_40, result_46)) >> (fun '(auction_state_40, result_46) =>
   result_46))).
 
+(* auction - Coq code:25 ends here *)
 
+(* [[file:auction.org::* auction - Coq code][auction - Coq code:26]] *)
 Definition auction_finalize
   (ctx_57 : context_state_hacspec_t): (option (
       context_state_hacspec_t ∏
@@ -592,7 +643,9 @@ Definition auction_finalize
 Definition finalize (st : State) :=
   auction_finalize st.
 
+(* auction - Coq code:26 ends here *)
 
+(* [[file:auction.org::* auction - Coq code][auction - Coq code:27]] *)
 Definition auction_test_init
   (item_59 : public_byte_seq)
   (time_60 : int64): bool :=
@@ -613,7 +666,9 @@ Theorem ensures_auction_test_init : forall result_61 (
 QuickChick (forAll g_public_byte_seq (fun item_59 : public_byte_seq =>
   forAll g_int64 (fun time_60 : int64 =>
   auction_test_init item_59 time_60))).
+(* auction - Coq code:27 ends here *)
 
+(* [[file:auction.org::* auction - Coq code][auction - Coq code:28]] *)
 Definition verify_bid
   (item_62 : public_byte_seq)
   (state_63 : state_hacspec_t)
@@ -647,7 +702,9 @@ Definition verify_bid
         )))
   ).
 
+(* auction - Coq code:28 ends here *)
 
+(* [[file:auction.org::* auction - Coq code][auction - Coq code:29]] *)
 Definition useraddress_from_u8 (i_77 : int8): user_address_t :=
   array_from_list int8 (let l :=
       [
@@ -685,7 +742,9 @@ Definition useraddress_from_u8 (i_77 : int8): user_address_t :=
         i_77
       ] in  l).
 
+(* auction - Coq code:29 ends here *)
 
+(* [[file:auction.org::* auction - Coq code][auction - Coq code:30]] *)
 Definition new_account
   (time_78 : int64)
   (i_79 : int8): (user_address_t ∏ context_t) :=
@@ -695,7 +754,9 @@ Definition new_account
     Context ((addr_80, addr_80, @repr WORDSIZE64 0, time_78)) in 
   (addr_80, ctx_81).
 
+(* auction - Coq code:30 ends here *)
 
+(* [[file:auction.org::* auction - Coq code][auction - Coq code:31]] *)
 Definition test_auction_bid_and_finalize
   (item_82 : public_byte_seq)
   (time_83 : int64)
@@ -804,7 +865,9 @@ QuickChick (forAll g_public_byte_seq (fun item_82 : public_byte_seq =>
   forAll g_int64 (fun time_83 : int64 =>
   forAll g_int64 (fun input_amount_84 : int64 =>
   test_auction_bid_and_finalize item_82 time_83 input_amount_84)))).
+(* auction - Coq code:31 ends here *)
 
+(* [[file:auction.org::* auction - Coq code][auction - Coq code:32]] *)
 Inductive Msg :=
 | BID
 | FINALIZE.
@@ -819,3 +882,5 @@ Definition auction_receive (chain : Chain) (ctx : ContractCallContext) (state : 
 
 Definition auction_contract : Contract Setup Msg State :=
   build_contract auction_State auction_receive.
+
+(* auction - Coq code:32 ends here *)
