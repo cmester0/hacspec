@@ -2585,8 +2585,8 @@ pub fn translate_and_write_to_file(
 
     write!(
         file,
-        "(** This file was automatically generated using Hacspec **)\n\
-        {}\n\
+        "{}\n\
+        (** This file was automatically generated using Hacspec **)\n\
         Require Import Hacspec_Lib MachineIntegers.\n\
         From Coq Require Import ZArith.\n\
         From Coq Require Import List.\n\

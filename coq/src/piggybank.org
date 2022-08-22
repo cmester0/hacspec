@@ -17,23 +17,23 @@
 :END:
 ** Resulting output
 #+begin_src sh
-  cargo clean
+cargo clean
 #+end_src
 
 #+begin_src sh
-  cargo install --path language
+cargo install --path language
 #+end_src
 
 #+begin_src sh
-  cargo build
+cargo build
 #+end_src
 
 #+begin_src sh
-  cargo hacspec -o coq/src/Piggybank.v hacspec-piggybank --init --org-file piggybank.org
+cargo hacspec -e v --dir coq/src/ hacspec-piggybank --vc-init --org-file piggybank.org
 #+end_src
 
 #+begin_src sh
-  cargo hacspec -o coq/src/Piggybank.v hacspec-piggybank --update --org-file piggybank.org
+cargo hacspec -e v --dir coq/src/ hacspec-piggybank --vc-update --org-file piggybank.org
 #+end_src
 
 * Piggybank smart contract specification
@@ -509,13 +509,13 @@ mod tests {
 
 ** Generation of backend output
 
-#+begin_src elisp :var SOURCE-CODE-FILE="Piggybank.v" :results output silent :tangle no
+#+begin_src elisp :var SOURCE-CODE-FILE="Hacspec_Piggybank.v" :results output silent :tangle no
 (org-babel-detangle SOURCE-CODE-FILE)
 #+end_src
 
 ***  - Coq code
 :PROPERTIES:
-:header-args: coq :tangle Piggybank.v :mkdirp yes  :comments link
+:header-args: coq :tangle Hacspec_Piggybank.v :mkdirp yes  :comments link
 :header-args: coq :eval never :results output silent
 :END:
 

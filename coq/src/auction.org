@@ -18,19 +18,19 @@
 :END:
 ** Resulting output
 #+begin_src sh
-  cargo clean
+cargo clean
 #+end_src
 
 #+begin_src sh
-  cargo install --path language
+cargo install --path language
 #+end_src
 
 #+begin_src sh
-  cargo build
+cargo build
 #+end_src
 
 #+begin_src sh
-cargo hacspec -e v -dir coq/src -o Auction --org-file auction.org hacspec-auction
+cargo hacspec -e v --dir coq/src -o Auction --org-file auction.org hacspec-auction
 #+end_src
 
 * Auction smart contract specification
@@ -1249,13 +1249,13 @@ fn test_auction_bid_and_finalize(item: PublicByteSeq, time : u64, input_amount :
 
 ** Generation of backend output
 
-#+begin_src elisp :var SOURCE-CODE-FILE="Auction.v" :results output silent :tangle no
+#+begin_src elisp :var SOURCE-CODE-FILE="Hacspec_Auction.v" :results output silent :tangle no
 (org-babel-detangle SOURCE-CODE-FILE)
 #+end_src
 
 ***  - Coq code
 :PROPERTIES:
-:header-args: coq :tangle Auction.v :mkdirp yes :comments link
+:header-args: coq :tangle Hacspec_Auction.v :mkdirp yes :comments link
 :header-args: coq :eval never :results output silent
 :END:
 
