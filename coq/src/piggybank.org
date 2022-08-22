@@ -134,9 +134,6 @@ fn coerce_rust_to_hacspec_piggybank_state(pbs : &PiggyBankState) -> PiggyBankSta
 #+end_src
 
 #+begin_src rust
-array!(UserAddress, 32, u8);
-
-pub struct Context(pub UserAddress, pub UserAddress, pub u64, pub u64);
 pub type ContextStateHacspec = (Context, PiggyBankStateHacspec);
 #+end_src
 
@@ -163,13 +160,6 @@ pub fn piggy_init(ctx : Context) -> ContextStateHacspec { // , actions
 fn piggy_init(_ctx: &impl HasInitContext) -> InitResult<PiggyBankState> {
     // Always succeeds
     Ok(coerce_hacspec_to_rust_piggybank_state(piggy_init_hacspec()))
-}
-#+end_src
-
-#+begin_src rust
-#[cfg(not(feature = "hacspec"))]
-fn coerce_rust_to_hacspec_account_address(aa: &AccountAddress) -> UserAddress {
-    UserAddress::from_native_slice(&aa.0)
 }
 #+end_src
 
@@ -587,28 +577,6 @@ Global Instance gen_piggy_bank_state_hacspec_t : Gen (piggy_bank_state_hacspec_t
 #+end_src
 
 #+begin_src coq
-Definition user_address_t := nseq (int8) (usize 32).
-Instance show_user_address_t : Show (user_address_t) := Build_Show (user_address_t) show.
-Definition g_user_address_t : G (user_address_t) := arbitrary.
-Instance gen_user_address_t : Gen (user_address_t) := Build_Gen user_address_t g_user_address_t.
-#+end_src
-
-#+begin_src coq
-Inductive context_t :=
-| Context : (user_address_t ∏ user_address_t ∏ int64 ∏ int64
-) -> context_t.
-Global Instance serializable_context_t : Serializable context_t :=
-  Derive Serializable context_t_rect<Context>.
-Global Instance show_context_t : Show (context_t) :=
- @Build_Show (context_t) (fun x =>
- match x with
- Context a => ("Context" ++ show a)%string
- end).
-Definition g_context_t : G (context_t) := oneOf_ (bindGen arbitrary (fun a => returnGen (Context a))) [bindGen arbitrary (fun a => returnGen (Context a))].
-Global Instance gen_context_t : Gen (context_t) := Build_Gen context_t g_context_t.
-#+end_src
-
-#+begin_src coq
 Notation "'context_state_hacspec_t'" := ((
     context_t ∏
     piggy_bank_state_hacspec_t
@@ -856,4 +824,4 @@ Definition PiggyBank_receive (chain : Chain) (ctx : ContractCallContext) (state 
 Definition PiggyBank_contract : Contract Setup Msg State :=
   build_contract PiggyBank_State PiggyBank_receive.
 #+end_src
-# 24 code sections
+# 22 code sections

@@ -247,6 +247,7 @@ Export Concordium_Traits.
 Require Import Concordium_Impls.
 Export Concordium_Impls.
 #+end_src
+# 5 code sections
 
 * Concordium "Types" specification
 ** Rust code
@@ -2678,9 +2679,27 @@ impl HasReceiveContext for ExternContext<ReceiveContextExtern> {
   }
 #+end_src
 *** Action
-#+begin_src rust
+#+begin_src rust :eval never
 // #[cfg(feature = "hacspec")]
 array!(UserAddress, 32, u8);
+
+#[cfg(not(feature = "hacspec"))]
+pub fn coerce_hacspec_to_rust_account_address(ua: UserAddress) -> AccountAddress {
+    AccountAddress([
+	ua[0], ua[1], ua[2], ua[3], ua[4], ua[5], ua[6], ua[7], ua[8], ua[9], ua[10], ua[11],
+	ua[12], ua[13], ua[14], ua[15], ua[16], ua[17], ua[18], ua[19], ua[20], ua[21], ua[22],
+	ua[23], ua[24], ua[25], ua[26], ua[27], ua[28], ua[29], ua[30], ua[31],
+    ])
+}
+
+#[cfg(not(feature = "hacspec"))]
+pub fn coerce_rust_to_hacspec_account_address(aa: &AccountAddress) -> UserAddress {
+    UserAddress::from_native_slice(&aa.0)
+}
+
+#+end_src
+
+#+begin_src rust
 
 // #[cfg(feature = "hacspec")]
 // #[cfg_attr(feature = "use_attributes", in_hacspec(Action))]
@@ -2703,6 +2722,21 @@ pub type ListAction = Seq<HasAction>;
 // #[cfg(feature = "hacspec")]
 pub fn accept_action() -> HasAction {
     HasAction::Accept()
+}
+
+pub struct Context(pub UserAddress, pub UserAddress, pub u64, pub u64);
+
+#[cfg(not(feature = "hacspec"))]
+pub fn coerce_rust_to_hacspec_context(ctx: &impl HasReceiveContext) -> Context {
+    Context(
+        coerce_rust_to_hacspec_account_address(&ctx.owner()),
+	match ctx.sender() {
+	    Address::Contract(_) => panic!(),
+	    Address::Account(account_address) => coerce_rust_to_hacspec_account_address(&account_address),
+	},
+        ctx.self_balance().micro_ccd,
+        ctx.metadata().slot_time().timestamp_millis(),
+    )
 }
 
 #[cfg(not(feature = "hacspec"))]
@@ -3836,7 +3870,13 @@ Notation "'list_action_t'" := (seq has_action_t) : hacspec_scope.
 Definition accept_action : has_action_t :=
   Accept (tt).
 #+end_src
-# 40 code sections
+
+#+begin_src coq
+Inductive context_t :=
+| Context : (user_address_t ∏ user_address_t ∏ int64 ∏ int64
+) -> context_t.
+#+end_src
+# 41 code sections
 
 * Concordium "Constants" specification
 ** Rust code

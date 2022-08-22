@@ -44,6 +44,7 @@ members = [
     "examples/concordium-derive",
     "examples/piggybank",
     "examples/auction",
+    "examples/wccd",
 ]
 default-members = [
     "lib",
@@ -86,5 +87,6 @@ default-members = [
     "examples/concordium-derive",
     "examples/piggybank",
     "examples/auction",
+    "examples/wccd",
 ]
 exclude = [ "language" ]

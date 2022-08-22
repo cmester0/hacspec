@@ -30,7 +30,7 @@ cargo build
 #+end_src
 
 #+begin_src sh
-cargo hacspec -e v --dir coq/src -o Auction --org-file auction.org hacspec-auction --vc-update --vc-dir coq/_vc
+cargo hacspec -e v --dir coq/src --org-file auction.org hacspec-auction --vc-update --vc-dir coq/_vc
 #+end_src
 
 * Auction smart contract specification
@@ -88,8 +88,10 @@ use creusot_contracts::{ensures, requires};
 
 #+begin_src rust :eval never
 // // Rust-hacspec Interface
+use hacspec_concordium::*;
+
 #[cfg(not(feature = "hacspec"))]
-use hacspec_concordium::{collections::BTreeMap, *};
+use hacspec_concordium::{collections::BTreeMap};
 
 #[cfg(feature = "hacspec")]
 use concert_lib::*;
@@ -98,170 +100,152 @@ use concert_lib::*;
 
 *** Types
 #+begin_src rust :eval never
-  array!(UserAddress, 32, u8); // U8
+#[cfg(not(feature = "hacspec"))]
+/// The state in which an auction can be.
+#[derive(Debug, Eq, PartialEq, PartialOrd, Serialize, SchemaType)] // TODO: Debug with creusot 
+pub enum AuctionState {
+    /// The auction is either
+    /// - still accepting bids or
+    /// - not accepting bids because it's past the auction end, but nobody has
+    ///   finalized the auction yet.
+    NotSoldYet,
+    /// The auction is over and the item has been sold to the indicated address.
+    Sold(AccountAddress), // winning account's address
+}
 
-  #[cfg(not(feature = "hacspec"))]
-  pub fn coerce_hacspec_to_rust_account_address(ua: UserAddress) -> AccountAddress {
-      AccountAddress([
-	  ua[0], ua[1], ua[2], ua[3], ua[4], ua[5], ua[6], ua[7], ua[8], ua[9], ua[10], ua[11],
-	  ua[12], ua[13], ua[14], ua[15], ua[16], ua[17], ua[18], ua[19], ua[20], ua[21], ua[22],
-	  ua[23], ua[24], ua[25], ua[26], ua[27], ua[28], ua[29], ua[30], ua[31],
-      ])
-  }
+/// The state in which an auction can be.
+#[derive(Clone, PartialEq)]
+pub enum AuctionStateHacspec {
+    /// The auction is either
+    /// - still accepting bids or
+    /// - not accepting bids because it's past the auction end, but nobody has
+    ///   finalized the auction yet.
+    NotSoldYet,
+    /// The auction is over and the item has been sold to the indicated address.
+    Sold(UserAddress), // winning account's address
+}
 
-  #[cfg(not(feature = "hacspec"))]
-  pub fn coerce_rust_to_hacspec_account_address(aa: &AccountAddress) -> UserAddress {
-      UserAddress::from_native_slice(&aa.0)
-  }
-#+end_src
+#[cfg(not(feature = "hacspec"))]
+pub fn coerce_hacspec_to_rust_auction_state(s : AuctionStateHacspec) -> AuctionState {
+    match s {
+	AuctionStateHacspec::NotSoldYet => AuctionState::NotSoldYet,
+	AuctionStateHacspec::Sold(ua) => AuctionState::Sold(coerce_hacspec_to_rust_account_address(ua))
+    }
+}
 
-#+begin_src rust :eval never
-  #[cfg(not(feature = "hacspec"))]
-  /// The state in which an auction can be.
-  #[derive(Debug, Eq, PartialEq, PartialOrd, Serialize, SchemaType)] // TODO: Debug with creusot 
-  pub enum AuctionState {
-      /// The auction is either
-      /// - still accepting bids or
-      /// - not accepting bids because it's past the auction end, but nobody has
-      ///   finalized the auction yet.
-      NotSoldYet,
-      /// The auction is over and the item has been sold to the indicated address.
-      Sold(AccountAddress), // winning account's address
-  }
-
-  /// The state in which an auction can be.
-  #[derive(Clone, PartialEq)]
-  pub enum AuctionStateHacspec {
-      /// The auction is either
-      /// - still accepting bids or
-      /// - not accepting bids because it's past the auction end, but nobody has
-      ///   finalized the auction yet.
-      NotSoldYet,
-      /// The auction is over and the item has been sold to the indicated address.
-      Sold(UserAddress), // winning account's address
-  }
-
-  #[cfg(not(feature = "hacspec"))]
-  pub fn coerce_hacspec_to_rust_auction_state(s : AuctionStateHacspec) -> AuctionState {
-      match s {
-	  AuctionStateHacspec::NotSoldYet => AuctionState::NotSoldYet,
-	  AuctionStateHacspec::Sold(ua) => AuctionState::Sold(coerce_hacspec_to_rust_account_address(ua))
-      }
-  }
-
-  #[cfg(not(feature = "hacspec"))]
-  pub fn coerce_rust_to_hacspec_auction_state(s : &AuctionState) -> AuctionStateHacspec {
-      match s {
-	  AuctionState::NotSoldYet => AuctionStateHacspec::NotSoldYet,
-	  AuctionState::Sold(aa) => AuctionStateHacspec::Sold(coerce_rust_to_hacspec_account_address(aa))
-      }
-  }
+#[cfg(not(feature = "hacspec"))]
+pub fn coerce_rust_to_hacspec_auction_state(s : &AuctionState) -> AuctionStateHacspec {
+    match s {
+	AuctionState::NotSoldYet => AuctionStateHacspec::NotSoldYet,
+	AuctionState::Sold(aa) => AuctionStateHacspec::Sold(coerce_rust_to_hacspec_account_address(aa))
+    }
+}
 
 #+end_src
 
 #+begin_src rust :eval never
-  #[derive(Clone, PartialEq)]
-  pub struct SeqMap(pub PublicByteSeq, pub PublicByteSeq);
+#[derive(Clone, PartialEq)]
+pub struct SeqMap(pub PublicByteSeq, pub PublicByteSeq);
 
-  #[cfg(not(feature = "hacspec"))]
-  pub fn coerce_hacspec_to_rust_b_tree_map(m: SeqMap) -> BTreeMap<AccountAddress, Amount> {
-      let m1prime =
-	  (0..m.0.len() / 32).map(|x| UserAddress::from_seq(&m.0.clone().slice(x * 32, 32)));
-      let m2prime =
-	  (0..m.1.len() / 8).map(|x| u64_from_be_bytes(u64Word::from_seq(&m.1.slice(x * 8, 8))));
+#[cfg(not(feature = "hacspec"))]
+pub fn coerce_hacspec_to_rust_b_tree_map(m: SeqMap) -> BTreeMap<AccountAddress, Amount> {
+    let m1prime =
+	(0..m.0.len() / 32).map(|x| UserAddress::from_seq(&m.0.clone().slice(x * 32, 32)));
+    let m2prime =
+	(0..m.1.len() / 8).map(|x| u64_from_be_bytes(u64Word::from_seq(&m.1.slice(x * 8, 8))));
 
-      (m1prime.zip(m2prime)).fold(BTreeMap::new(), |mut t, (x, y)| {
-	  t.insert(
-	      coerce_hacspec_to_rust_account_address(x),
-	      Amount { micro_ccd: y },
-	  );
-	  t
-      })
-  }
+    (m1prime.zip(m2prime)).fold(BTreeMap::new(), |mut t, (x, y)| {
+	t.insert(
+	    coerce_hacspec_to_rust_account_address(x),
+	    Amount { micro_ccd: y },
+	);
+	t
+    })
+}
 
-  #[cfg(not(feature = "hacspec"))]
-  pub fn coerce_rust_to_hacspec_b_tree_map(m: &BTreeMap<AccountAddress, Amount>) -> SeqMap {
-      SeqMap(
-	  m.keys()
-	      .map(|x| coerce_rust_to_hacspec_account_address(x))
-	      .fold(PublicByteSeq::new(0_usize), |v, x| v.concat(&x)),
-	  m.values()
-	      .map(|x| x.micro_ccd)
-	      .fold(PublicSeq::new(0_usize), |v, x| {
-		  v.concat(&u64_to_be_bytes(x))
-	      }),
-      )
-  }
+#[cfg(not(feature = "hacspec"))]
+pub fn coerce_rust_to_hacspec_b_tree_map(m: &BTreeMap<AccountAddress, Amount>) -> SeqMap {
+    SeqMap(
+	m.keys()
+	    .map(|x| coerce_rust_to_hacspec_account_address(x))
+	    .fold(PublicByteSeq::new(0_usize), |v, x| v.concat(&x)),
+	m.values()
+	    .map(|x| x.micro_ccd)
+	    .fold(PublicSeq::new(0_usize), |v, x| {
+		v.concat(&u64_to_be_bytes(x))
+	    }),
+    )
+}
 #+end_src
 
 #+begin_src rust :eval never
 
-  #[cfg(not(feature = "hacspec"))]
-  /// The state of the smart contract.
-  /// This is the state that will be shown when the contract is queried using
-  /// `concordium-client contract show`.
-  #[contract_state(contract = "auction")]
-  #[derive(Debug, Eq, PartialEq, Serialize, SchemaType)] // TODO: Debug, 
-  pub struct State {
-      /// Has the item been sold?
-      auction_state: AuctionState,
-      /// The highest bid so far (stored explicitly so that bidders can quickly
-      /// see it)
-      highest_bid:   Amount,
-      /// The sold item (to be displayed to the auction participants), encoded in
-      /// ASCII
-      item:          Vec<u8>,
-      /// Expiration time of the auction at which bids will be closed (to be
-      /// displayed to the auction participants)
-      expiry:        Timestamp,
-      /// Keeping track of which account bid how much money
-      // #[concordium(size_length = 2)] // TODO
-      bids:          BTreeMap<AccountAddress, Amount>,
-  }
+#[cfg(not(feature = "hacspec"))]
+/// The state of the smart contract.
+/// This is the state that will be shown when the contract is queried using
+/// `concordium-client contract show`.
+#[contract_state(contract = "auction")]
+#[derive(Debug, Eq, PartialEq, Serialize, SchemaType)] // TODO: Debug, 
+pub struct State {
+    /// Has the item been sold?
+    auction_state: AuctionState,
+    /// The highest bid so far (stored explicitly so that bidders can quickly
+    /// see it)
+    highest_bid:   Amount,
+    /// The sold item (to be displayed to the auction participants), encoded in
+    /// ASCII
+    item:          Vec<u8>,
+    /// Expiration time of the auction at which bids will be closed (to be
+    /// displayed to the auction participants)
+    expiry:        Timestamp,
+    /// Keeping track of which account bid how much money
+    // #[concordium(size_length = 2)] // TODO
+    bids:          BTreeMap<AccountAddress, Amount>,
+}
 
-  #[derive(Clone, PartialEq)]
-  pub struct StateHacspec(
-      pub AuctionStateHacspec,
-      pub u64, // amount
-      pub PublicByteSeq,
-      pub u64, // timestamp
-      pub SeqMap,
-  );
+#[derive(Clone, PartialEq)]
+pub struct StateHacspec(
+    pub AuctionStateHacspec,
+    pub u64, // amount
+    pub PublicByteSeq,
+    pub u64, // timestamp
+    pub SeqMap,
+);
 
-  #[cfg(not(feature = "hacspec"))]
-  pub fn coerce_hacspec_to_rust_state(s : StateHacspec) -> State {
-      let StateHacspec(auction_state_hacspec, amount, item_seq, time, bid_map) = s;
-      let auction_state = coerce_hacspec_to_rust_auction_state(auction_state_hacspec);
-      let highest_bid = Amount { micro_ccd: amount };
-      let item = item_seq.native_slice().to_vec();
-      let expiry = Timestamp::from_timestamp_millis(time);
-      let bids = coerce_hacspec_to_rust_b_tree_map(bid_map);
+#[cfg(not(feature = "hacspec"))]
+pub fn coerce_hacspec_to_rust_state(s : StateHacspec) -> State {
+    let StateHacspec(auction_state_hacspec, amount, item_seq, time, bid_map) = s;
+    let auction_state = coerce_hacspec_to_rust_auction_state(auction_state_hacspec);
+    let highest_bid = Amount { micro_ccd: amount };
+    let item = item_seq.native_slice().to_vec();
+    let expiry = Timestamp::from_timestamp_millis(time);
+    let bids = coerce_hacspec_to_rust_b_tree_map(bid_map);
 
-      State {
-	  auction_state,
-	  highest_bid,
-	  item,
-	  expiry,
-	  bids,
-      }
-  }
+    State {
+	auction_state,
+	highest_bid,
+	item,
+	expiry,
+	bids,
+    }
+}
 
-  #[cfg(not(feature = "hacspec"))]
-  pub fn coerce_rust_to_hacspec_state(s : &State) -> StateHacspec {
-      let auction_state = coerce_rust_to_hacspec_auction_state(&s.auction_state);
-      let highest_bid = s.highest_bid.micro_ccd;
-      let item = PublicByteSeq::from_native_slice(&s.item);
-      let expiry = s.expiry.timestamp_millis();
-      let bids = coerce_rust_to_hacspec_b_tree_map(&s.bids);
+#[cfg(not(feature = "hacspec"))]
+pub fn coerce_rust_to_hacspec_state(s : &State) -> StateHacspec {
+    let auction_state = coerce_rust_to_hacspec_auction_state(&s.auction_state);
+    let highest_bid = s.highest_bid.micro_ccd;
+    let item = PublicByteSeq::from_native_slice(&s.item);
+    let expiry = s.expiry.timestamp_millis();
+    let bids = coerce_rust_to_hacspec_b_tree_map(&s.bids);
 
-      StateHacspec (
-	  auction_state,
-	  highest_bid,
-	  item,
-	  expiry,
-	  bids,
-      )
-  }
+    StateHacspec (
+	auction_state,
+	highest_bid,
+	item,
+	expiry,
+	bids,
+    )
+}
 
 #+end_src
 
@@ -313,7 +297,6 @@ struct InitParameter(
 #+end_src
 
 #+begin_src rust :eval never
-pub struct Context(UserAddress, UserAddress, u64, u64);
 pub type ContextStateHacspec = (Context, StateHacspec);
 
 #[cfg(feature = "hacspec")]
@@ -366,38 +349,38 @@ fn auction_init(ctx: &impl HasInitContext) -> InitResult<State> {
 #+end_src
 *** Map Update and result type
 #+begin_src rust :eval never
-  #[derive(Clone, PartialEq)]
-  pub enum MapUpdate {
-      Update(u64, SeqMap),
-  }
+#[derive(Clone, PartialEq)]
+pub enum MapUpdate {
+    Update(u64, SeqMap),
+}
 
-  fn seq_map_update_entry(m: SeqMap, sender_address: UserAddress, amount: u64) -> MapUpdate {
-      let SeqMap(m0, m1) = m;
+fn seq_map_update_entry(m: SeqMap, sender_address: UserAddress, amount: u64) -> MapUpdate {
+    let SeqMap(m0, m1) = m;
 
-      let mut res = MapUpdate::Update(
-	  amount,
-	  SeqMap(
-	      m0.clone().concat(&sender_address),
-	      m1.clone().concat(&u64_to_be_bytes(amount)),
-	  ),
-      );
+    let mut res = MapUpdate::Update(
+	amount,
+	SeqMap(
+	    m0.clone().concat(&sender_address),
+	    m1.clone().concat(&u64_to_be_bytes(amount)),
+	),
+    );
 
-      // TODO: use chunks instead of doing the math yourself
-      // !! Issue in for loop !! (update, updates the reference!)
-      for x in 0..m0.clone().len() / 32 {
-	  if UserAddress::from_seq(&m0.clone().slice(x * 32, 32)) == sender_address {
-	      res = MapUpdate::Update(
-		  amount,
-		  SeqMap(
-		      m0.clone().update(x * 32, &sender_address),
-		      m1.clone().update(x * 8, &u64_to_be_bytes(amount)),
-		  ),
-	      );
-	  }
-      }
+    // TODO: use chunks instead of doing the math yourself
+    // !! Issue in for loop !! (update, updates the reference!)
+    for x in 0..m0.clone().len() / 32 {
+	if UserAddress::from_seq(&m0.clone().slice(x * 32, 32)) == sender_address {
+	    res = MapUpdate::Update(
+		amount,
+		SeqMap(
+		    m0.clone().update(x * 32, &sender_address),
+		    m1.clone().update(x * 8, &u64_to_be_bytes(amount)),
+		),
+	    );
+	}
+    }
 
-      res
-  }
+    res
+}
 #+end_src
 *** Auction bid and intermediate types
 #+begin_src rust :eval never
@@ -506,10 +489,10 @@ pub fn auction_bid_hacspec(ctx: Context, amount: u64, state: StateHacspec) -> Au
 pub fn coerce_rust_to_hacspec_context(ctx: &impl HasReceiveContext) -> Context {
     Context(
         coerce_rust_to_hacspec_account_address(&ctx.owner()),
-	match ctx.sender() {
-	    Address::Contract(_) => panic!(),
-	    Address::Account(account_address) => coerce_rust_to_hacspec_account_address(&account_address),
-	},
+       match ctx.sender() {
+           Address::Contract(_) => panic!(),
+           Address::Account(account_address) => coerce_rust_to_hacspec_account_address(&account_address),
+       },
         ctx.self_balance().micro_ccd,
         ctx.metadata().slot_time().timestamp_millis(),
     )
@@ -1288,15 +1271,13 @@ Export Hacspec_Lib.
 #+end_src
 
 #+begin_src coq
-Require Import Concert_Lib.
-Export Concert_Lib.
+Require Import Hacspec_Concordium.
+Export Hacspec_Concordium.
 #+end_src
 
 #+begin_src coq
-Definition user_address_t := nseq (int8) (usize 32).
-Instance show_user_address_t : Show (user_address_t) := Build_Show (user_address_t) show.
-Definition g_user_address_t : G (user_address_t) := arbitrary.
-Instance gen_user_address_t : Gen (user_address_t) := Build_Gen user_address_t g_user_address_t.
+Require Import Concert_Lib.
+Export Concert_Lib.
 #+end_src
 
 #+begin_src coq
@@ -1411,21 +1392,6 @@ Global Instance show_init_parameter_t : Show (init_parameter_t) :=
  end).
 Definition g_init_parameter_t : G (init_parameter_t) := oneOf_ (bindGen arbitrary (fun a => returnGen (InitParameter a))) [bindGen arbitrary (fun a => returnGen (InitParameter a))].
 Global Instance gen_init_parameter_t : Gen (init_parameter_t) := Build_Gen init_parameter_t g_init_parameter_t.
-#+end_src
-
-#+begin_src coq
-Inductive context_t :=
-| Context : (user_address_t ∏ user_address_t ∏ int64 ∏ int64
-) -> context_t.
-Global Instance serializable_context_t : Serializable context_t :=
-  Derive Serializable context_t_rect<Context>.
-Global Instance show_context_t : Show (context_t) :=
- @Build_Show (context_t) (fun x =>
- match x with
- Context a => ("Context" ++ show a)%string
- end).
-Definition g_context_t : G (context_t) := oneOf_ (bindGen arbitrary (fun a => returnGen (Context a))) [bindGen arbitrary (fun a => returnGen (Context a))].
-Global Instance gen_context_t : Gen (context_t) := Build_Gen context_t g_context_t.
 #+end_src
 
 #+begin_src coq
@@ -2123,4 +2089,4 @@ Definition auction_receive (chain : Chain) (ctx : ContractCallContext) (state : 
 Definition auction_contract : Contract Setup Msg State :=
   build_contract auction_State auction_receive.
 #+end_src
-# 32 code sections
+# 31 code sections

@@ -485,3 +485,9 @@ Definition accept_action : has_action_t :=
 
 (* concordium_impls - Coq code:40 ends here *)
 
+(* [[file:concordium.org::* concordium_impls - Coq code][concordium_impls - Coq code:41]] *)
+Inductive context_t :=
+| Context : (user_address_t ∏ user_address_t ∏ int64 ∏ int64
+) -> context_t.
+(* concordium_impls - Coq code:41 ends here *)
+
