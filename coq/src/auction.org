@@ -50,7 +50,7 @@ hacspec-lib = { path = "../../lib" }
 # pearlite-syn = { path = "../../../../creusot/pearlite-syn" }
 creusot-contracts = { git = "https://github.com/xldenis/creusot", rev = "7763b3ae77205fba83182b9a6c3e69ad0b12fec7" }
 # hacspec = {optional = true}
-concordium-contracts-common = { path = "../../../../concordium-rust-smart-contracts/concordium-contracts-common" }
+concordium-contracts-common = { git = "https://github.com/Concordium/concordium-contracts-common", rev = "0cffb859f736ff6726fa38600428a415d800d7b6" ,  version = "=2.0.0" , default-features = false }
 hacspec-concordium = { path = "../concordium" }
 hacspec-concordium-derive = { path = "../concordium-derive" }
 

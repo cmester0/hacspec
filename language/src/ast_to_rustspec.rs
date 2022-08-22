@@ -1190,13 +1190,7 @@ fn translate_expr(
             sess.span_rustspec_err(e.span.clone(), "boxing is not allowed in Hacspec");
             Err(())
         }
-        ExprKind::Array(_) => {            
-            println!("S Expr: {:?}", specials.arrays.len());
-            println!("S Expr: {:?}", specials.enums.len());
-            println!("S Expr: {:?}\n", specials.aliases.len());
-
-            println!("S Expr: {:#?}", specials);
-
+        ExprKind::Array(_) => {
             sess.span_rustspec_err(e.span.clone(), "array values are not allowed in Hacspec");
             Err(())
         }
@@ -1469,13 +1463,6 @@ fn translate_expr(
                 return Err(());
             }
             let name = call.path.segments.first().unwrap();
-
-            println!("S Expr: {:?}", specials.arrays.len());
-            println!("S Expr: {:?}", specials.enums.len());
-            println!("S Expr: {:?}\n", specials.aliases.len());
-
-            println!("MacCall {:?}", name.ident.name.to_ident_string().as_str());
-            
             match (
                 name.ident.name.to_ident_string().as_str(),
                 name.args.as_ref(),
@@ -2237,9 +2224,6 @@ fn translate_array_decl(
                     _ => None,
                 }
             };
-
-            println!("Special Arrays {:?}", typ_ident_string);
-            
             Ok((
                 (ItemTranslationResult::Item(DecoratedItem {
                     item: Item::ArrayDecl(typ_ident, size, cell_t, index_typ),
@@ -3111,7 +3095,7 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
     log::trace!("translate_items ({:?})", i);
     let mut tags = HashSet::new();
     tags.insert("code".to_string());
-    
+
     i.attrs
         .iter()
         .fold((), |(), attr| match attribute_tag(attr) {
@@ -3293,7 +3277,7 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
                         }
                         None => v,
                     });
-            
+
             let receive =
                 i.attrs
                     .iter()
@@ -3333,7 +3317,7 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
                 // if krate_name == "hacspec_attributes" {
                 //     return Ok((ItemTranslationResult::Ignored, specials.clone()));
                 // }
-                
+
                 let data = external_data(&vec![(krate_name.clone(), i.span.into())]);
                 let mut specials = specials.clone();
                 for (enum_name, _) in data.enums.into_iter() {
@@ -3688,9 +3672,6 @@ pub fn translate<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
     log::trace!("translate ({:?})", krate);
     let items = &krate.items;
 
-    println!("S Before: {:#?}", specials.arrays);
-    println!("S Before: {:?}", specials.enums.len());
-    println!("S Before: {:?}", specials.aliases.len());
     let translated_items = check_vec(
         items
             .into_iter()
@@ -3701,9 +3682,6 @@ pub fn translate<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
             })
             .collect(),
     )?;
-    println!("S After: {:#?}", specials.arrays);
-    println!("S After: {:?}", specials.enums.len());
-    println!("S After: {:?}", specials.aliases.len());
 
     let items: Vec<_> = translated_items
         .into_iter()

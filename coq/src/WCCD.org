@@ -1,0 +1,117 @@
+
+#+TITLE: Auction Smartcontract
+#+AUTHOR: Lasse Letager Hansen
+
+# Use org-tanglesync !
+# lentic
+
+#+HTML_HEAD: <style>pre.src {background-color: #303030; color: #e5e5e5;}</style>
+#+PROPERTY: header-args:coq  :session *Coq*
+
+# C-c C-v t   -  export this files
+# C-c C-v b   -  create results / run this file
+# C-c C-v s   -  create results / run subtree
+
+* General information
+:PROPERTIES:
+:header-args: sh :eval never :results output silent
+:END:
+** Resulting output
+#+begin_src sh
+cargo clean
+#+end_src
+
+#+begin_src sh
+cargo install --path language
+#+end_src
+
+#+begin_src sh
+cargo build
+#+end_src
+
+#+begin_src sh
+cargo hacspec -e v --dir coq/src --org-file WCCD.org hacspec-wccd --vc-update --vc-dir coq/_vc
+#+end_src
+
+* WCCD smart contract specification
+** Config
+#+begin_src toml :tangle ../../examples/wccd/Cargo.toml :mkdirp yes :eval never
+[package]
+name = "hacspec-wccd"
+version = "0.1.0"
+authors = [""]
+edition = "2018"
+
+[lib]
+path = "src/wccd.rs"
+
+[dependencies]
+hacspec-lib = { path = "../../lib" }
+# pearlite-syn = { path = "../../../../creusot/pearlite-syn" }
+creusot-contracts = { git = "https://github.com/xldenis/creusot", rev = "7763b3ae77205fba83182b9a6c3e69ad0b12fec7" }
+# hacspec = {optional = true}
+concordium-contracts-common = { git = "https://github.com/Concordium/concordium-contracts-common", rev = "0cffb859f736ff6726fa38600428a415d800d7b6" ,  version = "=2.0.0" , default-features = false }
+hacspec-concordium = { path = "../concordium" }
+hacspec-concordium-derive = { path = "../concordium-derive" }
+
+[features]
+hacspec = []
+# use_attributes = ["hacspec-attributes", "hacspec-attributes/print_attributes"]
+
+[dev-dependencies]
+hacspec-dev = { path = "../../utils/dev" }
+criterion = "0.3"
+rand = "0.8"
+quickcheck = "1"
+quickcheck_macros = "1"
+#+end_src
+
+** Rust code
+:PROPERTIES:
+:header-args: :tangle ../../examples/wccd/src/wccd.rs :mkdirp yes
+:END:
+
+*** Imports
+#+begin_src rust :eval never
+#[cfg(not(feature = "hacspec"))]
+extern crate hacspec_lib;
+
+use hacspec_lib::*;
+
+// #[cfg(not(feature = "hacspec"))]
+// extern crate creusot_contracts;
+#[cfg(test)]
+#[cfg(not(feature = "hacspec"))]
+use creusot_contracts::{ensures, requires};
+
+#+end_src
+
+** Generation of backend output
+
+#+begin_src elisp :var SOURCE-CODE-FILE="Hacspec_Wccd.v" :results output silent :tangle no
+(org-babel-detangle SOURCE-CODE-FILE)
+#+end_src
+
+*** wccd - Coq code
+:PROPERTIES:
+:header-args: coq :tangle Hacspec_Wccd.v :mkdirp yes :comments link
+:header-args: coq :eval never :results output silent
+:END:
+
+#+begin_src coq
+
+(** This file was automatically generated using Hacspec **)
+Require Import Hacspec_Lib MachineIntegers.
+From Coq Require Import ZArith.
+From Coq Require Import List.
+Import ListNotations.
+Open Scope Z_scope.
+Open Scope bool_scope.
+Open Scope hacspec_scope.
+#+end_src
+
+#+begin_src coq
+Require Import Hacspec_Lib.
+Export Hacspec_Lib.
+#+end_src
+# 2 code sections
