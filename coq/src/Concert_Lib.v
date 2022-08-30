@@ -6,11 +6,14 @@ Open Scope Z_scope.
 Open Scope bool_scope.
 Open Scope hacspec_scope.
 
+From QuickChick Require Import QuickChick.
+Require Import QuickChickLib.
+
 From ConCert.Execution Require Import Serializable.
 From ConCert.Execution Require Import Blockchain.
 
 Require Import Hacspec_Concordium.
-Export Hacspec_Concordium.
+(* Export Hacspec_Concordium. *)
 
 Global Program Instance int_serializable {ws : WORDSIZE} : Serializable int :=
   {| serialize m := (serialize (unsigned m)) ;
@@ -58,13 +61,48 @@ Instance BaseTypes : ChainBase := {|
 (* Definition list_action_t := list ActionBody. *)
 (* Definition ACT_TRANSFER (p : Address ∏ int64) := act_transfer (fst p) (unsigned (snd p)).   *)
 (* Instance d_ab : Default ActionBody := {| default := act_transfer (array_new_ (default : int8) 32) 0 |}. *)
-
-Definition to_action_body (ctx : ContractCallContext) (y : has_action_t) : ActionBody :=
+    
+Program Definition to_action_body (ctx : ContractCallContext) (y : has_action_t) : ActionBody :=
   match y with
   | (Accept _) => act_transfer (ctx.(ctx_from)) (ctx.(ctx_amount))
   | (SimpleTransfer (ua, i)) => act_transfer (ua) (i)
+  | (SendRaw (ua, receive_name, amount, data)) =>
+      act_call (ua) (amount) (list_rect (fun _ : list int8 => SerializedValue)
+                                        (build_ser_value ser_unit tt)
+                                        (fun a _ IHdata =>
+                                           build_ser_value
+                                             (ser_pair ser_int (ser_value_type IHdata))
+                                             (unsigned a, ser_value IHdata))
+                                        data)
   end.
 Instance default_has_action : Default has_action_t := {| default := Accept tt |}.
 
+Global Instance serializable_has_action_t : Serializable has_action_t :=
+  Derive Serializable has_action_t_rect<Accept,SimpleTransfer,SendRaw>.
+Global Instance show_has_action_t : Show (has_action_t) :=
+ @Build_Show (has_action_t) (fun x =>
+ match x with
+ Accept a => ("Accept" ++ show a)%string
+ | SimpleTransfer a => ("SimpleTransfer" ++ show a)%string
+ | SendRaw a => ("SendRaw" ++ show a)%string
+ end).
+Definition g_has_action_t : G (has_action_t) := oneOf_ (bindGen arbitrary (fun a => returnGen (Accept a))) [bindGen arbitrary (fun a => returnGen (Accept a));bindGen arbitrary (fun a => returnGen (SimpleTransfer a))].
+Global Instance gen_has_action_t : Gen (has_action_t) := Build_Gen has_action_t g_has_action_t.
+
 Definition to_action_body_list (ctx : ContractCallContext) {X} : option (X ∏ list has_action_t) -> option (X ∏ list ActionBody)  :=
   option_map (fun '(x, y) => (x, List.map (to_action_body ctx) y)).
+
+
+Instance show_user_address_t : Show (user_address_t) := Build_Show (user_address_t) show.
+Definition g_user_address_t : G (user_address_t) := arbitrary.
+Instance gen_user_address_t : Gen (user_address_t) := Build_Gen user_address_t g_user_address_t.
+
+Global Instance serializable_context_t : Serializable context_t :=
+  Derive Serializable context_t_rect<Context>.
+Global Instance show_context_t : Show (context_t) :=
+ @Build_Show (context_t) (fun x =>
+ match x with
+ Context a => ("Context" ++ show a)%string
+ end).
+Definition g_context_t : G (context_t) := oneOf_ (bindGen arbitrary (fun a => returnGen (Context a))) [bindGen arbitrary (fun a => returnGen (Context a))].
+Global Instance gen_context_t : Gen (context_t) := Build_Gen context_t g_context_t.

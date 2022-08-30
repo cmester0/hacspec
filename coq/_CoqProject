@@ -34,4 +34,4 @@ src/Concert_Lib.v
 
 src/Hacspec_Piggybank.v
 src/Hacspec_Auction.v
-src/Hacspec_WCCD.v
+src/Hacspec_Wccd.v

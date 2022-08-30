@@ -621,12 +621,14 @@ fn find_typ(
     log::trace!("find_typ {}", x);
     match x {
         Ident::Unresolved(_) => panic!("name resolution should have already happened"),
-        Ident::TopLevel(name) => top_level_context.consts.get(name).map(|(t, span)| {
+        Ident::TopLevel(name) => {
+            top_level_context.consts.get(name).map(|(t, span)| {
             (
                 (Borrowing::Consumed, span.clone()),
                 (t.clone(), span.clone()),
             )
-        }),
+            })
+        },
         Ident::Local(LocalIdent { name: _, id }) => var_context.get(id).map(|x| x.0.clone()),
     }
 }

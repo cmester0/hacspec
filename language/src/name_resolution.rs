@@ -112,14 +112,8 @@ pub(crate) fn find_ident<'b>(
                 match top_level_context.consts.get(&x_tl) {
                     Some(_) => Ok(Ident::TopLevel(x_tl)),
                     None => {
-                        println!("NAME ISSUE: {}", name.clone());
-                        // if name.clone() == "None" || name.clone() == "MIN" {
-                        //     Ok(Ident::TopLevel(x_tl))
-                        // }
-                        // else {
-                            sess.span_rustspec_err(x.1.clone(), "identifier is not a constant");
-                            Err(())
-                        // }
+                        sess.span_rustspec_err(x.1.clone(), "identifier is not a constant");
+                        Err(())
                     }
                 }
             }

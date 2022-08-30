@@ -1958,3 +1958,6 @@ Definition pub_uint32_checked_sub (a : int32) (b : int32) : option int32 :=
   if (a .- b) <=.? min_v
   then None
   else Some (a .- b).
+
+Require Import String.
+Definition string_t := String.string.

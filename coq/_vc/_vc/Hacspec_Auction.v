@@ -43,6 +43,7 @@ Inductive auction_state_hacspec_t :=
 Global Instance serializable_auction_state_hacspec_t : Serializable auction_state_hacspec_t :=
   Derive Serializable auction_state_hacspec_t_rect<NotSoldYet,Sold>.
 
+
 Definition eqb_auction_state_hacspec_t (x y : auction_state_hacspec_t) : bool :=
 match x with
    | NotSoldYet => match y with | NotSoldYet=> true | _ => false end
@@ -71,6 +72,7 @@ Inductive seq_map_t :=
 | SeqMap : (public_byte_seq ∏ public_byte_seq) -> seq_map_t.
 Global Instance serializable_seq_map_t : Serializable seq_map_t :=
   Derive Serializable seq_map_t_rect<SeqMap>.
+
 
 Definition eqb_seq_map_t (x y : seq_map_t) : bool :=
 match x with
@@ -105,6 +107,7 @@ Inductive state_hacspec_t :=
 Global Instance serializable_state_hacspec_t : Serializable state_hacspec_t :=
   Derive Serializable state_hacspec_t_rect<StateHacspec>.
 
+
 Definition eqb_state_hacspec_t (x y : state_hacspec_t) : bool :=
 match x with
    | StateHacspec a => match y with | StateHacspec b => a =.? b end
@@ -123,6 +126,7 @@ Global Instance show_state_hacspec_t : Show (state_hacspec_t) :=
  end).
 Definition g_state_hacspec_t : G (state_hacspec_t) := oneOf_ (bindGen arbitrary (fun a => returnGen (StateHacspec a))) [bindGen arbitrary (fun a => returnGen (StateHacspec a))].
 Global Instance gen_state_hacspec_t : Gen (state_hacspec_t) := Build_Gen state_hacspec_t g_state_hacspec_t.
+Definition State := context_t ∏ state_hacspec_t.
 
 (* auction - Coq code:7 ends here *)
 
@@ -145,6 +149,7 @@ Inductive init_parameter_t :=
 | InitParameter : (public_byte_seq ∏ int64) -> init_parameter_t.
 Global Instance serializable_init_parameter_t : Serializable init_parameter_t :=
   Derive Serializable init_parameter_t_rect<InitParameter>.
+
 Global Instance show_init_parameter_t : Show (init_parameter_t) :=
  @Build_Show (init_parameter_t) (fun x =>
  match x with
@@ -177,9 +182,8 @@ Definition auction_init
     ctx_2,
     fresh_state_hacspec (seq_new_ (default) (usize 0)) (@repr WORDSIZE64 0)
   ).
-Definition State := context_state_hacspec_t.
-  Definition Setup := init_parameter_t.
-  Definition auction_State (chain : Chain) (ctx : ContractCallContext) (setup : Setup) : option State :=
+Definition Setup := init_parameter_t.
+Definition auction_State (chain : Chain) (ctx : ContractCallContext) (setup : Setup) : option context_state_hacspec_t :=
   Some (auction_init (Context (ctx.(ctx_from), ctx.(ctx_origin), repr ctx.(ctx_amount), 0 (* TODO *))) setup).
 
 (* auction - Coq code:11 ends here *)
@@ -221,6 +225,7 @@ Inductive map_update_t :=
 | Update : (int64 ∏ seq_map_t) -> map_update_t.
 Global Instance serializable_map_update_t : Serializable map_update_t :=
   Derive Serializable map_update_t_rect<Update>.
+
 
 Definition eqb_map_update_t (x y : map_update_t) : bool :=
 match x with
@@ -288,6 +293,7 @@ Inductive bid_error_hacspec_t :=
 Global Instance serializable_bid_error_hacspec_t : Serializable bid_error_hacspec_t :=
   Derive Serializable bid_error_hacspec_t_rect<ContractSender,BidTooLow,BidsOverWaitingForAuctionFinalization,AuctionIsFinalized>.
 
+
 Definition eqb_bid_error_hacspec_t (x y : bid_error_hacspec_t) : bool :=
 match x with
    | ContractSender => match y with | ContractSender=> true | _ => false end
@@ -342,13 +348,13 @@ Definition auction_bid_hacspec
         st4_24
       )) :=
     (state_19) in 
-  ifbnd negb ((auction_state_20) =.? (NotSoldYet)) : bool
+  ifbnd (negb ((auction_state_20) =.? (NotSoldYet))) : bool
   thenbnd (bind (@Err state_hacspec_t bid_error_hacspec_t (
         AuctionIsFinalized)) (fun _ =>  Ok (tt)))
   else (tt) >> (fun 'tt =>
   let 'Context ((owner_25, sender_26, balance_27, slot_time_28)) :=
     ctx_17 in 
-  ifbnd negb ((slot_time_28) <=.? (expiry_23)) : bool
+  ifbnd (negb ((slot_time_28) <=.? (expiry_23))) : bool
   thenbnd (bind (@Err state_hacspec_t bid_error_hacspec_t (
         BidsOverWaitingForAuctionFinalization)) (fun _ =>  Ok (tt)))
   else (tt) >> (fun 'tt =>
@@ -360,7 +366,7 @@ Definition auction_bid_hacspec
     | Update (updated_bid_33, updated_map_34) => (updated_bid_33, updated_map_34
     )
     end in 
-  ifbnd negb ((updated_bid_31) >.? (highest_bid_21)) : bool
+  ifbnd (negb ((updated_bid_31) >.? (highest_bid_21))) : bool
   thenbnd (bind (@Err state_hacspec_t bid_error_hacspec_t (BidTooLow)) (
       fun _ =>  Ok (tt)))
   else (tt) >> (fun 'tt =>
@@ -382,7 +388,7 @@ Definition auction_bid
     seq_new_ (default) (usize 0) in 
   @Some (context_state_hacspec_t ∏ list_action_t) ((ctx_35, s_37)).
 
-Definition bid (amount : int64)(st : State) :=
+Definition bid (amount : int64) (st : State) :=
   auction_bid st amount.
 
 (* auction - Coq code:18 ends here *)
@@ -394,6 +400,7 @@ Inductive finalize_error_hacspec_t :=
 | AuctionFinalized : finalize_error_hacspec_t.
 Global Instance serializable_finalize_error_hacspec_t : Serializable finalize_error_hacspec_t :=
   Derive Serializable finalize_error_hacspec_t_rect<BidMapError,AuctionStillActive,AuctionFinalized>.
+
 
 Definition eqb_finalize_error_hacspec_t (x y : finalize_error_hacspec_t) : bool :=
 match x with
@@ -448,6 +455,7 @@ Inductive finalize_action_t :=
 Global Instance serializable_finalize_action_t : Serializable finalize_action_t :=
   Derive Serializable finalize_action_t_rect<Accept,SimpleTransfer>.
 
+
 Definition eqb_finalize_action_t (x y : finalize_action_t) : bool :=
 match x with
    | Accept => match y with | Accept=> true | _ => false end
@@ -481,6 +489,7 @@ Inductive bid_remain_t :=
 | BidSome : int64 -> bid_remain_t.
 Global Instance serializable_bid_remain_t : Serializable bid_remain_t :=
   Derive Serializable bid_remain_t_rect<BidNone,BidSome>.
+
 
 Definition eqb_bid_remain_t (x y : bid_remain_t) : bool :=
 match x with
@@ -530,13 +539,13 @@ Definition auction_finalize_hacspec
         (state_39),
         Accept
       )) in 
-  ifbnd negb ((auction_state_40) =.? (NotSoldYet)) : bool
+  ifbnd (negb ((auction_state_40) =.? (NotSoldYet))) : bool
   thenbnd (bind (@Err (state_hacspec_t ∏ finalize_action_t
       ) finalize_error_hacspec_t (AuctionFinalized)) (fun _ =>  Ok (tt)))
   else (tt) >> (fun 'tt =>
   let '(slot_time_47, owner_48, balance_49) :=
     ctx_38 in 
-  ifbnd negb ((slot_time_47) >.? (expiry_43)) : bool
+  ifbnd (negb ((slot_time_47) >.? (expiry_43))) : bool
   thenbnd (bind (@Err (state_hacspec_t ∏ finalize_action_t
       ) finalize_error_hacspec_t (AuctionStillActive)) (fun _ =>  Ok (tt)))
   else (tt) >> (fun 'tt =>
@@ -567,7 +576,7 @@ Definition auction_finalize_hacspec
                 amnt_54))))
           end in 
         (auction_state_40, return_action_50, remaining_bid_51))
-      elsebnd(ifbnd negb ((remaining_bid_51) =.? (BidNone)) : bool
+      elsebnd(ifbnd (negb ((remaining_bid_51) =.? (BidNone))) : bool
         thenbnd (bind (@Err (state_hacspec_t ∏ finalize_action_t
             ) finalize_error_hacspec_t (BidMapError)) (fun _ =>  Ok (tt)))
         else (tt) >> (fun 'tt =>
@@ -586,8 +595,8 @@ Definition auction_finalize_hacspec
         remaining_bid_51
       ) => let result_46 :=
         match remaining_bid_51 with
-        | BidSome amount_56 => (if (negb ((amount_56) =.? (
-                highest_bid_41))):bool then (@Err (
+        | BidSome amount_56 => (if ((negb ((amount_56) =.? (
+                  highest_bid_41)))):bool then (@Err (
               state_hacspec_t ∏
               finalize_action_t
             ) finalize_error_hacspec_t (BidMapError)) else (@Ok (

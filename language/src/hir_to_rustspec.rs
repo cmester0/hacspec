@@ -414,17 +414,18 @@ fn process_fn_id(
         _ => {
             let def_path = tcx.def_path(*id);
             if def_path.krate == *krate_num {
-                if def_path.data.len() == 1 {
-                    let ty = translate_base_typ(tcx, &tcx.type_of(*id), &HashMap::new());
-                    match ty {
-                        Ok((ty, _)) => match def_path.data[0].data {
+                let ty = translate_base_typ(tcx, &tcx.type_of(*id), &HashMap::new());
+                match ty {
+                    Ok((ty, _)) => match def_path.data.last() {
+                        Some (d) => match d.data {
                             DefPathData::ValueNs(name) => {
                                 extern_consts.insert(name.to_ident_string(), ty);
                             }
                             _ => (),
                         },
-                        Err(_) => (),
-                    }
+                        _ => (),
+                    },
+                    Err(_) => (),
                 }
             }
         }

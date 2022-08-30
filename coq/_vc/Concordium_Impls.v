@@ -37,7 +37,7 @@ Notation "'reject_hacspec_t'" := (int32) : hacspec_scope.
 
 (* [[file:concordium.org::* concordium_impls - Coq code][concordium_impls - Coq code:7]] *)
 Definition reject_impl_deafult : reject_hacspec_t :=
-  min_v.
+  (- (@repr WORDSIZE32 2147483648)).
 
 (* concordium_impls - Coq code:7 ends here *)
 
@@ -50,7 +50,7 @@ Definition new_reject_impl (x_25 : int32): (option int32) :=
 
 (* [[file:concordium.org::* concordium_impls - Coq code][concordium_impls - Coq code:9]] *)
 Definition reject_impl_convert_from_unit : reject_hacspec_t :=
-  (min_v) .+ (@repr WORDSIZE32 1).
+  ((- (@repr WORDSIZE32 2147483648))) .+ (@repr WORDSIZE32 1).
 
 
 Theorem ensures_reject_impl_convert_from_unit : forall result_26 ,
@@ -61,7 +61,7 @@ Theorem ensures_reject_impl_convert_from_unit : forall result_26 ,
 
 (* [[file:concordium.org::* concordium_impls - Coq code][concordium_impls - Coq code:10]] *)
 Definition reject_impl_convert_from_parse_error : reject_hacspec_t :=
-  (min_v) .+ (@repr WORDSIZE32 2).
+  ((- (@repr WORDSIZE32 2147483648))) .+ (@repr WORDSIZE32 2).
 
 
 Theorem ensures_reject_impl_convert_from_parse_error : forall result_26 ,
@@ -73,8 +73,8 @@ Theorem ensures_reject_impl_convert_from_parse_error : forall result_26 ,
 (* [[file:concordium.org::* concordium_impls - Coq code][concordium_impls - Coq code:11]] *)
 Definition reject_impl_from_log_error (le_27 : log_error_t): reject_hacspec_t :=
   match le_27 with
-  | Full => (min_v) .+ (@repr WORDSIZE32 3)
-  | Malformed => (min_v) .+ (@repr WORDSIZE32 4)
+  | Full => ((- (@repr WORDSIZE32 2147483648))) .+ (@repr WORDSIZE32 3)
+  | Malformed => ((- (@repr WORDSIZE32 2147483648))) .+ (@repr WORDSIZE32 4)
   end.
 
 
@@ -97,10 +97,14 @@ Inductive new_contract_name_error_t :=
 Definition reject_impl_from_new_contract_name_error
   (nre_28 : new_contract_name_error_t): reject_hacspec_t :=
   match nre_28 with
-  | NewContractNameErrorMissingInitPrefix => (min_v) .+ (@repr WORDSIZE32 5)
-  | NewContractNameErrorTooLong => (min_v) .+ (@repr WORDSIZE32 6)
-  | NewContractNameErrorContainsDot => (min_v) .+ (@repr WORDSIZE32 9)
-  | NewContractNameErrorInvalidCharacters => (min_v) .+ (@repr WORDSIZE32 10)
+  | NewContractNameErrorMissingInitPrefix => ((- (
+        @repr WORDSIZE32 2147483648))) .+ (@repr WORDSIZE32 5)
+  | NewContractNameErrorTooLong => ((- (@repr WORDSIZE32 2147483648))) .+ (
+    @repr WORDSIZE32 6)
+  | NewContractNameErrorContainsDot => ((- (@repr WORDSIZE32 2147483648))) .+ (
+    @repr WORDSIZE32 9)
+  | NewContractNameErrorInvalidCharacters => ((- (
+        @repr WORDSIZE32 2147483648))) .+ (@repr WORDSIZE32 10)
   end.
 
 
@@ -122,9 +126,12 @@ Inductive new_receive_name_error_t :=
 Definition reject_impl_from_new_receive_name_error
   (nre_29 : new_receive_name_error_t): reject_hacspec_t :=
   match nre_29 with
-  | NewReceiveNameErrorMissingDotSeparator => (min_v) .+ (@repr WORDSIZE32 7)
-  | NewReceiveNameErrorTooLong => (min_v) .+ (@repr WORDSIZE32 8)
-  | NewReceiveNameErrorInvalidCharacters => (min_v) .+ (@repr WORDSIZE32 11)
+  | NewReceiveNameErrorMissingDotSeparator => ((- (
+        @repr WORDSIZE32 2147483648))) .+ (@repr WORDSIZE32 7)
+  | NewReceiveNameErrorTooLong => ((- (@repr WORDSIZE32 2147483648))) .+ (
+    @repr WORDSIZE32 8)
+  | NewReceiveNameErrorInvalidCharacters => ((- (
+        @repr WORDSIZE32 2147483648))) .+ (@repr WORDSIZE32 11)
   end.
 
 
@@ -137,7 +144,7 @@ Theorem ensures_reject_impl_from_new_receive_name_error : forall result_26 (
 
 (* [[file:concordium.org::* concordium_impls - Coq code][concordium_impls - Coq code:16]] *)
 Definition reject_impl_from_not_payable_error : reject_hacspec_t :=
-  (min_v) .+ (@repr WORDSIZE32 12).
+  ((- (@repr WORDSIZE32 2147483648))) .+ (@repr WORDSIZE32 12).
 
 
 Theorem ensures_reject_impl_from_not_payable_error : forall result_26 ,
@@ -472,7 +479,9 @@ Definition user_address_t := nseq (int8) (usize 32).
 (* [[file:concordium.org::* concordium_impls - Coq code][concordium_impls - Coq code:38]] *)
 Inductive has_action_t :=
 | Accept : unit -> has_action_t
-| SimpleTransfer : (user_address_t ∏ int64) -> has_action_t.
+| SimpleTransfer : (user_address_t ∏ int64) -> has_action_t
+| SendRaw : (user_address_t ∏ string_t ∏ int64 ∏ public_byte_seq
+) -> has_action_t.
 (* concordium_impls - Coq code:38 ends here *)
 
 (* [[file:concordium.org::* concordium_impls - Coq code][concordium_impls - Coq code:39]] *)
@@ -490,4 +499,16 @@ Inductive context_t :=
 | Context : (user_address_t ∏ user_address_t ∏ int64 ∏ int64
 ) -> context_t.
 (* concordium_impls - Coq code:41 ends here *)
+
+(* [[file:concordium.org::* concordium_impls - Coq code][concordium_impls - Coq code:42]] *)
+Definition send_wrap_hacspec
+  (ca_index_92 : int64)
+  (ca_subindex_93 : int64)
+  (receive_name_bytes_94 : public_byte_seq)
+  (amount_95 : int64)
+  (param_bytes_96 : public_byte_seq): int32 :=
+  send_hacspec (ca_index_92) (ca_subindex_93) (receive_name_bytes_94) (
+    amount_95) (param_bytes_96).
+
+(* concordium_impls - Coq code:42 ends here *)
 

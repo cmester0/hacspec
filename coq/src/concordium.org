@@ -1,6 +1,8 @@
 #+TITLE: Concordium Smartcontract Infrastructure Implementations
 #+AUTHOR: Lasse Letager Hansen
 
+# (rev: 4d4b024b547a1f120f6d6951cbc409c94f8f146a)
+
 #+HTML_HEAD: <style>pre.src {background-color: #303030; color: #e5e5e5;}</style>
 #+PROPERTY: header-args:coq  :session *Coq*
 
@@ -45,7 +47,7 @@ path = "src/concordium.rs"
 hacspec-lib = { path = "../../lib" }
 # hacspec-attributes = { path = "../../utils/attributes", version = "0.1.0-beta.1" , features = ["print_attributes", "hacspec_unsafe"] } # , features = ["hacspec_unsafe"] , , optional = true
 creusot-contracts = { git = "https://github.com/xldenis/creusot", rev = "7763b3ae77205fba83182b9a6c3e69ad0b12fec7" }
-concordium-contracts-common = { git = "https://github.com/Concordium/concordium-contracts-common", rev = "0cffb859f736ff6726fa38600428a415d800d7b6" ,  version = "=2.0.0" , default-features = false }
+concordium-contracts-common = { git = "https://github.com/Concordium/concordium-contracts-common", rev = "84ff7db509ca1fbf958b47e5e5903b7662295850", version = "=2.0.0", default-features = false }
 hacspec-concordium-derive = { path = "../concordium-derive" }
 
 # Reduce code size, at the cost of performance in allocation heavy-code.
@@ -1741,29 +1743,28 @@ use hacspec_lib::Seq; // TODO: fix name collision
 use concordium_prims::*;
 use concordium_types::*;
 use concordium_traits::*;
-
 #+END_SRC
 
 *** Reject
 We modle reject as the underlying data, that is the src_rust[:eval never]{i32} error code. The default constructor is i32 min.
 #+begin_src rust
-  pub type RejectHacspec = i32;
+pub type RejectHacspec = i32;
 
-  pub fn reject_impl_deafult() -> RejectHacspec {
-      i32::MIN
-  }
+pub fn reject_impl_deafult() -> RejectHacspec {
+    -2_147_483_648i32 // i32::MIN
+}
 
 #+end_src
 We then implement the new operations for Reject.
 #+begin_src rust
-  pub fn new_reject_impl(x: i32) -> Option::<i32> { // Option<RejectHacspec>
-      // TODO: fix 'identifier is not a constant' error (Seems to be fixed by some import?)
-      if x < 0i32 {
-          Option::<i32>::Some(x)
-      } else {
-          Option::<i32>::None
-      }
-  }
+pub fn new_reject_impl(x: i32) -> Option::<i32> { // Option<RejectHacspec>
+    // TODO: fix 'identifier is not a constant' error (Seems to be fixed by some import?)
+    if x < 0i32 {
+        Option::<i32>::Some(x)
+    } else {
+        Option::<i32>::None
+    }
+}
 
 #+end_src
 We define the coercion function for Reject, and implement the traits
@@ -1786,109 +1787,109 @@ pub fn coerce_hacspec_to_rust_reject(hacspec_reject: RejectHacspec) -> Reject {
 **** Reject - From trait
 We modle the unsafe block with unchecked non zero as a precondition using requires giving us the hacspec equivalent
 #+begin_src rust
-  #[ensures(!(result == 0i32))] // !=
-  pub fn reject_impl_convert_from_unit() -> RejectHacspec {
-      i32::MIN + 1i32
-  }
+#[ensures(!(result == 0i32))] // !=
+pub fn reject_impl_convert_from_unit() -> RejectHacspec {
+    -2_147_483_648i32 + 1i32 // i32::MIN
+}
 
-  #[ensures(!(result == 0i32))] // !=
-  pub fn reject_impl_convert_from_parse_error() -> RejectHacspec {
-      i32::MIN + 2i32
-  }
+#[ensures(!(result == 0i32))] // !=
+pub fn reject_impl_convert_from_parse_error() -> RejectHacspec {
+    -2_147_483_648i32 + 2i32 // i32::MIN
+}
 #+end_src
 We then implement the traits
 #+begin_src rust
-  #[cfg(not(feature = "hacspec"))]
-  impl convert::From<()> for Reject {
-      #[inline(always)]
-      fn from(_: ()) -> Self {
-          coerce_hacspec_to_rust_reject(reject_impl_convert_from_unit())
-      }
-  }
+#[cfg(not(feature = "hacspec"))]
+impl convert::From<()> for Reject {
+    #[inline(always)]
+    fn from(_: ()) -> Self {
+        coerce_hacspec_to_rust_reject(reject_impl_convert_from_unit())
+    }
+}
 
-  #[cfg(not(feature = "hacspec"))]
-  impl convert::From<ParseError> for Reject {
-      #[inline(always)]
-      fn from(_: ParseError) -> Self {
-          coerce_hacspec_to_rust_reject(reject_impl_convert_from_parse_error())
-      }
-  }  
+#[cfg(not(feature = "hacspec"))]
+impl convert::From<ParseError> for Reject {
+    #[inline(always)]
+    fn from(_: ParseError) -> Self {
+        coerce_hacspec_to_rust_reject(reject_impl_convert_from_parse_error())
+    }
+}  
 #+end_src
 We define a log error type and function converting from it to the reject type
 #+begin_src rust
-  #[ensures(!(result == 0i32))] // !=
-  pub fn reject_impl_from_log_error(le: LogError) -> RejectHacspec {
-      match le {
-          LogError::Full => i32::MIN + 3i32,
-          LogError::Malformed => i32::MIN + 4i32,
-      }
-  }
+#[ensures(!(result == 0i32))] // !=
+pub fn reject_impl_from_log_error(le: LogError) -> RejectHacspec {
+    match le {
+        LogError::Full => -2_147_483_648i32 + 3i32, // i32::MIN
+        LogError::Malformed => -2_147_483_648i32 + 4i32, // i32::MIN
+    }
+}
 
 #+end_src
 We then implement the traits
 #+begin_src rust
-  #[cfg(not(feature = "hacspec"))]
-  /// Full is mapped to i32::MIN+3, Malformed is mapped to i32::MIN+4.
-  impl From<LogError> for Reject {
-      #[inline(always)]
-      fn from(le: LogError) -> Self {
-          coerce_hacspec_to_rust_reject(reject_impl_from_log_error(le))
-      }
-  }
+#[cfg(not(feature = "hacspec"))]
+/// Full is mapped to i32::MIN+3, Malformed is mapped to i32::MIN+4.
+impl From<LogError> for Reject {
+    #[inline(always)]
+    fn from(le: LogError) -> Self {
+        coerce_hacspec_to_rust_reject(reject_impl_from_log_error(le))
+    }
+}
 
 #+end_src
 We define a type for new contract name errors and conversion from it to reject
 #+begin_src rust
-  #[derive(Clone)] // , Debug, PartialEq, Eq
-  pub enum NewContractNameError {
-      NewContractNameErrorMissingInitPrefix,
-      NewContractNameErrorTooLong,
-      NewContractNameErrorContainsDot,
-      NewContractNameErrorInvalidCharacters,
-  }
+#[derive(Clone)] // , Debug, PartialEq, Eq
+pub enum NewContractNameError {
+    NewContractNameErrorMissingInitPrefix,
+    NewContractNameErrorTooLong,
+    NewContractNameErrorContainsDot,
+    NewContractNameErrorInvalidCharacters,
+}
 
-  #[ensures(!(result == 0i32))] // !=
-  pub fn reject_impl_from_new_contract_name_error(nre: NewContractNameError) -> RejectHacspec {
-      match nre {
-          NewContractNameError::NewContractNameErrorMissingInitPrefix => i32::MIN + 5i32,
-          NewContractNameError::NewContractNameErrorTooLong => i32::MIN + 6i32,
-          NewContractNameError::NewContractNameErrorContainsDot => i32::MIN + 9i32,
-          NewContractNameError::NewContractNameErrorInvalidCharacters => i32::MIN + 10i32,
-      }
-  }
+#[ensures(!(result == 0i32))] // !=
+pub fn reject_impl_from_new_contract_name_error(nre: NewContractNameError) -> RejectHacspec {
+    match nre {
+        NewContractNameError::NewContractNameErrorMissingInitPrefix => -2_147_483_648i32 + 5i32, // i32::MIN
+        NewContractNameError::NewContractNameErrorTooLong => -2_147_483_648i32 + 6i32, // i32::MIN
+        NewContractNameError::NewContractNameErrorContainsDot => -2_147_483_648i32 + 9i32, // i32::MIN
+        NewContractNameError::NewContractNameErrorInvalidCharacters => -2_147_483_648i32 + 10i32, // i32::MIN
+    }
+}
 
 #+end_src
 We then implement the traits
 #+begin_src rust
-  #[cfg(not(feature = "hacspec"))]
-  /// MissingInitPrefix is mapped to i32::MIN + 5,
-  /// TooLong to i32::MIN + 6,
-  /// ContainsDot to i32::MIN + 9, and
-  /// InvalidCharacters to i32::MIN + 10.
-  impl From<NewContractNameError> for Reject {
-      fn from(nre: NewContractNameError) -> Self {
-          coerce_hacspec_to_rust_reject(reject_impl_from_new_contract_name_error(nre))
-      }
-  }
+#[cfg(not(feature = "hacspec"))]
+/// MissingInitPrefix is mapped to i32::MIN + 5,
+/// TooLong to i32::MIN + 6,
+/// ContainsDot to i32::MIN + 9, and
+/// InvalidCharacters to i32::MIN + 10.
+impl From<NewContractNameError> for Reject {
+    fn from(nre: NewContractNameError) -> Self {
+        coerce_hacspec_to_rust_reject(reject_impl_from_new_contract_name_error(nre))
+    }
+}
 
 #+end_src
 We define a type for new receive name errors and conversion from it to reject
 #+begin_src rust
-  #[derive(Clone)] // , Debug, PartialEq, Eq
-  pub enum NewReceiveNameError {
-      NewReceiveNameErrorMissingDotSeparator,
-      NewReceiveNameErrorTooLong,
-      NewReceiveNameErrorInvalidCharacters,
-  }
+#[derive(Clone)] // , Debug, PartialEq, Eq
+pub enum NewReceiveNameError {
+    NewReceiveNameErrorMissingDotSeparator,
+    NewReceiveNameErrorTooLong,
+    NewReceiveNameErrorInvalidCharacters,
+}
 
-  #[ensures(!(result == 0i32))] // !=
-  pub fn reject_impl_from_new_receive_name_error(nre: NewReceiveNameError) -> RejectHacspec {
-      match nre {
-          NewReceiveNameError::NewReceiveNameErrorMissingDotSeparator => i32::MIN + 7i32,
-          NewReceiveNameError::NewReceiveNameErrorTooLong => i32::MIN + 8i32,
-          NewReceiveNameError::NewReceiveNameErrorInvalidCharacters => i32::MIN + 11i32,
-      }
-  }
+#[ensures(!(result == 0i32))] // !=
+pub fn reject_impl_from_new_receive_name_error(nre: NewReceiveNameError) -> RejectHacspec {
+    match nre {
+        NewReceiveNameError::NewReceiveNameErrorMissingDotSeparator => -2_147_483_648i32 + 7i32, // i32::MIN
+        NewReceiveNameError::NewReceiveNameErrorTooLong => -2_147_483_648i32 + 8i32, // i32::MIN
+        NewReceiveNameError::NewReceiveNameErrorInvalidCharacters => -2_147_483_648i32 + 11i32, // i32::MIN
+    }
+}
 
 #+end_src
 We then implement the traits
@@ -1909,7 +1910,7 @@ We then implement the traits
 #+begin_src rust
 #[ensures(!(result == 0i32))] // !=
 pub fn reject_impl_from_not_payable_error() -> RejectHacspec {
-    i32::MIN + 12i32
+    -2_147_483_648i32 + 12i32 // i32::MIN
 }
 #+end_src
 
@@ -2707,12 +2708,12 @@ pub enum HasAction {
     Accept(),
     SimpleTransfer(UserAddress, u64),
     // TODO: add send_raw
-    // SEND_RAW(
-    //     UserAddress,
-    //     u64, // TODO: Should be ReceiveName => string
-    //     u64,
-    //     PublicByteSeq,
-    // ),
+    SendRaw(
+        UserAddress,
+        String, // TODO: Should be ReceiveName => string
+        u64,
+        PublicByteSeq,
+    ),
     // AND_THEN(HasAction, HasAction),
     // OR_ELSE(HasAction, HasAction)
 }
@@ -2724,6 +2725,21 @@ pub fn accept_action() -> HasAction {
     HasAction::Accept()
 }
 
+// pub type ContextState = (Context, ());
+
+// #[cfg(feature = "hacspec")]
+// #[init(contract = "auction")]
+// pub fn auction_init(ctx : Context) -> ContextState {
+//     // Always succeeds
+//     (ctx, ())
+// }
+
+// pub fn auction_init2(ctx : Context) -> ContextState {
+//     // Always succeeds
+//     (ctx, ())
+// }
+
+// Owner, Sender, Balance, Data / time
 pub struct Context(pub UserAddress, pub UserAddress, pub u64, pub u64);
 
 #[cfg(not(feature = "hacspec"))]
@@ -2744,7 +2760,7 @@ pub fn coerce_rust_to_hacspec_context(ctx: &impl HasReceiveContext) -> Context {
 /// These actions are implemented by direct calls to host functions.
 impl HasActions for Action {
     #[inline(always)]
-    fn accept() -> Self {
+    fn accept() -> Self {        
         Action {
             _private: accept_hacspec(),
         }
@@ -2787,14 +2803,9 @@ impl HasActions for Action {
         Action { _private: res }
     }
 }
-
 #+end_src
 
-*** Remaining todo
-:PROPERTIES:
-:header-args: rust :tangle no :eval never
-:END:
-
+*** Used as is
 # TODO: Get functionlity of everything into hacspec
 #+begin_src rust
 // TODO: Define functionality in hacspec instead!
@@ -2817,8 +2828,33 @@ pub fn put_in_memory(input: &[u8]) -> *mut u8 {
 
 #+end_src
 
+# TODO: Get functionlity of everything into hacspec
 #+begin_src rust
-// TODO: never used
+// #[cfg(feature = "hacspec")]
+/// Wrapper for
+/// [HasActions::send_raw](./trait.HasActions.html#tymethod.send_raw), which
+/// automatically serializes the parameter. Note that if the parameter is
+/// already a byte array or convertible to a byte array without allocations it
+/// is preferrable to use [send_raw](./trait.HasActions.html#tymethod.send_raw).
+/// It is more efficient and avoids memory allocations.
+pub fn send_wrap_hacspec(
+    ca_index: u64,
+    ca_subindex: u64,
+    receive_name_bytes: PublicByteSeq,
+    amount: u64,
+    param_bytes: PublicByteSeq,
+) -> u32 {
+    send_hacspec(
+        ca_index,
+        ca_subindex,
+        receive_name_bytes,
+        amount,
+        param_bytes,
+    )
+}
+
+
+// TODO: Get functionlity of everything into hacspec
 #[allow(dead_code)]
 #[cfg(not(feature = "hacspec"))]
 /// Wrapper for
@@ -2827,7 +2863,7 @@ pub fn put_in_memory(input: &[u8]) -> *mut u8 {
 /// already a byte array or convertible to a byte array without allocations it
 /// is preferrable to use [send_raw](./trait.HasActions.html#tymethod.send_raw).
 /// It is more efficient and avoids memory allocations.
-pub fn send<A: HasActions, P: Serial>(
+pub fn send_wrap<A: HasActions, P: Serial>(
     ca: &ContractAddress,
     receive_name: ReceiveName,
     amount: Amount,
@@ -2837,6 +2873,12 @@ pub fn send<A: HasActions, P: Serial>(
     A::send_raw(ca, receive_name, amount, &param_bytes)
 }
 #+end_src
+
+*** Remaining todo
+:PROPERTIES:
+:header-args: rust :tangle no :eval never
+:END:
+
 
 #+begin_src rust
 #[cfg(not(feature = "hacspec"))]

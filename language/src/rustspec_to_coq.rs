@@ -84,7 +84,7 @@ fn make_uint_size_coercion<'a>(pat: RcDoc<'a, ()>) -> RcDoc<'a, ()> {
         .append(RcDoc::space())
         .append(RcDoc::as_string(":="))
         .append(RcDoc::space())
-        .append(("int_in_nat_mod n."))
+        .append(RcDoc::as_string("int_in_nat_mod n."))
         .append(RcDoc::line())
         .append(RcDoc::as_string("Coercion "))
         .append(RcDoc::as_string("uint_size_in_"))
@@ -338,15 +338,15 @@ fn translate_literal<'a>(lit: Literal) -> RcDoc<'a, ()> {
         Literal::Unit => RcDoc::as_string("tt"),
         Literal::Bool(true) => RcDoc::as_string("true"),
         Literal::Bool(false) => RcDoc::as_string("false"),
-        Literal::Int128(x) => RcDoc::as_string(format!("@repr WORDSIZE128 {}", x)),
+        Literal::Int128(x) => RcDoc::as_string(format!("@repr WORDSIZE128 {}", x.abs_diff(0))),
         Literal::UInt128(x) => RcDoc::as_string(format!("@repr WORDSIZE128 {}", x)),
-        Literal::Int64(x) => RcDoc::as_string(format!("@repr WORDSIZE64 {}", x)),
+        Literal::Int64(x) => RcDoc::as_string(format!("@repr WORDSIZE64 {}", x.abs_diff(0))),
         Literal::UInt64(x) => RcDoc::as_string(format!("@repr WORDSIZE64 {}", x)),
-        Literal::Int32(x) => RcDoc::as_string(format!("@repr WORDSIZE32 {}", x)),
+        Literal::Int32(x) => RcDoc::as_string(format!("@repr WORDSIZE32 {}", x.abs_diff(0))),
         Literal::UInt32(x) => RcDoc::as_string(format!("@repr WORDSIZE32 {}", x)),
-        Literal::Int16(x) => RcDoc::as_string(format!("@repr WORDSIZE16 {}", x)),
+        Literal::Int16(x) => RcDoc::as_string(format!("@repr WORDSIZE16 {}", x.abs_diff(0))),
         Literal::UInt16(x) => RcDoc::as_string(format!("@repr WORDSIZE16 {}", x)),
-        Literal::Int8(x) => RcDoc::as_string(format!("@repr WORDSIZE8 {}", x)),
+        Literal::Int8(x) => RcDoc::as_string(format!("@repr WORDSIZE8 {}", x.abs_diff(0))),
         Literal::UInt8(x) => RcDoc::as_string(format!("@repr WORDSIZE8 {}", x)),
         Literal::Isize(x) => RcDoc::as_string(format!("isize {}", x)),
         Literal::Usize(x) => RcDoc::as_string(format!("usize {}", x)),
@@ -881,10 +881,12 @@ fn translate_expression<'a>(e: Expression, top_ctx: &'a TopLevelContext) -> RcDo
         }
         Expression::Unary(op, e1, op_typ) => {
             let e1 = e1.0;
-            translate_unop(op, op_typ.as_ref().unwrap().clone())
-                .append(RcDoc::space())
-                .append(make_paren(translate_expression(e1, top_ctx)))
-                .group()
+            make_paren(
+                translate_unop(op, op_typ.as_ref().unwrap().clone())
+                    .append(RcDoc::space())
+                    .append(make_paren(translate_expression(e1, top_ctx)))
+                    .group(),
+            )
         }
         Expression::Lit(lit) => translate_literal(lit.clone()),
         Expression::Tuple(es) => make_tuple(
@@ -1601,12 +1603,7 @@ fn translate_item<'a>(
         .append(RcDoc::line())
         .append(RcDoc::intersperse(
             init.into_iter().map(|x| {
-                RcDoc::as_string("Definition ")
-                    // .append(x)
-                    .append(RcDoc::as_string("State :="))
-                    .append(RcDoc::line().append(translate_base_typ(sig.ret.0.clone())).append(RcDoc::as_string(".")).group().nest(2))
-                    .append(RcDoc::line())
-                    .append(RcDoc::as_string("Definition Setup :="))
+                RcDoc::as_string("Definition Setup :=")
                     .append(RcDoc::space())
                     .append(match x.parameter.clone() {
                         Some(y) => translate_base_typ(BaseTyp::Named((TopLevelIdent { string: y, kind: TopLevelIdentKind::Type }, DUMMY_SP.into()), None)),
@@ -1615,18 +1612,23 @@ fn translate_item<'a>(
                     .append(RcDoc::as_string("."))
                     .append(RcDoc::line())
                     .append(RcDoc::as_string("Definition "))
-                    .append(RcDoc::as_string(x.contract.clone()))
-                    .append(RcDoc::as_string("_State (chain : Chain) (ctx : ContractCallContext) (setup : Setup) : option State :="))
+                    .append(RcDoc::as_string(str::replace(&x.contract.clone(), "-", "_")))
+                    .append(RcDoc::as_string("_State (chain : Chain) (ctx : ContractCallContext) (setup : Setup) : option "))
+                    .append(translate_base_typ(sig.ret.0.clone()))
+                    .append(RcDoc::as_string(" :="))
+                    .append(
+                        RcDoc::line()
+                            .append(RcDoc::as_string("Some ("))
+                            .append(translate_ident(Ident::TopLevel(f.clone())).group())
+                            .append(RcDoc::as_string(" (Context (ctx.(ctx_from), ctx.(ctx_origin), repr ctx.(ctx_amount), 0 (* TODO *)))"))
+                            .append(match x.parameter.clone() {
+                                Some(y) => RcDoc::as_string(" setup"),
+                                None => RcDoc::nil(),
+                            })
+                            .append(RcDoc::as_string(")."))
+                            .nest(2))
                     .append(RcDoc::line())
-                    .append(RcDoc::as_string("Some ("))
-                    .nest(2)
-                    .append(translate_ident(Ident::TopLevel(f.clone())).group())
-                    .append(RcDoc::as_string(" (Context (ctx.(ctx_from), ctx.(ctx_origin), repr ctx.(ctx_amount), 0 (* TODO *)))"))
-                    .append(match x.parameter.clone() {
-                        Some(y) => RcDoc::as_string(" setup"),
-                        None => RcDoc::nil(),
-                    })
-                    .append(RcDoc::as_string(").\n"))
+
             }),
             RcDoc::nil(),
         ))
@@ -1636,7 +1638,7 @@ fn translate_item<'a>(
                     .append(RcDoc::as_string("Definition "))
                     .append(RcDoc::as_string(y))
                     .append(RcDoc::space())
-                    .append(if b.clone() { RcDoc::as_string("(amount : int64)") } else { RcDoc::nil() })
+                    .append(if b.clone() { RcDoc::as_string("(amount : int64)").append(RcDoc::space()) } else { RcDoc::nil() })
                     .append(RcDoc::as_string("(st : State)"))
                     .append(RcDoc::as_string(" :="))
                     .append(RcDoc::line().append(translate_ident(Ident::TopLevel(f.clone()))).append(RcDoc::as_string(" st")).append(if b.clone() { RcDoc::as_string(" amount") } else { RcDoc::nil() }).append(RcDoc::as_string(".")).nest(2))
@@ -1713,7 +1715,8 @@ fn translate_item<'a>(
                 RcDoc::nil()
             }
         }),
-        Item::EnumDecl(name, cases) => RcDoc::as_string("Inductive")
+        Item::EnumDecl(name, cases) =>
+            RcDoc::as_string("Inductive")
             .append(RcDoc::space())
             .append(translate_enum_name(name.0.clone()))
             .append(RcDoc::space())
@@ -1744,7 +1747,8 @@ fn translate_item<'a>(
                             RcDoc::as_string(","),
                         ))
                         .append(RcDoc::as_string(">."))
-                        .nest(2),
+                        .nest(2)
+                        .append(RcDoc::hardline()),
                 )
             } else {
                 RcDoc::nil()
@@ -1966,7 +1970,25 @@ fn translate_item<'a>(
                     .append(RcDoc::hardline())
             } else {
                 RcDoc::nil()
-            }),
+            })
+            .append(if item.tags.0.contains(&"contract_state".to_string()) {
+                RcDoc::as_string("Definition ")
+                // .append(x)
+                    .append(RcDoc::as_string("State :="))
+                    .append(
+                        RcDoc::line()
+                            .append(RcDoc::as_string("context_t ∏"))
+                            .append(RcDoc::space())
+                            .append(translate_ident(Ident::TopLevel(name.0.clone())))
+                            .append(RcDoc::as_string("."))
+                            .group()
+                            .nest(2))
+                    .append(RcDoc::line())
+            }
+                    else {
+                        RcDoc::nil()
+                    }
+            ),
         Item::ArrayDecl(name, size, cell_t, index_typ) => RcDoc::as_string("Definition")
             .append(RcDoc::space())
             .append(translate_ident(Ident::TopLevel(name.0.clone())))
@@ -2145,7 +2167,7 @@ fn translate_item<'a>(
         }
         // Aliases are translated to Coq Notations
         Item::AliasDecl((ident, _), (ty, _)) => {
-            RcDoc::as_string("Notation")
+                RcDoc::as_string("Notation")
                 .append(RcDoc::space())
                 .append(RcDoc::as_string("\"'"))
                 .append(translate_ident(Ident::TopLevel(ident.clone())))
@@ -2250,6 +2272,7 @@ fn translate_item<'a>(
                 })
         }
     };
+
     match org_file {
         Some((file, section)) => {
             let tangle_num = next_tangle_id();
@@ -2313,6 +2336,7 @@ fn translate_program<'a>(
 
     RcDoc::concat(p.items.iter().map(|(i, _)| translate_item(i, top_ctx, org_file.clone(), export_quick_check, serializable).append(RcDoc::hardline()).append(RcDoc::hardline()))).append(if !receives.is_empty() {
         let ReceiveData { contract: name, .. } = receives.first().unwrap().first().unwrap();
+        let name = str::replace(&name.clone(), "-", "_");
         wrap_in_org(
             org_file,
             RcDoc::as_string("Inductive Msg :=")
@@ -2326,7 +2350,7 @@ fn translate_program<'a>(
                 .append(RcDoc::as_string(">."))
                 .append(RcDoc::line())
                 .append(RcDoc::as_string("Definition "))
-                .append(RcDoc::as_string(name))
+                .append(RcDoc::as_string(name.clone()))
                 .append(RcDoc::as_string("_receive (chain : Chain) (ctx : ContractCallContext) (state : State) (msg : option Msg) : option (State * list ActionBody) :="))
                 .append(
                     RcDoc::line()
@@ -2345,7 +2369,10 @@ fn translate_program<'a>(
                                             RcDoc::as_string("| Some ")
                                                 .append(RcDoc::as_string(y.to_uppercase()))
                                                 .append(RcDoc::as_string(" => to_action_body_list ctx "))
-                                                .append(make_paren(RcDoc::as_string(y).append(if b.clone() { RcDoc::as_string(" (repr ctx.(ctx_amount))") } else { RcDoc::nil() }).append(RcDoc::as_string(" state"))))
+                                                .append(make_paren(
+                                                    RcDoc::as_string(y)
+                                                        .append(if b.clone() { RcDoc::as_string(" (repr ctx.(ctx_amount))") } else { RcDoc::nil() })
+                                                        .append(RcDoc::as_string(" state"))))
                                                 .append(RcDoc::line())
                                         }))
                                     }),
@@ -2360,9 +2387,16 @@ fn translate_program<'a>(
                 .append(RcDoc::line())
                 .append(RcDoc::line())
                 .append(RcDoc::as_string("Definition "))
-                .append(RcDoc::as_string(name))
+                .append(RcDoc::as_string(name.clone()))
                 .append(RcDoc::as_string("_contract : Contract Setup Msg State :="))
-                .append(RcDoc::line().append(RcDoc::as_string("build_contract ")).append(RcDoc::as_string(name)).append(RcDoc::as_string("_State ")).append(RcDoc::as_string(name)).append(RcDoc::as_string("_receive.")).nest(2))
+                .append(
+                    RcDoc::line()
+                        .append(RcDoc::as_string("build_contract "))
+                        .append(RcDoc::as_string(name.clone()))
+                        .append(RcDoc::as_string("_State "))
+                        .append(RcDoc::as_string(name.clone()))
+                        .append(RcDoc::as_string("_receive."))
+                        .nest(2))
                 .append(RcDoc::line()),
         )
     } else {

@@ -43,6 +43,7 @@ Inductive piggy_bank_state_hacspec_t :=
 Global Instance serializable_piggy_bank_state_hacspec_t : Serializable piggy_bank_state_hacspec_t :=
   Derive Serializable piggy_bank_state_hacspec_t_rect<Intact,Smashed>.
 
+
 Definition eqb_piggy_bank_state_hacspec_t (x y : piggy_bank_state_hacspec_t) : bool :=
 match x with
    | Intact => match y with | Intact=> true | _ => false end
@@ -91,9 +92,8 @@ Definition piggy_init_hacspec : piggy_bank_state_hacspec_t :=
 (* [[file:piggybank.org::* piggybank - Coq code][piggybank - Coq code:8]] *)
 Definition piggy_init (ctx_0 : context_t): context_state_hacspec_t :=
   (ctx_0, piggy_init_hacspec ).
-Definition State := context_state_hacspec_t.
-  Definition Setup := unit.
-  Definition PiggyBank_State (chain : Chain) (ctx : ContractCallContext) (setup : Setup) : option State :=
+Definition Setup := unit.
+Definition PiggyBank_State (chain : Chain) (ctx : ContractCallContext) (setup : Setup) : option context_state_hacspec_t :=
   Some (piggy_init (Context (ctx.(ctx_from), ctx.(ctx_origin), repr ctx.(ctx_amount), 0 (* TODO *)))).
 
 (* piggybank - Coq code:8 ends here *)
@@ -138,7 +138,7 @@ Definition piggy_insert
         s_13
       ))).
 
-Definition insert (amount : int64)(st : State) :=
+Definition insert (amount : int64) (st : State) :=
   piggy_insert st amount.
 
 (* piggybank - Coq code:11 ends here *)
@@ -149,6 +149,7 @@ Inductive smash_error_t :=
 | AlreadySmashed : smash_error_t.
 Global Instance serializable_smash_error_t : Serializable smash_error_t :=
   Derive Serializable smash_error_t_rect<NotOwner,AlreadySmashed>.
+
 
 Definition eqb_smash_error_t (x y : smash_error_t) : bool :=
 match x with
@@ -184,11 +185,11 @@ Definition piggy_smash_hacspec
   (state_15 : piggy_bank_state_hacspec_t): piggy_smash_result_t :=
   let 'Context ((owner_16, sender_17, balance_18, metadata_19)) :=
     ctx_14 in 
-  ifbnd negb ((owner_16) array_eq (sender_17)) : bool
+  ifbnd (negb ((owner_16) array_eq (sender_17))) : bool
   thenbnd (bind (@Err piggy_bank_state_hacspec_t smash_error_t (NotOwner)) (
       fun _ =>  Ok (tt)))
   else (tt) >> (fun 'tt =>
-  ifbnd negb ((state_15) =.? (Intact)) : bool
+  ifbnd (negb ((state_15) =.? (Intact))) : bool
   thenbnd (bind (@Err piggy_bank_state_hacspec_t smash_error_t (
         AlreadySmashed)) (fun _ =>  Ok (tt)))
   else (tt) >> (fun 'tt =>

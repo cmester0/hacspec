@@ -2,6 +2,8 @@
 #+TITLE: Auction Smartcontract
 #+AUTHOR: Lasse Letager Hansen
 
+# rev: 4d4b024b547a1f120f6d6951cbc409c94f8f146a
+
 # Use org-tanglesync !
 # lentic
 
@@ -50,7 +52,7 @@ hacspec-lib = { path = "../../lib" }
 # pearlite-syn = { path = "../../../../creusot/pearlite-syn" }
 creusot-contracts = { git = "https://github.com/xldenis/creusot", rev = "7763b3ae77205fba83182b9a6c3e69ad0b12fec7" }
 # hacspec = {optional = true}
-concordium-contracts-common = { git = "https://github.com/Concordium/concordium-contracts-common", rev = "0cffb859f736ff6726fa38600428a415d800d7b6" ,  version = "=2.0.0" , default-features = false }
+concordium-contracts-common = { git = "https://github.com/Concordium/concordium-contracts-common", rev = "84ff7db509ca1fbf958b47e5e5903b7662295850" ,  version = "=2.0.0" , default-features = false }
 hacspec-concordium = { path = "../concordium" }
 hacspec-concordium-derive = { path = "../concordium-derive" }
 
@@ -203,6 +205,7 @@ pub struct State {
     bids:          BTreeMap<AccountAddress, Amount>,
 }
 
+#[contract_state(contract = "auction")]
 #[derive(Clone, PartialEq)]
 pub struct StateHacspec(
     pub AuctionStateHacspec,
@@ -297,6 +300,7 @@ struct InitParameter(
 #+end_src
 
 #+begin_src rust :eval never
+#[cfg(feature = "hacspec")]
 pub type ContextStateHacspec = (Context, StateHacspec);
 
 #[cfg(feature = "hacspec")]
@@ -700,6 +704,7 @@ fn simple_transfer_from_index_and_seq<A: HasActions>(x: usize, s: PublicByteSeq)
     )
 }
 
+// TODO: add actions!!
 #[cfg(feature = "hacspec")]
 /// Receive function in which accounts can bid before the auction end time
 #[receive(contract = "auction", name = "finalize")]

@@ -98,10 +98,6 @@ fn construct_module_string<T>(
     {
         Some(krate_dir.clone() + "/" + krate_path.clone().as_str() + "/mod")
     } else {
-        println!("krate: {} -- {}", krate_path, ast_crates_map.len());
-        // for key in ast_crates_map.keys() {
-        //     println!("Key: {}", key);
-        // }
         // panic!("Could not construct module string");
         None
     }
@@ -132,8 +128,6 @@ fn construct_handle_crate_queue<'tcx>(
         return Err(true);
     }
     handled.insert(krate_module_string.clone());
-
-    // println!("Module {}", krate_module_string);
 
     let krate = ast_crates_map[&krate_module_string].clone();
 
@@ -322,18 +316,6 @@ fn handle_crate<'tcx>(
                     match x.kind {
                         // Load the top_ctx from the module specified in the use statement
                         rustc_ast::ast::ItemKind::Use(ref tree) => {
-                            println!(
-                                "{}, {:?} USE: {:?}",
-                                krate_path.clone(),
-                                tree.kind,
-                                (&tree.prefix)
-                                    .segments
-                                    .last()
-                                    .unwrap()
-                                    .ident
-                                    .name
-                                    .to_ident_string()
-                            );
                             match tree.kind {
                                 rustc_ast::ast::UseTreeKind::Glob => {
                                     krate_use_paths[&krate_path].push(
@@ -380,7 +362,6 @@ fn handle_crate<'tcx>(
         };
 
         for krate_use_path_string in &krate_use_paths[&krate_path] {
-            println!("{} , construct 1: {}", krate_path, krate_use_path_string);
             if let Some(krate_use_string) = construct_module_string(
                 krate_use_path_string.clone(),
                 krate_dir.clone(),
@@ -430,13 +411,20 @@ fn handle_crate<'tcx>(
             functions: HashMap::new(),
             typ_dict: HashMap::new(),
         };
-        new_top_ctx.consts.insert(
-            rustspec::TopLevelIdent {
-                string: "MIN".to_string(),
-                kind: rustspec::TopLevelIdentKind::Constant,
-            },
-            (rustspec::BaseTyp::Int32, rustc_span::DUMMY_SP.into()),
-        );
+        // new_top_ctx.consts.insert(
+        //     rustspec::TopLevelIdent {
+        //         string: "MIN".to_string(),
+        //         kind: rustspec::TopLevelIdentKind::Constant,
+        //     },
+        //     (rustspec::BaseTyp::Int32, rustc_span::DUMMY_SP.into()),
+        // );
+        // new_top_ctx.consts.insert(
+        //     rustspec::TopLevelIdent {
+        //         string: "MAX".to_string(),
+        //         kind: rustspec::TopLevelIdentKind::Constant,
+        //     },
+        //     (rustspec::BaseTyp::Int32, rustc_span::DUMMY_SP.into()),
+        // );
         // new_top_ctx.consts.insert(
         //     rustspec::TopLevelIdent {
         //         string: "None".to_string(),
@@ -446,7 +434,6 @@ fn handle_crate<'tcx>(
         // );
 
         for krate_use_path_string in &krate_use_paths[&krate_path] {
-            println!("construct 2");
             if let Some(krate_use_string) = construct_module_string(
                 krate_use_path_string.clone(),
                 krate_dir.clone(),
@@ -478,7 +465,7 @@ fn handle_crate<'tcx>(
                 return Compilation::Stop;
             }
         };
-
+        
         let krate = match typechecker::typecheck_program(&compiler.session(), &krate, new_top_ctx) {
             Ok(krate) => krate,
             Err(_) => {
@@ -492,7 +479,7 @@ fn handle_crate<'tcx>(
         (*top_ctx_map).insert(krate_path.clone(), new_top_ctx.clone());
         krate_queue_typechecked.push(((krate_path, krate_dir, krate_module_string), krate));
     }
-
+    
     let imported_crates = (&krate_queue_typechecked).into_iter().fold(
         Vec::new(),
         |mut all_imported_crates, (_, krate)| {

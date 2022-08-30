@@ -670,7 +670,7 @@ fn translate_expr(
                             ExprTranslationResult::TransExpr(Expression::EnumInject(
                                 BaseTyp::Named(func_name_but_as_type, None),
                                 func_name_but_as_enum_constructor,
-                                Some(if func_args.len() > 1 {
+                                Some(if func_args.is_empty() || func_args.len() > 1 {
                                     (Box::new(Expression::Tuple(func_args)), e.span.into())
                                 } else {
                                     let arg = func_args.into_iter().next().unwrap();
@@ -2375,48 +2375,40 @@ fn attribute_ensures(attr: &Attribute) -> Option<String> {
 fn attribute_init(attr: &Attribute) -> Option<InitData> {
     let attr_name = attr.name_or_empty().to_ident_string();
     match attr_name.as_str() {
-        "init" => {
-            match attr.kind.clone() {
-                rustc_ast::ast::AttrKind::Normal(p, o) => {
-                    match p.args {
-                        rustc_ast::MacArgs::Delimited(_, _, t) => {
-                            let inner_tokens = t;
+        "init" => match attr.kind.clone() {
+            rustc_ast::ast::AttrKind::Normal(p, o) => match p.args {
+                rustc_ast::MacArgs::Delimited(_, _, t) => {
+                    let inner_tokens = t;
 
-                            let mut it = inner_tokens.trees();
-                            it.next();
-                            it.next();
-                            let temp1 = match it.next().unwrap() {
-                                TokenTree::Token(third_tok) => match third_tok.kind {
-                                    TokenKind::Literal(l) => {
-                                        Some(l.symbol.to_string())
-                                    }
-                                    _ => None,
-                                },
-                                _ => None,
-                            }?;
-                            it.next();
-                            it.next();
-                            it.next();
-                            let temp2 = match it.next() {
-                                Some(TokenTree::Token(third_tok)) => match third_tok.kind {
-                                    TokenKind::Literal(l) => {
-                                        Some(l.symbol.to_string())
-                                    }
-                                    _ => None,
-                                },
-                                _ => None,
-                            };
-                            Some (InitData {
-                                contract: temp1,
-                                parameter: temp2,
-                            })
-                        }
+                    let mut it = inner_tokens.trees();
+                    it.next();
+                    it.next();
+                    let temp1 = match it.next().unwrap() {
+                        TokenTree::Token(third_tok) => match third_tok.kind {
+                            TokenKind::Literal(l) => Some(l.symbol.to_string()),
+                            _ => None,
+                        },
                         _ => None,
-                    }
-                },
+                    }?;
+                    it.next();
+                    it.next();
+                    it.next();
+                    let temp2 = match it.next() {
+                        Some(TokenTree::Token(third_tok)) => match third_tok.kind {
+                            TokenKind::Literal(l) => Some(l.symbol.to_string()),
+                            _ => None,
+                        },
+                        _ => None,
+                    };
+                    Some(InitData {
+                        contract: temp1,
+                        parameter: temp2,
+                    })
+                }
                 _ => None,
-            }
-        }
+            },
+            _ => None,
+        },
         _ => None,
     }
 }
@@ -2424,49 +2416,68 @@ fn attribute_init(attr: &Attribute) -> Option<InitData> {
 fn attribute_receive(attr: &Attribute) -> Option<ReceiveData> {
     let attr_name = attr.name_or_empty().to_ident_string();
     match attr_name.as_str() {
-        "receive" => {
-            match attr.kind.clone() {
-                rustc_ast::ast::AttrKind::Normal(p, o) => {
-                    match p.args {
-                        rustc_ast::MacArgs::Delimited(_, _, t) => {
-                            let inner_tokens = t;
+        "receive" => match attr.kind.clone() {
+            rustc_ast::ast::AttrKind::Normal(p, o) => match p.args {
+                rustc_ast::MacArgs::Delimited(_, _, t) => {
+                    let inner_tokens = t;
 
-                            let mut it = inner_tokens.trees();
-                            it.next();
-                            it.next();
-                            let temp = match it.next().unwrap() {
-                                TokenTree::Token(third_tok) => match third_tok.kind {
-                                    TokenKind::Literal(l) => {
-                                        Some(l.symbol.to_string())
-                                    }
-                                    _ => None,
-                                },
-                                _ => None,
-                            }?;
-                            it.next();
-                            it.next();
-                            it.next();
-                            let temp2 = match it.next().unwrap() {
-                                TokenTree::Token(third_tok) => match third_tok.kind {
-                                    TokenKind::Literal(l) => {
-                                        Some(l.symbol.to_string())
-                                    }
-                                    _ => None,
-                                },
-                                _ => None,
-                            }?;
-                            Some (ReceiveData {
-                                contract: temp,
-                                name: temp2,
-                                payable: it.next().is_some()
-                            })
-                        }
+                    let mut it = inner_tokens.trees();
+                    it.next();
+                    it.next();
+                    let temp = match it.next().unwrap() {
+                        TokenTree::Token(third_tok) => match third_tok.kind {
+                            TokenKind::Literal(l) => Some(l.symbol.to_string()),
+                            _ => None,
+                        },
                         _ => None,
+                    }?;
+                    it.next();
+                    it.next();
+                    it.next();
+                    let temp2 = match it.next().unwrap() {
+                        TokenTree::Token(third_tok) => match third_tok.kind {
+                            TokenKind::Literal(l) => Some(l.symbol.to_string()),
+                            _ => None,
+                        },
+                        _ => None,
+                    }?;
+
+                    let mut temp3 = None;
+                    let mut payable = false;
+                    let mut logger = false;
+
+                    while true {
+                        match it.next() {
+                            Some(TokenTree::Token(third_tok)) => {
+                                match third_tok.kind {
+                                    TokenKind::Literal(l) => temp3 = Some(l.symbol.to_string()),
+                                    TokenKind::Ident(l, _) => match l.to_string().as_str() {
+                                        "enable_logger" => logger = true,
+                                        "payable" => payable = true,
+                                        _ => (),
+                                    },
+                                    _ => (),
+                                }
+                            }
+                            None => {
+                                break;
+                            }
+                            _ => (),
+                        };
                     }
-                },
+
+                    Some(ReceiveData {
+                        contract: temp,
+                        name: temp2,
+                        // parameter: temp3,
+                        payable: payable,
+                        // logger: logger,
+                    })
+                }
                 _ => None,
-            }
-        }
+            },
+            _ => None,
+        },
         _ => None,
     }
 }
@@ -2507,7 +2518,7 @@ fn attribute_tag(attr: &Attribute) -> Option<Vec<ItemTag>> {
     let attr_name = attr.name_or_empty().to_ident_string();
     match attr_name.as_str() {
         "quickcheck" | "proof" | "test" | "requires" | "ensures" | "creusot" | "hacspec_unsafe"
-        | "unsafe_hacspec" | "init" | "receive" => Some(vec![attr_name]),
+        | "unsafe_hacspec" | "init" | "receive" | "contract_state" => Some(vec![attr_name]),
         "derive" => {
             let inner = get_delimited_tree(attr.clone())?;
             Some(inner.trees().fold(Vec::new(), |mut a, x| match x {
@@ -3099,14 +3110,6 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
     i.attrs
         .iter()
         .fold((), |(), attr| match attribute_tag(attr) {
-            Some(a) if a[0].as_str() == "init" => {
-                println!("TODO: handle 'init' with ConCert");
-                tags.extend(a.iter());
-            }
-            Some(a) if a[0].as_str() == "receive" => {
-                println!("TODO: handle 'receive' with ConCert");
-                tags.extend(a.iter());
-            }
             Some(a) => {
                 tags.extend(a.iter());
             }
@@ -3267,16 +3270,16 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
                         None => v,
                     });
 
-            let init =
-                i.attrs
-                    .iter()
-                    .fold(Vec::new(), |mut v, attr| match attribute_init(attr) {
-                        Some(a) => {
-                            v.push(a);
-                            v
-                        }
-                        None => v,
-                    });
+            let init = i
+                .attrs
+                .iter()
+                .fold(Vec::new(), |mut v, attr| match attribute_init(attr) {
+                    Some(a) => {
+                        v.push(a);
+                        v
+                    }
+                    None => v,
+                });
 
             let receive =
                 i.attrs
@@ -3300,7 +3303,7 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
                 requires,
                 ensures,
                 init,
-                receive
+                receive,
             );
 
             Ok((
@@ -3329,6 +3332,19 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
                 for (alias_name, alias_ty) in data.ty_aliases.into_iter() {
                     specials.aliases.insert(alias_name, alias_ty);
                 }
+
+                // pub struct SpecialNames {
+                //     pub arrays: HashSet<String>,
+                //     pub enums: HashSet<String>,
+                //     pub aliases: HashMap<String, BaseTyp>,
+                // }
+
+                // pub funcs: HashMap<FnKey, Result<ExternalFuncSig, String>>,
+                // pub consts: HashMap<String, BaseTyp>,
+                // pub arrays: HashMap<String, BaseTyp>,
+                // pub nat_ints: HashMap<String, BaseTyp>,
+                // pub enums: HashMap<String, BaseTyp>,
+                // pub ty_aliases: HashMap<String, BaseTyp>,
 
                 Ok((
                     ItemTranslationResult::Item(DecoratedItem {
@@ -3486,8 +3502,6 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
             Err(())
         }
         ItemKind::Mod(a, b) => {
-            println!("mod '{:?}' '{:?}' '{:?}'", i, a, b);
-
             sess.span_rustspec_err(i.span.clone(), "sub-modules not allowed in Hacspec");
             Err(())
         }
@@ -3610,7 +3624,7 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
                             })
                             .collect(),
                     )?;
-                    let payload = if tuple_args.len() > 1 {
+                    let payload = if tuple_args.is_empty() || tuple_args.len() > 1 {
                         (BaseTyp::Tuple(tuple_args), i.span.clone().into())
                     } else {
                         tuple_args.into_iter().next().unwrap()
