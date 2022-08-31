@@ -32,11 +32,9 @@ cargo build
 #+end_src
 
 #+begin_src sh
-cargo hacspec -e v --dir coq/src --org-file WCCD.org hacspec-wccd --vc-update --vc-dir coq/_vc
+cargo hacspec -e v --dir coq/src --org-file WCCD.org hacspec-wccd --vc-update --vc-dir coq/
 #+end_src
-
-* WCCD smart contract specification
-** Config
+* Config
 #+begin_src toml :tangle ../../examples/wccd/Cargo.toml :mkdirp yes :eval never
 [package]
 name = "hacspec-wccd"
@@ -68,11 +66,11 @@ quickcheck = "1"
 quickcheck_macros = "1"
 #+end_src
 
+* Cis1
 ** Rust code
 :PROPERTIES:
-:header-args: :tangle ../../examples/wccd/src/wccd.rs :mkdirp yes
+:header-args: :tangle ../../examples/wccd/src/cis1.rs :mkdirp yes
 :END:
-
 *** Imports
 #+begin_src rust :eval never
 #[cfg(not(feature = "hacspec"))]
@@ -93,7 +91,6 @@ use concert_lib::*;
 
 #+end_src
 
-*** Cis1
 #+begin_src rust :eval never
 // #![cfg_attr(not(feature = "std"), no_std)]
 // use concordium_std::*;
@@ -108,6 +105,9 @@ use convert::TryFrom;
 #[cfg(not(feature = "hacspec"))]
 pub use hacspec_concordium::num::NonZeroI32;
 
+#+end_src
+*** Consts
+#+begin_src rust :eval never
 /// Tag for the CIS1 Transfer event.
 pub const TRANSFER_EVENT_TAG: u8 = 255u8; // u8::MAX
 /// Tag for the CIS1 Mint event.
@@ -119,6 +119,9 @@ pub const UPDATE_OPERATOR_EVENT_TAG: u8 = 255u8 - 3u8; // u8::MAX
 /// Tag for the CIS1 TokenMetadata event.
 pub const TOKEN_METADATA_EVENT_TAG: u8 = 255u8 - 4u8; // u8::MAX
 
+#+end_src
+*** Types
+#+begin_src rust :eval never
 /// Sha256 digest
 #[cfg(feature = "hacspec")]
 array!(Sha256, 32, u8);
@@ -148,6 +151,9 @@ pub struct MetadataUrl {
     pub hash: Option<Sha256>,
 }
 
+#+end_src
+
+#+begin_src rust :eval never
 #[cfg(not(feature = "hacspec"))]
 /// Trait for marking types as CIS1 token IDs.
 /// For a type to be a valid CIS1 token ID it must implement serialization and
@@ -159,6 +165,9 @@ pub struct MetadataUrl {
 /// ID implementations avoiding allocations.
 pub trait IsTokenId: Serialize + schema::SchemaType {}
 
+#+end_src
+*** TokenIdVec
+#+begin_src rust :eval never
 #[cfg(feature = "hacspec")]
 // #[derive(Debug, PartialOrd, Ord, PartialEq, Eq, Hash, Clone, Serialize)]
 pub struct TokenIdVec(pub PublicByteSeq);
@@ -201,6 +210,9 @@ impl schema::SchemaType for TokenIdVec {
 //     }
 // }
 
+#+end_src
+*** TokenIdFixed
+#+begin_src rust :eval never
 #[cfg(not(feature = "hacspec"))]
 /// Token Identifier, which combined with the address of the contract instance,
 /// forms the unique identifier of a token type.
@@ -274,6 +286,9 @@ impl<const N: usize> Deserial for TokenIdFixed<N> {
 //     }
 // }
 
+#+end_src
+*** TokenIdU64
+#+begin_src rust :eval never
 #[cfg(not(feature = "hacspec"))]
 /// Token Identifier, which combined with the address of the contract instance,
 /// forms the unique identifier of a token type.
@@ -341,6 +356,9 @@ impl Deserial for TokenIdU64 {
 //     }
 // }
 
+#+end_src
+*** TokenIdU32
+#+begin_src rust :eval never
 #[cfg(feature = "hacspec")]
 // #[derive(Debug, PartialOrd, Ord, PartialEq, Eq, Hash, Copy, Clone)]
 pub struct TokenIdU32(pub u32);
@@ -411,6 +429,9 @@ impl Deserial for TokenIdU32 {
 //     }
 // }
 
+#+end_src
+*** TokenIdU16
+#+begin_src rust :eval never
 #[cfg(feature = "hacspec")]
 // #[derive(Debug, PartialOrd, Ord, PartialEq, Eq, Hash, Copy, Clone)]
 pub struct TokenIdU16(pub u16);
@@ -481,6 +502,9 @@ impl Deserial for TokenIdU16 {
 //     }
 // }
 
+#+end_src
+*** TokenIdU8
+#+begin_src rust :eval never
 #[cfg(feature = "hacspec")]
 // #[derive(Debug, PartialOrd, Ord, PartialEq, Eq, Hash, Copy, Clone)]
 pub struct TokenIdU8(pub u8);
@@ -551,6 +575,9 @@ impl Deserial for TokenIdU8 {
 //     }
 // }
 
+#+end_src
+*** TokenIdUnit
+#+begin_src rust :eval never
 #[cfg(feature = "hacspec")]
 // #[derive(Debug, PartialOrd, Ord, PartialEq, Eq, Hash, Copy, Clone)]
 pub struct TokenIdUnit();
@@ -601,6 +628,9 @@ impl Deserial for TokenIdUnit {
     }
 }
 
+#+end_src
+*** More data types -- events
+#+begin_src rust :eval never
 // #[cfg(not(feature="hacspec"))]
 /// An amount of a specific token type.
 pub type TokenAmount = u64;
@@ -818,6 +848,20 @@ impl<X: From<ParseError>> From<ParseError> for Cis1Error<X> {
     }
 }
 
+#+end_src
+*** Receiver
+#+begin_src rust :eval never
+#[cfg_attr(feature = "hacspec", derive(Debug, Serialize))]
+pub enum ReceiverHacspec {
+    Account(
+        PublicByteSeq,
+    ),
+    Contract(
+        PublicByteSeq,
+        String,
+    ),
+}
+
 #[cfg(not(feature = "hacspec"))]
 /// The receiving address for a transfer, similar to the Address type, but
 /// contains extra information when the receiver address is a contract.
@@ -887,6 +931,12 @@ impl From<AccountAddress> for Receiver {
     }
 }
 
+#+end_src
+*** Additional Data
+#+begin_src rust :eval never
+#[cfg_attr(feature = "hacspec", derive(Debug, Serialize))]
+pub struct AdditionalDataHacspec(Seq<u8>);
+
 #[cfg(not(feature = "hacspec"))]
 /// Additional information to include with a transfer.
 #[derive(Debug, Serialize)]
@@ -924,6 +974,9 @@ impl AsRef<[u8]> for AdditionalData {
     }
 }
 
+#+end_src
+*** Transfer
+#+begin_src rust :eval never
 #[cfg(not(feature = "hacspec"))]
 /// A single transfer of some amount of a token.
 // Note: For the serialization to be derived according to the CIS1
@@ -985,6 +1038,9 @@ impl<T: IsTokenId> AsRef<[Transfer<T>]> for TransferParams<T> {
     }
 }
 
+#+end_src
+*** Update Operator
+#+begin_src rust :eval never
 #[cfg(not(feature = "hacspec"))]
 /// A single update of an operator.
 // Note: For the serialization to be derived according to the CIS1
@@ -1007,6 +1063,9 @@ pub struct UpdateOperatorParams(
     pub Vec<UpdateOperator>,
 );
 
+#+end_src
+*** Balance of
+#+begin_src rust :eval never
 #[cfg(not(feature = "hacspec"))]
 /// A query for the balance of a given address for a given token.
 // Note: For the serialization to be derived according to the CIS1
@@ -1062,6 +1121,9 @@ impl<T: IsTokenId> AsRef<[BalanceOfQueryResult<T>]> for BalanceOfQueryResponse<T
     }
 }
 
+#+end_src
+*** Operator of
+#+begin_src rust :eval never
 #[cfg(not(feature = "hacspec"))]
 /// A query for the operator of a given address for a given token.
 // Note: For the serialization to be derived according to the CIS1
@@ -1117,6 +1179,9 @@ impl AsRef<[OperatorOfQueryResult]> for OperatorOfQueryResponse {
     }
 }
 
+#+end_src
+*** Token metadata
+#+begin_src rust :eval never
 #[cfg(not(feature = "hacspec"))]
 /// The parameter type for the contract function `tokenMetadata`.
 // Note: For the serialization to be derived according to the CIS1
@@ -1160,6 +1225,9 @@ impl<T: IsTokenId> AsRef<[TokenMetadataQueryResult<T>]> for TokenMetadataQueryRe
     }
 }
 
+#+end_src
+*** On Receivivingreceiver
+#+begin_src rust :eval never
 #[cfg(not(feature = "hacspec"))]
 /// The parameter type for a contract function which receives CIS1 tokens.
 // Note: For the serialization to be derived according to the CIS1
@@ -1180,10 +1248,37 @@ pub struct OnReceivingCis1Params<T: IsTokenId> {
 }
 #+end_src
 
-*** WCCD
+* WCCD smart contract specification
+** Rust code
+:PROPERTIES:
+:header-args: :tangle ../../examples/wccd/src/wccd.rs :mkdirp yes
+:END:
+*** Imports
+#+begin_src rust :eval never
+#[cfg(not(feature = "hacspec"))]
+extern crate hacspec_lib;
+
+use hacspec_lib::*;
+
+// #[cfg(not(feature = "hacspec"))]
+// extern crate creusot_contracts;
+#[cfg(test)]
+#[cfg(not(feature = "hacspec"))]
+use creusot_contracts::{ensures, requires};
+
+use hacspec_concordium::*;
+
+#[cfg(feature = "hacspec")]
+use concert_lib::*;
+
+#+end_src
+
 #+begin_src rust :eval never
 // #![cfg_attr(not(feature = "std"), no_std)]
 // use concordium_cis1::*;
+
+mod cis1;
+pub use cis1::*;
 
 #[cfg(not(feature = "hacspec"))]
 pub use concordium_contracts_common::{HashMap as Map, HashSet as Set};
@@ -1193,6 +1288,16 @@ pub use concordium_contracts_common::{HashMap as Map, HashSet as Set};
 // #[cfg(not(feature = "hacspec"))]
 // pub use concordium_prims::*;
 
+// #![cfg_attr(not(feature = "std"), no_std)]
+// use concordium_std::*;
+// #[cfg(not(feature = "std"))]
+// use core::fmt;
+// #[cfg(feature = "std")]
+// use std::fmt;
+
+#+end_src
+*** Consts
+#+begin_src rust :eval never
 /// Contract token ID type.
 /// Since this contract will only ever contain this one token type, we use the
 /// smallest possible token ID.
@@ -1205,7 +1310,15 @@ const TOKEN_ID_WCCD: ContractTokenId = TokenIdUnit();
 /// The metadata url for the wCCD token.
 const TOKEN_METADATA_URL: &str = "https://some.example/token/wccd";
 
+#+end_src
+
+*** Types
+#+begin_src rust :eval never
 // Types
+
+/// The state tracked for each address.
+#[cfg_attr(feature = "hacspec", derive(Serialize, SchemaType))]
+struct AddressStateHacspec (TokenAmount, PublicByteSeq);
 
 #[cfg(not(feature = "hacspec"))]
 /// The state tracked for each address.
@@ -1219,10 +1332,11 @@ struct AddressState {
     operators: Set<Address>,
 }
 
-#[cfg(feature = "hacspec")]
-/// The contract state,
-#[contract_state(contract = "CIS1-wCCD")]
-// #[derive(Serialize, SchemaType)]
+#+end_src
+
+#+begin_src rust :eval never
+#[cfg_attr(feature = "hacspec", contract_state(contract = "CIS1-wCCD"))]
+#[cfg_attr(feature = "hacspec", derive(Serialize, SchemaType))]
 struct StateHacspec(pub PublicByteSeq); // Map<Address, AddressState>
 
 #[cfg(not(feature = "hacspec"))]
@@ -1234,6 +1348,12 @@ struct State {
     token: Map<Address, AddressState>,
 }
 
+#+end_src
+
+#+begin_src rust :eval never
+#[cfg_attr(feature = "hacspec", derive(Serialize, SchemaType))]
+struct UnwrapParamsHacspec (TokenAmount, PublicByteSeq, ReceiverHacspec, AdditionalDataHacspec);
+
 #[cfg(not(feature = "hacspec"))]
 /// The parameter type for the contract function `unwrap`.
 /// Takes an amount of tokens and unwrap the CCD and send it to a receiver.
@@ -1244,10 +1364,16 @@ struct UnwrapParams {
     /// The owner of the tokens.
     owner: Address,
     /// The address to receive these unwrapped CCD.
-    receiver: Receiver,
+    receiver: cis1::Receiver,
     /// Some additional bytes to include in the transfer.
     data: AdditionalData,
 }
+
+#+end_src
+
+#+begin_src rust :eval never
+#[cfg_attr(feature = "hacspec", derive(Serialize, SchemaType))]
+struct WrapParamsHacspec (ReceiverHacspec, AdditionalDataHacspec);
 
 #[cfg(not(feature = "hacspec"))]
 /// The parameter type for the contract function `wrap`.
@@ -1258,11 +1384,14 @@ struct WrapParams {
     /// The address to receive these tokens.
     /// If the receiver is the sender of the message wrapping the tokens, it
     /// will not log a transfer.
-    to: Receiver,
+    to: cis1::Receiver,
     /// Some additional bytes to include in a transfer.
     data: AdditionalData,
 }
 
+#+end_src
+
+#+begin_src rust :eval never
 #[cfg(not(feature = "hacspec"))]
 /// The different errors the contract can produce.
 #[derive(Serialize, Debug, PartialEq, Eq, Reject)]
@@ -1276,12 +1405,22 @@ enum CustomContractError {
     LogMalformed,
 }
 
+#+end_src
+
+#+begin_src rust :eval never
 #[cfg(not(feature = "hacspec"))]
 type ContractError = Cis1Error<CustomContractError>;
 
+#+end_src
+
+#+begin_src rust :eval never
 #[cfg(not(feature = "hacspec"))]
 type ContractResult<A> = Result<A, ContractError>;
 
+#+end_src
+
+*** Implemenetations
+#+begin_src rust :eval never
 #[cfg(not(feature = "hacspec"))]
 /// Mapping the logging errors to ContractError.
 impl From<LogError> for CustomContractError {
@@ -1421,6 +1560,10 @@ impl State {
     }
 }
 
+#+end_src
+
+*** Contract
+#+begin_src rust :eval never
 // Contract functions
 
 #[cfg(feature = "hacspec")]
@@ -1459,6 +1602,9 @@ fn contract_init(ctx: &impl HasInitContext, logger: &mut impl HasLogger) -> Init
     Ok(state)
 }
 
+#+end_src
+
+#+begin_src rust :eval never
 #[cfg(feature = "hacspec")]
 /// Receive function in which accounts can bid before the auction end time
 #[receive(
@@ -1533,7 +1679,7 @@ fn contract_wrap<A: HasActions>(
     }
 
     // Send message to the receiver of the tokens.
-    if let Receiver::Contract(address, function) = params.to {
+    if let cis1::Receiver::Contract(address, function) = params.to {
         let parameter = OnReceivingCis1Params {
             token_id: TOKEN_ID_WCCD,
             amount: amount.micro_ccd,
@@ -1554,6 +1700,9 @@ fn contract_wrap<A: HasActions>(
     }
 }
 
+#+end_src
+
+#+begin_src rust :eval never
 #[cfg(feature = "hacspec")]
 /// Receive function in which accounts can bid before the auction end time
 #[receive(
@@ -1607,8 +1756,8 @@ fn contract_unwrap<A: HasActions>(
     let unwrapped_amount = Amount::from_micro_ccd(params.amount);
 
     let action = match params.receiver {
-        Receiver::Account(address) => A::simple_transfer(&address, unwrapped_amount),
-        Receiver::Contract(address, function) => {
+        cis1::Receiver::Account(address) => A::simple_transfer(&address, unwrapped_amount),
+        cis1::Receiver::Contract(address, function) => {
             send_wrap(&address, function.as_ref(), unwrapped_amount, &params.data)
         }
     };
@@ -1616,7 +1765,13 @@ fn contract_unwrap<A: HasActions>(
     Ok(action)
 }
 
+#+end_src
+
+#+begin_src rust :eval never
 // Contract functions required by CIS1
+
+#[allow(dead_code)]
+type TransferParameterHacspec = (); // TODO: hacspec repr for TransferParams<ContractTokenId>;
 
 #[cfg(not(feature = "hacspec"))]
 #[allow(dead_code)]
@@ -1627,7 +1782,7 @@ type TransferParameter = TransferParams<ContractTokenId>;
 #[receive(
     contract = "CIS1-wCCD",
     name = "transfer",
-    parameter = "TransferParameter",
+    parameter = "TransferParameterHacspec",
     enable_logger
 )]
 fn contract_transfer(ctx: (Context, StateHacspec)) -> Option<((Context, StateHacspec), ListAction)> {
@@ -1705,7 +1860,7 @@ fn contract_transfer<A: HasActions>(
 
         // If the receiver is a contract, we add sending it a message to the list of
         // actions.
-        if let Receiver::Contract(address, function) = to {
+        if let cis1::Receiver::Contract(address, function) = to {
             let parameter = OnReceivingCis1Params {
                 token_id,
                 amount,
@@ -1721,6 +1876,9 @@ fn contract_transfer<A: HasActions>(
 }
 
 
+#+end_src
+
+#+begin_src rust :eval never
 #[cfg(feature = "hacspec")]
 /// Receive function in which accounts can bid before the auction end time
 #[receive(
@@ -1783,6 +1941,9 @@ fn contract_update_operator<A: HasActions>(
     Ok(A::accept())
 }
 
+#+end_src
+
+#+begin_src rust :eval never
 #[cfg(not(feature="hacspec"))]
 /// Parameter type for the CIS-1 function `balanceOf` specialized to the subset
 /// of TokenIDs used by this contract.
@@ -1803,7 +1964,6 @@ fn contract_balance_of(ctx: (Context, StateHacspec)) -> Option<((Context, StateH
         s,
     ))
 }
-
 
 #[cfg(not(feature="hacspec"))]
 /// Get the balance of given token IDs and addresses. It takes a contract
@@ -1845,6 +2005,9 @@ fn contract_balance_of<A: HasActions>(
     ))
 }
 
+#+end_src
+
+#+begin_src rust :eval never
 #[cfg(feature = "hacspec")]
 /// Receive function in which accounts can bid before the auction end time
 #[receive(contract = "CIS1-wCCD", name = "operatorOf", parameter = "OperatorOfQueryParams")]
@@ -1962,6 +2125,10 @@ fn contract_token_metadata<A: HasActions>(
     ))
 }
 
+#+end_src
+
+*** Tests
+#+begin_src rust :eval never
 // Tests
 
 #[cfg(not(feature="hacspec"))]
@@ -2039,7 +2206,7 @@ mod tests {
             token_id: TOKEN_ID_WCCD,
             amount:   100,
             from:     ADDRESS_0,
-            to:       Receiver::from_account(ACCOUNT_1),
+            to:       cis1::Receiver::from_account(ACCOUNT_1),
             data:     AdditionalData::empty(),
         };
         let parameter = TransferParams::from(vec![transfer]);
@@ -2097,7 +2264,7 @@ mod tests {
         // and parameter.
         let transfer = Transfer {
             from:     ADDRESS_0,
-            to:       Receiver::from_account(ACCOUNT_1),
+            to:       cis1::Receiver::from_account(ACCOUNT_1),
             token_id: TOKEN_ID_WCCD,
             amount:   100,
             data:     AdditionalData::empty(),
@@ -2127,7 +2294,7 @@ mod tests {
         // and parameter.
         let transfer = Transfer {
             from:     ADDRESS_0,
-            to:       Receiver::from_account(ACCOUNT_1),
+            to:       cis1::Receiver::from_account(ACCOUNT_1),
             token_id: TOKEN_ID_WCCD,
             amount:   100,
             data:     AdditionalData::empty(),

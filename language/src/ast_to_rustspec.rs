@@ -2310,17 +2310,23 @@ fn tokentree_text(x: TokenTree) -> String {
     }
 }
 
-fn get_delimited_tree(attr: Attribute) -> Option<rustc_ast::tokenstream::TokenStream> {
+fn attr_to_cursor_ref_delim<'a>(attr: Attribute) -> Option<rustc_ast::tokenstream::TokenStream> {
     let inner_tokens = attr.clone().tokens().to_tokenstream();
     if inner_tokens.len() != 2 {
         return None;
     }
-    let mut it = inner_tokens.trees();
+    Some(inner_tokens)
+}
+
+fn get_delimited_tree(
+    mut it: rustc_ast::tokenstream::CursorRef,
+) -> Option<rustc_ast::tokenstream::TokenStream> {
     let first_token = it.next().unwrap();
-    let second_token = it.next().unwrap();
     match first_token {
+        // Outer tree
         TokenTree::Token(first_tok) => match first_tok.kind {
             TokenKind::Pound => {
+                let second_token = it.next().unwrap();
                 let inner = get_delimited_inner_tree(second_token.clone())?;
                 if inner.len() != 2 {
                     return None;
@@ -2333,6 +2339,8 @@ fn get_delimited_tree(attr: Attribute) -> Option<rustc_ast::tokenstream::TokenSt
             }
             _ => None,
         },
+        // Inner tree
+        TokenTree::Delimited(_, _, inner) => Some(inner.clone()),
         _ => None,
     }
 }
@@ -2348,7 +2356,7 @@ fn attribute_requires(attr: &Attribute) -> Option<String> {
     let attr_name = attr.name_or_empty().to_ident_string();
     match attr_name.as_str() {
         "requires" => {
-            let inner = get_delimited_tree(attr.clone())?;
+            let inner = get_delimited_tree(attr_to_cursor_ref_delim(attr.clone())?.trees())?;
             let textify = inner
                 .trees()
                 .fold("".to_string(), |s, x| s + &tokentree_text(x.clone()));
@@ -2362,7 +2370,7 @@ fn attribute_ensures(attr: &Attribute) -> Option<String> {
     let attr_name = attr.name_or_empty().to_ident_string();
     match attr_name.as_str() {
         "ensures" => {
-            let inner = get_delimited_tree(attr.clone())?;
+            let inner = get_delimited_tree(attr_to_cursor_ref_delim(attr.clone())?.trees())?;
             let textify = inner
                 .trees()
                 .fold("".to_string(), |s, x| s + &tokentree_text(x.clone()));
@@ -2448,17 +2456,15 @@ fn attribute_receive(attr: &Attribute) -> Option<ReceiveData> {
 
                     while true {
                         match it.next() {
-                            Some(TokenTree::Token(third_tok)) => {
-                                match third_tok.kind {
-                                    TokenKind::Literal(l) => temp3 = Some(l.symbol.to_string()),
-                                    TokenKind::Ident(l, _) => match l.to_string().as_str() {
-                                        "enable_logger" => logger = true,
-                                        "payable" => payable = true,
-                                        _ => (),
-                                    },
+                            Some(TokenTree::Token(third_tok)) => match third_tok.kind {
+                                TokenKind::Literal(l) => temp3 = Some(l.symbol.to_string()),
+                                TokenKind::Ident(l, _) => match l.to_string().as_str() {
+                                    "enable_logger" => logger = true,
+                                    "payable" => payable = true,
                                     _ => (),
-                                }
-                            }
+                                },
+                                _ => (),
+                            },
                             None => {
                                 break;
                             }
@@ -2469,9 +2475,9 @@ fn attribute_receive(attr: &Attribute) -> Option<ReceiveData> {
                     Some(ReceiveData {
                         contract: temp,
                         name: temp2,
-                        // parameter: temp3,
+                        parameter: temp3,
                         payable: payable,
-                        // logger: logger,
+                        logger: logger,
                     })
                 }
                 _ => None,
@@ -2484,7 +2490,7 @@ fn attribute_receive(attr: &Attribute) -> Option<ReceiveData> {
 
 fn attribute_cfg_token_ident(
     ident: rustc_span::symbol::Symbol,
-    mut it: rustc_ast::tokenstream::CursorRef,
+    it: &mut rustc_ast::tokenstream::CursorRef,
 ) -> Option<Vec<String>> {
     let ident_string = ident.to_ident_string();
     match ident_string.as_str() {
@@ -2501,7 +2507,9 @@ fn attribute_cfg_token_ident(
                     }) => {
                         let ident_string = symbol.to_ident_string();
                         match ident_string.as_str() {
-                            "creusot" | "hacspec" => Some(vec![ident_string]),
+                            "creusot" | "hacspec" => {
+                                Some(vec![ident_string])
+                            }
                             _ => None,
                         }
                     }
@@ -2514,13 +2522,15 @@ fn attribute_cfg_token_ident(
     }
 }
 
-fn attribute_tag(attr: &Attribute) -> Option<Vec<ItemTag>> {
-    let attr_name = attr.name_or_empty().to_ident_string();
+fn attribute_tag(
+    attr_name: String,
+    tokentree: rustc_ast::tokenstream::CursorRef,
+) -> Option<Vec<ItemTag>> {
     match attr_name.as_str() {
         "quickcheck" | "proof" | "test" | "requires" | "ensures" | "creusot" | "hacspec_unsafe"
         | "unsafe_hacspec" | "init" | "receive" | "contract_state" => Some(vec![attr_name]),
         "derive" => {
-            let inner = get_delimited_tree(attr.clone())?;
+            let inner = get_delimited_tree(tokentree)?;
             Some(inner.trees().fold(Vec::new(), |mut a, x| match x {
                 TokenTree::Token(tok) => match tok.kind {
                     TokenKind::Ident(ident, _) => {
@@ -2533,7 +2543,7 @@ fn attribute_tag(attr: &Attribute) -> Option<Vec<ItemTag>> {
             }))
         }
         "cfg" => {
-            let inner = get_delimited_tree(attr.clone())?;
+            let inner = get_delimited_tree(tokentree)?;
             // if inner.len() != 1 {
             //     return None;
             // }
@@ -2550,7 +2560,7 @@ fn attribute_tag(attr: &Attribute) -> Option<Vec<ItemTag>> {
                             match first_token {
                                 TokenTree::Token(tok) => match tok.kind {
                                     TokenKind::Ident(ident, _) => Some(
-                                        attribute_cfg_token_ident(ident, it)?
+                                        attribute_cfg_token_ident(ident, &mut it)?
                                             .iter()
                                             .map(|s| "not(".to_string() + s + ")")
                                             .collect(),
@@ -2560,8 +2570,44 @@ fn attribute_tag(attr: &Attribute) -> Option<Vec<ItemTag>> {
                                 _ => None,
                             }
                         } else {
-                            attribute_cfg_token_ident(ident, it)
+                            attribute_cfg_token_ident(ident, &mut it)
                         }
+                    }
+                    _ => None,
+                },
+                _ => None,
+            }
+        }
+        "cfg_attr" => {
+            let inner = get_delimited_tree(tokentree)?;
+            // if inner.len() != 1 {
+            //     return None;
+            // }
+            let mut it = inner.trees();
+            let first_token = it.next().unwrap();
+            match first_token {
+                TokenTree::Token(tok) => match tok.kind {
+                    TokenKind::Ident(ident, _) => {
+                        attribute_cfg_token_ident(ident, &mut it).map(|v| {
+                            it.next();
+                            let first_token = it.next().unwrap();
+                            match first_token {
+                                TokenTree::Token(tok) => match tok.kind {
+                                    TokenKind::Ident(ident, _) => {
+                                        match attribute_tag(ident.to_ident_string(), it) {
+                                            Some(a) => {
+                                                a
+                                            }
+                                            None => {
+                                                vec![]
+                                            }
+                                        }
+                                    }
+                                    _ => vec![],
+                                },
+                                _ => vec![],
+                            }
+                        })
                     }
                     _ => None,
                 },
@@ -3107,14 +3153,17 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
     let mut tags = HashSet::new();
     tags.insert("code".to_string());
 
-    i.attrs
-        .iter()
-        .fold((), |(), attr| match attribute_tag(attr) {
+    i.attrs.iter().fold((), |(), attr| {
+        match attribute_tag(
+            attr.name_or_empty().to_ident_string(),
+            attr.clone().tokens().to_tokenstream().trees(),
+        ) {
             Some(a) => {
                 tags.extend(a.iter());
             }
             None => (),
-        });
+        }
+    });
 
     if tags.contains(&"test".to_string()) && !tags.contains(&"proof".to_string())
         || (!tags.contains(&"hacspec".to_string()) && tags.contains(&"not(hacspec)".to_string()))

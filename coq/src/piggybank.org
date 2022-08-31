@@ -106,12 +106,19 @@ enum PiggyBankState {
     Smashed,
 }
 
+
+#[cfg(feature = "hacspec")]
 /// The state of the piggy bank
-#[derive(Debug, PartialEq, Eq)] // , Serialize
+#[derive(Debug, PartialEq, Eq , Serialize)]
+#[contract_state(contract = "CIS1-wCCD")]
 pub enum PiggyBankStateHacspec {
-    /// Alive and well, allows for GTU to be inserted.
     Intact,
-    /// The piggy bank has been emptied, preventing further GTU to be inserted.
+    Smashed,
+}
+#[cfg(not(feature = "hacspec"))]
+#[derive(Debug, PartialEq, Eq)]
+pub enum PiggyBankStateHacspec {
+    Intact,
     Smashed,
 }
 
@@ -134,11 +141,6 @@ fn coerce_rust_to_hacspec_piggybank_state(pbs : &PiggyBankState) -> PiggyBankSta
 #+end_src
 
 #+begin_src rust
-#[cfg(feature = "hacspec")]
-pub type ContextStateHacspec = (Context, PiggyBankStateHacspec);
-#+end_src
-
-#+begin_src rust
 pub fn piggy_init_hacspec() -> PiggyBankStateHacspec {
     // Always succeeds
     PiggyBankStateHacspec::Intact
@@ -148,7 +150,7 @@ pub fn piggy_init_hacspec() -> PiggyBankStateHacspec {
 #+begin_src rust
 #[cfg(feature = "hacspec")]
 #[init(contract = "PiggyBank")]
-pub fn piggy_init(ctx : Context) -> ContextStateHacspec { // , actions
+pub fn piggy_init(ctx : Context) -> (Context, PiggyBankStateHacspec) { // , actions
     // Always succeeds
     (ctx, piggy_init_hacspec())
 }
@@ -177,7 +179,7 @@ pub fn piggy_insert_hacspec(ctx: Context, amount: u64, state: PiggyBankStateHacs
 
 #[cfg(feature = "hacspec")]
 #[receive(contract = "PiggyBank", name = "insert", payable)]
-pub fn piggy_insert(ctx_state: ContextStateHacspec, amount: u64) -> Option<(ContextStateHacspec, ListAction)> {
+pub fn piggy_insert(ctx_state: (Context, PiggyBankStateHacspec), amount: u64) -> Option<((Context, PiggyBankStateHacspec), ListAction)> {
     let (ctx, state) = ctx_state;
     let Context(a, c, balance, d) = ctx;
     accept_hacspec();
@@ -188,7 +190,7 @@ pub fn piggy_insert(ctx_state: ContextStateHacspec, amount: u64) -> Option<(Cont
     }?;
     let s = Seq::<HasAction>::new(0);
     s[0] = accept_action();
-    Option::<(ContextStateHacspec, ListAction)>::Some (((Context(a, c, balance + amount, d), state), s))
+    Option::<((Context, PiggyBankStateHacspec), ListAction)>::Some (((Context(a, c, balance + amount, d), state), s))
 }
 
 #[cfg(not(feature = "hacspec"))]
@@ -249,7 +251,7 @@ fn piggy_smash_hacspec(ctx: Context, state: PiggyBankStateHacspec) -> PiggySmash
 
 #[cfg(feature = "hacspec")]
 #[receive(contract = "PiggyBank", name = "smash")]
-fn piggy_smash(ctx_state: ContextStateHacspec) -> Option<(ContextStateHacspec, ListAction)> {
+fn piggy_smash(ctx_state: (Context, PiggyBankStateHacspec)) -> Option<((Context, PiggyBankStateHacspec), ListAction)> {
     let (ctx, state) = ctx_state;
     let Context(a, c, balance, d) = ctx;
     accept_hacspec();
@@ -260,7 +262,7 @@ fn piggy_smash(ctx_state: ContextStateHacspec) -> Option<(ContextStateHacspec, L
     }?;
     let s = Seq::<HasAction>::new(1);
     // s[0] = HasAction::SIMPLE_TRANSFER( a, balance );
-    Option::<(ContextStateHacspec, ListAction)>::Some(((Context(a, c, 0u64, d), new_state), s))
+    Option::<((Context, PiggyBankStateHacspec), ListAction)>::Some(((Context(a, c, 0u64, d), new_state), s))
     // piggy_smash_hacspec(ctx, state)
 }
 

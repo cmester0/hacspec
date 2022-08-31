@@ -469,7 +469,9 @@ pub enum Quantified<I, T> {
 pub struct ReceiveData {
     pub contract : String,
     pub name : String,
+    pub parameter: Option<String>,
     pub payable: bool,
+    pub logger: bool,
 }
 
 #[derive(Clone, Serialize, Debug)]
