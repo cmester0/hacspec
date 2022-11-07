@@ -144,24 +144,25 @@ Definition ed_hash_to_field
   : seq_ed_result_t :=
   let len_in_bytes_2225 : uint_size :=
     (count_2224) * (l_v) in 
-  bind (expand_message_xmd (msg_2222) (dst_2223) (len_in_bytes_2225)) (
-    fun uniform_bytes_2226 => let output_2227 : seq ed25519_field_element_t :=
-      seq_new_ (default) (count_2224) in 
-    let output_2227 :=
-      foldi (usize 0) (count_2224) (fun i_2228 output_2227 =>
-        let elm_offset_2229 : uint_size :=
-          (l_v) * (i_2228) in 
-        let tv_2230 : seq uint8 :=
-          seq_slice (uniform_bytes_2226) (elm_offset_2229) (l_v) in 
-        let u_i_2231 : ed25519_field_element_t :=
-          nat_mod_from_byte_seq_be (seq_slice (nat_mod_to_byte_seq_be (
-                nat_mod_from_byte_seq_be (tv_2230) : ed_field_hash_t)) (
-              usize 32) (usize 32)) : ed25519_field_element_t in 
-        let output_2227 :=
-          seq_upd output_2227 (i_2228) (u_i_2231) in 
-        (output_2227))
-      output_2227 in 
-    @Ok seq ed25519_field_element_t error_t (output_2227)).
+  let uniform_bytes_2226 : byte_seq :=
+    expand_message_xmd (msg_2222) (dst_2223) (len_in_bytes_2225) in 
+  let output_2227 : seq ed25519_field_element_t :=
+    seq_new_ (default) (count_2224) in 
+  let output_2227 :=
+    foldi (usize 0) (count_2224) (fun i_2228 output_2227 =>
+      let elm_offset_2229 : uint_size :=
+        (l_v) * (i_2228) in 
+      let tv_2230 : seq uint8 :=
+        seq_slice (uniform_bytes_2226) (elm_offset_2229) (l_v) in 
+      let u_i_2231 : ed25519_field_element_t :=
+        nat_mod_from_byte_seq_be (seq_slice (nat_mod_to_byte_seq_be (
+              nat_mod_from_byte_seq_be (tv_2230) : ed_field_hash_t)) (
+            usize 32) (usize 32)) : ed25519_field_element_t in 
+      let output_2227 :=
+        seq_upd output_2227 (i_2228) (u_i_2231) in 
+      (output_2227))
+    output_2227 in 
+  @Ok seq ed25519_field_element_t error_t (output_2227).
 
 Definition ed_is_square (x_2232 : ed25519_field_element_t) : bool :=
   let c1_2233 : ed25519_field_element_t :=
@@ -491,13 +492,14 @@ Definition ed_encode_to_curve
   (msg_2371 : byte_seq)
   (dst_2372 : byte_seq)
   : ed_point_result_t :=
-  bind (ed_hash_to_field (msg_2371) (dst_2372) (usize 1)) (fun u_2373 =>
-    let q_2374 : (
-        ed25519_field_element_t ×
-        ed25519_field_element_t ×
-        ed25519_field_element_t ×
-        ed25519_field_element_t
-      ) :=
-      map_to_curve_elligator2_edwards (seq_index (u_2373) (usize 0)) in 
-    @Ok ed_point_t error_t (ed_clear_cofactor (q_2374))).
+  let u_2373 : seq ed25519_field_element_t :=
+    ed_hash_to_field (msg_2371) (dst_2372) (usize 1) in 
+  let q_2374 : (
+      ed25519_field_element_t ×
+      ed25519_field_element_t ×
+      ed25519_field_element_t ×
+      ed25519_field_element_t
+    ) :=
+    map_to_curve_elligator2_edwards (seq_index (u_2373) (usize 0)) in 
+  @Ok ed_point_t error_t (ed_clear_cofactor (q_2374)).
 

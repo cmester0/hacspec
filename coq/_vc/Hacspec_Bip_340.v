@@ -137,12 +137,13 @@ Definition lift_x
       @repr WORDSIZE128 7) : field_element_t in 
   let y_sq_2415 : field_element_t :=
     (nat_mod_pow_self (x_2410) (three_2413)) +% (seven_2414) in 
-  bind (option_ok_or (sqrt (y_sq_2415)) (InvalidXCoordinate)) (fun y_2416 =>
-    let '(y_2416) :=
-      if ((y_2416) rem (two_2412)) =.? (one_2411):bool then (let y_2416 :=
-          (nat_mod_zero ) -% (y_2416) in 
-        (y_2416)) else ((y_2416)) in 
-    @Ok affine_point_t error_t ((x_2410, y_2416))).
+  let y_2416 : field_element_t :=
+    option_ok_or (sqrt (y_sq_2415)) (InvalidXCoordinate) in 
+  let '(y_2416) :=
+    if ((y_2416) rem (two_2412)) =.? (one_2411):bool then (let y_2416 :=
+        (nat_mod_zero ) -% (y_2416) in 
+      (y_2416)) else ((y_2416)) in 
+  @Ok affine_point_t error_t ((x_2410, y_2416)).
 
 Definition compute_lam
   (p1_2417 : affine_point_t)
@@ -419,9 +420,10 @@ Definition scalar_from_bytes_strict (b_2453 : bytes32_t) : (option scalar_t) :=
           array_to_seq (b_2453)) : scalar_t))).
 
 Definition seckey_scalar_from_bytes (b_2456 : bytes32_t) : (option scalar_t) :=
-  bind (scalar_from_bytes_strict (b_2456)) (fun s_2457 => (if ((s_2457) =.? (
-          nat_mod_zero )):bool then (@None scalar_t) else (@Some scalar_t (
-          s_2457)))).
+  let s_2457 : scalar_t :=
+    scalar_from_bytes_strict (b_2456) in 
+  (if ((s_2457) =.? (nat_mod_zero )):bool then (@None scalar_t) else (
+      @Some scalar_t (s_2457))).
 
 Definition fieldelem_from_bytes
   (b_2458 : public_key_t)
@@ -451,13 +453,11 @@ Notation "'pubkey_gen_result_t'" := ((
   result public_key_t error_t)) : hacspec_scope.
 
 Definition pubkey_gen (seckey_2465 : secret_key_t) : pubkey_gen_result_t :=
-  bind (option_ok_or (seckey_scalar_from_bytes (seckey_2465)) (
-      InvalidSecretKey)) (fun d0_2466 => let p_2467 : (
-        field_element_t ×
-        field_element_t
-      ) :=
-      option_unwrap (finite (point_mul_base (d0_2466))) in 
-    @Ok public_key_t error_t (bytes_from_point (p_2467))).
+  let d0_2466 : scalar_t :=
+    option_ok_or (seckey_scalar_from_bytes (seckey_2465)) (InvalidSecretKey) in 
+  let p_2467 : (field_element_t × field_element_t) :=
+    option_unwrap (finite (point_mul_base (d0_2466))) in 
+  @Ok public_key_t error_t (bytes_from_point (p_2467)).
 
 Notation "'sign_result_t'" := ((result signature_t error_t)) : hacspec_scope.
 
@@ -466,39 +466,37 @@ Definition sign
   (seckey_2469 : secret_key_t)
   (aux_rand_2470 : aux_rand_t)
   : sign_result_t :=
-  bind (option_ok_or (seckey_scalar_from_bytes (seckey_2469)) (
-      InvalidSecretKey)) (fun d0_2471 => let p_2472 : (
-        field_element_t ×
-        field_element_t
-      ) :=
-      option_unwrap (finite (point_mul_base (d0_2471))) in 
-    let d_2473 : scalar_t :=
-      (if (has_even_y (p_2472)):bool then (d0_2471) else ((nat_mod_zero ) -% (
-            d0_2471))) in 
-    let t_2474 : bytes32_t :=
-      xor_bytes (bytes_from_scalar (d_2473)) (hash_aux (aux_rand_2470)) in 
-    let k0_2475 : scalar_t :=
-      scalar_from_bytes (hash_nonce (t_2474) (bytes_from_point (p_2472)) (
-          msg_2468)) in 
-    ifbnd (k0_2475) =.? (nat_mod_zero ) : bool
-    thenbnd (bind (@Err signature_t error_t (InvalidNonceGenerated)) (fun _ =>
-        Ok (tt)))
-    else (tt) >> (fun 'tt =>
-    let r_2476 : (field_element_t × field_element_t) :=
-      option_unwrap (finite (point_mul_base (k0_2475))) in 
-    let k_2477 : scalar_t :=
-      (if (has_even_y (r_2476)):bool then (k0_2475) else ((nat_mod_zero ) -% (
-            k0_2475))) in 
-    let e_2478 : scalar_t :=
-      scalar_from_bytes (hash_challenge (bytes_from_point (r_2476)) (
-          bytes_from_point (p_2472)) (msg_2468)) in 
-    let sig_2479 : signature_t :=
-      array_update (array_update (array_new_ (default) (64)) (usize 0) (
-          array_to_seq (bytes_from_point (r_2476)))) (usize 32) (
-        array_to_seq (bytes_from_scalar ((k_2477) +% ((e_2478) *% (
-              d_2473))))) in 
-    bind (verify (msg_2468) (bytes_from_point (p_2472)) (sig_2479)) (fun _ =>
-      @Ok signature_t error_t (sig_2479)))).
+  let d0_2471 : scalar_t :=
+    option_ok_or (seckey_scalar_from_bytes (seckey_2469)) (InvalidSecretKey) in 
+  let p_2472 : (field_element_t × field_element_t) :=
+    option_unwrap (finite (point_mul_base (d0_2471))) in 
+  let d_2473 : scalar_t :=
+    (if (has_even_y (p_2472)):bool then (d0_2471) else ((nat_mod_zero ) -% (
+          d0_2471))) in 
+  let t_2474 : bytes32_t :=
+    xor_bytes (bytes_from_scalar (d_2473)) (hash_aux (aux_rand_2470)) in 
+  let k0_2475 : scalar_t :=
+    scalar_from_bytes (hash_nonce (t_2474) (bytes_from_point (p_2472)) (
+        msg_2468)) in 
+  let 'tt :=
+    if (k0_2475) =.? (nat_mod_zero ):bool then (let _ : signature_t :=
+        @Err signature_t error_t (InvalidNonceGenerated) in 
+      tt) else (tt) in 
+  let r_2476 : (field_element_t × field_element_t) :=
+    option_unwrap (finite (point_mul_base (k0_2475))) in 
+  let k_2477 : scalar_t :=
+    (if (has_even_y (r_2476)):bool then (k0_2475) else ((nat_mod_zero ) -% (
+          k0_2475))) in 
+  let e_2478 : scalar_t :=
+    scalar_from_bytes (hash_challenge (bytes_from_point (r_2476)) (
+        bytes_from_point (p_2472)) (msg_2468)) in 
+  let sig_2479 : signature_t :=
+    array_update (array_update (array_new_ (default) (64)) (usize 0) (
+        array_to_seq (bytes_from_point (r_2476)))) (usize 32) (
+      array_to_seq (bytes_from_scalar ((k_2477) +% ((e_2478) *% (d_2473))))) in 
+  let _ : unit :=
+    verify (msg_2468) (bytes_from_point (p_2472)) (sig_2479) in 
+  @Ok signature_t error_t (sig_2479).
 
 Notation "'verification_result_t'" := ((result unit error_t)) : hacspec_scope.
 
@@ -507,21 +505,26 @@ Definition verify
   (pubkey_2481 : public_key_t)
   (sig_2482 : signature_t)
   : verification_result_t :=
-  bind (option_ok_or (fieldelem_from_bytes (pubkey_2481)) (InvalidPublicKey)) (
-    fun p_x_2483 => bind (lift_x (p_x_2483)) (fun p_2484 => bind (option_ok_or (
-          fieldelem_from_bytes (array_from_slice (default) (32) (
-              array_to_seq (sig_2482)) (usize 0) (usize 32))) (
-          InvalidSignature)) (fun r_2485 => bind (option_ok_or (
-            scalar_from_bytes_strict (array_from_slice (default) (32) (
-                array_to_seq (sig_2482)) (usize 32) (usize 32))) (
-            InvalidSignature)) (fun s_2486 => let e_2487 : scalar_t :=
-            scalar_from_bytes (hash_challenge (array_from_slice (default) (32) (
-                  array_to_seq (sig_2482)) (usize 0) (usize 32)) (
-                bytes_from_point (p_2484)) (msg_2480)) in 
-          bind (option_ok_or (finite (point_add (point_mul_base (s_2486)) (
-                  point_mul ((nat_mod_zero ) -% (e_2487)) (Affine (p_2484))))) (
-              InvalidSignature)) (fun r_p_2488 => (if ((negb (has_even_y (
-                      r_p_2488))) || ((x (r_p_2488)) !=.? (r_2485))):bool then (
-                @Err unit error_t (InvalidSignature)) else (@Ok unit error_t (
-                  tt)))))))).
+  let p_x_2483 : field_element_t :=
+    option_ok_or (fieldelem_from_bytes (pubkey_2481)) (InvalidPublicKey) in 
+  let p_2484 : affine_point_t :=
+    lift_x (p_x_2483) in 
+  let r_2485 : field_element_t :=
+    option_ok_or (fieldelem_from_bytes (array_from_slice (default) (32) (
+          array_to_seq (sig_2482)) (usize 0) (usize 32))) (InvalidSignature) in 
+  let s_2486 : scalar_t :=
+    option_ok_or (scalar_from_bytes_strict (array_from_slice (default) (32) (
+          array_to_seq (sig_2482)) (usize 32) (usize 32))) (
+      InvalidSignature) in 
+  let e_2487 : scalar_t :=
+    scalar_from_bytes (hash_challenge (array_from_slice (default) (32) (
+          array_to_seq (sig_2482)) (usize 0) (usize 32)) (bytes_from_point (
+          p_2484)) (msg_2480)) in 
+  let r_p_2488 : (field_element_t × field_element_t) :=
+    option_ok_or (finite (point_add (point_mul_base (s_2486)) (point_mul ((
+              nat_mod_zero ) -% (e_2487)) (Affine (p_2484))))) (
+      InvalidSignature) in 
+  (if ((negb (has_even_y (r_p_2488))) || ((x (r_p_2488)) !=.? (
+          r_2485))):bool then (@Err unit error_t (InvalidSignature)) else (
+      @Ok unit error_t (tt))).
 

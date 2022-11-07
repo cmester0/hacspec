@@ -26,24 +26,30 @@ Definition vrf_mgf1
   (n_2489 : rsa_int_t)
   (alpha_2490 : byte_seq)
   : byte_seq_result_t :=
-  bind (i2osp (rsa_int_from_literal (@cast _ uint128 _ (byte_size_v))) (
-      @repr WORDSIZE32 4)) (fun mgf_salt1_2491 => bind (i2osp (n_2489) (
-        byte_size_v)) (fun mgf_salt2_2492 => let mgf_salt_2493 : seq uint8 :=
-        seq_concat (mgf_salt1_2491) (mgf_salt2_2492) in 
-      let mgf_string_2494 : seq uint8 :=
-        seq_concat (seq_concat (array_concat (suite_string_v) (
-              array_to_seq (one_v))) (mgf_salt_2493)) (alpha_2490) in 
-      bind (mgf1 (mgf_string_2494) ((@cast _ uint32 _ (byte_size_v)) - (
-            usize 1))) (fun mgf_2495 => @Ok seq uint8 error_t (mgf_2495)))).
+  let mgf_salt1_2491 : seq uint8 :=
+    i2osp (rsa_int_from_literal (@cast _ uint128 _ (byte_size_v))) (
+      @repr WORDSIZE32 4) in 
+  let mgf_salt2_2492 : seq uint8 :=
+    i2osp (n_2489) (byte_size_v) in 
+  let mgf_salt_2493 : seq uint8 :=
+    seq_concat (mgf_salt1_2491) (mgf_salt2_2492) in 
+  let mgf_string_2494 : seq uint8 :=
+    seq_concat (seq_concat (array_concat (suite_string_v) (
+          array_to_seq (one_v))) (mgf_salt_2493)) (alpha_2490) in 
+  let mgf_2495 : seq uint8 :=
+    mgf1 (mgf_string_2494) ((@cast _ uint32 _ (byte_size_v)) - (usize 1)) in 
+  @Ok seq uint8 error_t (mgf_2495).
 
 Definition prove (sk_2496 : sk_t) (alpha_2497 : byte_seq) : byte_seq_result_t :=
   let '(n_2498, d_2499) :=
     (sk_2496) in 
-  bind (vrf_mgf1 (n_2498) (alpha_2497)) (fun em_2500 =>
-    let m_2501 : rsa_int_t :=
-      os2ip (em_2500) in 
-    bind (rsasp1 (sk_2496) (m_2501)) (fun s_2502 => i2osp (s_2502) (
-        byte_size_v))).
+  let em_2500 : seq uint8 :=
+    vrf_mgf1 (n_2498) (alpha_2497) in 
+  let m_2501 : rsa_int_t :=
+    os2ip (em_2500) in 
+  let s_2502 : rsa_int_t :=
+    rsasp1 (sk_2496) (m_2501) in 
+  i2osp (s_2502) (byte_size_v).
 
 Definition proof_to_hash (pi_string_2503 : byte_seq) : byte_seq_result_t :=
   let hash_string_2504 : seq uint8 :=
@@ -60,10 +66,12 @@ Definition verify
     (pk_2505) in 
   let s_2510 : rsa_int_t :=
     os2ip (pi_string_2507) in 
-  bind (rsavp1 (pk_2505) (s_2510)) (fun m_2511 => bind (vrf_mgf1 (n_2508) (
-        alpha_2506)) (fun em_prime_2512 => let m_prime_2513 : rsa_int_t :=
-        os2ip (em_prime_2512) in 
-      (if ((m_2511) =.? (m_prime_2513)):bool then (proof_to_hash (
-            pi_string_2507)) else (@Err seq uint8 error_t (
-            VerificationFailed))))).
+  let m_2511 : rsa_int_t :=
+    rsavp1 (pk_2505) (s_2510) in 
+  let em_prime_2512 : seq uint8 :=
+    vrf_mgf1 (n_2508) (alpha_2506) in 
+  let m_prime_2513 : rsa_int_t :=
+    os2ip (em_prime_2512) in 
+  (if ((m_2511) =.? (m_prime_2513)):bool then (proof_to_hash (
+        pi_string_2507)) else (@Err seq uint8 error_t (VerificationFailed))).
 

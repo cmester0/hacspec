@@ -95,6 +95,7 @@ Definition mgf1
   : byte_seq_result_t :=
   let result_1968 : (result byte_seq error_t) :=
     @Err byte_seq error_t (InvalidLength) in 
+<<<<<<< ../coq/src/Hacspec_Rsa_Pkcs1.v
   ifbnd (mask_len_1967) <.? ((usize 2) .^ ((usize 32) * (hlen_v))) : bool
   thenbnd (let t_1969 : seq uint8 :=
       seq_new_ (default) (usize 0) in 
@@ -109,4 +110,20 @@ Definition mgf1
       Ok ((result_1968))))
   else ((result_1968)) >> (fun '(result_1968) =>
   result_1968).
+=======
+  ifbnd (mask_len_2395) <.? ((usize 2) .^ ((usize 32) * (hlen_v))) : bool
+  thenbnd (let t_2397 : seq uint8 :=
+      seq_new_ (default) (usize 0) in 
+    bind (foldibnd (usize 0) to (((mask_len_2395) + (usize 32)) / (
+          usize 32)) for t_2397 >> (fun i_2398 t_2397 =>
+      bind (i2osp (nat_mod_from_literal (0x) (pub_u128 (i_2398)) : rsa_int_t) (
+          @repr WORDSIZE32 4)) (fun x_2399 => let t_2397 :=
+          seq_concat (t_2397) (array_to_seq (sha256 (seq_concat (
+                mgf_seed_2394) (x_2399)))) in 
+        Ok ((t_2397))))) (fun t_2397 => let result_2396 :=
+        @Ok byte_seq error_t (seq_slice (t_2397) (usize 0) (mask_len_2395)) in 
+      Ok ((result_2396))))
+  else ((result_2396)) >> (fun '(result_2396) =>
+  result_2396).
+>>>>>>> ../coq/_vc/Hacspec_Rsa_Pkcs1.v
 

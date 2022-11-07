@@ -103,18 +103,23 @@ Definition mgf1
   : byte_seq_result_t :=
   let result_2396 : (result byte_seq error_t) :=
     @Err byte_seq error_t (InvalidLength) in 
-  ifbnd (mask_len_2395) <.? ((usize 2) .^ ((usize 32) * (hlen_v))) : bool
-  thenbnd (let t_2397 : seq uint8 :=
-      seq_new_ (default) (usize 0) in 
-    bind (foldibnd (usize 0) to (((mask_len_2395) + (usize 32)) / (
-          usize 32)) for t_2397 >> (fun i_2398 t_2397 =>
-      bind (i2osp (nat_mod_from_literal (0x) (pub_u128 (i_2398)) : rsa_int_t) (
-          @repr WORDSIZE32 4)) (fun x_2399 => let t_2397 :=
-          seq_concat (t_2397) (array_to_seq (sha256 (seq_concat (
-                mgf_seed_2394) (x_2399)))) in 
-        Ok ((t_2397))))) (fun t_2397 => let result_2396 :=
+  let '(result_2396) :=
+    if (mask_len_2395) <.? ((usize 2) .^ ((usize 32) * (hlen_v))):bool then (
+      let t_2397 : seq uint8 :=
+        seq_new_ (default) (usize 0) in 
+      let t_2397 :=
+        foldi (usize 0) (((mask_len_2395) + (usize 32)) / (
+              usize 32)) (fun i_2398 t_2397 =>
+          let x_2399 : byte_seq :=
+            i2osp (nat_mod_from_literal (0x) (pub_u128 (i_2398)) : rsa_int_t) (
+              @repr WORDSIZE32 4) in 
+          let t_2397 :=
+            seq_concat (t_2397) (array_to_seq (sha256 (seq_concat (
+                  mgf_seed_2394) (x_2399)))) in 
+          (t_2397))
+        t_2397 in 
+      let result_2396 :=
         @Ok byte_seq error_t (seq_slice (t_2397) (usize 0) (mask_len_2395)) in 
-      Ok ((result_2396))))
-  else ((result_2396)) >> (fun '(result_2396) =>
-  result_2396).
+      (result_2396)) else ((result_2396)) in 
+  result_2396.
 

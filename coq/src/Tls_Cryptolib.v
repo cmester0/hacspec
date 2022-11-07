@@ -218,9 +218,15 @@ Definition p256_ecdh
       ) in 
     match p256_point_mul (nat_mod_from_byte_seq_be (x_13) : p256_scalar_t) (
       pk_15) with
+<<<<<<< ../coq/src/Tls_Cryptolib.v
     | Ok (x_16, y_17) => @Ok key_t crypto_error_t (seq_concat (
         nat_mod_to_byte_seq_be (x_16)) (nat_mod_to_byte_seq_be (y_17)))
     | Err _ => @Err key_t crypto_error_t (CryptoError)
+=======
+    | Ok ((x_16, y_17)) => @Ok key_t crypto_error_t (seq_concat (
+        nat_mod_to_byte_seq_be (x_16)) (nat_mod_to_byte_seq_be (y_17)))
+    | Err (_) => @Err key_t crypto_error_t (CryptoError)
+>>>>>>> ../coq/_vc/Tls_Cryptolib.v
     end).
 
 Definition ecdh

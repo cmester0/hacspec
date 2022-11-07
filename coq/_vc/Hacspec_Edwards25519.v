@@ -341,9 +341,10 @@ Definition decompress (q_2060 : compressed_ed_point_t) : (option ed_point_t) :=
   let y_s_2063 :=
     array_upd y_s_2063 (usize 31) ((array_index (y_s_2063) (usize 31)) .& (
         secret (@repr WORDSIZE8 127) : int8)) in 
-  ifbnd negb (check_canonical_point (y_s_2063)) : bool
-  thenbnd (bind (@None ed_point_t) (fun _ => Some (tt)))
-  else (tt) >> (fun 'tt =>
+  let 'tt :=
+    if negb (check_canonical_point (y_s_2063)):bool then (let _ : ed_point_t :=
+        @None ed_point_t in 
+      tt) else (tt) in 
   let y_2064 : ed25519_field_element_t :=
     nat_mod_from_byte_seq_le (
       array_to_seq (y_s_2063)) : ed25519_field_element_t in 
@@ -357,18 +358,21 @@ Definition decompress (q_2060 : compressed_ed_point_t) : (option ed_point_t) :=
     ((d_2061) *% (yy_2066)) +% (z_2065) in 
   let xx_2069 : ed25519_field_element_t :=
     (u_2067) *% (nat_mod_inv (v_2068)) in 
-  bind (sqrt (xx_2069)) (fun x_2070 => let x_r_2071 : uint8 :=
-      is_negative (x_2070) in 
-    ifbnd ((x_2070) =.? (nat_mod_zero )) && ((uint8_declassify (x_s_2062)) =.? (
-        @repr WORDSIZE8 1)) : bool
-    thenbnd (bind (@None ed_point_t) (fun _ => Some (tt)))
-    else (tt) >> (fun 'tt =>
-    let '(x_2070) :=
-      if (uint8_declassify (x_r_2071)) !=.? (uint8_declassify (
-          x_s_2062)):bool then (let x_2070 :=
-          (nat_mod_zero ) -% (x_2070) in 
-        (x_2070)) else ((x_2070)) in 
-    some ((x_2070, y_2064, z_2065, (x_2070) *% (y_2064)))))).
+  let x_2070 : ed25519_field_element_t :=
+    sqrt (xx_2069) in 
+  let x_r_2071 : uint8 :=
+    is_negative (x_2070) in 
+  let 'tt :=
+    if ((x_2070) =.? (nat_mod_zero )) && ((uint8_declassify (x_s_2062)) =.? (
+        @repr WORDSIZE8 1)):bool then (let _ : ed_point_t :=
+        @None ed_point_t in 
+      tt) else (tt) in 
+  let '(x_2070) :=
+    if (uint8_declassify (x_r_2071)) !=.? (uint8_declassify (
+        x_s_2062)):bool then (let x_2070 :=
+        (nat_mod_zero ) -% (x_2070) in 
+      (x_2070)) else ((x_2070)) in 
+  some ((x_2070, y_2064, z_2065, (x_2070) *% (y_2064))).
 
 Definition decompress_non_canonical
   (p_2072 : compressed_ed_point_t)
@@ -397,14 +401,16 @@ Definition decompress_non_canonical
     ((d_2073) *% (yy_2078)) +% (z_2077) in 
   let xx_2081 : ed25519_field_element_t :=
     (u_2079) *% (nat_mod_inv (v_2080)) in 
-  bind (sqrt (xx_2081)) (fun x_2082 => let x_r_2083 : uint8 :=
-      is_negative (x_2082) in 
-    let '(x_2082) :=
-      if (uint8_declassify (x_r_2083)) !=.? (uint8_declassify (
-          x_s_2074)):bool then (let x_2082 :=
-          (nat_mod_zero ) -% (x_2082) in 
-        (x_2082)) else ((x_2082)) in 
-    some ((x_2082, y_2076, z_2077, (x_2082) *% (y_2076)))).
+  let x_2082 : ed25519_field_element_t :=
+    sqrt (xx_2081) in 
+  let x_r_2083 : uint8 :=
+    is_negative (x_2082) in 
+  let '(x_2082) :=
+    if (uint8_declassify (x_r_2083)) !=.? (uint8_declassify (
+        x_s_2074)):bool then (let x_2082 :=
+        (nat_mod_zero ) -% (x_2082) in 
+      (x_2082)) else ((x_2082)) in 
+  some ((x_2082, y_2076, z_2077, (x_2082) *% (y_2076))).
 
 Definition encode (p_2084 : ed_point_t) : byte_seq :=
   let '(x_2085, y_2086, z_2087, _) :=
