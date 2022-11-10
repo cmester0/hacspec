@@ -31,10 +31,10 @@ jobs:
       with:
         repository: AU-COBRA/AUCurves
         path: AUCurves
-	submodules: 'true'
+        submodules: 'true'
     - name: Check AUCurves
       run: |
         cp coq/src/Hacspec_Lib.v AUCurves/src/Hacspec/Util/Lib.v
         cp coq/src/MachineIntegers.v AUCurves/src/Hacspec/Util/MachineIntegers.v
         cd AUCurves
-	make
+        make
