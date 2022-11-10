@@ -9,7 +9,7 @@ jobs:
       options: --user root
     steps:
     - uses: actions/checkout@v3
-    - name: Build
+    - name: Generate examples
       run: |
         export HOME=/home/coq
         export PATH=$HOME/.cargo/bin:$PATH
@@ -27,3 +27,14 @@ jobs:
         cd ../coq
         coq_makefile -f _CoqProject -o Makefile
         make
+    - uses: actions/checkout@v3
+      with:
+        repository: AU-COBRA/AUCurves
+        path: AUCurves
+	submodules: 'true'
+    - name: Check AUCurves
+      run: |
+        cp coq/src/Hacspec_Lib.v AUCurves/src/Hacspec/Util/Lib.v
+        cp coq/src/MachineIntegers.v AUCurves/src/Hacspec/Util/MachineIntegers.v
+        cd AUCurves
+	make
