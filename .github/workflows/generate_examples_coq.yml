@@ -35,7 +35,7 @@ jobs:
         cd ../coq
         coq_makefile -f _CoqProject -o Makefile
         make
-        cd ..
+        cd ../../
         cp Hacspec/coq/src/Hacspec_Lib.v AUCurves/src/Hacspec/Util/Lib.v
         cp Hacspec/coq/src/MachineIntegers.v AUCurves/src/Hacspec/Util/MachineIntegers.v
         cd AUCurves
