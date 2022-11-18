@@ -210,7 +210,7 @@ lift_to_both0 (uint128_rotate_right u s).
   (* should use size u instead of u? *)
   Definition usize_shift_left_ (u: uint_size) (s: int32) : both0 (uint_size) :=
     lift_to_both (u usize_shift_left s).
-  
+
   (**** Operations *)
 
   Definition shift_left_ `{WS : wsize} (i : @int WS) (j : uint_size) : both0 (@int WS) := lift_to_both (@shift_left_ WS i j).
@@ -782,7 +782,7 @@ Section Loops.
     apply H_loc_incl.
     apply H_opsig_incl.
   Defined.
-    
+
   (* Global Arguments foldi {_} _ _ {_} {_} {_} _ _ {_} {_}. *)
 
   Lemma valid_remove_back :
@@ -1182,7 +1182,7 @@ Section Arrays.
              (s1: (T (nseq a len)))
              (s2 : (T (nseq a len))) : both0 ((nseq a len)) :=
     lift_to_both (array_join_map op s1 s2).
-    
+
   Fixpoint array_eq_
            {a: ChoiceEquality}
            {len: nat}
@@ -1666,7 +1666,7 @@ Notation "'letb' ''' x ':=' y 'in' f" :=
   (let_both (lift_scope (H_loc_incl := _) (H_opsig_incl := _) y) (fun x => f)) (at level 100, x pattern, right associativity).
 
 Definition ChoiceEqualityLocation := ∑ (t : ChoiceEquality), nat.
-Definition CE_loc_to_loc := 
+Definition CE_loc_to_loc :=
   ((fun '(k ; n) => (ct k; n)) : ChoiceEqualityLocation -> Location).
 Notation "'CE_loc_to_CE'" := (@projT1 ChoiceEquality (fun _ => nat)).
 Coercion CE_loc_to_loc : ChoiceEqualityLocation >-> Location.
@@ -1695,14 +1695,14 @@ Program Definition let_mut_both {L : {fset Location}} {I} {B : ChoiceEquality}
   {|
     is_state := letmc temp loc( x_loc ) := x in f ;
      is_pure := is_pure (f (is_pure x)) ;
-  |}.  
+  |}.
 Next Obligation.
   intros.
   cbn.
   replace (ret _) with (temp ← ret (is_pure x) ;; ret (T_ct (is_pure (f (ct_T temp))))) by (cbn ; now rewrite ct_T_id).
 
   destruct x_loc as [A n].
-  
+
   eapply r_bind.
   apply x.
   intros.
@@ -1733,7 +1733,7 @@ Notation "'letbnd(' M ')' ' x ':=' y 'in' f" := (ChoiceEqualityMonad.bind_both (
 
 Program Definition bind_code_mut  {L : {fset Location}} {I} `{H_bind_code : ChoiceEqualityMonad.BindCode} {B : ChoiceEquality} (x_loc : ChoiceEqualityLocation) {A : ChoiceEquality} `{H_loc : M A = (CE_loc_to_CE x_loc)} `{H_in: is_true (ssrbool.in_mem (CE_loc_to_loc x_loc) (ssrbool.mem L))} (x : code L I (CE_loc_to_CE x_loc)) (f : A -> code L I (M B)) : code L I (M B) .
 Proof.
-  destruct x_loc as [? n]. 
+  destruct x_loc as [? n].
   cbn in *. subst.
   refine ({code ChoiceEqualityMonad.bind_code x (fun temp => {code
          #put (ct (M A) ; n) := T_ct (ChoiceEqualityMonad.ret temp) ;;
@@ -1768,9 +1768,9 @@ Proof.
   refine (code_eq_proof_statement (@ChoiceEqualityMonad.bind_both _ _ _ H_bind_both L I A B x (fun temp => {| is_state := {code #put ((ct (M A); n) : Location) := ChoiceEqualityMonad.ret temp ;; f temp } |}))).
   unfold prog.
   apply better_r_put_lhs.
-  eapply rpre_weaken_rule with (pre := true_precond).  
+  eapply rpre_weaken_rule with (pre := true_precond).
   apply (code_eq_proof_statement (f temp)).
-  easy. 
+  easy.
 Defined.
 
 Notation "'bndm(' M ',' A ',' B ',' L ')' x '⇠' y 'in' f" := (ChoiceEqualityMonad.bind_code (BindCode := M) (A := A) (B := B) (L := L) y (fun x => f)) (at level 100, x pattern, right associativity).
@@ -1886,7 +1886,7 @@ Proof.
   apply code_ext.
 
   subst.
-  
+
   set ((fun (x0 : uint_size) (y : M A) => _)).
   set ((fun (x0 : uint_size) (y : M A) => _)).
   enough (y0 = y).
@@ -1926,7 +1926,7 @@ Proof.
       apply functional_extensionality. intros.
       symmetry.
       apply H0.
-Qed.      
+Qed.
 
 Section TodoSection3.
 Definition nat_mod_from_byte_seq_be {A n} (x : seq A) : both0 (nat_mod n) := lift_to_both (nat_mod_from_byte_seq_be x).
@@ -2561,10 +2561,10 @@ Ltac init_both_proof b_state b_pure :=
 Ltac foldi_state_eq_code :=
   erewrite <- @foldi_bind_both_proj_code' ; [ reflexivity | intros ; hnf | reflexivity | reflexivity  ].
 Ltac bind_both_eq_code :=
-  erewrite <- @ChoiceEqualityMonad.bind_both_proj_code ; [ reflexivity | hnf | reflexivity ].  
-  
+  erewrite <- @ChoiceEqualityMonad.bind_both_proj_code ; [ reflexivity | hnf | reflexivity ].
 
-Theorem letbm_proj_code : 
+
+Theorem letbm_proj_code :
   forall (L1 L2 : {fset Location}) `{H_loc_incl : List.incl L1 L2} {I1 I2 : {fset opsig}} `{H_opsig_incl : List.incl I1 I2} B (i : ChoiceEqualityLocation),
   forall `{H_in : is_true (ssrbool.in_mem (CE_loc_to_loc i) (ssrbool.mem L2))} (x : both L1 I1 (CE_loc_to_CE i)) (f : (CE_loc_to_CE i) -> both L2 I2 B) (y : code L1 I1 (CE_loc_to_CE i)) (g : (CE_loc_to_CE i) -> code L2 I2 B),
     is_state x = y ->
@@ -2587,11 +2587,11 @@ Proof.
   apply f_equal.
   rewrite H_fun_eq.
   reflexivity.
-Qed.  
+Qed.
 
-Ltac letbm_eq_code :=    
+Ltac letbm_eq_code :=
   match goal with
-  | [ |- context [let_mut_both _ (lift_scope ?k) ?f] ] => 
+  | [ |- context [let_mut_both _ (lift_scope ?k) ?f] ] =>
       erewrite letbm_proj_code with (g := f) (y := k) ; [ hnf | reflexivity | reflexivity ]
   end.
 Ltac f_equal_fun_ext :=
@@ -2612,7 +2612,7 @@ Definition seq_link_both { L1 L2 : {fset Location} } {I} {M : InterfaceCE} {E} (
                                                (pack_valid p1)
                                                (pack_valid p2) |} ;
     pack_eq_proof_statement := pack_eq_proof_statement
-  |}.  
+  |}.
 
 Definition par_link { L1 L2 : {fset Location} }  { I1 I2 E1 E2} (p1 : package L1 I1 E1) (p2 : package L2 I2 E2) (_ : pkg_composition.Parable p1 p2) : package (L1 :|: L2) (I1 :|: I2) (E1 :|: E2) :=
   {|
@@ -2666,4 +2666,3 @@ Notation "'link_rest_both(' a , b , .. , c ')'" :=
   (par_link_both .. ( par_link_both a b _ ) .. c _) : hacspec_scope.
 
 (* Ltac par_link p1 p2 := par_link p1 p2 ltac:(cbv ; now destruct fset_key). *)
-

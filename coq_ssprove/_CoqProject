@@ -26,3 +26,6 @@ src/Hacspec_Curve25519.v
 src/Hacspec_Hmac.v # depends on sha256
 src/Hacspec_Hkdf.v # Cannot infer M for bind (should use result_monad) # depends on Hmac and Sha256
 # src/Tls_Cryptolib.v
+
+src/Xor_Both.v
+src/Hacspec_Aes_Jazz.v

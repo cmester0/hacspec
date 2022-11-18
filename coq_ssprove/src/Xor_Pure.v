@@ -3,7 +3,7 @@ Set Warnings "-notation-overridden,-ambiguous-paths".
 From Crypt Require Import choice_type Package Prelude.
 Import PackageNotation.
 From extructures Require Import ord fset.
-(* From CoqWord Require Import ssrZ word. *)
+(* From CoqWord Require Import word.ssrZ word. *)
 From Jasmin Require Import word.
 Require Import ChoiceEquality.
 

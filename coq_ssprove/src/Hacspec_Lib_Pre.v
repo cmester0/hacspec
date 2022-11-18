@@ -64,7 +64,7 @@ Section IntType.
   Definition int_or {WS : wsize} : @int WS -> @int WS -> @int WS := wor.
 
   Definition int_not {WS : wsize} : @int WS -> @int WS := wnot.
-  
+
   Definition zero {WS : wsize} : T (@int WS) := @word0 WS.
   Definition one {WS : wsize} : T (@int WS) := @word1 (pred WS).
 
@@ -133,7 +133,7 @@ End IntType.
 
 Axiom secret : forall {WS : wsize},  (T (@int WS)) -> (T (@int WS)).
 
-Infix "%%" := int_modi (at level 40, left associativity) : Z_scope.
+Infix ".%%" := int_modi (at level 40, left associativity) : Z_scope.
 Infix ".+" := int_add (at level 77) : hacspec_scope.
 Infix ".-" := int_sub (at level 77) : hacspec_scope.
 Notation "-" := int_opp (at level 77) : hacspec_scope.
@@ -1113,9 +1113,9 @@ Defined.
 Definition repr_Z_succ : forall WS z, @repr WS (Z.succ z) = (repr z .+ one).
 Proof.
   intros.
-  replace one with (@repr WS 1) by (unfold one ; now rewrite word1_zmodE).    
+  replace one with (@repr WS 1) by (unfold one ; now rewrite word1_zmodE).
   now rewrite add_repr.
-Qed.  
+Qed.
 
 Definition array_from_list
            (A: ChoiceEquality)
@@ -1521,7 +1521,7 @@ Definition seq_get_exact_chunk {a : ChoiceEquality} `{Default (T (a))} (l : (T (
 Definition seq_set_exact_chunk {a : ChoiceEquality} `{H : Default (T (a))} :=
   @seq_set_chunk a H.
 
-Definition seq_get_remainder_chunk {a : ChoiceEquality} `{Default a} (l : seq a) (chunk_size : uint_size) : seq a :=  
+Definition seq_get_remainder_chunk {a : ChoiceEquality} `{Default a} (l : seq a) (chunk_size : uint_size) : seq a :=
   let chunks := seq_num_chunks l chunk_size in
   let last_chunk := if (zero <.? chunks)
                     then (chunks .- one)%nat
@@ -1535,7 +1535,7 @@ Check @fmap.FMap.FMap _ _ [].
 
 Fixpoint list_xor_ {WS} (x y : list (@int WS)) : list (@int WS) :=
   match x, y with
-  | (x :: xs), (y :: ys) => (int_xor x y) :: (list_xor_ xs ys) 
+  | (x :: xs), (y :: ys) => (int_xor x y) :: (list_xor_ xs ys)
   | [] , _ => y
   | _, [] => x
   end.
@@ -1552,7 +1552,7 @@ Fixpoint list_truncate {a} (x : list a) (n : nat) : list a := (* uint_size *)
   end.
 Definition seq_truncate {a} (x : seq a) (n : nat) : seq a := (* uint_size *)
   seq_from_list _ (list_truncate (seq_to_list _ x) n).
-  
+
 (**** Numeric operations *)
 
 (* takes two nseq's and joins them using a function op : a -> a -> a *)
@@ -2083,7 +2083,7 @@ Global Program Instance Dec_eq_prod (A B : Type) `{EqDec A} `{EqDec B} : EqDec (
   }.
 Next Obligation.
   split ; intros ; destruct x ; destruct y.
-  - unfold is_true in H1. 
+  - unfold is_true in H1.
     symmetry in H1.
     apply Bool.andb_true_eq in H1. destruct H1.
     symmetry in H1. rewrite (eqb_leibniz) in H1.
@@ -2188,8 +2188,8 @@ Module ChoiceEqualityMonad.
       (* ret_bind : forall {A : ChoiceEquality} (x : M A) , bind x ret = x ; *)
       (* bind_cong : forall {A B C : ChoiceEquality} (x : M A) (f : A -> M B) (g : B -> M C), *)
       (*   bind (bind x f) g = bind x (fun x => bind (f x) g) ; *)
-    }. 
-  
+    }.
+
   Class CEMonad2 (M : ChoiceEquality -> ChoiceEquality) : Type :=
     {
       unit {A : ChoiceEquality} (x : A) : M A ;
@@ -2212,7 +2212,7 @@ Module ChoiceEqualityMonad.
 
   Class CEMonad_prod (M M0 : ChoiceEquality -> ChoiceEquality) :=
     { prod : forall A, M0 (M (M0 A)) -> M (M0 A) }.
-  
+
   #[global] Program Instance ComposeProd2 `{CEMonad2} `{CEMonad2} `{@CEMonad_prod M M0} : CEMonad2 (fun x => M (M0 x)) :=
     {|
       unit A x := unit (A := M0 A) (unit x) ;
@@ -2221,7 +2221,7 @@ Module ChoiceEqualityMonad.
     |}.
 
   #[global] Instance ComposeProd `{CEMonad} `{CEMonad} `(@CEMonad_prod M M0) : CEMonad (fun x => M (M0 x)) := (@CEMonad2ToCEMonad _ ComposeProd2).
-  
+
   Definition bind_prod `{CEMonad} `{CEMonad} `{@CEMonad_prod M M0}
              {A B} (x : M (M0 A)) (f : A -> M (M0 B))
     : M (M0 B) :=
@@ -2231,7 +2231,7 @@ Module ChoiceEqualityMonad.
 
   Class CEMonad_swap (M M0 : ChoiceEquality -> ChoiceEquality) :=
     { swap : forall A, M0 (M A) -> M (M0 A) }.
-  
+
   #[global] Program Instance ComposeSwap2 `{CEMonad2 } `{CEMonad2} `{@CEMonad_swap M M0} : CEMonad2 (fun x => M (M0 x)) :=
     {|
       unit A x := unit (A := M0 A) (unit x) ;
@@ -2244,8 +2244,8 @@ Module ChoiceEqualityMonad.
   Definition bind_swap `{CEMonad} `{CEMonad} `{@CEMonad_swap M M0}
              A B (x : M (M0 A)) (f : A -> M (M0 B)) : M (M0 B) :=
     (@bind _ (@ComposeSwap M _ M0 _ _) A B x f).
-  
-  
+
+
   Section ResultMonad.
     Definition result_bind {C A B} (r : result C A) (f : A -> result C B) : result C B :=
       match r with
@@ -2254,24 +2254,24 @@ Module ChoiceEqualityMonad.
       end.
 
     Definition result_ret {C A : ChoiceEquality} (a : A) : result C A := Ok a.
-    
+
     Global Instance result_monad {C : ChoiceEquality} : CEMonad (result C) :=
       {|  (* (@result_bind C) (@result_ret C) *)
         bind := (@result_bind C) ;
         ret := (@result_ret C) ;
       |}.
-    
+
     Arguments result_monad {_} &.
 
-    
-    
+
+
     (* Existing Instance result_monad. *)
 
-    
+
   End ResultMonad.
 
 
-  
+
   Definition option_bind {A B} (r : option A) (f : A -> option B) : option B :=
     match r with
       Some (a) => f a
@@ -2346,4 +2346,3 @@ Global Instance nat_mod_default {p : Z} : Default (nat_mod p) := {
 Global Instance prod_default {A B : ChoiceEquality} `{Default A} `{Default B} : Default (A '× B) := {
     default := (default, default)
   }.
-

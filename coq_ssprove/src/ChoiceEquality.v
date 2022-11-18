@@ -147,11 +147,11 @@ Defined.
 
 
 Definition pre_to_post (P : precond) {A} : postcond A A :=
-  fun '(a, h₀) '(b, h₁) => a = b /\ P (h₀ , h₁).  
+  fun '(a, h₀) '(b, h₁) => a = b /\ P (h₀ , h₁).
 Definition pre_to_post_ret (P : precond) {A} v : postcond A A :=
-  fun '(a, h₀) '(b, h₁) => (a = b /\ b = v) /\ P (h₀ , h₁).  
+  fun '(a, h₀) '(b, h₁) => (a = b /\ b = v) /\ P (h₀ , h₁).
 
-Definition true_precond : precond := fun _ => True.
+Definition true_precond : precond := fun '(_, _) => True.
 
 Class both L I (A : ChoiceEquality) :=
   {
