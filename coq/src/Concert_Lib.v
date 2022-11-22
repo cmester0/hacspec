@@ -89,8 +89,11 @@ Global Instance show_has_action_t : Show (has_action_t) :=
 Definition g_has_action_t : G (has_action_t) := oneOf_ (bindGen arbitrary (fun a => returnGen (Accept a))) [bindGen arbitrary (fun a => returnGen (Accept a));bindGen arbitrary (fun a => returnGen (SimpleTransfer a))].
 Global Instance gen_has_action_t : Gen (has_action_t) := Build_Gen has_action_t g_has_action_t.
 
-Definition to_action_body_list (ctx : ContractCallContext) {X} : option (X ∏ list has_action_t) -> option (X ∏ list ActionBody)  :=
-  option_map (fun '(x, y) => (x, List.map (to_action_body ctx) y)).
+Definition to_action_body_list (ctx : ContractCallContext) {X} (k : option (X ∏ list has_action_t)) : ResultMonad.result (X ∏ list ActionBody) unit  :=
+  match (option_map (fun '(x, y) => (x, List.map (to_action_body ctx) y)) k) with
+    Some a => ResultMonad.Ok a
+  | None => ResultMonad.Err tt
+  end.
 
 
 Instance show_user_address_t : Show (user_address_t) := Build_Show (user_address_t) show.
