@@ -338,7 +338,7 @@ fn translate_enum_case_name<'a>(
 
 pub(crate) fn translate_base_typ<'a>(tau: BaseTyp) -> RcDoc<'a, ()> {
     match tau {
-        BaseTyp::Bool => RcDoc::as_string("bool_ChoiceEquality"),
+        BaseTyp::Bool => RcDoc::as_string("'bool"),
         BaseTyp::UInt8 => RcDoc::as_string("int8"),
         BaseTyp::Int8 => RcDoc::as_string("int8"),
         BaseTyp::UInt16 => RcDoc::as_string("int16"),
@@ -398,7 +398,7 @@ pub(crate) fn translate_base_typ<'a>(tau: BaseTyp) -> RcDoc<'a, ()> {
         BaseTyp::Variable(id) => RcDoc::as_string(format!("t{}", id.0)),
         BaseTyp::Tuple(args) => {
             if args.len() == 0 {
-                RcDoc::as_string("unit_ChoiceEquality")
+                RcDoc::as_string("'unit")
             } else {
                 make_typ_tuple(args.into_iter().map(|(arg, _)| translate_base_typ(arg)))
             }
@@ -417,9 +417,9 @@ pub(crate) fn translate_typ<'a>((_, (tau, _)): Typ) -> RcDoc<'a, ()> {
 
 fn translate_literal<'a>(lit: Literal) -> RcDoc<'a, ()> {
     match lit {
-        Literal::Unit => RcDoc::as_string("(tt : unit_ChoiceEquality)"),
-        Literal::Bool(true) => RcDoc::as_string("(true : bool_ChoiceEquality)"),
-        Literal::Bool(false) => RcDoc::as_string("(false : bool_ChoiceEquality)"),
+        Literal::Unit => RcDoc::as_string("(tt : 'unit)"),
+        Literal::Bool(true) => RcDoc::as_string("(true : 'bool)"),
+        Literal::Bool(false) => RcDoc::as_string("(false : 'bool)"),
         Literal::Int128(x) => RcDoc::as_string(format!("@repr U128 {}", x)),
         Literal::UInt128(x) => RcDoc::as_string(format!("@repr U128 {}", x)),
         Literal::Int64(x) => RcDoc::as_string(format!("@repr U64 {}", x)),
@@ -1037,7 +1037,7 @@ fn translate_expression<'a>(
                     RcDoc::as_string("if")
                         .append(RcDoc::space())
                         .append(make_paren(trans_cond))
-                        .append(RcDoc::as_string(":bool_ChoiceEquality"))
+                        .append(RcDoc::as_string(":'bool"))
                         .append(RcDoc::space())
                         .append(RcDoc::as_string("then (*inline*)"))
                         .append(RcDoc::space())
@@ -1809,7 +1809,7 @@ fn translate_statements<'a>(
                 let expr = RcDoc::as_string("if")
                     .append(RcDoc::space())
                     .append(trans_cond.clone())
-                    .append(RcDoc::as_string(":bool_ChoiceEquality"))
+                    .append(RcDoc::as_string(":'bool"))
                     .append(RcDoc::line())
                     .append(RcDoc::as_string("then (*not state*)"))
                     .append(RcDoc::space())
@@ -2042,7 +2042,7 @@ pub(crate) fn fset_from_scope<'a>(smvars: ScopeMutableVars) -> RcDoc<'a, ()> {
     if all.len() == 0 {
         RcDoc::as_string("fset.fset0")
     } else {
-        RcDoc::as_string("CEfset ").append(make_paren(list_of_loc_vars(smvars)))
+        RcDoc::as_string("fset ").append(make_paren(list_of_loc_vars(smvars)))
     }
 }
 
@@ -2052,7 +2052,7 @@ fn locations_from_scope<'a>(smvars: ScopeMutableVars) -> RcDoc<'a, ()> {
         locals.into_iter().map(|(i, typ)| {
             make_definition(
                 translate_ident(i.clone()).append("_loc"),
-                Some(RcDoc::as_string("ChoiceEqualityLocation")),
+                Some(RcDoc::as_string("Location")),
                 make_paren(
                     match typ {
                         Some(typ) => translate_typ(typ),
@@ -2460,7 +2460,7 @@ pub(crate) fn translate_item<'a>(
                         .iter()
                         .map(|((_x, _), (tau, _))| translate_typ(tau.clone())),
                     RcDoc::space()
-                        .append(RcDoc::as_string("'×"))
+                        .append(RcDoc::as_string("×"))
                         .append(RcDoc::space()),
                 )
             };
@@ -2614,7 +2614,7 @@ pub(crate) fn translate_item<'a>(
         }
         Item::EnumDecl(name, cases) => make_definition(
             translate_enum_name(name.0.clone()),
-            Some(RcDoc::as_string("ChoiceEquality")),
+            Some(RcDoc::as_string("choice_type")),
             RcDoc::intersperse(
                 cases.into_iter().map(|(case_name, case_typ)| {
                     translate_base_typ(match case_typ {
@@ -2918,6 +2918,7 @@ pub fn translate_and_write_to_file(
          Open Scope Z_scope.\n\
          Open Scope bool_scope.\n\
          \n\
+         From mathcomp Require Import choice.
          Require Import ChoiceEquality.\n\
          Require Import LocationUtility.\n\
          Require Import Hacspec_Lib_Comparable.\n\

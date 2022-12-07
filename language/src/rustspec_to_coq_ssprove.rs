@@ -79,9 +79,9 @@ fn translate_pattern<'a>(p: Pattern) -> RcDoc<'a, ()> {
 
 fn translate_literal<'a>(lit: Literal) -> RcDoc<'a, ()> {
     match lit {
-        Literal::Unit => RcDoc::as_string("(tt : unit_ChoiceEquality)"),
-        Literal::Bool(true) => RcDoc::as_string("(true : bool_ChoiceEquality)"),
-        Literal::Bool(false) => RcDoc::as_string("(false : bool_ChoiceEquality)"),
+        Literal::Unit => RcDoc::as_string("(tt : 'unit)"),
+        Literal::Bool(true) => RcDoc::as_string("(true : 'bool)"),
+        Literal::Bool(false) => RcDoc::as_string("(false : 'bool)"),
         Literal::Int128(x) => RcDoc::as_string(format!("@repr U128 {}", x)),
         Literal::UInt128(x) => RcDoc::as_string(format!("@repr U128 {}", x)),
         Literal::Int64(x) => RcDoc::as_string(format!("@repr U64 {}", x)),
@@ -583,7 +583,7 @@ fn translate_statements<'a>(
                 .append(RcDoc::space())
                 .append(trans_cond.clone())
                 .append(RcDoc::space())
-                .append(RcDoc::as_string(":bool_ChoiceEquality"))
+                .append(RcDoc::as_string(":'bool"))
                 .append(RcDoc::line())
                 .append(RcDoc::as_string("then"))
                 .append(RcDoc::space())
@@ -765,14 +765,14 @@ fn translate_item<'a>(item: DecoratedItem, top_ctx: &'a TopLevelContext) -> RcDo
                     .append(RcDoc::as_string(":="))
                     .append(make_paren(
                         if sig.args.is_empty() {
-                            RcDoc::as_string("unit_ChoiceEquality")
+                            RcDoc::as_string("'unit")
                         } else {
                             RcDoc::intersperse(
                                 sig.args.iter().map(|((_x, _), (tau, _))| {
                                     rustspec_to_coq_ssprove_state::translate_typ(tau.clone())
                                 }),
                                 RcDoc::space()
-                                    .append(RcDoc::as_string("'×"))
+                                    .append(RcDoc::as_string("×"))
                                     .append(RcDoc::space()),
                             )
                         }
@@ -792,18 +792,18 @@ fn translate_item<'a>(item: DecoratedItem, top_ctx: &'a TopLevelContext) -> RcDo
                     .append(RcDoc::as_string(":="))
                     .append(make_paren(
                         if sig.args.is_empty() {
-                            RcDoc::as_string("unit_ChoiceEquality")
+                            RcDoc::as_string("'unit")
                         } else {
                             RcDoc::intersperse(
                                 sig.args.iter().map(|((_x, _), (tau, _))| {
                                     rustspec_to_coq_ssprove_state::translate_typ(tau.clone())
                                 }),
                                 RcDoc::space()
-                                    .append(RcDoc::as_string("'×"))
+                                    .append(RcDoc::as_string("×"))
                                     .append(RcDoc::space()),
                             )
                         }
-                        .append(RcDoc::as_string(" : ChoiceEquality")),
+                        .append(RcDoc::as_string(" : choice_type")),
                     ))
                     .append(RcDoc::as_string(" (at level 2)."));
 
@@ -835,7 +835,7 @@ fn translate_item<'a>(item: DecoratedItem, top_ctx: &'a TopLevelContext) -> RcDo
                     .append(RcDoc::as_string(":="))
                     .append(make_paren(
                         rustspec_to_coq_ssprove_state::translate_base_typ(sig.ret.0.clone())
-                            .append(RcDoc::as_string(" : ChoiceEquality")),
+                            .append(RcDoc::as_string(" : choice_type")),
                     ))
                     .append(RcDoc::as_string(" (at level 2)."));
 
@@ -956,6 +956,7 @@ pub fn translate_and_write_to_file(
          Open Scope Z_scope.\n\
          Open Scope bool_scope.\n\
          \n\
+         From mathcomp Require Import choice.
          Require Import ChoiceEquality.\n\
          Require Import LocationUtility.\n\
          Require Import Hacspec_Lib_Comparable.\n\

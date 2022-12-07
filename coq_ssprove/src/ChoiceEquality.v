@@ -4,6 +4,7 @@ Import PackageNotation.
 From Crypt Require Import pkg_interpreter.
 From extructures Require Import ord fset fmap.
 Require Import Hacspec_Lib_Comparable.
+From mathcomp Require Import ssrbool.
 
 Require Import LocationUtility.
 Require Import Coq.Logic.FunctionalExtensionality.
@@ -19,113 +20,47 @@ Open Scope rsemantic_scope.
 (* with a proof of equality between the two.                                  *)
 (******************************************************************************)
 
-Monomorphic Class ChoiceEquality := {
-    T : Type@{choice.Choice.type.u0} ;
-    ct : choice_type ;
-    ChoiceEq : @eq Type@{choice.Choice.type.u0} (choice.Choice.sort (chElement ct)) T ;
-  }.
+(* Monomorphic Class ChoiceEquality := { *)
+(*     T : Type@{choice.Choice.type.u0} ; *)
+(*     ct : choice_type ; *)
+(*     ChoiceEq : @eq Type@{choice.Choice.type.u0} (choice.Choice.sort (chElement ct)) T ; *)
+(*   }. *)
 
-Arguments T ChoiceEquality : clear implicits.
-Arguments ct ChoiceEquality : clear implicits.
-Arguments ChoiceEq ChoiceEquality : clear implicits.
+(* Arguments T ChoiceEquality : clear implicits. *)
+(* Arguments ct ChoiceEquality : clear implicits. *)
+(* Arguments ChoiceEq ChoiceEquality : clear implicits. *)
 
-Global Coercion T : ChoiceEquality >-> Sortclass.
-Global Coercion ct : ChoiceEquality >-> choice_type.
+(* Global Coercion T : ChoiceEquality >-> Sortclass. *)
+(* Global Coercion ct : ChoiceEquality >-> choice_type. *)
 
-Definition ct_T {ce : ChoiceEquality} (x : choice.Choice.sort (ct ce)) : T ce :=
-  eq_rect (choice.Choice.sort (chElement (ct ce))) id x (T ce) (ChoiceEq _).
+(* Definition ct_T {ce : ChoiceEquality} (x : choice.Choice.sort (ct ce)) : T ce := *)
+(*   eq_rect (choice.Choice.sort (chElement (ct ce))) id x (T ce) (ChoiceEq _). *)
 
-Definition T_ct {ce : ChoiceEquality} (x : T ce) : choice.Choice.sort (ct ce) :=
-  eq_rect_r id x (ChoiceEq _).
+(* Definition T_ct {ce : ChoiceEquality} (x : T ce) : choice.Choice.sort (ct ce) := *)
+(*   eq_rect_r id x (ChoiceEq _). *)
 
-Theorem ct_T_id : forall {ce : ChoiceEquality} t, ct_T (T_ct t) = t.
-Proof (fun ce => rew_opp_r id (ChoiceEq ce)).
+(* Theorem ct_T_id : forall {ce : ChoiceEquality} t, ct_T (T_ct t) = t. *)
+(* Proof (fun ce => rew_opp_r id (ChoiceEq ce)). *)
 
-Theorem T_ct_id : forall {ce : ChoiceEquality} t, T_ct (ct_T t) = t.
-Proof (fun ce => rew_opp_l id (ChoiceEq ce)).
+(* Theorem T_ct_id : forall {ce : ChoiceEquality} t, T_ct (ct_T t) = t. *)
+(* Proof (fun ce => rew_opp_l id (ChoiceEq ce)). *)
 
-Global Coercion ct_T : choice.Choice.sort >-> T.
-Global Coercion T_ct : T >-> choice.Choice.sort.
+(* Global Coercion ct_T : choice.Choice.sort >-> T. *)
+(* Global Coercion T_ct : T >-> choice.Choice.sort. *)
 
+(* eqtype.Equality.axiom *)
 
-Lemma ChoiceEquality_ct_EqP : forall ce1 ce2, ce1 = ce2 <-> ct ce1 = ct ce2.
-Proof.
-  split ; intros.
-  - rewrite H.
-    reflexivity.
-  - destruct ce1 as [T1 ct1 CE1].
-    destruct ce2 as [T2 ct2 CE2].
-    cbn in *.
-    subst.
-    reflexivity.
-Qed.
+Notation "A '× B" := (chProd A B) (at level 79, left associativity) : hacspec_scope.
+Notation "prod_ce( a , b )" := (chProd a b) : hacspec_scope.
+Notation "prod_ce( a , b , .. , c )" := (chProd .. (chProd a b) .. c).
 
-Definition ChoiceEquality_leq (t1 t2 : ChoiceEquality) :=
-    choice_type_leq t1 t2.
+Definition lift_to_code {ce : choice_type} {L I} (x : choice.Choice.sort (chElement ce)) : code L I ce :=
+  {code ret x}.
 
-Lemma ChoiceEquality_leqP : Ord.axioms ChoiceEquality_leq.
-Proof.
-  unfold ChoiceEquality_leq.
-  destruct choice_type_leqP.
-  split.
-  - intros ?. apply H.
-  - intros ? ? ? ? ?. apply (H0 y x z) ; assumption.
-  - intros ? ? ?.
-    apply ChoiceEquality_ct_EqP.
-    apply H1. assumption.
-  - intros ? ?. apply H2.
-Qed.
-
-Program Instance prod_ChoiceEquality (a b : ChoiceEquality) : ChoiceEquality :=
-  {| T := (@T a) * (@T b) ; ct := (@ct a) × (@ct b); |}.
-Next Obligation.
-  intros.
-  do 2 rewrite ChoiceEq.
-  reflexivity.
-Defined.
-
-Notation "A '× B" := (prod_ChoiceEquality A B) (at level 79, left associativity) : hacspec_scope.
-
-Notation "prod_ce( a , b )" := ((a , b) : prod_ChoiceEquality _ _) : hacspec_scope.
-Notation "prod_ce( a , b , .. , c )" := ((.. ((a , b) : prod_ChoiceEquality _ _) .. , c) : prod_ChoiceEquality _ _) : hacspec_scope.
-
-Program Instance sum_ChoiceEquality (a b : ChoiceEquality) : ChoiceEquality :=
-  {| T := (@T a) + (@T b) ; ct := (@ct a) ∐ (@ct b); |}.
-Next Obligation.
-  intros.
-  do 2 rewrite ChoiceEq.
-  reflexivity.
-Defined.
-
-Notation "A '+ B" := (sum_ChoiceEquality A B) (at level 79, left associativity) : hacspec_scope.
-
-Open Scope hacspec_scope.
-
-Definition fst_CE {A B} (p : A '× B) : A := let '(f,s) := p in f.
-Definition snd_CE {A B} (p : A '× B) : B := let '(f,s) := p in s.
-
-
-Theorem T_ct_id_prod : forall {ceA ceB : ChoiceEquality} a b, @T_ct (prod_ChoiceEquality ceA ceB) (@ct_T ceA a , @ct_T ceB b) = (a , b).
-Proof. now intros [? ? []] [? ? []]. Qed.
-
-Theorem T_ct_prod_propegate : forall {ceA ceB : ChoiceEquality} a b, @T_ct (prod_ChoiceEquality ceA ceB) (a , b) = (T_ct a , T_ct b).
-Proof. now intros [? ? []] [? ? []]. Qed.
-
-Theorem ct_T_prod_propegate : forall {ceA ceB : ChoiceEquality} a b,
-    @ct_T (prod_ChoiceEquality ceA ceB) (a , b) = (ct_T a , ct_T b).
-Proof. now intros [? ? []] [? ? []]. Qed.
-
-Instance nat_ChoiceEquality : ChoiceEquality := {| T := nat ; ct := 'nat ; ChoiceEq := ltac:(reflexivity) |}.
-Instance bool_ChoiceEquality : ChoiceEquality := {| T := bool ; ct := 'bool ; ChoiceEq := ltac:(reflexivity) |}.
-Instance unit_ChoiceEquality : ChoiceEquality := {| T := unit ; ct := 'unit ; ChoiceEq := ltac:(reflexivity) |}.
-
-Definition lift_to_code {ce : ChoiceEquality} {L I} (x : @T ce) : code L I (@ct ce) :=
-  {code ret (T_ct x)}.
-
-Definition evaluate_code {ce : ChoiceEquality} {L I} (x : code L I (@ct ce)) `{match Run sampler x 0 with Some _ => True | _ => False end} : @T ce.
+Definition evaluate_code {ce : choice_type} {L I} (x : code L I ce) `{match Run sampler x 0 with Some _ => True | _ => False end} : choice.Choice.sort (chElement ce).
 Proof.
   destruct (Run sampler x 0).
-  apply (ct_T s).
+  apply ( s).
   contradiction.
 Defined.
 
@@ -137,119 +72,193 @@ Definition pre_to_post_ret (P : precond) {A} v : postcond A A :=
 
 Definition true_precond : precond := fun _ => True.
 
-Class both L I (A : ChoiceEquality) :=
+Class both L I (A : choice_type) :=
   {
-    is_pure : A ;
-    is_state : code L I (@ct A) ;
+    is_pure : choice.Choice.sort (chElement A) ;
+    is_state : code L I A ;
     code_eq_proof_statement :
     ⊢ ⦃ true_precond ⦄
           is_state ≈ lift_to_code (L := L) (I := I) (is_pure)
-      ⦃ pre_to_post_ret true_precond (T_ct is_pure) ⦄
+      ⦃ pre_to_post_ret true_precond is_pure ⦄
   }.
 
 Arguments is_pure {_} {_} {_} both.
 Arguments is_state {_} {_} {_} both.
 Arguments code_eq_proof_statement {_} {_} {_} both.
 
-Coercion is_pure : both >-> T.
+Coercion is_pure : both >-> choice.Choice.sort.
 Coercion is_state : both >-> code.
 
-Definition opsigCE := ident * (ChoiceEquality * ChoiceEquality).
-Definition InterfaceCE := list opsigCE.
 
-Definition opsigCE_opsig := (fun '(i, (s, t)) => (i : ident, (ct s, ct t))).
-Definition IfToCEIf (x : InterfaceCE) : Interface := fset (map opsigCE_opsig x).
+(* (ssrbool.elimT (xseq.InP  _ _)) *)
+Print typed_raw_function.
+Print raw_package.
 
-Lemma helper :
-  forall (o : opsigCE),
-    choice.Choice.sort (fst (snd o)) = choice.Choice.sort (src (opsigCE_opsig o)).
-Proof. now intros [? []]. Qed.
+(* Program Definition pure_package := *)
+(*   {fmap ident -> {S : choice_type & {T : choice_type & choice.Choice.sort S -> choice.Choice.sort T }}}. *)
 
-Lemma pack_helper :
-  forall {E : InterfaceCE} {o} (H : In o E),
-    is_true
-   (ssrbool.in_mem (opsigCE_opsig o)
-      (ssrbool.mem (IfToCEIf E))).
-Proof.
-  intros.
-  apply (ssrbool.introT (xseq.InP _ _)).
-  unfold IfToCEIf.
-  apply -> (in_remove_fset (T:=opsig_ordType)).
-  apply in_map.
-  apply H.
-Defined.
+(* Definition a : forall L I E (x : pure_package) (y : package L I E) (o : opsig), True. *)
+(*   intros. *)
+(*   unfold pure_package in x. *)
 
-Class both_package L I (E : InterfaceCE) :=
-  {
-    pack_pure : forall o, List.In o E -> fst (snd o) -> snd (snd o) ;
-    pack_state : package L I (IfToCEIf E) ;
-    pack_eq_proof_statement : forall i s t (H : In (i,(s,t)) E), forall (v : s),
-      forall f, (pack pack_state) i = Some
-    (existT
-       (fun S0 : choice_type => {T0 : choice_type & choice.Choice.sort S0 -> raw_code T0})
-       s (existT (fun T0 : choice_type => choice.Choice.sort s -> raw_code T0) t f)) ->
-      ⊢ ⦃ true_precond ⦄
-          f v
-          ≈ lift_to_code (L := L) (I := I) (pack_pure (i,(s,t)) H v)
-      ⦃ pre_to_post_ret true_precond (T_ct (pack_pure (i,(s,t)) H v)) ⦄
+  
+(*   (* Set Printing All. *) *)
+(*   Check code_eq_proof_statement. *)
+(*   epose (@mapim _ _ Prop (fun i (k : {S : choice_type & *)
+(*             {T : choice_type & *)
+(*             choice.Choice.sort S -> choice.Choice.sort T}}) => let (S, p) := k in let (T, f) := p in _) x). *)
+(*   Unshelve. *)
+(*   2:{ *)
+(*     epose (@mapim _ _ Prop _ (pack y)). *)
+(*     Unshelve. *)
+(*     2:{ *)
+(*       intros i' [? [? g]]. *)
+(*       refine (S = x0 -> _). *)
+(*     refine (⊢ ⦃ true_precond ⦄ *)
+(*         g _ *)
+(*         ≈ lift_to_code (f _) *)
+(*         ⦃ pre_to_post_ret true_precond _ ⦄). *)
+      
+      
+(*     pose ((pack y) i). *)
+(*     refine (⊢ ⦃ true_precond ⦄ *)
+        
+(*         ≈ lift_to_code (f _) *)
+(*         ⦃ pre_to_post_ret true_precond _ ⦄). *)
+
+(*     refine (forall (v : choice.Choice.sort S), _). *)
+(*     apply f T *)
+    
+(*   epose (fun f => mapim (fun v => lift_to_code v) x). *)
+(*   (* ⊢ ⦃ true_precond ⦄ *) *)
+(*   (*         f v *) *)
+(*   (*         ≈ lift_to_code v *) *)
+(*   (*     ⦃ pre_to_post_ret true_precond _ ⦄ *) *)
+  
+(*   destruct x. *)
+
+
+#[local] Open Scope type_scope.
+
+Import SigTNotations.
+(* Definition valid_pure E := *)
+Record package_pure (E : Interface) := mkpackage_pure {
+  pure_pack : {fmap ident -> (sigT (fun (x : choice_type) => (sigT (fun (y : choice_type) => choice.Choice.sort x -> choice.Choice.sort y))))} ;
+  pure_pack_valid : forall o, o \in E ->
+    let '(id, (src, tgt)) := o in
+    exists (f : choice.Choice.sort src -> choice.Choice.sort tgt),
+      pure_pack id = Some (src ; (tgt ; f))
   }.
 
-Arguments pack_pure {_} {_} {_} {_} {_} {_} both_package.
-Arguments pack_state {_} {_} {_} both_package.
-
-Coercion pack_pure : both_package >-> Funclass.
-Coercion pack_state : both_package >-> package.
-
-Instance package_both {L I} {x y z} (pkg : both_package L I ((x, (y, z)) :: nil)) (args : y)
-  : both L I (z).
+Definition pure_get_op_default (p : {fmap ident -> (sigT (fun (x : choice_type) => (sigT (fun (y : choice_type) => choice.Choice.sort x -> choice.Choice.sort y))))}) (o : opsig) :
+  choice.Choice.sort (src o) -> choice.Choice.sort (tgt o).
 Proof.
-  destruct pkg as [pure state eq_proof].
-  pose (o := (x, (y, z)) : opsigCE).
-  Check pack_eq_proof_statement.
-  refine {| is_pure := pure o (List.in_eq _ _) args ;
-           is_state := {code get_op_default state (opsigCE_opsig o) (args) #with valid_get_op_default _ _ _ state (opsigCE_opsig o) (args) _ (pack_helper (List.in_eq _ _)) } |}.
-  apply eq_proof.
-  cbn.
-  destruct (from_valid_package _ _ _ _ (pack_valid state) (opsigCE_opsig o) (pack_helper (List.in_eq _ _))) as [? []].
-  rewrite H.
-  apply f_equal.
-  apply f_equal.
-  apply f_equal.
-  unfold get_op_default.
-  cbn.
-  rewrite H.
-  destruct choice_type_eqP ; [ | contradiction ].
-  destruct choice_type_eqP ; [ | contradiction ].
-  rewrite pkg_composition.cast_fun_K.
-  reflexivity.
+  destruct o as [? []].
+  destruct (p i).
+  destruct s as [? []].
+  destruct (choice_type_eqP x c).
+  subst.
+  destruct (choice_type_eqP x0 c0).
+  subst.
+  apply s.
+  all: intros ; apply chCanonical.
 Defined.
 
-Program Instance both_package' L I o (bf : T (fst (snd o)) -> both L I (snd (snd o)))
-  : both_package L I (o :: nil) :=
+Class both_package L I E :=
+  {
+    pack_pure : package_pure E ;
+    pack_state : package L I E ;
+    pack_eq_proof_statement : forall (o : opsig),
+      forall (v : choice.Choice.sort (src o)), ⊢ ⦃ true_precond ⦄ 
+               get_op_default pack_state o v
+               ≈ lift_to_code (L := L) (I := I) (pure_get_op_default (pure_pack _ pack_pure) o v)
+               ⦃ pre_to_post_ret true_precond (pure_get_op_default (pure_pack _ pack_pure) o v) ⦄
+  
+    (* pack_eq_proof_statement : forall i (H : i \in E), *)
+    (*   (let '(existT f v) := exists_to_inhabited_sig ((pure_pack_valid E pack_pure) i H) in f) *)
+  }.
+
+(* Arguments pack_pure {_} {_} {_} {_} {_} {_} both_package. *)
+(* Arguments pack_state {_} {_} {_} both_package. *)
+
+(* Coercion pack_pure : both_package >-> Funclass. *)
+(* Coercion pack_state : both_package >-> package. *)
+
+Instance package_both {L I} {x y z} (pkg : both_package L I (fset ((x, (y, z)) :: nil))) (args : choice.Choice.sort y)
+  : both L I (z).
+Proof.
+  epose (H := ssrbool.introT (@fset1P opsig_ordType _ _) eq_refl).
+  rewrite (@fset1E opsig_ordType _) in H.
+
+  refine {|
+      is_pure := pure_get_op_default (pure_pack _ pack_pure) (x, (y, z)) args ;
+      is_state := { code get_op_default (pack_state) (x, (y, z)) args #with valid_get_op_default _ _ _ (pack_state) (x, (y, z)) (args) _ H } ;
+      code_eq_proof_statement := pack_eq_proof_statement _ _
+    |}.
+Defined.
+
+Program Instance both_package' L I (o : opsig) (bf : choice.Choice.sort (src o) -> both L I (chtgt o))
+  : both_package L I (fset (o :: nil)) :=
   {|
-    pack_pure := fun o0 H => ltac:((assert (o = o0) by now destruct H) ; subst ; apply bf ; apply X) ;
-    pack_state := (mkpackage (mkfmap ((fst o, pkg_composition.mkdef _ _ (fun x => bf (ct_T x))) :: nil)) (valid_package1 L I (fst o) (fst (snd o)) (snd (snd o)) (fun x => bf (ct_T x)) (fun x => prog_valid (is_state (bf (ct_T x)))))) ;
+    pack_pure := _ ;
+    pack_state := (mkpackage (mkfmap ((fst o, pkg_composition.mkdef _ _ (fun x => bf x)) :: nil)) (valid_package1 L I (fst o) (chsrc o) (chtgt o) (fun x => bf x) (fun x => prog_valid (is_state (bf x))))) ;
     pack_eq_proof_statement := _
   |}.
 Next Obligation.
   intros.
-  destruct H ; [ subst | contradiction ].
-  cbn in H0.
-  rewrite (ssrbool.introT ssrnat.eqnP eq_refl) in H0.
-  inversion H0.
-  do 2 apply Eqdep.EqdepTheory.inj_pair2 in H1.
+  refine {| pure_pack := _ |}.
+  Unshelve.
+  2:{
+    eexists.
+    Unshelve.
+    2:{
+      refine (_ :: nil).
+      split.
+      apply (fst o).
+      eexists.
+      eexists.
+      apply bf.
+    }
+    easy.
+  }
+  intros.
+  rewrite <- (@fset1E opsig_ordType _) in H.
+  apply (ssrbool.elimT (@fset1P opsig_ordType _ _)) in H.
   subst.
+  destruct o as [? []].
+  exists (fun x => bf x).
   cbn.
-  rewrite ct_T_id.
-  apply bf.
+  rewrite (ssrbool.introT (@ssrnat.eqnP i i) eq_refl).
+  reflexivity.
 Defined.
 
-Program Definition lift_to_both {ce : ChoiceEquality} {L I} (x : @T ce) : both L I ce :=
+Program Definition lift_to_both {ce : choice_type} {L I} (x : choice.Choice.sort ce) : both L I ce :=
   {| is_pure := x ; is_state := @lift_to_code ce L I x |}.
+Next Obligation. intros. now destruct o as [? []]. Qed.
+Next Obligation.
+  intros.
+
+  unfold get_op_default.
+  unfold pkg_composition.lookup_op.
+  destruct o0 as [? []]. cbn.
+  destruct o as [? []]. cbn.
+  destruct (ssrnat.eqn i i0) eqn:io.
+  - cbn.
+    destruct choice_type_eqP.
+    + subst.
+      cbn.
+      destruct choice_type_eqP.
+      * subst.
+        cbn.
+        apply (bf v).
+      * apply r_ret ; easy.
+    + apply r_ret ; easy.
+  - apply r_ret ; easy.
+Qed.
 Next Obligation. intros. apply r_ret. intros. easy. Qed.
 
-Definition both0 (A : ChoiceEquality) := both fset.fset0 [interface] A.
-Definition lift_to_both0 {ce : ChoiceEquality} (x : T ce) : both fset.fset0 [interface] ce := lift_to_both x.
+Definition both0 (A : choice_type) := both fset.fset0 [interface] A.
+Definition lift_to_both0 {ce : choice_type} (x : choice.Choice.sort ce) : both fset.fset0 [interface] ce := lift_to_both x.
 
 Definition lift_code_scope {L1 L2 : {fset Location}} {I1 I2 : {fset opsig}} {A} (c : code L1 I1 A) `{H_loc_incl : List.incl L1 L2} `{H_opsig_incl : List.incl I1 I2} : code L2 I2 A :=
   {code (prog c) #with
@@ -272,7 +281,7 @@ Definition lift_scopeI
 Definition lift_scope0 {L I} {A} (b : both fset.fset0 [interface] A) : both L I A :=
   lift_scope (H_loc_incl := incl_nil_l _) (H_opsig_incl := ltac:(rewrite <- fset0E ; apply incl_nil_l)) b.
 
-Instance both_comparable {A : ChoiceEquality} `{Comparable A} {L I} : Comparable (both L I A) :=
+Instance both_comparable {A : choice_type} `{Comparable (choice.Choice.sort A)} {L I} : Comparable (both L I A) :=
   {|
     ltb x y := ltb (is_pure x) (is_pure y) ;
     leb x y := leb (is_pure x) (is_pure y) ;
@@ -288,14 +297,14 @@ Proof.
   now apply (rpre_weaken_rule _ _ _ H).
 Qed.
 
-Program Instance prod_both {ceA ceB : ChoiceEquality} {L1 L2 : {fset _}} {I1 I2 : {fset _}} (a : both L1 I1 ceA) (b : both L2 I2 ceB) : both (L1 :|: L2) (I1 :|: I2) (ceA '× ceB) :=
+Program Instance prod_both {ceA ceB : choice_type} {L1 L2 : {fset _}} {I1 I2 : {fset _}} (a : both L1 I1 ceA) (b : both L2 I2 ceB) : both (L1 :|: L2) (I1 :|: I2) (chProd ceA ceB) :=
   {|
     is_pure := (is_pure a , is_pure b) ;
     is_state :=
     {code
        x ← a ;;
        y ← b ;;
-       @ret (prod_ChoiceEquality _ _) (x , y)
+       @ret (chProd _ _) (x , y)
     }
   |}.
 Next Obligation.
@@ -311,10 +320,10 @@ Next Obligation.
 Defined.
 Next Obligation.
   intros.
-  rewrite (T_ct_prod_propegate).
+  (* rewrite (T_ct_prod_propegate). *)
 
   set (r := ret _).
-  pattern (T_ct (is_pure a)) in r.
+  pattern ( (is_pure a)) in r.
   set (g := fun _ => _) in r.
   subst r.
   replace (g a) with (bind (ret a) g) by reflexivity.
@@ -327,7 +336,7 @@ Next Obligation.
   apply forget_precond.
 
   set (r := ret _).
-  pattern (T_ct (is_pure b)) in r.
+  pattern ( (is_pure b)) in r.
   set (g := fun _ => _) in r.
   subst r.
   replace (g b) with (bind (ret b) g) by reflexivity.
@@ -363,14 +372,14 @@ Ltac destruct_choice_type_prod :=
       unfold projT1 in H
   end ;
   repeat match goal with
-  | H : @T (prod_ChoiceEquality _ _) |- _ =>
+  | H :  (chProd _ _) |- _ =>
       destruct H
   end ;
   repeat match goal with
   | H : choice.Choice.sort
          (chElement
-            (@ct
-               (prod_ChoiceEquality _ _))) |- _ =>
+            (
+               (chProd _ _))) |- _ =>
       destruct H
   end ;
   repeat match goal with
@@ -600,26 +609,26 @@ Proof.
   reflexivity.
 Qed.
 
-Theorem r_bind_eq : forall {B C : ChoiceEquality} (y : B) (g : choice.Choice.sort B  -> raw_code C), (temp ← ret y ;; g temp) = g y.
+Theorem r_bind_eq : forall {B C : choice_type} (y : choice.Choice.sort B) (g : choice.Choice.sort B  -> raw_code C), (temp ← ret y ;; g temp) = g y.
 Proof. reflexivity. Qed.
 
 Theorem r_bind_trans :
-  forall {B C : ChoiceEquality}
+  forall {B C : choice_type}
      (f : choice.Choice.sort B -> raw_code C)
-    (g : B -> raw_code C) (x : raw_code B) (y : B),
+    (g : choice.Choice.sort B -> raw_code C) (x : raw_code B) (y : choice.Choice.sort B),
   forall (P P_mid : precond) (Q : postcond (choice.Choice.sort C) (choice.Choice.sort C)),
-  forall (H_x_is_y : ⊢ ⦃ P ⦄ x  ≈ ret y ⦃ pre_to_post_ret P_mid (T_ct y) ⦄),
-    (⊢ ⦃ P_mid ⦄ f (T_ct y)  ≈ g y ⦃ Q ⦄) ->
+  forall (H_x_is_y : ⊢ ⦃ P ⦄ x  ≈ ret y ⦃ pre_to_post_ret P_mid (y) ⦄),
+    (⊢ ⦃ P_mid ⦄ f (y)  ≈ g y ⦃ Q ⦄) ->
     ⊢ ⦃ P ⦄ temp ← x ;; f temp ≈ g y ⦃ Q ⦄.
 Proof.
   intros.
-  rewrite <- (ct_T_id y).
-  replace (g (ct_T (T_ct y))) with (temp ← ret (T_ct y) ;; g (ct_T temp)) by reflexivity.
+  (* rewrite <- (y). *)
+  replace (g ( y)) with (temp ← ret ( y) ;; g ( temp)) by reflexivity.
 
   pose @r_bind.
-  specialize r with (f₀ := f) (f₁ := fun x => g (ct_T x)).
-  specialize r with (m₀ := x) (m₁ := (ret (T_ct y))).
-  specialize r with (pre := P) (mid := pre_to_post_ret P_mid (T_ct y) ) (post := Q).
+  specialize r with (f₀ := f) (f₁ := fun x => g ( x)).
+  specialize r with (m₀ := x) (m₁ := (ret ( y))).
+  specialize r with (pre := P) (mid := pre_to_post_ret P_mid ( y) ) (post := Q).
   apply r ; clear r.
 
   - apply H_x_is_y.
@@ -629,38 +638,37 @@ Proof.
     eapply rpre_weaken_rule.
     cbn in H2.
     subst.
-    rewrite ct_T_id.
     apply H.
     intros ? ? []. subst. apply H2.
 Qed.
 
 Theorem r_bind_trans' :
-  forall {B C : ChoiceEquality}
+  forall {B C : choice_type}
      (f : choice.Choice.sort B -> raw_code C)
-    (g : B -> raw_code C) (x : raw_code B) (y : B),
+    (g : choice.Choice.sort B -> raw_code C) (x : raw_code B) (y : choice.Choice.sort B),
   forall (P : precond) (Q : postcond (choice.Choice.sort C) (choice.Choice.sort C)),
-  forall (H_x_is_y : ⊨ repr x ≈ repr (ret (T_ct y)) [{retW (T_ct y, T_ct y)}]),
-    (⊢ ⦃ P ⦄ f (T_ct y)  ≈ g y ⦃ Q ⦄) ->
+  forall (H_x_is_y : ⊨ repr x ≈ repr (ret y) [{retW ( y,  y)}]),
+    (⊢ ⦃ P ⦄ f ( y)  ≈ g y ⦃ Q ⦄) ->
     ⊢ ⦃ P ⦄ temp ← x ;; f temp ≈ g y ⦃ Q ⦄.
 Proof.
   intros.
 
-  rewrite <- (ct_T_id y).
+  (* rewrite <- (ct_T_id y). *)
 
-  replace (g (ct_T (T_ct y))) with (temp ← ret (T_ct y) ;; g (ct_T temp)) by reflexivity.
+  replace (g y) with (temp ← ret y ;; g ( temp)) by reflexivity.
 
   pose @r_bind.
-  specialize r with (f₀ := f) (f₁ := fun x => g (ct_T x)).
-  specialize r with (m₀ := x) (m₁ := (ret (T_ct y))).
-  specialize r with (pre := P) (mid := fun s0 s1 => pre_to_post P s0 s1 /\ fst s1 = T_ct y) (post := Q).
+  specialize r with (f₀ := f) (f₁ := fun x => g ( x)).
+  specialize r with (m₀ := x) (m₁ := (ret ( y))).
+  specialize r with (pre := P) (mid := fun s0 s1 => pre_to_post P s0 s1 /\ fst s1 =  y) (post := Q).
   apply r ; clear r.
 
   - eapply from_sem_jdg.
-    eapply (RulesStateProb.weaken_rule (retW (T_ct y , T_ct y))).
+    eapply (RulesStateProb.weaken_rule (retW ( y ,  y))).
     + apply H_x_is_y.
     + unfold retW.
       intros [] X [? πa1a2] ; cbn in X.
-      specialize (fun x => πa1a2 (x, s) (T_ct y, s0)).
+      specialize (fun x => πa1a2 (x, s) ( y, s0)).
 
       unfold proj1_sig.
 
@@ -680,10 +688,6 @@ Proof.
     intros ? ? [[] ?]. subst.
     eapply rpre_weaken_rule.
     2: { intros ? ? []. subst. apply H1. }
-    clear H1.
-    cbn in H2.
-    subst.
-    rewrite ct_T_id.
     apply H.
 Qed.
 
@@ -727,9 +731,9 @@ Qed.
 Ltac solve_heap_ignore_remove_set_heap :=
   apply (heap_ignore_remove_set_heap) ; [ apply isolate_mem_section ; apply fset_compute ; apply -> in_remove_fset ; cbn ; repeat (left ; reflexivity || right || reflexivity) | assumption ].
 
-Theorem r_bind_trans_both : forall {B C : ChoiceEquality} {L I} {f : choice.Choice.sort B -> raw_code C} {g : B -> raw_code C} (b : both L I B),
+Theorem r_bind_trans_both : forall {B C : choice_type} {L I} {f : choice.Choice.sort B -> raw_code C} {g : choice.Choice.sort B -> raw_code C} (b : both L I B),
   forall (P : precond) (Q : postcond _ _),
-    (⊢ ⦃ true_precond ⦄ f (T_ct (is_pure b))  ≈ g (is_pure b) ⦃ Q ⦄) ->
+    (⊢ ⦃ true_precond ⦄ f ( (is_pure b))  ≈ g (is_pure b) ⦃ Q ⦄) ->
     ⊢ ⦃ P ⦄ temp ← is_state b ;; f temp ≈ g (is_pure b) ⦃ Q ⦄.
 Proof.
   intros.
@@ -831,8 +835,8 @@ Qed.
 
 Ltac remove_T_ct :=
   progress match goal with
-  | [ |- context[ T_ct ?x ] ] =>
-      replace (T_ct x) with x by reflexivity
+  | [ |- context[  ?x ] ] =>
+      replace ( x) with x by reflexivity
   end.
 
 Ltac pattern_both Hx Hf Hg :=

@@ -129,7 +129,7 @@ fn make_typ_tuple<'a, I: IntoIterator<Item = RcDoc<'a, ()>>>(args: I) -> RcDoc<'
                 .append(RcDoc::intersperse(
                     args.into_iter(),
                     RcDoc::space()
-                        .append(RcDoc::as_string("'×"))
+                        .append(RcDoc::as_string("×"))
                         .append(RcDoc::line()),
                 ))
                 .group()
@@ -193,7 +193,7 @@ fn translate_enum_case_name<'a>(
 
 fn translate_base_typ<'a>(tau: BaseTyp) -> RcDoc<'a, ()> {
     match tau {
-        BaseTyp::Bool => RcDoc::as_string("bool_ChoiceEquality"),
+        BaseTyp::Bool => RcDoc::as_string("'bool"),
         BaseTyp::UInt8 => RcDoc::as_string("int8"),
         BaseTyp::Int8 => RcDoc::as_string("int8"),
         BaseTyp::UInt16 => RcDoc::as_string("int16"),
@@ -270,9 +270,9 @@ fn translate_typ<'a>((_, (tau, _)): Typ) -> RcDoc<'a, ()> {
 
 fn translate_literal<'a>(lit: Literal) -> RcDoc<'a, ()> {
     match lit {
-        Literal::Unit => RcDoc::as_string("(tt : unit_ChoiceEquality)"),
-        Literal::Bool(true) => RcDoc::as_string("(true : bool_ChoiceEquality)"),
-        Literal::Bool(false) => RcDoc::as_string("(false : bool_ChoiceEquality)"),
+        Literal::Unit => RcDoc::as_string("(tt : 'unit)"),
+        Literal::Bool(true) => RcDoc::as_string("(true : 'bool)"),
+        Literal::Bool(false) => RcDoc::as_string("(false : 'bool)"),
         Literal::Int128(x) => RcDoc::as_string(format!("@repr U128 {}", x)),
         Literal::UInt128(x) => RcDoc::as_string(format!("@repr U128 {}", x)),
         Literal::Int64(x) => RcDoc::as_string(format!("@repr U64 {}", x)),
@@ -628,7 +628,7 @@ fn translate_expression<'a>(e: Expression, top_ctx: &'a TopLevelContext) -> RcDo
                 RcDoc::as_string("if")
                     .append(RcDoc::space())
                     .append(make_paren(translate_expression(cond, top_ctx)))
-                    .append(RcDoc::as_string(":bool_ChoiceEquality"))
+                    .append(RcDoc::as_string(":'bool"))
                     .append(RcDoc::space())
                     .append(RcDoc::as_string("then"))
                     .append(RcDoc::space())
@@ -1010,7 +1010,7 @@ fn translate_statements<'a>(
                     .append(RcDoc::space())
                     .append(make_paren(translate_expression(cond.clone(), top_ctx)))
                     .append(RcDoc::space())
-                    .append(RcDoc::as_string(": bool_ChoiceEquality"))
+                    .append(RcDoc::as_string(": 'bool"))
                     .append(RcDoc::line())
                     .append(if b1_question_mark {
                         RcDoc::as_string("thenbnd")
@@ -1062,7 +1062,7 @@ fn translate_statements<'a>(
                         RcDoc::as_string("if")
                             .append(RcDoc::space())
                             .append(make_paren(translate_expression(cond.clone(), top_ctx)))
-                            .append(RcDoc::as_string(":bool_ChoiceEquality"))
+                            .append(RcDoc::as_string(":'bool"))
                             .append(RcDoc::line())
                             .append(RcDoc::as_string("then"))
                             .append(RcDoc::space())
@@ -1358,7 +1358,7 @@ pub(crate) fn translate_item<'a>(
                     .append(RcDoc::space())
                     .append(RcDoc::as_string(":"))
                     .append(RcDoc::space())
-                    .append(RcDoc::as_string("bool_ChoiceEquality"))
+                    .append(RcDoc::as_string("'bool"))
                     .append(RcDoc::space())
                     .append(RcDoc::as_string(":="))
                     .append(RcDoc::line())
@@ -1620,6 +1620,7 @@ pub fn translate_and_write_to_file(
          Open Scope Z_scope.\n\
          Open Scope bool_scope.\n\
          \n\
+         From mathcomp Require Import choice.
          Require Import Hacspec_Lib_Comparable.\n\
          Require Import Hacspec_Lib_Pre.\n\
          \n\
