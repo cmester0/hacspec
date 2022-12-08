@@ -2376,17 +2376,307 @@ Definition seq_link { L1 L2 : {fset Location} } {I M E} (p1 : package L1 M E) (p
 
 Print pack_state.
 
+Definition pure_cast_fun {So To St Tt : choice_type}
+  (hS : St = So) (hT : Tt = To) (f : St -> Tt) :
+  So -> To.
+Proof.
+  subst. auto.
+Defined.
+
+Definition pure_lookup_op (p: {fmap ident -> (sigT (fun (x : choice_type) => (sigT (fun (y : choice_type) => choice.Choice.sort x -> choice.Choice.sort y))))}) (o : opsig) : Datatypes.option (src o -> tgt o) :=
+  let '(n, (So, To)) := o in
+  match p n with
+  | Some (St ; Tt ; f) =>
+    match choice_type_eqP St So, choice_type_eqP Tt To with
+    | Bool.ReflectT hS, Bool.ReflectT hT => Some (pure_cast_fun hS hT f)
+    | _,_ => None
+    end
+  | None => None
+  end.
+
+Fixpoint pure_code_link {A} (v : raw_code A) (p : package_pure_raw) :
+  raw_code A :=
+  match v with
+  | ret a => ret a
+  | opr o a k =>
+    (* The None branch doesn't happen when valid *)
+    (* We continue with a default value to preserve associativity. *)
+    match pure_lookup_op p o with
+    | Some f => pure_code_link (k (f a)) p
+    | None => pure_code_link (k (chCanonical (chtgt o))) p
+    end
+  | getr l k => getr l (fun x => pure_code_link (k x) p)
+  | putr l v k => putr l v (pure_code_link k p)
+  | pkg_core_definition.sampler op k => pkg_core_definition.sampler op (fun x => pure_code_link (k x) p)
+  end.
+
 Program Definition seq_link_both { L1 L2 : {fset Location} } {I} {M : Interface} {E} (p1 : both_package L1 ( M) E) (p2 : both_package L2 I M) : both_package (L1 :|: L2) I E :=
   {|
-    pack_pure := pack_pure ;
+    pack_pure :=
+    {|
+                    pure_pack := _ |} ;
+    (* @pack_pure L1 M E p1 *)
     pack_state := seq_link (@pack_state L1 M E p1) (@pack_state L2 I M p2) ;
     pack_eq_proof_statement := _
   |}.
 Next Obligation.
   intros.
+  unfold package_pure_raw.
+  refine (fmap _).
+  Unshelve.
+  2:{
+    refine (@mapm _ (sigT (fun (x : choice_type) => (sigT (fun (y : choice_type) => choice.Choice.sort x -> choice.Choice.sort y)))) _ (fun '(So ; To ; f) => (So ; To ; _)) _).
+    intros x.
+    pose (@pure_code_link To (lift_to_code (I := I) (L := L2) (f x)) (pure_pack _ (@pack_pure _ _ _ p2))).
+    
+    
+    fun x => pure_code_link (lift_to_code (f x)).
+    intros [? []].
+    refine (x ; x0 ; _).
+    (fun '(So ; To ; f) => (So ; To ; fun x => pure_code_link (lift_to_code (f x)) _))
+    
+    refine (@mapm _ (sigT (fun (x : choice_type) => (sigT (fun (y : choice_type) => choice.Choice.sort x -> choice.Choice.sort y)))) _
+    (fun '(So ; To ; f) => (So ; To ; fun x => pure_code_link (lift_to_code (f x)) _)) _).
+Next Obligation.
+  intros.
+  destruct p1 as [[pure_pack1 pure_valid1] [pack1 valid1] proof1], p2 as [[pure_pack2 pure_valid2] [pack2 valid2] proof2].
+  cbn in *.
+
+
+  (* unfold get_op_default. *)
+  (* unfold pkg_composition.lookup_op. *)
+  pose (@pkg_composition.valid_link _ _ _ _ _ _ _ valid1 valid2).
+  inversion v0.
+  specialize (H0 o H).
+
+  inversion valid1.
+  specialize (H1 o H).
+  specialize (proof1 o H v).
+  clear proof2.
+  
+  specialize (pure_valid1 o H).
+
+  unfold pure_get_op_default.
   cbn.
-  unfold pack_state.
-  destruct p1 as [pure1 state1 proof1], p2 as [pure2 state2 proof2].
+  
+  epose (@valid_get_op_default _ _ _ _ _ v (@pkg_composition.valid_link _ _ _ _ _ _ _ valid1 valid2) H).
+  induction v1.
+  cbn.
+  
+  rewrite e.
+  
+  pose (lookup_op_link pack1 pack2 o).
+  unfold get_op_default.
+  rewrite e.
+  
+
+  destruct o as [? []].
+  destruct H0 as [? []].
+  destruct H1 as [? []].
+
+
+    
+  unfold get_op_default in *.
+  unfold pkg_composition.lookup_op in *.
+  rewrite H0 in *.
+  rewrite H1 in *.
+
+  unfold pure_get_op_default in *.
+  destruct pure_valid1 in *.
+  rewrite H4 in *.
+
+  choice_type_eqP_handle.
+  choice_type_eqP_handle.
+  rewrite pkg_composition.cast_fun_K in *.
+  cbn in *.
+
+  Set Printing Coercions.
+  unfold getm in H1.
+  
+  unfold getm_def in H0.
+  unfold seq.map in H0.
+  destruct pack1.
+  
+  apply proof1.
+  
+  
+  epose (pkg_composition.valid_code_link _ L1 M E (k x4) pack2 H1 ).
+
+
+  
+  specialize (pure_valid1 o).
+  
+  inversion valid1. rename H0  into H_valid1.
+  specialize (H_valid1 o).
+
+  specialize (H_valid1 H).
+  specialize (pure_valid1 H).
+
+  specialize (proof1 o H v).
+  
+  destruct o as [? []].
+
+  destruct H_valid1 as [? [H_pack1 valid_code1]].
+  destruct pure_valid1 as [? H_pure_pack1].
+
+  cbn in *.
+  rewrite H_pure_pack1 in *.
+
+  rewrite get_op_default_link in *.
+  unfold get_op_default in *.
+  cbn in *.
+  rewrite H_pack1 in *.
+  cbn in *.
+
+  choice_type_eqP_handle.
+  choice_type_eqP_handle.
+
+  cbn in *.  
+  
+  specialize (valid_code1 v).
+  induction valid_code1.
+  + cbn in *.
+    apply proof1.
+  + inversion valid2. rename H3 into H_valid2.
+    specialize (H_valid2 o H0).
+    specialize (proof2 o H0).
+    specialize (pure_valid2 o H0).
+    destruct o as [? []].
+    cbn in *.
+    destruct H_valid2 as [? [H_pack2 valid_code2]].
+    destruct pure_valid2 as [? H_pure_pack2].
+    
+    rewrite H_pack2 in proof2 |- *.
+    rewrite H_pure_pack2 in *.
+    (* cbn in *. *)
+    choice_type_eqP_handle.
+    choice_type_eqP_handle.
+    rewrite pkg_composition.cast_fun_K in *.
+    
+    cbn in *.
+    
+    specialize (valid_code2 x1).
+    induction valid_code2.
+    * cbn.
+      specialize (H1 x4).
+      specialize (H2 x4).
+
+      epose (pkg_composition.valid_code_link _ L1 M E (k x4) pack2 H1 ).
+
+      apply H2.
+
+      
+      
+      easy.
+        
+        induction k.
+        induction H0.
+        -- 
+          cbn in *.
+           specialize (H1 v).
+           apply H1.
+           destruct pack2.
+           apply proof2.
+
+      easy.d
+    
+    specialize valid_code1 with 
+    
+  rewrite get_op_default_link.
+  specialize (proof2 o v).
+  unfold get_op_default in *.
+  cbn in *.
+  destruct pack2.
+  
+  destruct (ssrbool.in_mem o (ssrbool.mem E)) eqn:o_in_E.
+  - inversion valid1. rename H into H_valid1.
+    specialize (H_valid1 o o_in_E).
+    pose (H_pure_valid1 := pure_valid1 o o_in_E).
+    pose (H_proof1 := proof1 o v).
+
+    destruct o as [? []].
+    destruct H_valid1 as [? []].
+    destruct H_pure_valid1.
+
+    rewrite get_op_default_link.
+    unfold get_op_default in H_proof1 |- *.
+    cbn in H_proof1 |- *.
+    rewrite H in H_proof1 |- *.
+    rewrite H1 in H_proof1 |- *.
+    choice_type_eqP_handle.
+    choice_type_eqP_handle.
+    rewrite pkg_composition.cast_fun_K in H_proof1 |- *.
+    cbn in H_proof1 |- *.
+
+    specialize (H0 v).
+    destruct (x v).
+    + apply H_proof1.
+    + inversion H0.
+      subst.
+      inversion H3.
+      apply Eqdep.EqdepTheory.inj_pair2 in H5, H3, H7.
+      subst.
+      cbn.
+      
+      inversion valid2. rename H2 into H_valid2.
+      specialize (H_valid2 o H4).
+      pose (H_pure_valid2 := pure_valid2 o H4).
+      pose (H_proof2 := proof2 o x1).
+
+      destruct o as [? []].
+      destruct H_valid2 as [? []].
+      destruct H_pure_valid2.
+
+      unfold get_op_default in H_proof2.
+      cbn in H_proof2 |- *.
+      rewrite H2 in H_proof2 |- *.
+      rewrite H5 in H_proof2.
+      choice_type_eqP_handle.
+      choice_type_eqP_handle.
+      rewrite pkg_composition.cast_fun_K in H_proof2 |- *.
+      cbn in * |- *.
+
+      specialize (H3 x1).
+      inversion H3.
+      * cbn.
+        specialize (H6 x4).
+        inversion H6.
+        -- cbn.
+           apply r_ret.
+           intros.
+           cbn.
+           split.
+           split.
+
+           inversion H_proof1.
+
+      
+      specialize H3 with x1.
+      inversion H3.
+      
+      cbn.
+      inversion H0.
+      
+      cbn in *.
+        eapply r_transR.
+        eapply r_ret.
+        intros.
+        subst.
+        reflexivity.
+
+        destruct pack2.
+        destruct pure_pure2.
+        assert (i2 = i1).
+        
+        apply rsymmetry.
+
+        
+        epose (@r_bind_trans_as_both _ _ _ _ (fun x => @pkg_composition.code_link _ (k x) pack2) _ ({code x2 x1 #with _}) (x3 _) true_precond (pre_to_post_ret true_precond (x0 _))).
+        Unshelve.
+        cbn in r.
+        eapply r.
+
+  - 
   
 Admitted.
 

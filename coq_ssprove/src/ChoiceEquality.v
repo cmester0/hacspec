@@ -51,8 +51,9 @@ Open Scope rsemantic_scope.
 (* eqtype.Equality.axiom *)
 
 Notation "A '× B" := (chProd A B) (at level 79, left associativity) : hacspec_scope.
-Notation "prod_ce( a , b )" := (chProd a b) : hacspec_scope.
-Notation "prod_ce( a , b , .. , c )" := (chProd .. (chProd a b) .. c).
+Notation "prod_ce( a , b )" := ((a , b) : chProd _ _) : hacspec_scope.
+
+Coercion prod_to_chProd {A B : choice_type} (x : prod (choice.Choice.sort A) (choice.Choice.sort B)) : choice.Choice.sort (chProd A B) := x.
 
 Definition lift_to_code {ce : choice_type} {L I} (x : choice.Choice.sort (chElement ce)) : code L I ce :=
   {code ret x}.
@@ -142,8 +143,10 @@ Print raw_package.
 
 Import SigTNotations.
 (* Definition valid_pure E := *)
+
+Definition package_pure_raw := {fmap ident -> (sigT (fun (x : choice_type) => (sigT (fun (y : choice_type) => choice.Choice.sort x -> choice.Choice.sort y))))}.
 Record package_pure (E : Interface) := mkpackage_pure {
-  pure_pack : {fmap ident -> (sigT (fun (x : choice_type) => (sigT (fun (y : choice_type) => choice.Choice.sort x -> choice.Choice.sort y))))} ;
+  pure_pack : package_pure_raw ;
   pure_pack_valid : forall o, o \in E ->
     let '(id, (src, tgt)) := o in
     exists (f : choice.Choice.sort src -> choice.Choice.sort tgt),
@@ -168,7 +171,9 @@ Class both_package L I E :=
   {
     pack_pure : package_pure E ;
     pack_state : package L I E ;
-    pack_eq_proof_statement : forall (o : opsig),
+    pack_eq_proof_statement :
+      forall (o : opsig),
+        o \in E ->
       forall (v : choice.Choice.sort (src o)), ⊢ ⦃ true_precond ⦄ 
                get_op_default pack_state o v
                ≈ lift_to_code (L := L) (I := I) (pure_get_op_default (pure_pack _ pack_pure) o v)
@@ -193,7 +198,7 @@ Proof.
   refine {|
       is_pure := pure_get_op_default (pure_pack _ pack_pure) (x, (y, z)) args ;
       is_state := { code get_op_default (pack_state) (x, (y, z)) args #with valid_get_op_default _ _ _ (pack_state) (x, (y, z)) (args) _ H } ;
-      code_eq_proof_statement := pack_eq_proof_statement _ _
+      code_eq_proof_statement := pack_eq_proof_statement _ H _
     |}.
 Defined.
 
