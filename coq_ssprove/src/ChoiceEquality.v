@@ -13,6 +13,8 @@ Import RulesStateProb.
 Import RulesStateProb.RSemanticNotation.
 Open Scope rsemantic_scope.
 
+From mathcomp Require Import choice.
+
 (******************************************************************************)
 (*   This file defines a class ChoiceEquality, which defines an equality      *)
 (* between choice_type and coq types. We also define types both and           *)
@@ -145,15 +147,52 @@ Import SigTNotations.
 (* Definition valid_pure E := *)
 
 Definition package_pure_raw := {fmap ident -> (sigT (fun (x : choice_type) => (sigT (fun (y : choice_type) => choice.Choice.sort x -> choice.Choice.sort y))))}.
-Record package_pure (E : Interface) := mkpackage_pure {
-  pure_pack : package_pure_raw ;
-  pure_pack_valid : forall o, o \in E ->
+Definition PurePackValid (E : Interface) (p : package_pure_raw) :=
+  forall o, o \in E ->
     let '(id, (src, tgt)) := o in
     exists (f : choice.Choice.sort src -> choice.Choice.sort tgt),
-      pure_pack id = Some (src ; (tgt ; f))
+      p id = Some (src ; (tgt ; f)).
+
+Record package_pure (E : Interface) := mkpackage_pure {
+  pure_pack : package_pure_raw ;
+  pure_pack_valid : PurePackValid E pure_pack
   }.
 
-Definition pure_get_op_default (p : {fmap ident -> (sigT (fun (x : choice_type) => (sigT (fun (y : choice_type) => choice.Choice.sort x -> choice.Choice.sort y))))}) (o : opsig) :
+Definition pure_cast_fun {So To St Tt : choice_type}
+  (hS : St = So) (hT : Tt = To) (f : St -> Tt) :
+  So -> To.
+Proof.
+  subst. auto.
+Defined.
+
+Definition pure_lookup_op (p: {fmap ident -> (sigT (fun (x : choice_type) => (sigT (fun (y : choice_type) => choice.Choice.sort x -> choice.Choice.sort y))))}) (o : opsig) : Datatypes.option (src o -> tgt o) :=
+  let '(n, (So, To)) := o in
+  match p n with
+  | Some (St ; (Tt ; f)) =>
+    match choice_type_eqP St So, choice_type_eqP Tt To with
+    | Bool.ReflectT hS, Bool.ReflectT hT => Some (pure_cast_fun hS hT f)
+    | _,_ => None
+    end
+  | None => None
+  end.
+
+Fixpoint pure_code_link {A} (v : raw_code A) (p : package_pure_raw) :
+  raw_code A :=
+  match v with
+  | ret a => ret a
+  | opr o a k =>
+    (* The None branch doesn't happen when valid *)
+    (* We continue with a default value to preserve associativity. *)
+    match pure_lookup_op p o with
+    | Some f => pure_code_link (k (f a)) p
+    | None => pure_code_link (k (chCanonical (chtgt o))) p
+    end
+  | getr l k => getr l (fun x => pure_code_link (k x) p)
+  | putr l v k => putr l v (pure_code_link k p)
+  | pkg_core_definition.sampler op k => pkg_core_definition.sampler op (fun x => pure_code_link (k x) p)
+  end.
+
+Definition pure_get_op_default (p : package_pure_raw) (o : opsig) :
   choice.Choice.sort (src o) -> choice.Choice.sort (tgt o).
 Proof.
   destruct o as [? []].
@@ -167,17 +206,60 @@ Proof.
   all: intros ; apply chCanonical.
 Defined.
 
+Lemma pure_lookup_op_valid :
+  forall (E : Interface) p (o : opsig),
+    PurePackValid E p ->
+    o \in E ->
+    exists f,
+      pure_lookup_op p o = Some f.
+Proof.
+  intros E p o hp ho.
+  (* eapply from_valid_package in hp. *)
+  specialize (hp o ho).
+  destruct o as [n [So To]].
+  destruct hp as [f ?].
+  exists f. cbn.
+  destruct (p n) as [[St [Tt ft]]|] eqn:e. 2: discriminate.
+  destruct choice_type_eqP ; [ | now inversion H ].
+  destruct choice_type_eqP ; [ | now inversion H ].
+  inversion H.
+  subst.
+  do 2 apply Eqdep.EqdepTheory.inj_pair2 in H3.
+  subst.
+  unfold pure_cast_fun.
+  reflexivity.
+Qed.
+
+Equations? pure_get_raw_package_op {E : Interface} (p : package_pure_raw)
+  (hp : PurePackValid E p)
+  (o : opsig) (ho : o \in E) (arg : choice.Choice.sort (src o)) : choice.Choice.sort (tgt o) :=
+  pure_get_raw_package_op p hp o ho arg with Prelude.inspect (pure_lookup_op p o) := {
+  | @exist (Some f) e1 => (f arg)
+  | @exist None e1 => False_rect _ _
+    }.
+Proof.
+  - destruct o as [n [S T]].
+    cbn - [pure_lookup_op] in *.
+    eapply pure_lookup_op_valid in hp. 2: eauto.
+    cbn - [pure_lookup_op] in hp. destruct hp as [g ?].
+    rewrite <- e1 in H. discriminate.
+Defined.
+
+Definition pure_get_opackage_op {E} (p : package_pure E) (o : opsig) (Hin : o \in E) :
+  choice.Choice.sort (src o) -> (tgt o) :=
+  @pure_get_raw_package_op E (pure_pack E p) (pure_pack_valid E p) o Hin.
+
 Class both_package L I E :=
   {
     pack_pure : package_pure E ;
     pack_state : package L I E ;
     pack_eq_proof_statement :
       forall (o : opsig),
-        o \in E ->
+      forall (H : o \in E),
       forall (v : choice.Choice.sort (src o)), ⊢ ⦃ true_precond ⦄ 
-               get_op_default pack_state o v
-               ≈ lift_to_code (L := L) (I := I) (pure_get_op_default (pure_pack _ pack_pure) o v)
-               ⦃ pre_to_post_ret true_precond (pure_get_op_default (pure_pack _ pack_pure) o v) ⦄
+               get_opackage_op pack_state o H v
+               ≈ lift_to_code (L := L) (I := I) (pure_get_opackage_op pack_pure o H v)
+               ⦃ pre_to_post_ret true_precond (pure_get_opackage_op pack_pure o H v) ⦄
   
     (* pack_eq_proof_statement : forall i (H : i \in E), *)
     (*   (let '(existT f v) := exists_to_inhabited_sig ((pure_pack_valid E pack_pure) i H) in f) *)
@@ -196,8 +278,8 @@ Proof.
   rewrite (@fset1E opsig_ordType _) in H.
 
   refine {|
-      is_pure := pure_get_op_default (pure_pack _ pack_pure) (x, (y, z)) args ;
-      is_state := { code get_op_default (pack_state) (x, (y, z)) args #with valid_get_op_default _ _ _ (pack_state) (x, (y, z)) (args) _ H } ;
+      is_pure := pure_get_opackage_op pack_pure (x, (y, z)) H args ;
+      is_state := get_opackage_op (pack_state) (x, (y, z)) H args ;
       code_eq_proof_statement := pack_eq_proof_statement _ H _
     |}.
 Defined.
@@ -226,6 +308,7 @@ Next Obligation.
     }
     easy.
   }
+  unfold PurePackValid.
   intros.
   rewrite <- (@fset1E opsig_ordType _) in H.
   apply (ssrbool.elimT (@fset1P opsig_ordType _ _)) in H.
@@ -237,29 +320,84 @@ Next Obligation.
   reflexivity.
 Defined.
 
+From Equations Require Import Equations.
+Lemma pure_get_raw_package_op_lookup :
+  forall {E : Interface} (p : package_pure_raw)
+    (hp : PurePackValid E p)
+    (o : opsig) (ho : o \in E) (arg : src o)
+    (f : src o -> (tgt o))
+    (H : pure_lookup_op p o = Some f),
+    (pure_get_raw_package_op p hp o ho arg) = f arg.
+Proof.
+
+  intros.
+  (* intros L I E p hp o ho arg f e. *)
+  funelim (pure_get_raw_package_op p hp o ho arg).
+
+  inversion H.
+  rewrite H2 in H0.
+  inversion H0.
+  subst.
+  rewrite Heqcall.
+  reflexivity.
+
+  inversion H.
+  rewrite H2 in H0.
+  discriminate.
+Qed.
+
+Instance choice_type_uip : UIP choice_type.
+Proof.
+  apply eqdec_uip ; unfold EqDec ; intros ;
+
+      destruct (choice_type_eq x y) eqn:o ; [
+       left ; apply (ssrbool.elimT (choice_type_eqP x y) o) |
+       ] .
+  right ; red ; intros.
+  pose (ssrbool.introT (choice_type_eqP x y) H).
+  rewrite i in o ;
+    discriminate.
+Qed.
+
 Program Definition lift_to_both {ce : choice_type} {L I} (x : choice.Choice.sort ce) : both L I ce :=
   {| is_pure := x ; is_state := @lift_to_code ce L I x |}.
 Next Obligation. intros. now destruct o as [? []]. Qed.
 Next Obligation.
   intros.
+  
+  
+  pose H.
+  rewrite (@in_fset opsig_ordType) in i.
+  apply fset_compute in i.
+  inversion i ; [ | contradiction ].
+  subst.
+  clear i.
 
-  unfold get_op_default.
-  unfold pkg_composition.lookup_op.
-  destruct o0 as [? []]. cbn.
-  destruct o as [? []]. cbn.
-  destruct (ssrnat.eqn i i0) eqn:io.
-  - cbn.
-    destruct choice_type_eqP.
-    + subst.
+  unfold get_opackage_op.
+  unfold pack.
+  unfold pure_get_opackage_op.
+  rewrite get_raw_package_op_lookup with (f := fun x => is_state (bf x)).
+  - rewrite pure_get_raw_package_op_lookup with (f := fun x => is_pure (bf x)).
+    + apply (code_eq_proof_statement (bf v)).
+    + destruct o0 as [? []]. cbn.
+
+      unfold pure_cast_fun.
+
+      rewrite (ssrbool.introT (@ssrnat.eqnP i i) eq_refl).
+      choice_type_eqP_handle.
+      choice_type_eqP_handle.
       cbn.
-      destruct choice_type_eqP.
-      * subst.
-        cbn.
-        apply (bf v).
-      * apply r_ret ; easy.
-    + apply r_ret ; easy.
-  - apply r_ret ; easy.
-Qed.
+      reflexivity.
+  - destruct o0 as [? []].
+    cbn.
+    rewrite (ssrbool.introT (@ssrnat.eqnP i i) eq_refl).
+    unfold pkg_composition.mkdef.
+    choice_type_eqP_handle.
+    choice_type_eqP_handle.
+    rewrite pkg_composition.cast_fun_K.
+    reflexivity.
+  - Unshelve.
+    + Qed.
 Next Obligation. intros. apply r_ret. intros. easy. Qed.
 
 Definition both0 (A : choice_type) := both fset.fset0 [interface] A.

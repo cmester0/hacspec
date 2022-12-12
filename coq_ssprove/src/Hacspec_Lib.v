@@ -2376,45 +2376,147 @@ Definition seq_link { L1 L2 : {fset Location} } {I M E} (p1 : package L1 M E) (p
 
 Print pack_state.
 
-Definition pure_cast_fun {So To St Tt : choice_type}
-  (hS : St = So) (hT : Tt = To) (f : St -> Tt) :
-  So -> To.
-Proof.
-  subst. auto.
+Program Fixpoint drop_merge (l1 l2 : list (nat_ordType * (∑ x y : choice_type, x -> y))) {measure (length l1 + length l2)} : list (nat_ordType * (∑ x y : choice_type, x -> y)) :=
+  match l1 with
+    [] => l2
+  | x :: xs =>
+      match l2 with
+        [] => l1
+      | y :: ys =>
+          if fst x =? fst y
+          then drop_merge l1 ys
+          else if (fst x < fst y)%ord
+               then x :: drop_merge xs l2
+               else y :: drop_merge l1 ys
+      end
+  end.
+Next Obligation.
+  intros.
+  subst.
+  cbn.
+  lia.
+Defined.
+Next Obligation.
+  intros.
+  subst.
+  cbn.
+  lia.
 Defined.
 
-Definition pure_lookup_op (p: {fmap ident -> (sigT (fun (x : choice_type) => (sigT (fun (y : choice_type) => choice.Choice.sort x -> choice.Choice.sort y))))}) (o : opsig) : Datatypes.option (src o -> tgt o) :=
-  let '(n, (So, To)) := o in
-  match p n with
-  | Some (St ; Tt ; f) =>
-    match choice_type_eqP St So, choice_type_eqP Tt To with
-    | Bool.ReflectT hS, Bool.ReflectT hT => Some (pure_cast_fun hS hT f)
-    | _,_ => None
-    end
-  | None => None
-  end.
+Definition drop_merge_eq_unfold : forall a p l1 l2,
+    is_true (fst a =? fst p) ->
+    drop_merge (a :: l1) (p :: l2) = drop_merge (a :: l1) l2.
+Proof.
+  intros.
+  unfold drop_merge.
+  unfold drop_merge_func.
+  rewrite Wf.WfExtensionality.fix_sub_eq_ext.
+  repeat fold drop_merge_func.
+  unfold ".π1".
+  unfold ".π2".
+  unfold proj1_sig.
+  destruct (_ =? _) ; easy.
+Qed.
 
-Fixpoint pure_code_link {A} (v : raw_code A) (p : package_pure_raw) :
-  raw_code A :=
-  match v with
-  | ret a => ret a
-  | opr o a k =>
-    (* The None branch doesn't happen when valid *)
-    (* We continue with a default value to preserve associativity. *)
-    match pure_lookup_op p o with
-    | Some f => pure_code_link (k (f a)) p
-    | None => pure_code_link (k (chCanonical (chtgt o))) p
-    end
-  | getr l k => getr l (fun x => pure_code_link (k x) p)
-  | putr l v k => putr l v (pure_code_link k p)
-  | pkg_core_definition.sampler op k => pkg_core_definition.sampler op (fun x => pure_code_link (k x) p)
+Definition drop_merge_lt_unfold : forall a p l1 l2,
+    is_true (fst a < fst p)%ord ->
+    drop_merge (a :: l1) (p :: l2) = a :: drop_merge l1 (p :: l2).
+Proof.
+  intros.
+  unfold drop_merge.
+  unfold drop_merge_func.
+  rewrite Wf.WfExtensionality.fix_sub_eq_ext.
+  repeat fold drop_merge_func.
+  unfold ".π1".
+  unfold ".π2".
+  unfold proj1_sig.
+  
+  destruct (_ =? _) eqn:eqb.
+  pose (ssrbool.elimT (Nat.eqb_spec (fst a) (fst p)) eqb).
+  rewrite e in H.
+  rewrite Ord.ltxx in H.
+  discriminate.
+
+  destruct (_ < _)%ord ; easy.
+Qed.
+
+Definition drop_merge_not_lt_unfold : forall a p l1 l2,
+    (fst a =? fst p) = false ->
+    (fst a < fst p)%ord = false ->
+    drop_merge (a :: l1) (p :: l2) = p :: drop_merge (a :: l1) (l2).
+Proof.
+  intros.
+  unfold drop_merge.
+  unfold drop_merge_func.
+  rewrite Wf.WfExtensionality.fix_sub_eq_ext.
+  repeat fold drop_merge_func.
+  unfold ".π1".
+  unfold ".π2".
+  unfold proj1_sig.
+  
+  destruct (_ =? _) eqn:eqb. discriminate.
+  destruct (_ < _)%ord ; easy.
+Qed.
+
+Definition drop_merge_lt_cases : forall a p l1 l2,
+    (fst a =? fst p) = false ->
+    drop_merge (a :: l1) (p :: l2) = a :: drop_merge (l1) (p :: l2) \/
+    drop_merge (a :: l1) (p :: l2) = p :: drop_merge (a :: l1) (l2).
+Proof.
+  intros.
+  unfold drop_merge.
+  unfold drop_merge_func.
+  rewrite Wf.WfExtensionality.fix_sub_eq_ext.
+  repeat fold drop_merge_func.
+  unfold ".π1".
+  unfold ".π2".
+  unfold proj1_sig.
+
+  destruct (_ =? _) eqn:eqb. discriminate.
+  destruct (_ < _)%ord eqn:lo ; [now left | now right].
+Qed.
+
+Definition drop_merge_cases : forall a p l1 l2,
+    drop_merge (a :: l1) (p :: l2) = drop_merge (a :: l1) (l2) \/
+    drop_merge (a :: l1) (p :: l2) = a :: drop_merge (l1) (p :: l2) \/
+    drop_merge (a :: l1) (p :: l2) = p :: drop_merge (a :: l1) (l2).
+Proof.
+  intros.
+  unfold drop_merge.
+  unfold drop_merge_func.
+  rewrite Wf.WfExtensionality.fix_sub_eq_ext.
+  repeat fold drop_merge_func.
+  unfold ".π1".
+  unfold ".π2".
+  unfold proj1_sig.
+
+  destruct (_ =? _) eqn:eqb ; [ now left | right ; destruct (_ < _)%ord eqn:lo ; [now left | now right] ].
+Qed.
+
+Theorem seq_link_helper :
+  (forall {a} {l : list (nat_ordType * (∑ x y : choice_type, x -> y))}, is_true (path.sorted Ord.lt (seq.unzip1 (a :: l))) -> is_true (path.sorted (Ord.lt (T := nat_ordType)) (seq.unzip1 l))).
+Proof.
+  clear.
+  intros.
+  epose (path.drop_sorted 1 H).
+  setoid_rewrite <- seq.map_drop in i.
+  now setoid_rewrite seq.drop0 in i.
+Qed.
+
+Fixpoint undup1 {A : ordType} {B : Type} (s : list (A * B)) : list (A * B) :=
+  match s with
+    x :: s' =>
+      if (ssrbool.in_mem (fst x) (ssrbool.mem (fset (@seq.map _ _ fst s'))))
+      then undup1 s'
+      else x :: undup1 s'
+  | [] => nil
   end.
 
 Program Definition seq_link_both { L1 L2 : {fset Location} } {I} {M : Interface} {E} (p1 : both_package L1 ( M) E) (p2 : both_package L2 I M) : both_package (L1 :|: L2) I E :=
   {|
-    pack_pure :=
-    {|
-                    pure_pack := _ |} ;
+    pack_pure := 
+  {| pure_pack := _ |}
+ ;
     (* @pack_pure L1 M E p1 *)
     pack_state := seq_link (@pack_state L1 M E p1) (@pack_state L2 I M p2) ;
     pack_eq_proof_statement := _
@@ -2422,12 +2524,381 @@ Program Definition seq_link_both { L1 L2 : {fset Location} } {I} {M : Interface}
 Next Obligation.
   intros.
   unfold package_pure_raw.
+
+  destruct p1 as [[fmap1 _] _ _].
+  destruct p2 as [[fmap2 _] _ _].
+
+  apply (unionm fmap1 fmap2).
+Defined.
+Next Obligation.  
+  unfold PurePackValid.
+  intros.
+  destruct p1 as [[]], p2 as  [[]].
+  cbn.
+  
+  intros.
+  destruct p1 as [pure1 [pack1 pack_valid1] proof1].
+  destruct p2 as [pure2 state2 proof2].
+  pose pack_valid1 as valid1.
+  destruct valid1 as [valid1].
+  specialize (valid1 o H).
+  destruct o as [? []].
+  destruct valid1 as [f []].
+  cbn.
+  destruct pure1.
+  destruct pure2.
+  rewrite pkg_composition.lookup_op_unionm.
+  unfold unionm.
+  
+  exists f.
+  
+  (* econstructor. *)
+  (* Unshelve. *)
+  
+  (* pose (fset (seq.unzip1 (fmval1 ++ fmval2))). *)
+  (* unfold fset in f. *)
+  
+  (* 2: exact (path.sort Ord.lt (undup1 (fmval1 ++ fmval2))). *)
+  (* admit.t *)
+  
+  
+  
+  (* destruct fmval1 as [ | p ] ; [ apply i2 | ]. *)
+  (* induction fmval2 as [ | p0 ] ; [ apply i1 | ]. *)
+  (* pose (drop_merge_cases p p0 fmval1 fmval2). *)
+  (* destruct o as [ | []] ; rewrite H ; clear H. *)
+  (* - apply IHfmval2. *)
+  (*   apply (seq_link_helper i2). *)
+  (* - induction fmval1. *)
+    
+    
+  
+  
+  induction (seq.unzip1 _).
+  rewrite path.path_sortedE.
+  
+  assert (forall (l1 l2 : list (nat_ordType * (∑ x y : choice_type, x -> y))), (l1 = [] /\ l2 = []) \/ (length l1 + length l2 > 0 /\ exists x xs ys, ((x :: seq.unzip1 (drop_merge xs ys) = seq.unzip1 (drop_merge l1 l2)) /\ is_true (seq.all (Ord.lt x) (seq.unzip1 (drop_merge xs ys)))))).
+  admit.
+
+  specialize (H fmval1 fmval2).
+  generalize dependent H.
+  induction (length fmval1 + length fmval2) ; intros.
+  + destruct H as [ [] | [] ] ; [ now subst | easy ].
+  + destruct H as [ [] | [] ] ; [ now subst | ].
+    destruct H0 as [ x [xs [ys [? []]]] ].
+    rewrite <- H0 in * ; subst.
+    
+    
+  induction H.
+  - destruct H ; now subst.
+  - destruct H.
+    destruct H0.
+    destruct H0.
+    destruct H0.
+    destruct H0.
+    rewrite <- H0.
+    (* clear H0. *)
+
+    generalize dependent x.
+    induction (seq.unzip1 (drop_merge x0 x1)) ; intros.
+    + easy.
+    + unfold path.sorted.
+      rewrite path.path_sortedE.
+      rewrite IHl.
+      rewrite H1.
+      reflexivity.
+
+      
+      
+      
+  (* assert (forall fmval1 fmval2, length (drop_merge fmval1 fmval2) <= length fmval1 + length fmval2) by admit. *)
+  assert (forall a (l : list (nat_ordType * (∑ x y : choice_type, x -> y))), is_true (path.sorted Ord.lt (seq.unzip1 (a :: l))) -> is_true (path.sorted (Ord.lt (T := nat_ordType)) (seq.unzip1 l))).
+  {
+    clear.
+    intros.
+    epose (path.drop_sorted 1 H).
+    setoid_rewrite <- seq.map_drop in i.
+    now setoid_rewrite seq.drop0 in i.
+  }
+  assert (forall a (l : list nat_ordType), is_true (path.sorted Ord.lt ((a :: l))) -> is_true (path.sorted (Ord.lt (T := nat_ordType)) (l))).
+  {
+    clear.
+    intros.
+    epose (path.drop_sorted 1 H).
+    now setoid_rewrite seq.drop0 in i.
+  }
+  
+  assert (forall l1 l2, (length l1 > 0) \/ (length l2 > 0) <-> length (drop_merge l1 l2) > 0).
+  {
+    admit.
+  }
+
+  assert (forall (l1 l2 : list (nat_ordType * (∑ x y : choice_type, x -> y))), (length l1 + length l2 > 0 /\ exists (x : (nat_ordType * (∑ x y : choice_type, x -> y))) xs ys, ((fst x :: seq.unzip1 (drop_merge xs ys) = seq.unzip1 (drop_merge l1 l2)) /\ is_true (seq.all (Ord.lt (fst x)) (seq.unzip1 (drop_merge xs ys))))) \/ (l1 = [] /\ l2 = [])).
+  admit.
+
+  specialize (H2 fmval1 fmval2).
+  destruct H2 as [[? [? [? [? []]]]] | [? ?]].
+  rewrite <- H3. clear H3.
+
+  unfold path.sorted.
+  generalize dependent (fst x).
+  induction (drop_merge x0 x1) ; intros.
+  - unfold path.sorted.
+    rewrite path.path_sortedE.
+    rewrite H4.
+    unfold Datatypes.andb.
+    apply H4.
+    apply Ord.lt_trans.
+  - cbn.
+    cbn in H4.
+    rewrite is_true_split_and in H4.
+    destruct H4.
+    rewrite H3.
+    unfold Datatypes.andb.
+    apply IHl.
+  
+  
+  induction (length fmval1 + length fmval2).
+  + destruct H2.
+  
+  generalize dependent fmval2.
+  induction fmval1; intros.
+  - apply i2.
+  - generalize dependent fmval1.
+    induction fmval2 ; intros.
+    + apply i1.
+    + destruct (fst a =? fst a0) eqn:a_p.
+      * rewrite drop_merge_eq_unfold.
+        apply IHfmval2.
+        apply (H _ _ i2).
+        apply i1.
+        apply a_p.
+      * destruct (fst p < fst a)%ord eqn:a_lt_p.
+        rewrite drop_merge_lt_unfold.
+        
+        rewrite path.path_sortedE.
+
+    specialize (H2 (p :: fmval1) fmval2 ltac:(cbn ; lia)).
+    destruct H2 as [x [xs []]].
+    rewrite <- H2 in *.
+    cbn in H3 |- *.
+    rewrite path.path_sortedE.
+    rewrite H3.
+    cbn.
+    clear -H3.
+
+  
+  
+  generalize dependent fmval2.
+  induction (fmval1) ; intros.
+  - apply i2.
+  - generalize dependent fmval1.
+    induction fmval2 ; intros.
+    + apply i1.
+    + specialize (IHl (H _ _ i1) (a0 :: fmval2) i2).
+      destruct (fst a =? fst a0) eqn:a_eq_a0.
+      - rewrite drop_merge_eq_unfold.
+        apply IHfmval2.
+        apply (H _ _ i2).
+        apply fmval1.
+        apply a_eq_a0.
+      - destruct (fst a < fst a0)%ord eqn:a_lt_a0.
+        + rewrite drop_merge_lt_unfold.
+          (* unfold path.sorted in IHl |- *. *)
+          unfold seq.unzip1 ; unfold seq.map ; fold (seq.map fst (drop_merge l (a0 :: fmval2))) ; fold (seq.unzip1 (drop_merge l (a0 :: fmval2))).
+
+          assert (exists x xs, ((x :: xs = drop_merge l (a0 :: fmval2)) /\ is_true (fst a < fst x)%ord)).
+          admit.
+
+          destruct H2 as [x [xs []]].
+          rewrite <- H2 in *.
+          cbn in H3 |- *.
+          rewrite H3.
+
+          
+          
+          clear -H0 H1 a_lt_a0.
+          (* generalize dependent (fst x). *)
+          (* unfold path.sorted in *. *)
+          (* epose (proj1 (H1 l (a0 :: fmval2)) ltac:((right ; cbn ; lia))). *)
+          (* set (drop_merge l (a0 :: fmval2)) in *. *)
+          (* generalize dependent g. *)
+          (* generalize dependent l0. *)
+          induction (xs) ; intros.
+          -- reflexivity.
+          -- cbn.
+             
+             
+            (* pose (H0  _ _ IHl). *)
+            destruct l1.
+            ++ admit.
+             cbn in IHl1 |- *.
+             erewrite IHl1.
+             assert (is_true (fst a0 < fst a1)%ord).
+             ** admit.
+             
+             
+             rewrite a_lt_a0.
+             fold (path.sorted _ _).
+             rewrite IHl0.
+             (* epose (@path.sorted_sort _ _ _ _ i). *)
+             (* rewrite <- e. *)
+             
+          unfold path.sorted.
+          unfold path.path.
+          destruct path.sort
+          rewrite <- seq.cat1s.
+          pose path.cat_sorted2.axo
+            
+          
+          
+          path.sorted_sort
+          
+          clear -a_lt_a0 i2.
+          generalize dependent fmval2.
+          induction l ; intros.
+          * cbn.
+            setoid_rewrite a_lt_a0.
+            rewrite i2.
+            reflexivity.
+          * destruct (fst a1 =? fst a0) eqn:a1_eq_a0.
+            -- rewrite drop_merge_eq_unfold.
+               
+               apply IHl.
+  
+  generalize dependent fmval1.
+  induction fmval2 ; intros.
+  - apply plus_is_O in sum_length.
+    destruct sum_length.
+    apply length_zero_iff_nil in H, H0.
+    subst.
+    reflexivity.
+  - subst l.
+    destruct fmval1.
+    + apply i2.
+    + destruct fmval2.
+      * apply i1.
+      * destruct (fst p =? fst p0) eqn:p_eq_a.
+        -- rewrite (drop_merge_eq_unfold) by apply p_eq_a.
+           apply IHn.
+           apply IHfmval2.
+        clear -i2.
+        generalize dependent a.
+        induction fmval2.
+        -- reflexivity.
+        -- intros.
+           cbn in i2.
+           cbn.
+           apply Bool.andb_true_iff in i2.
+           now destruct i2.
+      * destruct (fst p < fst a)%ord eqn:p_lt_a.
+        -- rewrite (drop_merge_lt_unfold) by apply p_lt_a.
+           unfold seq.unzip1.
+           set (drop_merge _ _).
+           unfold seq.map.
+           fold (seq.map fst l).
+           subst l.
+           unfold path.sorted.
+           clear -p_lt_a i2.
+           destruct fmval1.
+           ++ cbn.
+              setoid_rewrite p_lt_a.
+              apply i2.
+           ++ destruct (fst p0 =? fst a) eqn:p0_eq_a.
+              ** rewrite drop_merge_eq_unfold by apply p0_eq_a.
+                 
+           
+           induction fmval1.
+           ++ cbn.
+              setoid_rewrite p_lt_a.
+              cbn.
+              apply i2.
+           ++ destruct a0 =
+              
+
+              
+  Check path.merge_map.
+  2: exact (path.merge (fun x y => Ord.lt (fst x) (fst y)) fmval1 fmval2).
+  unfold seq.unzip1.
+  erewrite (@path.map_merge _ _ fst (fun x y => Ord.lt (fst x) (fst y)) Ord.lt _ _ _).
+
+  (* rewrite <- (@path.map_merge _ _ fst Ord.lt). *)
+  (* rewrite <- (@path.sort_map _ _ fst Ord.lt). *)
+  
+
+  unfold path.sorted.
+
+  unfold path.merge.
+  unfold ssrbool.rel_of_simpl_rel in i.
+  unfold ssrbool.rel_of_simpl_rel in i.
+  apply path.merge_sorted.
+  admit.
+  apply fmval1.
+  apply (@path.sort_sorted _ Ord.lt).
+  unfold ssrbool.total.
+  intros.
+  (* rewrite Ord.ltNge. *)
+  (* rewrite Ord.ltNge. *)
+  (* rewrite <- Bool.negb_andb. *)
+  (* pose (Ord.leq_total (T := nat_ordType) x y). *)
+  unfold ssrbool.total in *.
+  intros.
+  specialize (t y x).
+  apply t.
+
+  apply functional_extensionality. intros x.
+  apply functional_extensionality. intros y.
+  rewrite Ord.ltNge.
+  cbn.
+  
+  
+  pose Ord.leq_eqVlt.
+  unfold ssrbool.total.
+  intros.
+  pose (@Ord.leq_total nat_ordType x y).
+
+  
+  cbn.
+  cbn in i.
+  
+  
+  
+  (* epose (@mapm _ (sigT (fun (x : choice_type) => (sigT (fun (y : choice_type) => choice.Choice.sort x -> choice.Choice.sort y)))) _ *)
+  (*              (fun '(So ; To ; f) => (So ; To ; fun x => pure_code_link (lift_to_code (f x)) (@pure_pack _ (@pack_pure _ _ _ p2)))) (@pure_pack E (@pack_pure _ _ _ p1))). *)
+  (* unfold package_pure_raw. *)
+  (* destruct f. *)
+  (* econstructor. *)
+  (* Unshelve. *)
+  (* 4:{ *)
+  (*   induction fmval. *)
+  (*   - apply []. *)
+  (*   - apply cons. *)
+  (*     destruct a. *)
+  (*     split. *)
+  (*     apply s. *)
+  (*     destruct s0 as [? []]. *)
+  (*     refine (x ; x0 ; _). *)
+  (*     intros. *)
+  (*     pose (r x0). *)
+      
+      
+    
+  (*   Check pure_lookup_op. *)
+  (* apply i. *)
+  
+  
+  apply @pure_code_link.
+  
+  unfold package_pure_raw.
   refine (fmap _).
   Unshelve.
   2:{
     refine (@mapm _ (sigT (fun (x : choice_type) => (sigT (fun (y : choice_type) => choice.Choice.sort x -> choice.Choice.sort y)))) _ (fun '(So ; To ; f) => (So ; To ; _)) _).
+    
     intros x.
-    pose (@pure_code_link To (lift_to_code (I := I) (L := L2) (f x)) (pure_pack _ (@pack_pure _ _ _ p2))).
+    apply f.
+    apply x.
+    (* pose (@pure_code_link To (lift_to_code (I := I) (L := L2) (f x)) (pure_pack _ (@pack_pure _ _ _ p2))). *)
     
     
     fun x => pure_code_link (lift_to_code (f x)).
@@ -2679,6 +3150,95 @@ Next Obligation.
   - 
   
 Admitted.
+(* 1 goal (ID 2294) *)
+  
+(*   L1, L2 : {fset Location} *)
+(*   I, M, E : Interface *)
+(*   pure_pack : package_pure_raw *)
+(*   pure_pack_valid : PurePackValid E pure_pack *)
+(*   pack1 : raw_package *)
+(*   pack_valid1 : ValidPackage L1 M E pack1 *)
+(*   proof1 : forall (o : opsig) (H : is_true (ssrbool.in_mem o (ssrbool.mem E))) (v : src o), *)
+(*            ⊢ ⦃ true_precond ⦄ get_opackage_op {package pack1 } o H v ≈ *)
+(*               lift_to_code *)
+(*                 (pure_get_opackage_op *)
+(*                    {| pure_pack := pure_pack; pure_pack_valid := pure_pack_valid |} o H v)  *)
+(*            ⦃ pre_to_post_ret true_precond *)
+(*                (pure_get_opackage_op *)
+(*                   {| pure_pack := pure_pack; pure_pack_valid := pure_pack_valid |} o H v) ⦄ *)
+(*   pure2 : package_pure M *)
+(*   state2 : package L2 I M *)
+(*   proof2 : forall (o : opsig) (H : is_true (ssrbool.in_mem o (ssrbool.mem M))) (v : src o), *)
+(*            ⊢ ⦃ true_precond ⦄ get_opackage_op state2 o H v ≈ *)
+(*               lift_to_code (pure_get_opackage_op pure2 o H v)  *)
+(*            ⦃ pre_to_post_ret true_precond (pure_get_opackage_op pure2 o H v) ⦄ *)
+(*   s : nat_ordType *)
+(*   s0, s1 : choice_type_ordType *)
+(*   H : is_true (ssrbool.in_mem (s, (s0, s1)) (ssrbool.mem E)) *)
+(*   f : s0 -> raw_code s1 *)
+(*   H0 : pack1 s = Some (s0; s1; f) *)
+(*   H1 : forall x : s0, ValidCode L1 M (f x) *)
+(*   ============================ *)
+(*   exists f0 : s0 -> s1, *)
+(*     match *)
+(*       pure2 as p *)
+(*       return *)
+(*         (forall pack_state : package L2 I M, *)
+(*          (forall (o : opsig) (H2 : is_true (ssrbool.in_mem o (ssrbool.mem M))) (v : src o), *)
+(*           ⊢ ⦃ true_precond ⦄ *)
+(*              match *)
+(*                pkg_composition.lookup_op pack_state o as o0 *)
+(*                return *)
+(*                  (o0 = pkg_composition.lookup_op pack_state o -> *)
+(*                   is_true (ssrbool.in_mem o (ssrbool.mem M)) -> src o -> code L2 I (tgt o)) *)
+(*              with *)
+(*              | Some r => *)
+(*                  fun (e : Some r = pkg_composition.lookup_op pack_state o) *)
+(*                    (ho : is_true (ssrbool.in_mem o (ssrbool.mem M)))  *)
+(*                    (arg : src o) => {code r arg } *)
+(*              | None => *)
+(*                  fun (e : None = pkg_composition.lookup_op pack_state o) *)
+(*                    (ho : is_true (ssrbool.in_mem o (ssrbool.mem M)))  *)
+(*                    (arg : src o) => *)
+(*                  False_rect (code L2 I (tgt o)) *)
+(*                    (get_raw_package_op_obligation_2 L2 I M pack_state *)
+(*                       (pack_valid pack_state) o e ho arg) *)
+(*              end eq_refl H2 v ≈ ret (pure_get_opackage_op p o H2 v)  *)
+(*           ⦃ pre_to_post_ret true_precond (pure_get_opackage_op p o H2 v) ⦄) -> *)
+(*          {fmap ident -> ∑ x y : choice_type, x -> y}) *)
+(*     with *)
+(*     | {| pure_pack := pure_pack0; pure_pack_valid := pure_pack_valid0 |} => *)
+(*         fun (_H0 : package L2 I M) *)
+(*           (_ : forall (o : opsig) (H2 : is_true (ssrbool.in_mem o (ssrbool.mem M))) *)
+(*                  (v : src o), ⊢ ⦃ true_precond ⦄ *)
+(*                   match *)
+(*                     pkg_composition.lookup_op _H0 o as o0 *)
+(*                     return *)
+(*                       (o0 = pkg_composition.lookup_op _H0 o -> *)
+(*                        is_true (ssrbool.in_mem o (ssrbool.mem M)) -> *)
+(*                        src o -> code L2 I (tgt o)) *)
+(*                   with *)
+(*                   | Some r => *)
+(*                       fun (e : Some r = pkg_composition.lookup_op _H0 o) *)
+(*                         (ho : is_true (ssrbool.in_mem o (ssrbool.mem M)))  *)
+(*                         (arg : src o) => {code r arg } *)
+(*                   | None => *)
+(*                       fun (e : None = pkg_composition.lookup_op _H0 o) *)
+(*                         (ho : is_true (ssrbool.in_mem o (ssrbool.mem M)))  *)
+(*                         (arg : src o) => *)
+(*                       False_rect (code L2 I (tgt o)) *)
+(*                         (get_raw_package_op_obligation_2 L2 I M _H0  *)
+(*                            (pack_valid _H0) o e ho arg) *)
+(*                   end eq_refl H2 v ≈ *)
+(*                   ret *)
+(*                     (pure_get_opackage_op *)
+(*                        {| pure_pack := pure_pack0; pure_pack_valid := pure_pack_valid0 |} *)
+(*                        o H2 v)  *)
+(*                ⦃ pre_to_post_ret true_precond *)
+(*                    (pure_get_opackage_op *)
+(*                       {| pure_pack := pure_pack0; pure_pack_valid := pure_pack_valid0 |} o *)
+(*                       H2 v) ⦄) => unionm pure_pack pure_pack0 *)
+(*     end state2 proof2 s = Some (s0; s1; f0) *)
 
 Definition par_link { L1 L2 : {fset Location} }  { I1 I2 E1 E2} (p1 : package L1 I1 E1) (p2 : package L2 I2 E2) (_ : pkg_composition.Parable p1 p2) : package (L1 :|: L2) (I1 :|: I2) (E1 :|: E2) :=
   {|
