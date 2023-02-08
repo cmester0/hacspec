@@ -25,3 +25,14 @@ src/Hacspec_Gf128.v
 # src/Hacspec_P256.v
 # src/Hacspec_Sha3.v # Issues with operations with different types eg ".*" vs "*"
 src/Hacspec_Sha256.v
+
+src/Concordium_Prims.v
+src/Concordium_Types.v
+src/Concordium_Traits.v
+src/Concordium_Impls.v
+src/Hacspec_Concordium.v
+
+src/Concert_Lib.v
+
+src/Hacspec_Concordium_Auction.v
+

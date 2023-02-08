@@ -1077,6 +1077,11 @@ Infix "array_neq" := (fun s1 s2 => negb (array_eq_ eq s1 s2)) (at level 33) : ha
 
 
 (**** Integers to arrays *)
+Axiom uint16_to_le_bytes : int16 -> nseq int8 2.
+Axiom uint16_to_be_bytes : int16 -> nseq int8 2.
+Axiom uint16_from_le_bytes : nseq int8 2 -> int16.
+Axiom uint16_from_be_bytes : nseq int8 2 -> int16.
+
 Axiom uint32_to_le_bytes : int32 -> nseq int8 4.
 Axiom uint32_to_be_bytes : int32 -> nseq int8 4.
 Axiom uint32_from_le_bytes : nseq int8 4 -> int32.
@@ -1089,6 +1094,11 @@ Axiom uint128_to_le_bytes : int128 -> nseq int8 16.
 Axiom uint128_to_be_bytes : int128 -> nseq int8 16.
 Axiom uint128_from_le_bytes : nseq int8 16 -> int128.
 Axiom uint128_from_be_bytes : nseq int8 16 -> int128.
+
+Axiom u16_to_le_bytes : int16 -> nseq int8 2.
+Axiom u16_to_be_bytes : int16 -> nseq int8 2.
+Axiom u16_from_le_bytes : nseq int8 2 -> int16.
+Axiom u16_from_be_bytes : nseq int8 2 -> int16.
 Axiom u32_to_le_bytes : int32 -> nseq int8 4.
 Axiom u32_to_be_bytes : int32 -> nseq int8 4.
 Axiom u32_from_le_bytes : nseq int8 4 -> int32.
@@ -1559,6 +1569,7 @@ Global Instance bool_eqdec : EqDec bool := {
   eqb_leibniz := Bool.eqb_true_iff;
 }.
 
+Definition string_t := String.string.
 Global Instance string_eqdec : EqDec String.string := {
   eqb := String.eqb;
   eqb_leibniz := String.eqb_eq ;
@@ -1781,3 +1792,18 @@ Global Instance nat_mod_default {p : Z} : Default (nat_mod p) := {
 Global Instance prod_default {A B} `{Default A} `{Default B} : Default (A '× B) := {
   default := (default, default)
 }.
+
+(*** TODO *)
+
+Axiom pub_int64_checked_abs : int64 -> option int64.
+Axiom pub_int32_checked_add : int32 -> int32 -> option int32.
+Axiom pub_uint32_checked_add : uint32 -> uint32 -> option uint32.
+Axiom pub_uint32_checked_sub : uint32 -> uint32 -> option uint32.
+
+Axiom nat_from_be_bytes : forall {p}, nseq int8 p -> nat.
+Axiom nat_from_le_bytes : forall {p}, nseq int8 p -> nat.
+
+Axiom nat_to_be_bytes : forall {p}, nat -> nseq int8 p.
+Axiom nat_to_le_bytes : forall {p}, nat -> nseq int8 p.
+
+Axiom nat_to_from_be_bytes : forall {p} x, @nat_to_be_bytes p (nat_from_be_bytes x) = x.
