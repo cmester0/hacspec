@@ -83,7 +83,7 @@ pub struct ChainMetaTest {
 /// Policy type used by init and receive contexts for testing.
 /// This type should not be used directly, but rather through
 /// its `HasPolicy` interface.
-#[derive(Debug, Clone)]
+#[derive(Clone)] //Debug, 
 pub struct TestPolicy {
     /// Current position in the vector of policies. Used to implement
     /// `next_item`.
@@ -489,7 +489,7 @@ impl HasLogger for LogRecorder {
 
 #[cfg(not(feature = "hacspec"))]
 /// An actions tree, used to provide a simpler presentation for testing.
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Eq, PartialEq)] // , Debug
 pub enum ActionsTree {
     Accept,
     SimpleTransfer {
@@ -596,7 +596,7 @@ pub type ContractStateTestBorrowed<'a> = ContractStateTest<&'a mut Vec<u8>>;
 pub type ContractStateTestOwned = ContractStateTest<Vec<u8>>;
 
 #[cfg(not(feature = "hacspec"))]
-#[derive(Debug, PartialEq, Eq)]
+#[derive(PartialEq, Eq)] // Debug, 
 /// An error that is raised when operating with `Seek`, `Write`, or `Read` trait
 /// methods of the `ContractStateTest` type.
 pub enum ContractStateError {

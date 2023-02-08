@@ -36,7 +36,7 @@ pub struct Logger {
 
 // #[cfg(not(feature = "hacspec"))]
 /// Errors that can occur during logging.
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Copy, Clone, Eq, PartialEq)] // Debug, 
 #[repr(u8)]
 pub enum LogError {
     /// The log is full.
@@ -48,7 +48,7 @@ pub enum LogError {
 #[cfg(not(feature = "hacspec"))]
 /// Error triggered when a non-zero amount of CCD is sent to a contract
 /// init or receive function that is not marked as `payable`.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy)] // , Debug
 pub struct NotPayableError;
 
 #[cfg(not(feature = "hacspec"))]
@@ -76,7 +76,7 @@ impl Action {
 /// The client will see the error code as a reject reason; if a schema is
 /// provided, the error message corresponding to the error code will be
 /// displayed. The valid range for an error code is from i32::MIN to  -1.
-#[derive(Debug, Eq, PartialEq)] // TODO: Creusot issue re-add "Debug" attribute
+#[derive(Eq, PartialEq)] // TODO: Creusot issue re-add "Debug" attribute
 #[repr(transparent)]
 pub struct Reject {
     pub error_code: NonZeroI32,
@@ -186,9 +186,9 @@ macro_rules! fail {
     };
     ($($arg:tt),+) => {
         {
-            let msg = format!($($arg),+);
+            let msg = ""; // format!($($arg),+);
             $crate::test_infrastructure::report_error(&msg, file!(), line!(), column!());
-            panic!("{}", msg)
+            panic!() // ("{}", msg)
         }
     };
 }
@@ -210,7 +210,7 @@ macro_rules! fail {
         {
             let msg = &$crate::alloc::format!($($arg),+);
             $crate::test_infrastructure::report_error(&msg, file!(), line!(), column!());
-            panic!("{}", msg)
+            panic!() // ("{}", msg)
         }
     };
 }

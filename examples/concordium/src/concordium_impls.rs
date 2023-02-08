@@ -39,7 +39,7 @@ pub fn new_reject_impl(x: i32) -> Option::<i32> { // Option<RejectHacspec>
 
 #[cfg(not(feature = "hacspec"))]
 #[trusted]
-#[ensures(!(result == 0i32))]
+#[requires(!(v == 0i32))]
 pub fn non_zero_i32(v : i32) -> NonZeroI32 {
     unsafe { NonZeroI32::new_unchecked(v) }
 }
@@ -1063,36 +1063,36 @@ impl<A, E> UnwrapAbort for Result<A, E> {
 // #[cfg(not(feature = "std"))]
 // use crate::concordium_contracts_common::fmt; // core::fmt;
 
-#[cfg(not(feature = "hacspec"))]
-#[cfg(feature = "std")]
-use std::fmt;
+// #[cfg(not(feature = "hacspec"))]
+// #[cfg(feature = "std")]
+// use std::fmt;
 
-#[cfg(not(feature = "hacspec"))]
-#[cfg(feature = "std")]
-impl<A, E: fmt::Debug> ExpectReport for Result<A, E> {
-    type Unwrap = A;
+// #[cfg(not(feature = "hacspec"))]
+// #[cfg(feature = "std")]
+// impl<A, E: fmt::Debug> ExpectReport for Result<A, E> {
+//     type Unwrap = A;
 
-    fn expect_report(self, msg: &str) -> Self::Unwrap {
-        match self {
-            Ok(x) => x,
-            Err(e) => fail!("{}: {:?}", msg, e),
-        }
-    }
-}
+//     fn expect_report(self, msg: &str) -> Self::Unwrap {
+//         match self {
+//             Ok(x) => x,
+//             Err(e) => fail!("{}: {:?}", msg, e),
+//         }
+//     }
+// }
 
-// TODO:
-#[cfg(not(feature = "hacspec"))]
-#[cfg(feature = "std")]
-impl<A: fmt::Debug, E> ExpectErrReport for Result<A, E> {
-    type Unwrap = E;
+// // TODO:
+// #[cfg(not(feature = "hacspec"))]
+// #[cfg(feature = "std")]
+// impl<A: fmt::Debug, E> ExpectErrReport for Result<A, E> {
+//     type Unwrap = E;
 
-    fn expect_err_report(self, msg: &str) -> Self::Unwrap {
-        match self {
-            Ok(a) => fail!("{}: {:?}", msg, a),
-            Err(e) => e,
-        }
-    }
-}
+//     fn expect_err_report(self, msg: &str) -> Self::Unwrap {
+//         match self {
+//             Ok(a) => fail!("{}: {:?}", msg, a),
+//             Err(e) => e,
+//         }
+//     }
+// }
 
 #[cfg(not(feature = "hacspec"))]
 impl<A> UnwrapAbort for Option<A> {
@@ -1112,21 +1112,21 @@ impl<A> ExpectReport for Option<A> {
     fn expect_report(self, msg: &str) -> Self::Unwrap {
         match self {
             Some(v) => v,
-            None => fail!("{}", msg),
+            None => fail!(), // ("{}", msg),
         }
     }
 }
 
-// TODO:
-#[cfg(not(feature = "hacspec"))]
-#[cfg(feature = "std")]
-impl<A: fmt::Debug> ExpectNoneReport for Option<A> {
-    fn expect_none_report(self, msg: &str) {
-        if let Some(x) = self {
-            fail!("{}: {:?}", msg, x)
-        }
-    }
-}
+// // TODO:
+// #[cfg(not(feature = "hacspec"))]
+// #[cfg(feature = "std")]
+// impl<A: fmt::Debug> ExpectNoneReport for Option<A> {
+//     fn expect_none_report(self, msg: &str) {
+//         if let Some(x) = self {
+//             fail!("{}: {:?}", msg, x)
+//         }
+//     }
+// }
 
 // TODO: Remove / is not in concordium-std??
 #[cfg(not(feature = "hacspec"))]

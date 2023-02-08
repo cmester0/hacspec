@@ -120,9 +120,11 @@ extern crate hacspec_concordium_derive;
 pub use hacspec_concordium_derive::*;
 
 #[cfg(not(feature = "hacspec"))]
+#[cfg(not(feature = "contracts"))]
 extern crate wee_alloc;
 // Use `wee_alloc` as the global allocator to reduce code size.
 #[cfg(not(feature = "hacspec"))]
+#[cfg(not(feature = "contracts"))]
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
@@ -133,7 +135,7 @@ extern crate hacspec_lib;
 // #[cfg(feature = "hacspec")]
 // use hacspec_attributes::*;
 
-#[cfg(not(feature = "hacspec"))]
-extern crate creusot_contracts;
-#[cfg(not(feature = "hacspec"))]
-use creusot_contracts::*; // {ensures, trusted}; // requires, 
+// #[cfg(not(feature = "hacspec"))]
+// extern crate creusot_contracts;
+// #[cfg(not(feature = "hacspec"))]
+// use creusot_contracts::*; // {ensures, trusted}; // requires, 
