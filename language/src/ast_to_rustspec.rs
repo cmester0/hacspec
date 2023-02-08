@@ -2588,6 +2588,28 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
                         None => v,
                     });
 
+            let init = i
+                .attrs
+                .iter()
+                .fold(Vec::new(), |mut v, attr| match crate::concordium::attribute_init(attr) {
+                    Some(a) => {
+                        v.push(a);
+                        v
+                    }
+                    None => v,
+                });
+
+            let receive =
+                i.attrs
+                    .iter()
+                    .fold(Vec::new(), |mut v, attr| match crate::concordium::attribute_receive(attr) {
+                        Some(a) => {
+                            v.push(a);
+                            v
+                        }
+                        None => v,
+                    });
+
             log::trace!("   fn_body: {:#?}", fn_body);
             let fn_name = translate_toplevel_ident(&i.ident, TopLevelIdentKind::Function);
             let fn_sig = FuncSig {
@@ -2597,6 +2619,8 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
                 function_dependencies: FunctionDependencies(HashSet::new()),
                 requires,
                 ensures,
+                init,
+                receive,
             };
             let fn_item = Item::FnDecl(fn_name, fn_sig, fn_body);
 

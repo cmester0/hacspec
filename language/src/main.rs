@@ -34,6 +34,7 @@ mod typechecker;
 mod util;
 
 mod pearlite;
+mod concordium;
 
 use glob::Pattern;
 use heck::TitleCase;
