@@ -595,6 +595,8 @@ pub struct FuncSig {
     pub function_dependencies: FunctionDependencies,
     pub ensures: Vec<Quantified<(Ident, Spanned<BaseTyp>), Spanned<Expression>>>,
     pub requires: Vec<Quantified<(Ident, Spanned<BaseTyp>), Spanned<Expression>>>,
+    pub init: Vec<crate::concordium::InitData>,
+    pub receive: Vec<crate::concordium::ReceiveData>,
 }
 
 #[derive(Clone, Debug, Serialize)]

@@ -1564,7 +1564,25 @@ fn translate_item<'a>(
                     .append(RcDoc::hardline())
              } else {
                  RcDoc::nil()
-            }),
+            })
+            .append(if item.tags.0.contains(&"contract_state".to_string()) {
+                RcDoc::as_string("Definition ")
+                // .append(x)
+                    .append(RcDoc::as_string("State :="))
+                    .append(
+                        RcDoc::line()
+                            .append(RcDoc::as_string("context_t ∏"))
+                            .append(RcDoc::space())
+                            .append(translate_ident(Ident::TopLevel(name.0.clone())))
+                            .append(RcDoc::as_string("."))
+                            .group()
+                            .nest(2))
+                    .append(RcDoc::line())
+            }
+                    else {
+                        RcDoc::nil()
+                    }
+            ),
         Item::ArrayDecl(name, size, cell_t, index_typ) => RcDoc::as_string("Definition")
             .append(RcDoc::space())
             .append(translate_ident(Ident::TopLevel(name.0.clone())))
