@@ -32,5 +32,8 @@ members = [
     "bip-340",
     "rsa-fdh-vrf",
     "coverage_test",
-    "pearlite-example"
+    "pearlite-example",
+    "auction",
+    "concordium",
+    "concordium-derive",
 ]
