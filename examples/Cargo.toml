@@ -39,4 +39,5 @@ members = [
     "concordium-derive",
     "auction",
     "piggybank",
+    "wccd",
 ]

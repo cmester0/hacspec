@@ -2228,59 +2228,6 @@ fn translate_array_decl(
     ))
 }
 
-fn attribute_is_test(attr: &Attribute) -> bool {
-    let attr_name = attr.name_or_empty().to_ident_string();
-    match attr_name.as_str() {
-        "test" => true,
-        "cfg" => {
-            let inner_tokens = attr.tokens();
-            if inner_tokens.len() != 2 {
-                return false;
-            }
-            let mut it = inner_tokens.trees();
-            let first_token = it.next().unwrap();
-            let second_token = it.next().unwrap();
-            match (first_token, second_token) {
-                (TokenTree::Token(first_tok, ..), TokenTree::Delimited(_, _, inner)) => {
-                    match first_tok.kind {
-                        TokenKind::Pound => {
-                            if inner.len() != 2 {
-                                return false;
-                            }
-                            let mut it = inner.trees();
-                            let _first_token = it.next().unwrap();
-                            // First is cfg
-                            let second_token = it.next().unwrap();
-                            match second_token {
-                                TokenTree::Delimited(_, _, inner) => {
-                                    if inner.len() != 1 {
-                                        return false;
-                                    }
-                                    let mut it = inner.trees();
-                                    let first_token = it.next().unwrap();
-                                    match first_token {
-                                        TokenTree::Token(tok, ..) => match tok.kind {
-                                            TokenKind::Ident(ident, _) => {
-                                                ident.to_ident_string() == "test"
-                                            }
-                                            _ => false,
-                                        },
-                                        _ => false,
-                                    }
-                                }
-                                _ => false,
-                            }
-                        }
-                        _ => false,
-                    }
-                }
-                _ => false,
-            }
-        }
-        _ => false,
-    }
-}
-
 fn get_delimited_inner_tree(delim: TokenTree) -> Option<rustc_ast::tokenstream::TokenStream> {
     match delim {
         TokenTree::Delimited(_, _, inner) => Some(inner),
@@ -2395,6 +2342,10 @@ fn attribute_tag(attr: &Attribute) -> Option<Vec<ItemTag>> {
                 _ => None,
             }
         }
+        // TODO:
+        // "cfg_attr" => {
+
+        // }
         _ => Some(vec![attr_name]),
     }
 }

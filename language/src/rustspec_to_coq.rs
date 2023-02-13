@@ -1201,7 +1201,7 @@ fn translate_item<'a>(
                     .append(if b.clone() { RcDoc::as_string("(amount : int64)").append(RcDoc::space()) } else { RcDoc::nil() })
                     .append(RcDoc::as_string("(st : State)"))
                     .append(RcDoc::space())
-                    .append(match z {
+                    .append(match z.clone() {
                         Some(v) => make_paren(
                             RcDoc::as_string("param : ")
                                 .append(translate_ident(Ident::TopLevel(TopLevelIdent {
@@ -1218,6 +1218,10 @@ fn translate_item<'a>(
                                 RcDoc::as_string(" amount")
                             } else {
                                 RcDoc::nil()
+                            })
+                            .append(match z {
+                                Some(v) => RcDoc::as_string(" param"),
+                                None => RcDoc::nil()
                             })
                             .append(RcDoc::as_string("."))
                             .nest(2))
@@ -1644,14 +1648,15 @@ fn translate_item<'a>(
                  RcDoc::nil()
             })
             .append(if item.tags.0.contains(&"contract_state".to_string()) {
-                RcDoc::as_string("Definition ")
+                RcDoc::as_string("Notation ")
                 // .append(x)
                     .append(RcDoc::as_string("State :="))
                     .append(
                         RcDoc::line()
-                            .append(RcDoc::as_string("context_t '×"))
-                            .append(RcDoc::space())
-                            .append(translate_ident(Ident::TopLevel(name.0.clone())))
+                            .append(make_paren(
+                                RcDoc::as_string("context_t '×")
+                                    .append(RcDoc::space())
+                                    .append(translate_ident(Ident::TopLevel(name.0.clone())))))
                             .append(RcDoc::as_string("."))
                             .group()
                             .nest(2))
@@ -1973,7 +1978,25 @@ fn translate_program<'a>(
         let name = str::replace(&name.clone(), "-", "_");
         RcDoc::as_string("Inductive Msg :=")
             .append(RcDoc::line())
-            .append(RcDoc::intersperse(receives.iter().map(|x| RcDoc::intersperse(x.iter().map(|crate::concordium::ReceiveData { name: y, .. }| RcDoc::as_string("| ").append(RcDoc::as_string(y.to_uppercase()))), RcDoc::line())), RcDoc::line()))
+            .append(RcDoc::intersperse(receives.iter().map(|x| {
+                RcDoc::intersperse(x.iter().map(|crate::concordium::ReceiveData { name: y, parameter: z, .. }| {
+                    RcDoc::as_string("| ")
+                        .append(RcDoc::as_string(y.to_uppercase()))
+                        .append(match z {
+                            Some (v) =>
+                                RcDoc::space()
+                                .append(make_paren(
+                                    RcDoc::as_string("_ : ")
+                                        .append(translate_ident(Ident::TopLevel(TopLevelIdent {
+                                            string: v.clone(),
+                                            kind: TopLevelIdentKind::Type
+                                        })))
+                                )),
+                            None => RcDoc::nil()
+                        })
+                    }), RcDoc::line())
+                }),
+                RcDoc::line()))
             .append(RcDoc::as_string("."))
             .append(RcDoc::line())
             .append(RcDoc::as_string("Global Instance Msg_serializable : Serializable Msg :="))
@@ -2000,14 +2023,25 @@ fn translate_program<'a>(
                                             _ => None,
                                         })
                                         .map(|(f, x)| {
-                                            RcDoc::concat(x.iter().map(|crate::concordium::ReceiveData { name: y, payable: b, .. }| {
+                                            RcDoc::concat(x.iter().map(|crate::concordium::ReceiveData { name: y, payable: b, parameter: z, .. }| {
                                                 RcDoc::as_string("| Some ")
-                                                    .append(RcDoc::as_string(y.to_uppercase()))
+                                                    .append(make_paren(
+                                                        RcDoc::as_string(y.to_uppercase())
+                                                            .append(if z.is_some() {
+                                                                RcDoc::as_string(" param")
+                                                            } else {
+                                                                RcDoc::nil()
+                                                            } )))
                                                     .append(RcDoc::as_string(" => "))
                                                     .append(make_paren(
                                                         RcDoc::as_string(y)
-                                                            .append(if b.clone() { RcDoc::as_string(" (repr ctx.(ctx_amount))") } else { RcDoc::nil() })
-                                                            .append(RcDoc::as_string(" state"))))
+                                                            .append(if b.clone() {
+                                                                RcDoc::as_string(" (repr ctx.(ctx_amount))")
+                                                            } else {
+                                                                RcDoc::nil()
+                                                            })
+                                                            .append(RcDoc::as_string(" state"))
+                                                    .append(if z.is_some() { RcDoc::as_string(" param") } else { RcDoc::nil() } )))
                                                     .append(RcDoc::line())
                                             }))
                                         }),
@@ -2024,7 +2058,7 @@ fn translate_program<'a>(
             .append(RcDoc::line())
             .append(RcDoc::as_string("Definition "))
             .append(RcDoc::as_string(name.clone()))
-            .append(RcDoc::as_string("_contract : Contract Setup Msg State unit :="))
+            .append(RcDoc::as_string("_contract : Blockchain.Contract Setup Msg State unit :="))
             .append(
                 RcDoc::line()
                     .append(RcDoc::as_string("build_contract "))
