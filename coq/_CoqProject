@@ -37,3 +37,6 @@ src/Concert_Lib.v
 src/Hacspec_Concordium_Auction.v
 src/Hacspec_Concordium_Piggybank.v
 
+src/Cis1.v
+src/Hacspec_Concordium_Wccd.v
+
