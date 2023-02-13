@@ -33,7 +33,8 @@ members = [
     "rsa-fdh-vrf",
     "coverage_test",
     "pearlite-example",
-    "auction",
     "concordium",
     "concordium-derive",
+    "auction",
+    "piggybank",
 ]

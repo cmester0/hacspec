@@ -1650,6 +1650,25 @@ Inductive result (a: Type) (b: Type) :=
 Arguments Ok {_ _}.
 Arguments Err {_ _}.
 
+Definition result_eqb {A B} `{EqDec A} `{EqDec B} (x y : result A B) :=
+  match x with
+  | Ok x_a => match y with
+             | Ok y_a => eqb x_a y_a
+             | _ => false
+             end
+  | Err x_b => match y with
+              | Err y_b => eqb x_b y_b
+              | _ => false
+              end
+  end.
+Global Instance result_eqdec {A B} `{EqDec A} `{EqDec B} : EqDec (result A B).
+Proof.
+  apply (Build_EqDec (result A B) result_eqb).
+  intros [] [] ; simpl ; [ rewrite (@eqb_leibniz _ H) | | | rewrite (@eqb_leibniz _ H0) ].
+  (* all: easy. *)
+  all: split ; intros ; try inversion H1 ; subst ; reflexivity.
+Defined.
+
 (*** Be Bytes *)
 
 

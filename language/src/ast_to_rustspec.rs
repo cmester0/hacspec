@@ -502,7 +502,7 @@ fn translate_function_argument(
 }
 
 fn translate_literal(lit: &Lit) -> Result<Literal, ()> {
-    let l : LitKind = match LitKind::from_token_lit(*lit) {
+    let l: LitKind = match LitKind::from_token_lit(*lit) {
         Ok(l) => l,
         Err(_) => return Err(()),
     };
@@ -592,18 +592,16 @@ fn translate_expr(
     match &e.kind {
         ExprKind::IncludedBytes(..) => {
             unimplemented!();
-        },
-        ExprKind::Binary(op, e1, e2) => {
-            Ok((
-                ExprTranslationResult::TransExpr(Expression::Binary(
-                    (translate_binop(op.clone().node), op.clone().span.into()),
-                    Box::new(translate_expr_expects_exp(sess, specials, e1)?),
-                    Box::new(translate_expr_expects_exp(sess, specials, e2)?),
-                    None,
-                )),
-                e.span.into(),
-            ))
         }
+        ExprKind::Binary(op, e1, e2) => Ok((
+            ExprTranslationResult::TransExpr(Expression::Binary(
+                (translate_binop(op.clone().node), op.clone().span.into()),
+                Box::new(translate_expr_expects_exp(sess, specials, e1)?),
+                Box::new(translate_expr_expects_exp(sess, specials, e2)?),
+                None,
+            )),
+            e.span.into(),
+        )),
         ExprKind::Unary(op, e1) => Ok((
             ExprTranslationResult::TransExpr(Expression::Unary(
                 match *op {
@@ -921,38 +919,44 @@ fn translate_expr(
                 }
             }
         }
-        ExprKind::MethodCall(m) => {
-            match *(*m).clone() {
-                ast::MethodCall { seg: method_name, receiver: receiver, args: args, span: span } => {
-                    let method_arg = Box::new(translate_function_argument(sess, specials, &receiver)?);
-                    let method_name = match method_name.args {
-                        None => Ok(translate_toplevel_ident(
-                            &method_name.ident,
-                            TopLevelIdentKind::Function,
-                        )),
-                        Some(_) => {
-                            sess.span_rustspec_err(span, "method type arguments not allowed in Hacspec");
-                            Err(())
-                        }
-                    }?;
-                    let func_args: Vec<TranslationResult<(Spanned<Expression>, Spanned<Borrowing>)>> = args
-                        .iter()
+        ExprKind::MethodCall(m) => match *(*m).clone() {
+            ast::MethodCall {
+                seg: method_name,
+                receiver: receiver,
+                args: args,
+                span: span,
+            } => {
+                let method_arg = Box::new(translate_function_argument(sess, specials, &receiver)?);
+                let method_name = match method_name.args {
+                    None => Ok(translate_toplevel_ident(
+                        &method_name.ident,
+                        TopLevelIdentKind::Function,
+                    )),
+                    Some(_) => {
+                        sess.span_rustspec_err(
+                            span,
+                            "method type arguments not allowed in Hacspec",
+                        );
+                        Err(())
+                    }
+                }?;
+                let func_args: Vec<TranslationResult<(Spanned<Expression>, Spanned<Borrowing>)>> =
+                    args.iter()
                         .map(|arg| translate_function_argument(sess, specials, &arg))
                         .collect();
-                    let rest_args = check_vec(func_args)?;
-                    Ok((
-                        ExprTranslationResult::TransExpr(Expression::MethodCall(
-                            method_arg,
-                            None,
-                            method_name,
-                            rest_args,
-                            None,
-                        )),
-                        e.span.into(),
-                    ))
-                }
+                let rest_args = check_vec(func_args)?;
+                Ok((
+                    ExprTranslationResult::TransExpr(Expression::MethodCall(
+                        method_arg,
+                        None,
+                        method_name,
+                        rest_args,
+                        None,
+                    )),
+                    e.span.into(),
+                ))
             }
-        }
+        },
         ExprKind::Lit(lit) => translate_literal_expr(sess, lit, e.span.clone()),
         ExprKind::Assign(lhs, rhs_e, _) => {
             let (r_e, r_e_question_mark) =
@@ -1443,8 +1447,7 @@ fn translate_expr(
                 name.args.as_ref(),
             ) {
                 ("byte_seq", None) => {
-                    let array =
-                        check_for_literal_array_from_macro_args(sess, &call.args.tokens)?;
+                    let array = check_for_literal_array_from_macro_args(sess, &call.args.tokens)?;
                     return Ok((
                         (ExprTranslationResult::TransExpr(Expression::NewArray(
                             None,
@@ -1468,8 +1471,7 @@ fn translate_expr(
                     ));
                 }
                 ("public_byte_seq", None) => {
-                    let array =
-                        check_for_literal_array_from_macro_args(sess, &call.args.tokens)?;
+                    let array = check_for_literal_array_from_macro_args(sess, &call.args.tokens)?;
                     return Ok((
                         (ExprTranslationResult::TransExpr(Expression::NewArray(None, None, array))),
                         e.span.into(),
@@ -1805,11 +1807,7 @@ fn check_for_literal(sess: &Session, arg: &TokenTree) -> TranslationResult<Spann
     match arg {
         TokenTree::Token(tok, ..) => match tok.kind {
             TokenKind::Literal(l) => {
-                match translate_literal_expr(
-                    sess,
-                    &l,
-                    tok.span.clone(),
-                )? {
+                match translate_literal_expr(sess, &l, tok.span.clone())? {
                     (ExprTranslationResult::TransStmt(_), _) => panic!(), // should not happen
                     (ExprTranslationResult::TransExpr(e), s) => Ok((e, s)),
                 }
@@ -1976,28 +1974,28 @@ fn translate_simplified_natural_integer_decl(
     call: &MacCall,
     secrecy: Secrecy,
 ) -> TranslationResult<(ItemTranslationResult, SpecialNames)> {
-        {
-            let mut it = call.args.tokens.trees();
-            let (first_arg, second_arg, third_arg) = {
-                let first_arg = it.next().map_or(Err(()), |x| Ok(x));
-                let second_arg = it.next().map_or(Err(()), |x| Ok(x));
-                let third_arg = it.next().map_or(Err(()), |x| Ok(x));
-                Ok((first_arg?, second_arg?, third_arg?))
-            }?;
-            let (typ_ident, typ_ident_string) =
-                check_for_toplevel_ident(sess, &first_arg, TopLevelIdentKind::Type)?;
-            check_for_comma(sess, &second_arg)?;
-            let canvas_size = check_for_usize(sess, &third_arg)?;
-            Ok((
-                (ItemTranslationResult::Item(DecoratedItem {
-                    item: Item::NaturalIntegerDecl(typ_ident, secrecy, canvas_size, None),
-                    tags: ItemTagSet(HashSet::unit("code".to_string())),
-                })),
-                SpecialNames {
-                    arrays: specials.arrays.update(typ_ident_string),
-                    ..specials.clone()
-                },
-            ))
+    {
+        let mut it = call.args.tokens.trees();
+        let (first_arg, second_arg, third_arg) = {
+            let first_arg = it.next().map_or(Err(()), |x| Ok(x));
+            let second_arg = it.next().map_or(Err(()), |x| Ok(x));
+            let third_arg = it.next().map_or(Err(()), |x| Ok(x));
+            Ok((first_arg?, second_arg?, third_arg?))
+        }?;
+        let (typ_ident, typ_ident_string) =
+            check_for_toplevel_ident(sess, &first_arg, TopLevelIdentKind::Type)?;
+        check_for_comma(sess, &second_arg)?;
+        let canvas_size = check_for_usize(sess, &third_arg)?;
+        Ok((
+            (ItemTranslationResult::Item(DecoratedItem {
+                item: Item::NaturalIntegerDecl(typ_ident, secrecy, canvas_size, None),
+                tags: ItemTagSet(HashSet::unit("code".to_string())),
+            })),
+            SpecialNames {
+                arrays: specials.arrays.update(typ_ident_string),
+                ..specials.clone()
+            },
+        ))
     }
 }
 
@@ -2126,7 +2124,6 @@ fn translate_array_decl(
     call: &MacCall,
     cell_t: Option<BaseTyp>,
 ) -> TranslationResult<(ItemTranslationResult, SpecialNames)> {
-    
     let mut it = call.args.tokens.trees();
     let (first_arg, second_arg, third_arg) = {
         let first_arg = it.next().map_or(Err(()), |x| Ok(x));
@@ -2203,10 +2200,7 @@ fn translate_array_decl(
                             tok.span.clone().into(),
                         )),
                         _ => {
-                            sess.span_rustspec_err(
-                                tok.span.clone(),
-                                "expected an identifier",
-                            );
+                            sess.span_rustspec_err(tok.span.clone(), "expected an identifier");
                             return Err(());
                         }
                     },
@@ -2327,7 +2321,6 @@ fn attribute_cfg_token_ident(
 ) -> Option<Vec<String>> {
     let ident_string = ident.to_ident_string();
     match ident_string.as_str() {
-        "proof" | "test" => Some(vec![ident_string]),
         "feature" => {
             it.next(); // skip '=' TODO: Check is EQ token..
             let second_token = it.next().unwrap();
@@ -2339,17 +2332,14 @@ fn attribute_cfg_token_ident(
                         ..
                     }) => {
                         let ident_string = symbol.to_ident_string();
-                        match ident_string.as_str() {
-                            "creusot" | "hacspec" => Some(vec![ident_string]),
-                            _ => None,
-                        }
+                        Some(vec![ident_string])
                     }
                     _ => None,
                 },
                 _ => None,
             }
         }
-        _ => None,
+        _ => Some(vec![ident_string]),
     }
 }
 
@@ -2405,9 +2395,7 @@ fn attribute_tag(attr: &Attribute) -> Option<Vec<ItemTag>> {
                 _ => None,
             }
         }
-        _ => {
-            Some(vec![attr_name])
-        }
+        _ => Some(vec![attr_name]),
     }
 }
 
@@ -2420,22 +2408,19 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
     log::trace!("translate_items ({:?})", i);
     let mut tags = HashSet::new();
     tags.insert("code".to_string());
-    let export = i
-        .attrs
-        .iter()
-        .fold(false, |b, attr| match attribute_tag(attr) {
-            Some(a) => {
-                tags.extend(a.iter());
-                b || a.contains(&"proof".to_string())
-            }
-            None => b,
-        });
+
+    for attr in &i.attrs {
+        if let Some(a) = attribute_tag(&attr) {
+            tags.extend(a.iter());
+        }
+    }
 
     if tags.contains(&"test".to_string()) && !tags.contains(&"proof".to_string())
         || (!tags.contains(&"hacspec".to_string()) && tags.contains(&"not(hacspec)".to_string()))
     {
         return Ok((ItemTranslationResult::Ignored, specials.clone()));
     }
+
     match &i.kind {
         ItemKind::Fn(fn_kind) => {
             // Foremost we check whether this function is a test, in which case
@@ -2588,27 +2573,25 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
                         None => v,
                     });
 
-            let init = i
-                .attrs
-                .iter()
-                .fold(Vec::new(), |mut v, attr| match crate::concordium::attribute_init(attr) {
+            let init = i.attrs.iter().fold(Vec::new(), |mut v, attr| {
+                match crate::concordium::attribute_init(attr) {
                     Some(a) => {
                         v.push(a);
                         v
                     }
                     None => v,
-                });
+                }
+            });
 
-            let receive =
-                i.attrs
-                    .iter()
-                    .fold(Vec::new(), |mut v, attr| match crate::concordium::attribute_receive(attr) {
-                        Some(a) => {
-                            v.push(a);
-                            v
-                        }
-                        None => v,
-                    });
+            let receive = i.attrs.iter().fold(Vec::new(), |mut v, attr| {
+                match crate::concordium::attribute_receive(attr) {
+                    Some(a) => {
+                        v.push(a);
+                        v
+                    }
+                    None => v,
+                }
+            });
 
             log::trace!("   fn_body: {:#?}", fn_body);
             let fn_name = translate_toplevel_ident(&i.ident, TopLevelIdentKind::Function);
@@ -2635,6 +2618,11 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
         ItemKind::Use(ref tree) => match tree.kind {
             UseTreeKind::Glob => {
                 let krate_name = translate_use_path(sess, &tree.prefix)?;
+
+                if krate_name == "hacspec_attributes" {
+                    return Ok((ItemTranslationResult::Ignored, specials.clone()));
+                }
+
                 let data = external_data(&vec![(krate_name.clone(), i.span.into())]);
                 let mut specials = specials.clone();
                 for (enum_name, _) in data.enums.into_iter() {

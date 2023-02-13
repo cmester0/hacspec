@@ -178,7 +178,6 @@ pub(crate) fn translate_pearlite(
                     Box::new(translate_pearlite(sess, *right, span)),
                 )
             }
-            
             ExprKind::Binary(
                 rustc_span::source_map::Spanned {
                     node: translate_pearlite_binop(op),
