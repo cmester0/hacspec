@@ -1,7 +1,11 @@
 #[cfg(not(feature = "hacspec"))]
 extern crate hacspec_lib;
-
 use hacspec_lib::*;
+
+#[cfg(not(feature = "hacspec"))]
+extern crate hacspec_attributes;
+#[cfg(not(feature = "hacspec"))]
+use hacspec_attributes::*;
 
 // #[cfg(not(feature = "hacspec"))]
 // extern crate creusot_contracts;
@@ -619,19 +623,17 @@ fn auction_finalize<A: HasActions>(
     }
 }
 
-#[cfg(test)]
-extern crate quickcheck;
-#[cfg(test)]
-#[macro_use(quickcheck)]
-extern crate quickcheck_macros;
+// #[cfg(test)]
+// extern crate quickcheck;
+// #[cfg(test)]
+// #[macro_use(quickcheck)]
+// extern crate quickcheck_macros;
 
-#[cfg(test)]
-use quickcheck::*;
+// #[cfg(test)]
+// use quickcheck::*;
 
+#[test]
 #[ensures(result == true)]
-#[cfg(test)]
-#[proof]
-#[quickcheck]
 /// Test that the smart-contract initialization sets the state correctly
 /// (no bids, active state, indicated auction-end time and item name).
 pub fn auction_test_init(item: PublicByteSeq, time : u64) -> bool {
@@ -645,9 +647,8 @@ pub fn auction_test_init(item: PublicByteSeq, time : u64) -> bool {
 	)
 }
 
-
-#[cfg(test)]
-#[proof]
+#[test]
+#[ensures(result == true)]
 fn verify_bid(
     item: PublicByteSeq,
     state: StateHacspec,

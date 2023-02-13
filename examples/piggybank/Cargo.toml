@@ -1,11 +1,11 @@
 [package]
-name = "hacspec-concordium-auction"
+name = "hacspec-concordium-piggybank"
 version = "0.1.0"
 authors = [""]
 edition = "2018"
 
 [lib]
-path = "src/auction.rs"
+path = "src/piggybank.rs"
 
 [dependencies]
 hacspec-lib = { path = "../../lib" }
@@ -13,7 +13,6 @@ creusot-contracts = { git = "https://github.com/xldenis/creusot", rev = "7763b3a
 concordium-contracts-common = { git = "https://github.com/Concordium/concordium-contracts-common", rev = "84ff7db509ca1fbf958b47e5e5903b7662295850" ,  version = "=2.0.0" , default-features = false }
 hacspec-concordium = { path = "../concordium" }
 hacspec-concordium-derive = { path = "../concordium-derive" }
-hacspec-attributes = { path = "../../utils/attributes/" }
 
 [features]
 hacspec = []

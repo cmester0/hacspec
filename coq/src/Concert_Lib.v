@@ -112,3 +112,21 @@ Global Instance show_context_t : Show (context_t) :=
  end).
 Definition g_context_t : G (context_t) := oneOf_ (bindGen arbitrary (fun a => returnGen (Context a))) [bindGen arbitrary (fun a => returnGen (Context a))].
 Global Instance gen_context_t : Gen (context_t) := Build_Gen context_t g_context_t.
+
+
+Global Program Instance result_serializable {A B} `{Serializable A} `{Serializable B} : Serializable (result A B) :=
+  {| serialize m :=
+    @serialize _ (@sum_serializable A H B H0) (match m with
+                                               | Ok a => inl a
+                                               | Err b => inr b
+                                               end) ;
+    deserialize l :=
+    option_map (fun m => match m with
+                      | inl a => Ok a
+                      | inr b => Err b
+                      end)
+               (@deserialize _ (@sum_serializable A H B H0) l)  |}.
+Next Obligation.
+  intros. cbn. rewrite deserialize_serialize. cbn.
+  now destruct x.
+Defined.

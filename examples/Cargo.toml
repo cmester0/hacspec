@@ -35,7 +35,8 @@ members = [
     "coverage_test",
     "pearlite-example",
     "xor",
-    "auction",
     "concordium",
     "concordium-derive",
+    "auction",
+    "piggybank",
 ]
