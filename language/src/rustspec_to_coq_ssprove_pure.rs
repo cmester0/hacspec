@@ -1555,7 +1555,8 @@ pub(crate) fn translate_item<'a>(
                 RcDoc::nil()
             } else {
             RcDoc::as_string(format!(
-            "Require Import {}.",
+                "Require Import {}.\nExport {}.",
+                str::replace(&kr.to_title_case(), " ", "_"),
                 str::replace(&kr.to_title_case(), " ", "_"),
             ))
             }

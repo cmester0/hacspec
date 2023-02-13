@@ -6,13 +6,26 @@ Import List.ListNotations.
 Open Scope Z_scope.
 Open Scope bool_scope.
 Open Scope hacspec_scope.
+
 From QuickChick Require Import QuickChick.
 Require Import QuickChickLib.
+
+From ConCert.Utils Require Import Extras.
+From ConCert.Utils Require Import Automation.
+From ConCert.Execution Require Import Serializable.
+From ConCert.Execution Require Import Blockchain.
+From ConCert.Execution Require Import ContractCommon.
+From Coq Require Import Morphisms ZArith Basics.
+Open Scope Z.
+Set Nonrecursive Elimination Schemes.
 Require Import Hacspec_Lib.
+Export Hacspec_Lib.
 
 Require Import Hacspec_Concordium.
+Export Hacspec_Concordium.
 
 Require Import Concert_Lib.
+Export Concert_Lib.
 
 Inductive auction_state_hacspec_t :=
 | NotSoldYet : auction_state_hacspec_t
@@ -90,7 +103,7 @@ Build_EqDec (state_hacspec_t) (eqb_state_hacspec_t) (eqb_leibniz_state_hacspec_t
  end).
 Definition g_state_hacspec_t : G (state_hacspec_t) := oneOf_ (bindGen arbitrary (fun a => returnGen (StateHacspec a))) [bindGen arbitrary (fun a => returnGen (StateHacspec a))].
 #[global] Instance gen_state_hacspec_t : Gen (state_hacspec_t) := Build_Gen state_hacspec_t g_state_hacspec_t.
-Definition State := context_t ∏ state_hacspec_t.
+Definition State := context_t '× state_hacspec_t.
 
 
 Definition fresh_state_hacspec
@@ -108,6 +121,7 @@ Definition fresh_state_hacspec
           seq_new_ (default : int8) (usize 0)
         ))
     )).
+
 
 Inductive init_parameter_t :=
 | InitParameter : (public_byte_seq '× int64) -> init_parameter_t.
@@ -143,6 +157,10 @@ Definition auction_init
     fresh_state_hacspec (seq_new_ (default : int8) (usize 0)) (
       @repr WORDSIZE64 0)
   ).
+Definition Setup := init_parameter_t.
+Definition auction_State (chain : Chain) (ctx : ContractCallContext) (setup : Setup) : ResultMonad.result context_state_hacspec_t unit :=
+  ResultMonad.Ok (auction_init (Context (ctx.(ctx_from), ctx.(ctx_origin), repr ctx.(ctx_amount), 0 (* TODO *))) setup).
+
 
 Definition seq_map_entry
   (m_4 : seq_map_t)
@@ -174,6 +192,7 @@ Definition seq_map_entry
       (res_8))
     res_8 in 
   res_8.
+
 
 Inductive map_update_t :=
 | Update : (int64 '× seq_map_t) -> map_update_t.
@@ -232,6 +251,7 @@ Definition seq_map_update_entry
       (res_15))
     res_15 in 
   res_15.
+
 
 Inductive bid_error_hacspec_t :=
 | ContractSender : bid_error_hacspec_t
@@ -324,6 +344,7 @@ Definition auction_bid_hacspec
         updated_map_32
       )))))).
 
+
 Definition auction_bid
   (ctx_35 : context_state_hacspec_t)
   (amount_36 : int64)
@@ -332,6 +353,10 @@ Definition auction_bid
   let s_37 : seq has_action_t :=
     seq_new_ (default : has_action_t) (usize 0) in 
   @Some (context_state_hacspec_t '× list_action_t) ((ctx_35, s_37)).
+
+Definition bid (amount : int64) (st : State) :=
+  auction_bid st amount.
+
 
 Inductive finalize_error_hacspec_t :=
 | BidMapError : finalize_error_hacspec_t
@@ -553,6 +578,7 @@ Definition auction_finalize_hacspec
   else ((auction_state_40, result_46)) >> (fun '(auction_state_40, result_46) =>
   result_46))).
 
+
 Definition auction_finalize
   (ctx_57 : context_state_hacspec_t)
   
@@ -560,6 +586,10 @@ Definition auction_finalize
   let s_58 : seq has_action_t :=
     seq_new_ (default : has_action_t) (usize 0) in 
   @Some (context_state_hacspec_t '× list_action_t) ((ctx_57, s_58)).
+
+Definition finalize (st : State) :=
+  auction_finalize st.
+
 
 Definition auction_test_init
   (item_59 : public_byte_seq)
@@ -576,6 +606,7 @@ Definition auction_test_init
             seq_new_ (default : int8) (usize 0)
           ))
       ))).
+
 
 Theorem ensures_auction_test_init : forall result_61 (
   item_59 : public_byte_seq) (time_60 : int64),
@@ -621,3 +652,18 @@ Definition verify_bid
         )))
   ).
 
+
+Inductive Msg :=
+| BID
+| FINALIZE.
+Global Instance Msg_serializable : Serializable Msg :=
+  Derive Serializable Msg_rect<BID,FINALIZE>.
+Definition auction_receive (chain : Chain) (ctx : ContractCallContext) (state : State) (msg : option Msg) : ResultMonad.result (State * list ActionBody) unit :=
+  to_action_body_list ctx (match msg with
+    | Some BID => (bid (repr ctx.(ctx_amount)) state)
+    | Some FINALIZE => (finalize state)
+    | None => None
+    end).
+
+Definition auction_contract : Contract Setup Msg State unit :=
+  build_contract auction_State auction_receive.

@@ -472,7 +472,10 @@ fn translate_pattern<'a>(p: Pattern) -> RcDoc<'a, ()> {
     }
 }
 
-pub(crate) fn translate_expression<'a>(e: Expression, top_ctx: &'a TopLevelContext) -> RcDoc<'a, ()> {
+pub(crate) fn translate_expression<'a>(
+    e: Expression,
+    top_ctx: &'a TopLevelContext,
+) -> RcDoc<'a, ()> {
     match e {
         Expression::MonadicLet(..) => panic!("TODO: Coq support for Expression::MonadicLet"),
         Expression::QuestionMark(..) => {
@@ -1171,13 +1174,127 @@ fn translate_item<'a>(
                 .group(),
             true,
         )
-        .append(
-                if sig.ensures.len() > 0 {
-                    RcDoc::hardline()
-                        .append(RcDoc::hardline())
-                        .append(RcDoc::as_string("Theorem ensures_"))
+        .append(RcDoc::hardline())
+        .append(RcDoc::intersperse(
+            sig.init.clone().into_iter().map(|x| {
+                RcDoc::as_string("Definition Setup :=")
+                    .append(RcDoc::space())
+                    .append(match x.parameter.clone() {
+                        Some(y) => translate_base_typ(BaseTyp::Named((TopLevelIdent { string: y, kind: TopLevelIdentKind::Type }, DUMMY_SP.into()), None)),
+                        None => RcDoc::as_string("unit"),
+                    })
+                    .append(RcDoc::as_string("."))
+                    .append(RcDoc::line())
+                    .append(RcDoc::as_string("Definition "))
+                    .append(RcDoc::as_string(str::replace(&x.contract.clone(), "-", "_")))
+                    .append(RcDoc::as_string("_State (chain : Chain) (ctx : ContractCallContext) (setup : Setup) : ResultMonad.result "))
+                    .append(translate_base_typ(sig.ret.0.clone()))
+                    .append(RcDoc::as_string(" unit :="))
+                    .append(
+                        RcDoc::line()
+                            .append(RcDoc::as_string("ResultMonad.Ok ("))
+                            .append(translate_ident(Ident::TopLevel(f.clone())).group())
+                            .append(RcDoc::as_string(" (Context (ctx.(ctx_from), ctx.(ctx_origin), repr ctx.(ctx_amount), 0 (* TODO *)))"))
+                            .append(match x.parameter.clone() {
+                                Some(_) => RcDoc::as_string(" setup"),
+                                None => RcDoc::nil(),
+                            })
+                            .append(RcDoc::as_string(")."))
+                            .nest(2))
+                    .append(RcDoc::line())
+
+            }),
+            RcDoc::nil(),
+        ))
+        .append(RcDoc::intersperse(
+            sig.receive.clone().into_iter().map(|crate::concordium::ReceiveData { contract: x, name: y, parameter: z, logger: l, payable: b }| {
+                RcDoc::line()
+                    .append(RcDoc::as_string("Definition "))
+                    .append(RcDoc::as_string(y))
+                    .append(RcDoc::space())
+                    .append(if b.clone() { RcDoc::as_string("(amount : int64)").append(RcDoc::space()) } else { RcDoc::nil() })
+                    .append(RcDoc::as_string("(st : State)"))
+                    .append(RcDoc::space())
+                    .append(match z {
+                        Some(v) => make_paren(
+                            RcDoc::as_string("param : ")
+                                .append(translate_ident(Ident::TopLevel(TopLevelIdent {
+                                    string: v.clone(),
+                                    kind: TopLevelIdentKind::Type
+                                })))).append(RcDoc::space()),
+                        None => RcDoc::nil()
+                    })
+                    .append(RcDoc::as_string(":="))
+                    .append(RcDoc::line()
+                            .append(translate_ident(Ident::TopLevel(f.clone())))
+                            .append(RcDoc::as_string(" st"))
+                            .append(if b.clone() {
+                                RcDoc::as_string(" amount")
+                            } else {
+                                RcDoc::nil()
+                            })
+                            .append(RcDoc::as_string("."))
+                            .nest(2))
+                    .append(RcDoc::line())
+            }),
+            RcDoc::nil(),
+        ))
+        .append(if sig.ensures.len() > 0 {
+            RcDoc::hardline()
+                .append(RcDoc::hardline())
+                .append(RcDoc::as_string("Theorem ensures_"))
+                .append(translate_ident(Ident::TopLevel(f.clone())))
+                .append(RcDoc::as_string(" : forall"))
+                .append(RcDoc::space())
+                .append(translate_ident(Ident::Local(LocalIdent {
+                    id: NodeId::MAX.as_usize(),
+                    name: "result".to_string(),
+                    mutable: false,
+                })))
+                .append(RcDoc::space())
+                .append(RcDoc::intersperse(
+                    sig.args.iter().map(|((x, _), (tau, _))| {
+                        make_paren(
+                            translate_ident(x.clone())
+                                .append(RcDoc::space())
+                                .append(RcDoc::as_string(":"))
+                                .append(RcDoc::space())
+                                .append(translate_typ(tau.clone()))
+                        )
+                    }),
+                    RcDoc::space()
+                ))
+                .append(RcDoc::as_string(","))
+                .append(
+                    sig.requires.iter().enumerate().fold(RcDoc::line(), |rs, (i, e)| {
+                        rs
+                            .append(RcDoc::as_string("forall {H_"))
+                            .append(RcDoc::as_string(i.to_string()))
+                            .append(RcDoc::as_string(" : "))
+                            .append(crate::pearlite::translate_quantified_expression(e.clone(), top_ctx))
+                            .append(RcDoc::as_string("}"))
+                            .append(RcDoc::as_string(","))
+                            .append(RcDoc::line())
+                    })
+                        .append(RcDoc::as_string("@"))
                         .append(translate_ident(Ident::TopLevel(f.clone())))
-                        .append(RcDoc::as_string(" : forall"))
+                        .append(RcDoc::space())
+                        .append(RcDoc::intersperse(
+                            sig.args.iter().map(|((x, _), _)| {
+                                translate_ident(x.clone())
+                            }),
+                            RcDoc::space()
+                        ))
+                        .append(RcDoc::space())
+                        .append(RcDoc::intersperse(
+                            (0..sig.requires.iter().len())
+                                .map(|i| {
+                                    RcDoc::as_string("H_")
+                                        .append(RcDoc::as_string(i.to_string()))
+                                        .append(RcDoc::space())
+                                }),
+                            RcDoc::nil()))
+                        .append(RcDoc::as_string("="))
                         .append(RcDoc::space())
                         .append(translate_ident(Ident::Local(LocalIdent {
                             id: NodeId::MAX.as_usize(),
@@ -1185,107 +1302,55 @@ fn translate_item<'a>(
                             mutable: false,
                         })))
                         .append(RcDoc::space())
-                        .append(RcDoc::intersperse(
-                            sig.args.iter().map(|((x, _), (tau, _))| {
-                                make_paren(
-                                    translate_ident(x.clone())
-                                        .append(RcDoc::space())
-                                        .append(RcDoc::as_string(":"))
-                                        .append(RcDoc::space())
-                                        .append(translate_typ(tau.clone()))
-                                )
-                            }),
-                            RcDoc::space()
-                        ))
-                        .append(RcDoc::as_string(","))
-                        .append(
-                            sig.requires.iter().enumerate().fold(RcDoc::line(), |rs, (i, e)| {
-                                rs
-                                    .append(RcDoc::as_string("forall {H_"))
-                                    .append(RcDoc::as_string(i.to_string()))
-                                    .append(RcDoc::as_string(" : "))
-                                    .append(crate::pearlite::translate_quantified_expression(e.clone(), top_ctx))
-                                    .append(RcDoc::as_string("}"))
-                                    .append(RcDoc::as_string(","))
-                                    .append(RcDoc::line())
-                            })
-                                .append(RcDoc::as_string("@"))
-                                .append(translate_ident(Ident::TopLevel(f.clone())))
+                        .append(RcDoc::as_string("->"))
+                        .append(RcDoc::line())
+                        .append(RcDoc::intersperse(sig.ensures.iter().map(|e| crate::pearlite::translate_quantified_expression(e.clone(), top_ctx)), RcDoc::as_string("/\\")))
+                        .append(RcDoc::as_string("."))
+                        .append(RcDoc::line())
+                        .nest(1)
+                )
+                .append(RcDoc::as_string("Proof. Admitted."))
+        }
+        else {
+            RcDoc::nil()
+        })
+        .append(if item.tags.0.contains(&"quickcheck".to_string()) {
+            RcDoc::hardline()
+                .append(RcDoc::as_string("(*"))
+                .append(RcDoc::as_string("QuickChick"))
+                .append(RcDoc::space())
+                .append(make_paren(RcDoc::concat(
+                    sig.args
+                        .iter()
+                        .map(|((x, _), (tau, _))| {
+                            RcDoc::as_string("forAll g_")
+                                .append(translate_typ(tau.clone()))
                                 .append(RcDoc::space())
-                                .append(RcDoc::intersperse(
-                                    sig.args.iter().map(|((x, _), _)| {
-                                        translate_ident(x.clone())
-                                    }),
-                                    RcDoc::space()
-                                ))
+                                .append("(")
+                                .append(RcDoc::as_string("fun"))
                                 .append(RcDoc::space())
-                                .append(RcDoc::intersperse(
-                                    (0..sig.requires.iter().len())
-                                        .map(|i| {
-                                            RcDoc::as_string("H_")
-                                                .append(RcDoc::as_string(i.to_string()))
-                                                .append(RcDoc::space())
-                                        }),
-                                    RcDoc::nil()))
-                                .append(RcDoc::as_string("="))
+                                .append(translate_ident(x.clone()))
                                 .append(RcDoc::space())
-                                .append(translate_ident(Ident::Local(LocalIdent {
-                                    id: NodeId::MAX.as_usize(),
-                                    name: "result".to_string(),
-                                    mutable: false,
-                                })))
+                                .append(RcDoc::as_string(":"))
                                 .append(RcDoc::space())
-                                .append(RcDoc::as_string("->"))
-                                .append(RcDoc::line())
-                                .append(RcDoc::intersperse(sig.ensures.iter().map(|e| crate::pearlite::translate_quantified_expression(e.clone(), top_ctx)), RcDoc::as_string("/\\")))
-                                .append(RcDoc::as_string("."))
-                                .append(RcDoc::line())
-                                .nest(1)
-                        )
-                        .append(RcDoc::as_string("Proof. Admitted."))
-                }
-                else {
-                    RcDoc::nil()
-                })
-        .append({
-            if item.tags.0.contains(&"quickcheck".to_string()) {
-                RcDoc::hardline()
-                    .append(RcDoc::as_string("(*"))
-                    .append(RcDoc::as_string("QuickChick"))
-                    .append(RcDoc::space())
-                    .append(make_paren(RcDoc::concat(
-                        sig.args
-                            .iter()
-                            .map(|((x, _), (tau, _))| {
-                                RcDoc::as_string("forAll g_")
-                                    .append(translate_typ(tau.clone()))
-                                    .append(RcDoc::space())
-                                    .append("(")
-                                    .append(RcDoc::as_string("fun"))
-                                    .append(RcDoc::space())
-                                    .append(translate_ident(x.clone()))
-                                    .append(RcDoc::space())
-                                    .append(RcDoc::as_string(":"))
-                                    .append(RcDoc::space())
-                                    .append(translate_typ(tau.clone()))
-                                    .append(RcDoc::space())
-                                    .append(RcDoc::as_string("=>"))
-                            }))
-                            .append(translate_ident(Ident::TopLevel(f.clone())))
-                            .append(RcDoc::concat(sig.args.iter().map(|((x, _), (_, _))| {
-                                        RcDoc::space()
-                                        .append(translate_ident(x.clone()))
-                                }
-                            )))
-                            .append(RcDoc::concat(sig.args.iter().map(|_| RcDoc::as_string(")")))),
-                    ))
-                    .append(RcDoc::as_string("."))
-                    .append(RcDoc::as_string("*)"))
-                    .append(RcDoc::hardline())
-                    .group()
-            } else {
-                RcDoc::nil()
-            }
+                                .append(translate_typ(tau.clone()))
+                                .append(RcDoc::space())
+                                .append(RcDoc::as_string("=>"))
+                        }))
+                                   .append(translate_ident(Ident::TopLevel(f.clone())))
+                                   .append(RcDoc::concat(sig.args.iter().map(|((x, _), (_, _))| {
+                                       RcDoc::space()
+                                           .append(translate_ident(x.clone()))
+                                   }
+                                   )))
+                                   .append(RcDoc::concat(sig.args.iter().map(|_| RcDoc::as_string(")")))),
+                ))
+                .append(RcDoc::as_string("."))
+                .append(RcDoc::as_string("*)"))
+                .append(RcDoc::hardline())
+                .group()
+        } else {
+            RcDoc::nil()
         }),
         Item::EnumDecl(name, cases) => RcDoc::as_string("Inductive")
             .append(RcDoc::space())
@@ -1317,6 +1382,33 @@ fn translate_item<'a>(
                 RcDoc::line(),
             ))
             .append(RcDoc::as_string("."))
+            .append(// if item.tags.0.contains(&"Serialize".to_string()) {
+                RcDoc::hardline()
+                    .append(RcDoc::as_string("Global Instance serializable_"))
+                    .append(translate_enum_name(name.0.clone()))
+                    .append(RcDoc::as_string(" : Serializable "))
+                    .append(translate_enum_name(name.0.clone()))
+                    .append(RcDoc::as_string(" :="))
+                    .append(
+                        RcDoc::line()
+                            .append(RcDoc::as_string("Derive Serializable "))
+                            .append(translate_enum_name(name.0.clone()))
+                            .append(RcDoc::as_string("_rect<"))
+                            .append(RcDoc::intersperse(
+                                cases.into_iter().map(|(case_name, case_typ)| {
+                                    let name_ty = BaseTyp::Named(name.clone(), None);
+                                    translate_enum_case_name(name_ty, case_name.0.clone(), false)
+                                }),
+                                RcDoc::as_string(","),
+                            ))
+                            .append(RcDoc::as_string(">."))
+                            .nest(2)
+                            .append(RcDoc::hardline()),
+                    )
+            // } else {
+            //     RcDoc::nil()
+            // }
+    )
             .append(if item.tags.0.contains(&"PartialEq".to_string()) {
                 RcDoc::hardline()
                     .append(RcDoc::hardline())
@@ -1571,7 +1663,7 @@ fn translate_item<'a>(
                     .append(RcDoc::as_string("State :="))
                     .append(
                         RcDoc::line()
-                            .append(RcDoc::as_string("context_t ∏"))
+                            .append(RcDoc::as_string("context_t '×"))
                             .append(RcDoc::space())
                             .append(translate_ident(Ident::TopLevel(name.0.clone())))
                             .append(RcDoc::as_string("."))
@@ -1727,7 +1819,8 @@ fn translate_item<'a>(
         }
         Item::ImportedCrate((TopLevelIdent { string: kr, .. }, _)) => {
             RcDoc::as_string(format!(
-            "Require Import {}.",
+                "Require Import {}.\nExport {}.",
+                str::replace(&kr.to_title_case(), " ", "_"),
                 str::replace(&kr.to_title_case(), " ", "_"),
             ))
         }
@@ -1875,11 +1968,89 @@ fn translate_program<'a>(
     top_ctx: &'a TopLevelContext,
     export_quick_check: bool,
 ) -> RcDoc<'a, ()> {
+    let receives: Vec<_> = p
+        .items
+        .iter()
+        .filter_map(|(x, _)| match &x.item {
+            Item::FnDecl(_, sig, _) if !sig.receive.is_empty() => Some(sig.receive.clone()),
+            _ => None,
+        })
+        .collect();
+
     RcDoc::concat(p.items.iter().map(|(i, _)| {
         translate_item(i, top_ctx, export_quick_check)
             .append(RcDoc::hardline())
             .append(RcDoc::hardline())
     }))
+    .append(if !receives.is_empty() {
+        let crate::concordium::ReceiveData { contract: name, .. } = receives.first().unwrap().first().unwrap();
+        let name = str::replace(&name.clone(), "-", "_");
+        RcDoc::as_string("Inductive Msg :=")
+            .append(RcDoc::line())
+            .append(RcDoc::intersperse(receives.iter().map(|x| RcDoc::intersperse(x.iter().map(|crate::concordium::ReceiveData { name: y, .. }| RcDoc::as_string("| ").append(RcDoc::as_string(y.to_uppercase()))), RcDoc::line())), RcDoc::line()))
+            .append(RcDoc::as_string("."))
+            .append(RcDoc::line())
+            .append(RcDoc::as_string("Global Instance Msg_serializable : Serializable Msg :="))
+            .append(RcDoc::line().append(RcDoc::as_string("Derive Serializable Msg_rect<")).nest(2))
+            .append(RcDoc::intersperse(receives.iter().map(|x| RcDoc::intersperse(x.iter().map(|crate::concordium::ReceiveData { name: y, .. }| RcDoc::as_string(y.to_uppercase())), RcDoc::as_string(","))), RcDoc::as_string(",")))
+            .append(RcDoc::as_string(">."))
+            .append(RcDoc::line())
+            .append(RcDoc::as_string("Definition "))
+            .append(RcDoc::as_string(name.clone()))
+            .append(RcDoc::as_string("_receive (chain : Chain) (ctx : ContractCallContext) (state : State) (msg : option Msg) : ResultMonad.result (State * list ActionBody) unit :="))
+            .append(
+                RcDoc::line()
+                    .append(RcDoc::as_string("to_action_body_list ctx"))
+                    .append(RcDoc::space())
+                    .append(make_paren(
+                        RcDoc::as_string("match msg with")
+                            .append(RcDoc::line())
+                            .append(
+                                RcDoc::concat(
+                                    p.items
+                                        .iter()
+                                        .filter_map(|(x, _)| match &x.item {
+                                            Item::FnDecl((f, _), sig, _) if !sig.receive.is_empty() => Some((f, sig.receive.clone())),
+                                            _ => None,
+                                        })
+                                        .map(|(f, x)| {
+                                            RcDoc::concat(x.iter().map(|crate::concordium::ReceiveData { name: y, payable: b, .. }| {
+                                                RcDoc::as_string("| Some ")
+                                                    .append(RcDoc::as_string(y.to_uppercase()))
+                                                    .append(RcDoc::as_string(" => "))
+                                                    .append(make_paren(
+                                                        RcDoc::as_string(y)
+                                                            .append(if b.clone() { RcDoc::as_string(" (repr ctx.(ctx_amount))") } else { RcDoc::nil() })
+                                                            .append(RcDoc::as_string(" state"))))
+                                                    .append(RcDoc::line())
+                                            }))
+                                        }),
+                                ),
+                            )
+                            .append(RcDoc::as_string("| None => None"))
+                            .append(RcDoc::line())
+                            .append(RcDoc::as_string("end"))))
+                    .append(RcDoc::as_string("."))
+                    .group()
+                    .nest(2),
+            )
+            .append(RcDoc::line())
+            .append(RcDoc::line())
+            .append(RcDoc::as_string("Definition "))
+            .append(RcDoc::as_string(name.clone()))
+            .append(RcDoc::as_string("_contract : Contract Setup Msg State unit :="))
+            .append(
+                RcDoc::line()
+                    .append(RcDoc::as_string("build_contract "))
+                    .append(RcDoc::as_string(name.clone()))
+                    .append(RcDoc::as_string("_State "))
+                    .append(RcDoc::as_string(name.clone()))
+                    .append(RcDoc::as_string("_receive."))
+                    .nest(2))
+            .append(RcDoc::line())
+    } else {
+        RcDoc::nil()
+    })
 }
 
 pub fn translate_and_write_to_file(
@@ -1904,6 +2075,10 @@ pub fn translate_and_write_to_file(
         .items
         .iter()
         .any(|i| i.0.tags.0.contains(&"quickcheck".to_string()));
+    let imports_concert = p.items.iter().any(|(x, _)| match &x.item {
+        Item::ImportedCrate((TopLevelIdent { string: kr, .. }, _)) => kr == "concert_lib",
+        _ => false,
+    });
     write!(
         file,
         "(** This file was automatically generated using Hacspec **)\n\
@@ -1914,13 +2089,25 @@ pub fn translate_and_write_to_file(
         Open Scope Z_scope.\n\
         Open Scope bool_scope.\n\
         Open Scope hacspec_scope.\n\
-        {}",
+        {}{}",
         if export_quick_check {
-            "From QuickChick Require Import QuickChick.\n\
+            "\nFrom QuickChick Require Import QuickChick.\n\
             Require Import QuickChickLib.\n"
         } else {
             ""
-        }
+        },
+        if imports_concert {
+            "\nFrom ConCert.Utils Require Import Extras.\n\
+             From ConCert.Utils Require Import Automation.\n\
+             From ConCert.Execution Require Import Serializable.\n\
+             From ConCert.Execution Require Import Blockchain.\n\
+             From ConCert.Execution Require Import ContractCommon.\n\
+             From Coq Require Import Morphisms ZArith Basics.\n\
+             Open Scope Z.\n\
+             Set Nonrecursive Elimination Schemes.\n"
+        } else {
+            ""
+        },
     )
     .unwrap();
     translate_program(p, top_ctx, export_quick_check)
