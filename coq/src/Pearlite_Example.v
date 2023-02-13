@@ -7,6 +7,7 @@ Open Scope Z_scope.
 Open Scope bool_scope.
 Open Scope hacspec_scope.
 Require Import Hacspec_Lib.
+Export Hacspec_Lib.
 
 Definition ensure_something (x_0 : int8) (y_1 : int8)  `{x_0 = y_1} : bool :=
   (x_0) =.? (y_1).

@@ -2608,7 +2608,8 @@ pub(crate) fn translate_item<'a>(
             ))
         }
         Item::ImportedCrate((TopLevelIdent { string: kr, .. }, _)) => RcDoc::as_string(format!(
-            "Require Import {}.",
+            "Require Import {}.\nExport {}.",
+            str::replace(&kr.to_title_case(), " ", "_"),
             str::replace(&kr.to_title_case(), " ", "_"),
         )),
         // Aliases are translated to Coq Notations

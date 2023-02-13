@@ -567,7 +567,7 @@ Lemma foldi_nat_split_S :
 Proof.
   unfold foldi_nat.
   intros.
-  
+
   assert (succ_sub_diag : forall n, (S n - n = 1)%nat) by lia.
   rewrite (succ_sub_diag lo).
 
@@ -624,7 +624,7 @@ Lemma foldi_nat_split :
   foldi_nat lo hi f init = foldi_nat mid hi f (foldi_nat lo mid f init).
 Proof.
   intros.
-  assert (mid_is_low_plus_constant : {k : nat | (mid = lo + k)%nat})  by (exists (mid - lo)%nat ; lia).  
+  assert (mid_is_low_plus_constant : {k : nat | (mid = lo + k)%nat})  by (exists (mid - lo)%nat ; lia).
   destruct mid_is_low_plus_constant ; subst.
   rewrite Nat.add_comm.
   apply foldi_nat_split_add.

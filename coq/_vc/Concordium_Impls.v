@@ -7,12 +7,16 @@ Open Scope Z_scope.
 Open Scope bool_scope.
 Open Scope hacspec_scope.
 Require Import Hacspec_Lib.
+Export Hacspec_Lib.
 
 Require Import Concordium_Prims.
+Export Concordium_Prims.
 
 Require Import Concordium_Types.
+Export Concordium_Types.
 
 Require Import Concordium_Traits.
+Export Concordium_Traits.
 
 Notation "'reject_hacspec_t'" := (int32) : hacspec_scope.
 
