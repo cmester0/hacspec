@@ -1310,7 +1310,7 @@ fn translate_item<'a>(
                         .append(RcDoc::space())
                         .append(RcDoc::as_string("->"))
                         .append(RcDoc::line())
-                        .append(RcDoc::intersperse(sig.ensures.iter().map(|e| crate::pearlite::translate_quantified_expression(e.clone(), top_ctx)), RcDoc::as_string("/\\")))
+                        .append(RcDoc::intersperse(sig.ensures.iter().map(|e| make_paren(crate::pearlite::translate_quantified_expression(e.clone(), top_ctx))), RcDoc::line().append(RcDoc::as_string("/\\ "))))
                         .append(RcDoc::as_string("."))
                         .append(RcDoc::line())
                         .nest(1)

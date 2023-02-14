@@ -75,43 +75,48 @@ Definition PiggyBank_State (chain : Chain) (ctx : ContractCallContext) (setup : 
   ResultMonad.Ok (piggy_init (Context (ctx.(ctx_from), ctx.(ctx_origin), repr ctx.(ctx_amount), 0 (* TODO *)))).
 
 
+Theorem ensures_piggy_init : forall result_1 (ctx_0 : context_t),
+ @piggy_init ctx_0 = result_1 ->
+ (result_1 = (ctx_0, Intact)).
+ Proof. Admitted.
+
 Notation "'piggy_insert_result_t'" := ((result unit unit)) : hacspec_scope.
 
 Definition piggy_insert_hacspec
-  (ctx_1 : context_t)
-  (amount_2 : int64)
-  (state_3 : piggy_bank_state_hacspec_t)
+  (ctx_2 : context_t)
+  (amount_3 : int64)
+  (state_4 : piggy_bank_state_hacspec_t)
   
   : piggy_insert_result_t :=
-  match state_3 with
+  match state_4 with
   | Intact => @Ok unit unit (tt)
   | Smashed => @Err unit unit (tt)
   end.
 
 
 Definition piggy_insert
-  (ctx_state_4 : (context_t '× piggy_bank_state_hacspec_t))
-  (amount_5 : int64)
+  (ctx_state_5 : (context_t '× piggy_bank_state_hacspec_t))
+  (amount_6 : int64)
   
   : (option ((context_t '× piggy_bank_state_hacspec_t) '× list_action_t)) :=
-  let '(ctx_6, state_7) :=
-    ctx_state_4 in 
-  let 'Context ((a_8, c_9, balance_10, d_11)) :=
-    ctx_6 in 
+  let '(ctx_7, state_8) :=
+    ctx_state_5 in 
+  let 'Context ((a_9, c_10, balance_11, d_12)) :=
+    ctx_7 in 
   let _ : int32 :=
     accept_hacspec  in 
-  let temp_12 : (result unit unit) :=
-    piggy_insert_hacspec (ctx_6) (amount_5) (state_7) in 
-  bind (match temp_12 with
+  let temp_13 : (result unit unit) :=
+    piggy_insert_hacspec (ctx_7) (amount_6) (state_8) in 
+  bind (match temp_13 with
     | Ok (_) => @Some unit (tt)
     | Err (_) => @None unit
-    end) (fun _ => let s_13 : seq has_action_t :=
+    end) (fun _ => let s_14 : seq has_action_t :=
       seq_new_ (default : has_action_t) (usize 0) in 
-    let s_13 :=
-      seq_upd s_13 (usize 0) (accept_action ) in 
+    let s_14 :=
+      seq_upd s_14 (usize 0) (accept_action ) in 
     @Some ((context_t '× piggy_bank_state_hacspec_t) '× list_action_t) ((
-        (Context ((a_8, c_9, (balance_10) .+ (amount_5), d_11)), state_7),
-        s_13
+        (Context ((a_9, c_10, (balance_11) .+ (amount_6), d_12)), state_8),
+        s_14
       ))).
 
 Definition insert (amount : int64) (st : State) :=
@@ -148,43 +153,57 @@ Notation "'piggy_smash_result_t'" := ((
   result piggy_bank_state_hacspec_t smash_error_t)) : hacspec_scope.
 
 Definition piggy_smash_hacspec
-  (ctx_14 : context_t)
-  (state_15 : piggy_bank_state_hacspec_t)
+  (ctx_15 : context_t)
+  (state_16 : piggy_bank_state_hacspec_t)
   
   : piggy_smash_result_t :=
-  let 'Context ((owner_16, sender_17, balance_18, metadata_19)) :=
-    ctx_14 in 
-  ifbnd negb ((owner_16) array_eq (sender_17)) : bool
+  let 'Context ((owner_17, sender_18, balance_19, metadata_20)) :=
+    ctx_15 in 
+  ifbnd negb ((owner_17) array_eq (sender_18)) : bool
   thenbnd (bind (@Err piggy_bank_state_hacspec_t smash_error_t (NotOwner)) (
       fun _ => @Ok unit smash_error_t (tt)))
   else (tt) >> (fun 'tt =>
-  ifbnd negb ((state_15) =.? (Intact)) : bool
+  ifbnd negb ((state_16) =.? (Intact)) : bool
   thenbnd (bind (@Err piggy_bank_state_hacspec_t smash_error_t (
         AlreadySmashed)) (fun _ => @Ok unit smash_error_t (tt)))
   else (tt) >> (fun 'tt =>
   @Ok piggy_bank_state_hacspec_t smash_error_t (Smashed))).
 
 
+Theorem ensures_piggy_smash_hacspec : forall result_1 (ctx_15 : context_t) (
+  state_16 : piggy_bank_state_hacspec_t),
+ @piggy_smash_hacspec ctx_15 state_16 = result_1 ->
+ (~ (state_16 = Intact) ->
+   result_1 = @Err piggy_bank_state_hacspec_t smash_error_t (AlreadySmashed))
+ /\ (forall owner_21 : user_address_t,
+   forall sender_22 : user_address_t,
+   forall balance_23 : int64,
+   forall metadata_24 : int64,
+   ctx_15 = Context ((owner_21, sender_22, balance_23, metadata_24)) ->
+   ~ (owner_21 = sender_22) ->
+   result_1 = @Err piggy_bank_state_hacspec_t smash_error_t (NotOwner)).
+ Proof. Admitted.
+
 Definition piggy_smash
-  (ctx_state_20 : (context_t '× piggy_bank_state_hacspec_t))
+  (ctx_state_25 : (context_t '× piggy_bank_state_hacspec_t))
   
   : (option ((context_t '× piggy_bank_state_hacspec_t) '× list_action_t)) :=
-  let '(ctx_21, state_22) :=
-    ctx_state_20 in 
-  let 'Context ((a_23, c_24, balance_25, d_26)) :=
-    ctx_21 in 
+  let '(ctx_26, state_27) :=
+    ctx_state_25 in 
+  let 'Context ((a_28, c_29, balance_30, d_31)) :=
+    ctx_26 in 
   let _ : int32 :=
     accept_hacspec  in 
-  let smash_27 : (result piggy_bank_state_hacspec_t smash_error_t) :=
-    piggy_smash_hacspec (ctx_21) (state_22) in 
-  bind (match smash_27 with
-    | Ok (a_28) => @Some piggy_bank_state_hacspec_t (a_28)
-    | Err (b_29) => @None piggy_bank_state_hacspec_t
-    end) (fun new_state_30 => let s_31 : seq has_action_t :=
+  let smash_32 : (result piggy_bank_state_hacspec_t smash_error_t) :=
+    piggy_smash_hacspec (ctx_26) (state_27) in 
+  bind (match smash_32 with
+    | Ok (a_33) => @Some piggy_bank_state_hacspec_t (a_33)
+    | Err (b_34) => @None piggy_bank_state_hacspec_t
+    end) (fun new_state_35 => let s_36 : seq has_action_t :=
       seq_new_ (default : has_action_t) (usize 1) in 
     @Some ((context_t '× piggy_bank_state_hacspec_t) '× list_action_t) ((
-        (Context ((a_23, c_24, @repr WORDSIZE64 0, d_26)), new_state_30),
-        s_31
+        (Context ((a_28, c_29, @repr WORDSIZE64 0, d_31)), new_state_35),
+        s_36
       ))).
 
 Definition smash (st : State) :=
@@ -196,77 +215,77 @@ Definition test_init_hacspec   : bool :=
 
 
 Definition test_insert_intact
-  (ctx_32 : context_t)
-  (amount_33 : int64)
+  (ctx_37 : context_t)
+  (amount_38 : int64)
   
   : bool :=
-  (piggy_insert_hacspec (ctx_32) (amount_33) (Intact)) =.? (@Ok unit unit (tt)).
+  (piggy_insert_hacspec (ctx_37) (amount_38) (Intact)) =.? (@Ok unit unit (tt)).
 
 (*QuickChick (
-  forAll g_context_t (fun ctx_32 : context_t =>forAll g_int64 (fun amount_33 : int64 =>test_insert_intact ctx_32 amount_33))).*)
+  forAll g_context_t (fun ctx_37 : context_t =>forAll g_int64 (fun amount_38 : int64 =>test_insert_intact ctx_37 amount_38))).*)
 
 
 Definition test_insert_smashed
-  (ctx_34 : context_t)
-  (amount_35 : int64)
+  (ctx_39 : context_t)
+  (amount_40 : int64)
   
   : bool :=
-  (piggy_insert_hacspec (ctx_34) (amount_35) (Smashed)) =.? (@Err unit unit (
+  (piggy_insert_hacspec (ctx_39) (amount_40) (Smashed)) =.? (@Err unit unit (
       tt)).
 
 (*QuickChick (
-  forAll g_context_t (fun ctx_34 : context_t =>forAll g_int64 (fun amount_35 : int64 =>test_insert_smashed ctx_34 amount_35))).*)
+  forAll g_context_t (fun ctx_39 : context_t =>forAll g_int64 (fun amount_40 : int64 =>test_insert_smashed ctx_39 amount_40))).*)
 
 
 Definition test_smash_intact
-  (owner_36 : user_address_t)
-  (balance_37 : int64)
-  (metadata_38 : int64)
+  (owner_41 : user_address_t)
+  (balance_42 : int64)
+  (metadata_43 : int64)
   
   : bool :=
-  let sender_39 : user_address_t :=
-    owner_36 in 
-  let ctx_40 : context_t :=
-    Context ((owner_36, sender_39, balance_37, metadata_38)) in 
-  (piggy_smash_hacspec (ctx_40) (Intact)) =.? (
+  let sender_44 : user_address_t :=
+    owner_41 in 
+  let ctx_45 : context_t :=
+    Context ((owner_41, sender_44, balance_42, metadata_43)) in 
+  (piggy_smash_hacspec (ctx_45) (Intact)) =.? (
     @Ok piggy_bank_state_hacspec_t smash_error_t (Smashed)).
 
 (*QuickChick (
-  forAll g_user_address_t (fun owner_36 : user_address_t =>forAll g_int64 (fun balance_37 : int64 =>forAll g_int64 (fun metadata_38 : int64 =>test_smash_intact owner_36 balance_37 metadata_38)))).*)
+  forAll g_user_address_t (fun owner_41 : user_address_t =>forAll g_int64 (fun balance_42 : int64 =>forAll g_int64 (fun metadata_43 : int64 =>test_smash_intact owner_41 balance_42 metadata_43)))).*)
 
 
 Definition test_smash_intact_not_owner
-  (owner_41 : user_address_t)
-  (sender_42 : user_address_t)
-  (balance_43 : int64)
-  (metadata_44 : int64)
+  (owner_46 : user_address_t)
+  (sender_47 : user_address_t)
+  (balance_48 : int64)
+  (metadata_49 : int64)
   
   : bool :=
-  let ctx_45 : context_t :=
-    Context ((owner_41, sender_42, balance_43, metadata_44)) in 
-  ((owner_41) array_eq (sender_42)) || ((piggy_smash_hacspec (ctx_45) (
+  let ctx_50 : context_t :=
+    Context ((owner_46, sender_47, balance_48, metadata_49)) in 
+  ((owner_46) array_eq (sender_47)) || ((piggy_smash_hacspec (ctx_50) (
         Intact)) =.? (@Err piggy_bank_state_hacspec_t smash_error_t (
         NotOwner))).
 
 (*QuickChick (
-  forAll g_user_address_t (fun owner_41 : user_address_t =>forAll g_user_address_t (fun sender_42 : user_address_t =>forAll g_int64 (fun balance_43 : int64 =>forAll g_int64 (fun metadata_44 : int64 =>test_smash_intact_not_owner owner_41 sender_42 balance_43 metadata_44))))).*)
+  forAll g_user_address_t (fun owner_46 : user_address_t =>forAll g_user_address_t (fun sender_47 : user_address_t =>forAll g_int64 (fun balance_48 : int64 =>forAll g_int64 (fun metadata_49 : int64 =>test_smash_intact_not_owner owner_46 sender_47 balance_48 metadata_49))))).*)
 
 
 Definition test_smash_smashed
-  (owner_46 : user_address_t)
-  (balance_47 : int64)
-  (metadata_48 : int64)
+  (owner_51 : user_address_t)
+  (balance_52 : int64)
+  (metadata_53 : int64)
   
   : bool :=
-  let sender_49 : user_address_t :=
-    owner_46 in 
-  let ctx_50 : context_t :=
-    Context ((owner_46, sender_49, balance_47, metadata_48)) in 
-  (piggy_smash_hacspec (ctx_50) (Smashed)) =.? (
+  let sender_54 : user_address_t :=
+    owner_51 in 
+  let ctx_55 : context_t :=
+    Context ((owner_51, sender_54, balance_52, metadata_53)) in 
+  (piggy_smash_hacspec (ctx_55) (Smashed)) =.? (
     @Err piggy_bank_state_hacspec_t smash_error_t (AlreadySmashed)).
 
 (*QuickChick (
-  forAll g_user_address_t (fun owner_46 : user_address_t =>forAll g_int64 (fun balance_47 : int64 =>forAll g_int64 (fun metadata_48 : int64 =>test_smash_smashed owner_46 balance_47 metadata_48)))).*)
+  forAll g_user_address_t (fun owner_51 : user_address_t =>forAll g_int64 (fun balance_52 : int64 =>forAll g_int64 (fun metadata_53 : int64 =>test_smash_smashed owner_51 balance_52 metadata_53)))).*)
 
 
 Inductive Msg :=

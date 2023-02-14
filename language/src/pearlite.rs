@@ -337,14 +337,14 @@ pub(crate) fn translate_pearlite(
         //         pearlite_syn::term::Term::Range(_) => RcDoc::as_string("TODORange"),
         //         pearlite_syn::term::Term::Repeat(_) => RcDoc::as_string("TODORepeat"),
         //         pearlite_syn::term::Term::Struct(_) => RcDoc::as_string("TODOStruct"),
-        //         pearlite_syn::term::Term::Tuple(pearlite_syn::term::TermTuple { elems, .. }) => {
-        //             make_paren(RcDoc::intersperse(
-        //                 elems
-        //                     .into_iter()
-        //                     .map(|x| make_paren(translate_pearlite(x, top_ctx, idents.clone()))),
-        //                 RcDoc::as_string(",").append(RcDoc::space()),
-        //             ))
-        //         }
+        pearlite_syn::term::Term::Tuple(pearlite_syn::term::TermTuple { elems, .. }) => {
+            ExprKind::Tup(
+                elems
+                    .into_iter()
+                    .map(|x| P(translate_pearlite_unquantified(sess, x, span).unwrap()))
+                    .collect(),
+            )
+        }
         //         pearlite_syn::term::Term::Type(ty) => RcDoc::as_string("TODOType"),
         pearlite_syn::term::Term::Unary(pearlite_syn::term::TermUnary { op, expr }) => {
             if let syn::UnOp::Not(_) = op {
@@ -373,12 +373,6 @@ pub(crate) fn translate_pearlite(
                 Box::new(translate_pearlite(sess, *hyp, span)),
                 Box::new(translate_pearlite(sess, *cons, span)),
             );
-
-            // make_paren(translate_pearlite(*hyp, top_ctx, idents.clone()))
-            //     .append(RcDoc::space())
-            //     .append(RcDoc::as_string("->"))
-            //     .append(RcDoc::space())
-            //     .append(make_paren(translate_pearlite(*cons, top_ctx, idents.clone())))
         }
         pearlite_syn::term::Term::Forall(pearlite_syn::term::TermForall { args, term, .. }) => {
             return Quantified::Forall(
@@ -393,17 +387,19 @@ pub(crate) fn translate_pearlite(
                 Box::new(translate_pearlite(sess, *term, span)),
             );
         }
-        //         pearlite_syn::term::Term::Exists(pearlite_syn::term::TermExists { args, term, .. }) => {
-        //             RcDoc::as_string("exists")
-        //                 .append(RcDoc::space())
-        //                 .append(
-        //                     args.iter()
-        //                         .fold(RcDoc::nil(), |rs, x| rs.append(x.ident.to_string())),
-        //                 )
-        //                 .append(RcDoc::as_string(","))
-        //                 .append(RcDoc::space())
-        //                 .append(translate_pearlite(*term, top_ctx, idents.clone()))
-        //         }
+        pearlite_syn::term::Term::Exists(pearlite_syn::term::TermExists { args, term, .. }) => {
+            return Quantified::Exists(
+                args.iter()
+                    .map(|x| {
+                        (
+                            translate_id(translate_pearlite_ident(x.ident.clone(), span)),
+                            translate_pearlite_type(sess, *x.ty.clone(), span),
+                        )
+                    })
+                    .collect(),
+                Box::new(translate_pearlite(sess, *term, span)),
+            );
+        }
         //         pearlite_syn::term::Term::Absurd(_) => RcDoc::as_string("TODOAbsurd"),
         //         pearlite_syn::term::Term::Pearlite(term) => RcDoc::as_string("TODOPearlite"),
         //         pearlite_syn::term::Term::__Nonexhaustive => RcDoc::as_string("TODONonexhaustive"),
