@@ -34,7 +34,7 @@ fn translate_pearlite_binop(op: syn::BinOp) -> ast::BinOpKind {
         syn::BinOp::Ne(_) => ast::BinOpKind::Ne,
         syn::BinOp::Ge(_) => ast::BinOpKind::Ge,
         syn::BinOp::Gt(_) => ast::BinOpKind::Gt,
-        binop => panic!("binop error: {:#?}", binop), // Error
+        binop => panic!("binop error: {:#?}", binop),
         // syn::BinOp::AddEq(_) => ast::BinOpKind::AddEq,
         // syn::BinOp::SubEq(_) => ast::BinOpKind::SubEq,
         // syn::BinOp::MulEq(_) => ast::BinOpKind::MulEq,
@@ -176,8 +176,10 @@ pub(crate) fn translate_pearlite(
                 return Quantified::Eq(
                     Box::new(translate_pearlite(sess, *left, span)),
                     Box::new(translate_pearlite(sess, *right, span)),
-                )
+                );
             }
+
+            println!("kbin2: {:?}", translate_pearlite_binop(op));
             ExprKind::Binary(
                 rustc_span::source_map::Spanned {
                     node: translate_pearlite_binop(op),
@@ -249,25 +251,22 @@ pub(crate) fn translate_pearlite(
             args,
             ..
         }) => {
-            let mut arg_expr = args.into_iter()
-                    .map(|x| P(translate_pearlite_unquantified(sess, x, span).unwrap())).collect();
-            let mut receiver_expr = P(
-                translate_pearlite_unquantified(sess, *receiver, span).unwrap()
-            );
-            ExprKind::MethodCall(
-                Box::new(
-                    ast::MethodCall {
-                        seg: PathSegment {
-                            ident: translate_pearlite_ident(method, span),
-                            id: NodeId::MAX,
-                            args: None,
-                        },
-                        receiver: receiver_expr,
-                        args: arg_expr,
-                        span,
-                    }
-                ),
-            )
+            let mut arg_expr = args
+                .into_iter()
+                .map(|x| P(translate_pearlite_unquantified(sess, x, span).unwrap()))
+                .collect();
+            let mut receiver_expr =
+                P(translate_pearlite_unquantified(sess, *receiver, span).unwrap());
+            ExprKind::MethodCall(Box::new(ast::MethodCall {
+                seg: PathSegment {
+                    ident: translate_pearlite_ident(method, span),
+                    id: NodeId::MAX,
+                    args: None,
+                },
+                receiver: receiver_expr,
+                args: arg_expr,
+                span,
+            }))
         }
         pearlite_syn::term::Term::Paren(pearlite_syn::term::TermParen { expr, .. }) => {
             // match expr.clone() {
@@ -349,14 +348,11 @@ pub(crate) fn translate_pearlite(
         //         pearlite_syn::term::Term::Type(ty) => RcDoc::as_string("TODOType"),
         pearlite_syn::term::Term::Unary(pearlite_syn::term::TermUnary { op, expr }) => {
             if let syn::UnOp::Not(_) = op {
-                return Quantified::Not(
-                    Box::new(translate_pearlite(sess, *expr, span)),
-                )
-            }
-            else {
+                return Quantified::Not(Box::new(translate_pearlite(sess, *expr, span)));
+            } else {
                 panic!("translate_pearlite_todo unary: {:#?} {:#?}\n", op, expr);
             }
-        //             RcDoc::as_string("TODOUnary").append(translate_pearlite(*expr, top_ctx, idents.clone()))
+            //             RcDoc::as_string("TODOUnary").append(translate_pearlite(*expr, top_ctx, idents.clone()))
         }
         //         pearlite_syn::term::Term::Final(pearlite_syn::term::TermFinal { term, .. }) => {
         //             RcDoc::as_string("TODOFinal").append(translate_pearlite(*term, top_ctx, idents.clone()))
@@ -568,11 +564,13 @@ pub(crate) fn attribute_ensures(attr: &Attribute) -> Option<String> {
     }
 }
 
-
 fn resolve_quantified_identifiers(
     ids: Vec<(Ident, Spanned<BaseTyp>)>,
     name_context: &crate::name_resolution::NameContext,
-) -> (Vec<(Ident, Spanned<BaseTyp>)>, crate::name_resolution::NameContext) {
+) -> (
+    Vec<(Ident, Spanned<BaseTyp>)>,
+    crate::name_resolution::NameContext,
+) {
     let new_ids: Vec<(Ident, Spanned<BaseTyp>)> = ids
         .iter()
         .map(|(x, ty)| {
@@ -600,14 +598,13 @@ pub(crate) fn resolve_quantified_expression(
     qe: Quantified<(Ident, Spanned<BaseTyp>), Spanned<Expression>>,
     name_context: &crate::name_resolution::NameContext,
     top_level_ctx: &TopLevelContext,
-) -> crate::name_resolution::ResolutionResult<Quantified<(Ident, Spanned<BaseTyp>), Spanned<Expression>>> {
+) -> crate::name_resolution::ResolutionResult<
+    Quantified<(Ident, Spanned<BaseTyp>), Spanned<Expression>>,
+> {
     match qe {
-        Quantified::Unquantified(e) => Ok(Quantified::Unquantified(crate::name_resolution::resolve_expression(
-            sess,
-            e,
-            name_context,
-            top_level_ctx,
-        )?)),
+        Quantified::Unquantified(e) => Ok(Quantified::Unquantified(
+            crate::name_resolution::resolve_expression(sess, e, name_context, top_level_ctx)?,
+        )),
         Quantified::Forall(ids, qe2) => {
             let (new_ids, new_context) = resolve_quantified_identifiers(ids, name_context);
             let qe2_resolved =
@@ -669,7 +666,9 @@ pub(crate) fn translate_quantified_expression<'a>(
     top_ctx: &'a TopLevelContext,
 ) -> RcDoc<'a, ()> {
     match qe {
-        Quantified::Unquantified((e, _)) => crate::rustspec_to_coq::translate_expression(e, top_ctx),
+        Quantified::Unquantified((e, _)) => {
+            crate::rustspec_to_coq::translate_expression(e, top_ctx)
+        }
         Quantified::Forall(ids, qe2) => RcDoc::as_string("forall")
             .append(RcDoc::space())
             .append(RcDoc::intersperse(
@@ -706,8 +705,105 @@ pub(crate) fn translate_quantified_expression<'a>(
             .append(RcDoc::as_string("="))
             .append(RcDoc::space())
             .append(translate_quantified_expression(*qe3, top_ctx)),
-        Quantified::Not(qex) => RcDoc::as_string("~")
-            .append(RcDoc::space())
-            .append(crate::rustspec_to_coq_base::make_paren(translate_quantified_expression(*qex, top_ctx))),
+        Quantified::Not(qex) => RcDoc::as_string("~").append(RcDoc::space()).append(
+            crate::rustspec_to_coq_base::make_paren(translate_quantified_expression(*qex, top_ctx)),
+        ),
+    }
+}
+
+pub(crate) fn typecheck_quantified_expression(
+    sess: &Session,
+    qe: Quantified<(Ident, Spanned<BaseTyp>), Spanned<Expression>>,
+    top_level_context: &TopLevelContext,
+    var_context: &crate::typechecker::VarContext,
+) -> Quantified<(Ident, Spanned<BaseTyp>), Spanned<Expression>> {
+    match qe {
+        Quantified::Unquantified(e) => Quantified::Unquantified((
+            crate::typechecker::typecheck_expression_no_qm(
+                sess,
+                &e.clone(),
+                &None,
+                &None,
+                top_level_context,
+                var_context,
+            )
+            .unwrap()
+            .0,
+            e.1,
+        )),
+        Quantified::Forall(ids, qe2) => {
+            let var_context = ids
+                .iter()
+                .fold(var_context.clone(), |ctx, (x, (t, t_span))| {
+                    crate::typechecker::add_var(
+                        x,
+                        &((Borrowing::Consumed, *t_span), (t.clone(), *t_span)),
+                        &ctx,
+                    )
+                });
+            Quantified::Forall(
+                ids,
+                Box::new(typecheck_quantified_expression(
+                    sess,
+                    *qe2,
+                    top_level_context,
+                    &var_context,
+                )),
+            )
+        }
+        Quantified::Exists(ids, qe2) => {
+            let var_context = ids
+                .iter()
+                .fold(var_context.clone(), |ctx, (x, (t, t_span))| {
+                    crate::typechecker::add_var(
+                        x,
+                        &((Borrowing::Consumed, *t_span), (t.clone(), *t_span)),
+                        &ctx,
+                    )
+                });
+            Quantified::Exists(
+                ids,
+                Box::new(typecheck_quantified_expression(
+                    sess,
+                    *qe2,
+                    top_level_context,
+                    &var_context,
+                )),
+            )
+        }
+        Quantified::Implication(a, b) => Quantified::Implication(
+            Box::new(typecheck_quantified_expression(
+                sess,
+                *a,
+                top_level_context,
+                var_context,
+            )),
+            Box::new(typecheck_quantified_expression(
+                sess,
+                *b,
+                top_level_context,
+                var_context,
+            )),
+        ),
+        Quantified::Eq(a, b) => Quantified::Eq(
+            Box::new(typecheck_quantified_expression(
+                sess,
+                *a,
+                top_level_context,
+                var_context,
+            )),
+            Box::new(typecheck_quantified_expression(
+                sess,
+                *b,
+                top_level_context,
+                var_context,
+            )),
+        ),
+        Quantified::Not(x) => Quantified::Not(Box::new(typecheck_quantified_expression(
+            sess,
+            *x,
+            top_level_context,
+            var_context,
+        ))),
     }
 }

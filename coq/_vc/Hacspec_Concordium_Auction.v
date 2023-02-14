@@ -84,6 +84,7 @@ Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz
 
 Instance eq_dec_state_hacspec_t : EqDec (state_hacspec_t) :=
 Build_EqDec (state_hacspec_t) (eqb_state_hacspec_t) (eqb_leibniz_state_hacspec_t).
+
 Notation State := (context_t '× state_hacspec_t).
 
 
