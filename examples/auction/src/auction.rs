@@ -37,6 +37,7 @@ pub enum AuctionState {
 
 /// The state in which an auction can be.
 #[derive(Clone, PartialEq)]
+#[serialize]
 pub enum AuctionStateHacspec {
     /// The auction is either
     /// - still accepting bids or
@@ -64,6 +65,7 @@ pub fn coerce_rust_to_hacspec_auction_state(s : &AuctionState) -> AuctionStateHa
 }
 
 #[derive(Clone, PartialEq)]
+#[serialize]
 pub struct SeqMap(pub PublicByteSeq, pub PublicByteSeq);
 
 #[cfg(not(feature = "hacspec"))]
@@ -121,6 +123,7 @@ pub struct State {
 
 #[contract_state(contract = "auction")]
 #[derive(Clone, PartialEq)]
+#[serialize]
 pub struct StateHacspec(
     pub AuctionStateHacspec,
     pub u64, // amount
@@ -194,6 +197,7 @@ struct InitParameter {
 }
 
 #[cfg(feature = "hacspec")]
+#[serialize]
 struct InitParameter(
     /// The item to be sold, as a sequence of ASCII codes.
     PublicByteSeq,
@@ -201,7 +205,7 @@ struct InitParameter(
     u64,
 );
 
-#[cfg(feature = "hacspec")]
+#[cfg(fesature = "hacspec")]
 pub type ContextStateHacspec = (Context, StateHacspec);
 
 #[cfg(feature = "hacspec")]

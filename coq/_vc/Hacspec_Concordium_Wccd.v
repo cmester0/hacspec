@@ -43,6 +43,7 @@ Inductive state_hacspec_t :=
 | StateHacspec : public_byte_seq -> state_hacspec_t.
 Global Instance serializable_state_hacspec_t : Serializable state_hacspec_t :=
   Derive Serializable state_hacspec_t_rect<StateHacspec>.
+
 Notation State := (context_t '× state_hacspec_t).
 
 

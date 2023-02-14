@@ -10,19 +10,14 @@ proc-macro = true
 
 [dependencies]
 hacspec-lib = { path = "../../lib" }
-# hacspec-attributes = { path = "../../utils/attributes", version = "0.1.0-beta.1" , features = ["print_attributes", "hacspec_unsafe"] } # , features = ["hacspec_unsafe"] , , optional = true
-creusot-contracts = { git = "https://github.com/xldenis/creusot", rev = "7763b3ae77205fba83182b9a6c3e69ad0b12fec7" }
+creusot-contracts = { git = "https://github.com/xldenis/creusot", rev = "417b958b11c5a4a4f89da510b9e0a87433d5836e" }
 concordium-contracts-common = { git = "https://github.com/Concordium/concordium-contracts-common", rev = "84ff7db509ca1fbf958b47e5e5903b7662295850" ,  version = "=2.0.0" , default-features = false }
-# hacspec-concordium = { path = "../concordium" }
 syn = { version = "1.0.63", features = [ "full", "extra-traits" ] }
 quote = "=1.0.0"
 proc-macro2 = "1.0"
 
 # Reduce code size, at the cost of performance in allocation heavy-code.
 wee_alloc="0.4.5"
-
-# [features]
-# use_attributes = ["hacspec-attributes/print_attributes", "hacspec-attributes/hacspec_unsafe"]
 
 [dev-dependencies]
 hacspec-dev = { path = "../../utils/dev" }

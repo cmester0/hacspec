@@ -132,8 +132,8 @@ macro_rules! _array_base {
             }
         }
 
-        impl Default for $name {
-            #[cfg_attr(feature = "use_attributes", in_hacspec($name))]
+        impl core::default::Default for $name {
+            // #[cfg_attr(feature = "use_attributes", in_hacspec($name))]
             fn default() -> Self {
                 $name::new()
             }

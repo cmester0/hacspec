@@ -74,7 +74,7 @@ use std::{boxed::Box, cmp, num};
 /// Use only in unit tests!
 ///
 /// Defaults to having all of the fields unset
-#[derive(Default, Clone)]
+#[derive(core::default::Default, Clone)]
 pub struct ChainMetaTest {
     pub(crate) slot_time: Option<SlotTime>,
 }
@@ -109,7 +109,7 @@ impl TestPolicy {
 /// # Default
 /// Defaults to having all the fields unset, and constructing
 /// [`ChainMetaTest`](struct.ChainMetaTest.html) using default.
-#[derive(Default, Clone)]
+#[derive(core::default::Default, Clone)]
 #[doc(hidden)]
 pub struct CommonDataTest<'a> {
     pub(crate) metadata:  ChainMetaTest,
@@ -123,7 +123,7 @@ pub struct CommonDataTest<'a> {
 #[cfg(not(feature = "hacspec"))]
 /// Context used for testing. The type parameter C is used to determine whether
 /// this will be an init or receive context.
-#[derive(Default, Clone)]
+#[derive(core::default::Default, Clone)]
 pub struct ContextTest<'a, C> {
     pub(crate) common: CommonDataTest<'a>,
     pub(crate) custom: C,
@@ -191,7 +191,7 @@ pub struct ContextTest<'a, C> {
 pub type InitContextTest<'a> = ContextTest<'a, InitOnlyDataTest>;
 
 #[cfg(not(feature = "hacspec"))]
-#[derive(Default)]
+#[derive(core::default::Default)]
 #[doc(hidden)]
 pub struct InitOnlyDataTest {
     init_origin: Option<AccountAddress>,
@@ -261,7 +261,7 @@ pub struct InitOnlyDataTest {
 pub type ReceiveContextTest<'a> = ContextTest<'a, ReceiveOnlyDataTest>;
 
 #[cfg(not(feature = "hacspec"))]
-#[derive(Default)]
+#[derive(core::default::Default)]
 #[doc(hidden)]
 pub struct ReceiveOnlyDataTest {
     pub(crate) invoker:      Option<AccountAddress>,
@@ -276,7 +276,7 @@ pub struct ReceiveOnlyDataTest {
 impl ChainMetaTest {
     /// Create an `ChainMetaTest` where every field is unset, and getting any of
     /// the fields will result in [`fail!`](../macro.fail.html).
-    pub fn empty() -> Self { Default::default() }
+    pub fn empty() -> Self { core::default::Default::default() }
 
     /// Set the block slot time
     pub fn set_slot_time(&mut self, value: SlotTime) -> &mut Self {
@@ -327,7 +327,7 @@ impl<'a, C> ContextTest<'a, C> {
 impl<'a> InitContextTest<'a> {
     /// Create an `InitContextTest` where every field is unset, and getting any
     /// of the fields will result in [`fail!`](../macro.fail.html).
-    pub fn empty() -> Self { Default::default() }
+    pub fn empty() -> Self { core::default::Default::default() }
 
     /// Set `init_origin` in the `InitContextTest`
     pub fn set_init_origin(&mut self, value: AccountAddress) -> &mut Self {
@@ -340,7 +340,7 @@ impl<'a> InitContextTest<'a> {
 impl<'a> ReceiveContextTest<'a> {
     /// Create a `ReceiveContextTest` where every field is unset, and getting
     /// any of the fields will result in [`fail!`](../macro.fail.html).
-    pub fn empty() -> Self { Default::default() }
+    pub fn empty() -> Self { core::default::Default::default() }
 
     pub fn set_invoker(&mut self, value: AccountAddress) -> &mut Self {
         self.custom.invoker = Some(value);
@@ -672,7 +672,7 @@ impl<T: AsMut<Vec<u8>> + AsMut<[u8]> + AsRef<[u8]>> HasContractState<ContractSta
 }
 
 #[cfg(not(feature = "hacspec"))]
-impl Default for ContractStateError {
+impl core::default::Default for ContractStateError {
     fn default() -> Self { Self::Default }
 }
 

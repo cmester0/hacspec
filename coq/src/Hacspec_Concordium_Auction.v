@@ -84,7 +84,7 @@ Proof. split. intros; destruct x ; destruct y ; try (f_equal ; apply eqb_leibniz
 
 Instance eq_dec_state_hacspec_t : EqDec (state_hacspec_t) :=
 Build_EqDec (state_hacspec_t) (eqb_state_hacspec_t) (eqb_leibniz_state_hacspec_t).
-Definition State := context_t '× state_hacspec_t.
+Notation State := (context_t '× state_hacspec_t).
 
 
 Definition fresh_state_hacspec
@@ -162,9 +162,6 @@ Definition seq_map_entry
 
 Inductive map_update_t :=
 | Update : (int64 '× seq_map_t) -> map_update_t.
-Global Instance serializable_map_update_t : Serializable map_update_t :=
-  Derive Serializable map_update_t_rect<Update>.
-
 
 Definition eqb_map_update_t (x y : map_update_t) : bool :=
 match x with
@@ -219,9 +216,6 @@ Inductive bid_error_hacspec_t :=
 | BidTooLow : bid_error_hacspec_t
 | BidsOverWaitingForAuctionFinalization : bid_error_hacspec_t
 | AuctionIsFinalized : bid_error_hacspec_t.
-Global Instance serializable_bid_error_hacspec_t : Serializable bid_error_hacspec_t :=
-  Derive Serializable bid_error_hacspec_t_rect<ContractSender,BidTooLow,BidsOverWaitingForAuctionFinalization,AuctionIsFinalized>.
-
 
 Definition eqb_bid_error_hacspec_t (x y : bid_error_hacspec_t) : bool :=
 match x with
@@ -314,9 +308,6 @@ Inductive finalize_error_hacspec_t :=
 | BidMapError : finalize_error_hacspec_t
 | AuctionStillActive : finalize_error_hacspec_t
 | AuctionFinalized : finalize_error_hacspec_t.
-Global Instance serializable_finalize_error_hacspec_t : Serializable finalize_error_hacspec_t :=
-  Derive Serializable finalize_error_hacspec_t_rect<BidMapError,AuctionStillActive,AuctionFinalized>.
-
 
 Definition eqb_finalize_error_hacspec_t (x y : finalize_error_hacspec_t) : bool :=
 match x with
@@ -342,9 +333,6 @@ Notation "'finalize_context_t'" := ((int64 '× user_address_t '× int64
 Inductive finalize_action_t :=
 | Accept : finalize_action_t
 | SimpleTransfer : public_byte_seq -> finalize_action_t.
-Global Instance serializable_finalize_action_t : Serializable finalize_action_t :=
-  Derive Serializable finalize_action_t_rect<Accept,SimpleTransfer>.
-
 
 Definition eqb_finalize_action_t (x y : finalize_action_t) : bool :=
 match x with
@@ -366,9 +354,6 @@ Build_EqDec (finalize_action_t) (eqb_finalize_action_t) (eqb_leibniz_finalize_ac
 Inductive bid_remain_t :=
 | BidNone : bid_remain_t
 | BidSome : int64 -> bid_remain_t.
-Global Instance serializable_bid_remain_t : Serializable bid_remain_t :=
-  Derive Serializable bid_remain_t_rect<BidNone,BidSome>.
-
 
 Definition eqb_bid_remain_t (x y : bid_remain_t) : bool :=
 match x with
@@ -518,10 +503,10 @@ Global Instance Msg_serializable : Serializable Msg :=
   Derive Serializable Msg_rect<BID,FINALIZE>.
 Definition auction_receive (chain : Chain) (ctx : ContractCallContext) (state : State) (msg : option Msg) : ResultMonad.result (State * list ActionBody) unit :=
   to_action_body_list ctx (match msg with
-    | Some BID => (bid (repr ctx.(ctx_amount)) state)
-    | Some FINALIZE => (finalize state)
+    | Some (BID) => (bid (repr ctx.(ctx_amount)) state)
+    | Some (FINALIZE) => (finalize state)
     | None => None
     end).
 
-Definition auction_contract : Contract Setup Msg State unit :=
+Definition auction_contract : Blockchain.Contract Setup Msg State unit :=
   build_contract auction_State auction_receive.

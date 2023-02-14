@@ -43,9 +43,6 @@ Definition sha256_t := nseq (int8) (usize 32).
 
 Inductive metadata_url_t :=
 | MetadataUrl : (string_t '× (option sha256_t)) -> metadata_url_t.
-Global Instance serializable_metadata_url_t : Serializable metadata_url_t :=
-  Derive Serializable metadata_url_t_rect<MetadataUrl>.
-
 
 Inductive token_id_vec_t :=
 | TokenIdVec : public_byte_seq -> token_id_vec_t.
@@ -55,21 +52,12 @@ Global Instance serializable_token_id_vec_t : Serializable token_id_vec_t :=
 
 Inductive token_id_uint32_t :=
 | TokenIdU32 : int32 -> token_id_uint32_t.
-Global Instance serializable_token_id_uint32_t : Serializable token_id_uint32_t :=
-  Derive Serializable token_id_uint32_t_rect<TokenIdU32>.
-
 
 Inductive token_id_uint16_t :=
 | TokenIdU16 : int16 -> token_id_uint16_t.
-Global Instance serializable_token_id_uint16_t : Serializable token_id_uint16_t :=
-  Derive Serializable token_id_uint16_t_rect<TokenIdU16>.
-
 
 Inductive token_id_uint8_t :=
 | TokenIdU8 : int8 -> token_id_uint8_t.
-Global Instance serializable_token_id_uint8_t : Serializable token_id_uint8_t :=
-  Derive Serializable token_id_uint8_t_rect<TokenIdU8>.
-
 
 Inductive token_id_unit_t :=
 | TokenIdUnit : unit -> token_id_unit_t.

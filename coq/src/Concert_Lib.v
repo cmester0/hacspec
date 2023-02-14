@@ -12,7 +12,7 @@ Require Import QuickChickLib.
 From ConCert.Execution Require Import Serializable.
 From ConCert.Execution Require Import Blockchain.
 
-Require Import Hacspec_Concordium.
+(* Require Import Hacspec_Concordium. *)
 Require Import Concordium_Impls. (* Should not be nessessary *)
 (* Export Hacspec_Concordium. *)
 
@@ -76,19 +76,6 @@ Program Definition to_action_body (ctx : ContractCallContext) (y : has_action_t)
                                              (unsigned a, ser_value IHdata))
                                         data)
   end.
-Instance default_has_action : Default has_action_t := {| default := Accept tt |}.
-
-Global Instance serializable_has_action_t : Serializable has_action_t :=
-  Derive Serializable has_action_t_rect<Accept,SimpleTransfer,SendRaw>.
-Global Instance show_has_action_t : Show (has_action_t) :=
- @Build_Show (has_action_t) (fun x =>
- match x with
- Accept a => ("Accept" ++ show a)%string
- | SimpleTransfer a => ("SimpleTransfer" ++ show a)%string
- | SendRaw a => ("SendRaw" ++ show a)%string
- end).
-Definition g_has_action_t : G (has_action_t) := oneOf_ (bindGen arbitrary (fun a => returnGen (Accept a))) [bindGen arbitrary (fun a => returnGen (Accept a));bindGen arbitrary (fun a => returnGen (SimpleTransfer a))].
-Global Instance gen_has_action_t : Gen (has_action_t) := Build_Gen has_action_t g_has_action_t.
 
 (* Definition to_action_body_list (ctx : ContractCallContext) {X} (k : option (X '× list has_action_t)) : option (X '× list ActionBody)  := *)
 (*   option_map (fun '(x, y) => (x, List.map (to_action_body ctx) y)) k. *)
@@ -98,20 +85,6 @@ Definition to_action_body_list (ctx : ContractCallContext) {X} (k : option (X '�
     Some a => ResultMonad.Ok a
   | None => ResultMonad.Err tt
   end.
-
-Instance show_user_address_t : Show (user_address_t) := Build_Show (user_address_t) show.
-Definition g_user_address_t : G (user_address_t) := arbitrary.
-Instance gen_user_address_t : Gen (user_address_t) := Build_Gen user_address_t g_user_address_t.
-
-Global Instance serializable_context_t : Serializable context_t :=
-  Derive Serializable context_t_rect<Context>.
-Global Instance show_context_t : Show (context_t) :=
- @Build_Show (context_t) (fun x =>
- match x with
- Context a => ("Context" ++ show a)%string
- end).
-Definition g_context_t : G (context_t) := oneOf_ (bindGen arbitrary (fun a => returnGen (Context a))) [bindGen arbitrary (fun a => returnGen (Context a))].
-Global Instance gen_context_t : Gen (context_t) := Build_Gen context_t g_context_t.
 
 
 Global Program Instance result_serializable {A B} `{Serializable A} `{Serializable B} : Serializable (result A B) :=
@@ -130,3 +103,33 @@ Next Obligation.
   intros. cbn. rewrite deserialize_serialize. cbn.
   now destruct x.
 Defined.
+
+(*** Missing implementations *)
+
+Instance default_has_action : Default has_action_t := {| default := Accept tt |}.
+
+Global Instance serializable_has_action_t : Serializable has_action_t :=
+  Derive Serializable has_action_t_rect<Accept,SimpleTransfer,SendRaw>.
+Global Instance show_has_action_t : Show (has_action_t) :=
+ @Build_Show (has_action_t) (fun x =>
+ match x with
+ Accept a => ("Accept" ++ show a)%string
+ | SimpleTransfer a => ("SimpleTransfer" ++ show a)%string
+ | SendRaw a => ("SendRaw" ++ show a)%string
+ end).
+Definition g_has_action_t : G (has_action_t) := oneOf_ (bindGen arbitrary (fun a => returnGen (Accept a))) [bindGen arbitrary (fun a => returnGen (Accept a));bindGen arbitrary (fun a => returnGen (SimpleTransfer a))].
+Global Instance gen_has_action_t : Gen (has_action_t) := Build_Gen has_action_t g_has_action_t.
+
+Instance show_user_address_t : Show (user_address_t) := Build_Show (user_address_t) show.
+Definition g_user_address_t : G (user_address_t) := arbitrary.
+Instance gen_user_address_t : Gen (user_address_t) := Build_Gen user_address_t g_user_address_t.
+
+Global Instance serializable_context_t : Serializable context_t :=
+  Derive Serializable context_t_rect<Context>.
+Global Instance show_context_t : Show (context_t) :=
+ @Build_Show (context_t) (fun x =>
+ match x with
+ Context a => ("Context" ++ show a)%string
+ end).
+Definition g_context_t : G (context_t) := oneOf_ (bindGen arbitrary (fun a => returnGen (Context a))) [bindGen arbitrary (fun a => returnGen (Context a))].
+Global Instance gen_context_t : Gen (context_t) := Build_Gen context_t g_context_t.

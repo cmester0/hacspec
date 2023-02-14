@@ -3,6 +3,11 @@ extern crate hacspec_lib;
 
 use hacspec_lib::*;
 
+#[cfg(not(feature = "hacspec"))]
+extern crate hacspec_attributes;
+#[cfg(not(feature = "hacspec"))]
+use hacspec_attributes::*;
+
 // #[cfg(not(feature = "hacspec"))]
 // extern crate creusot_contracts;
 #[cfg(test)]
@@ -80,6 +85,7 @@ pub trait IsTokenId: Serialize + schema::SchemaType {}
 
 #[cfg(feature = "hacspec")]
 // #[derive(Debug, PartialOrd, Ord, PartialEq, Eq, Hash, Clone, Serialize)]
+#[serialize]
 pub struct TokenIdVec(pub PublicByteSeq);
 
 #[cfg(not(feature = "hacspec"))]
@@ -472,6 +478,7 @@ impl Deserial for TokenIdU8 {
 
 #[cfg(feature = "hacspec")]
 // #[derive(Debug, PartialOrd, Ord, PartialEq, Eq, Hash, Copy, Clone)]
+#[serialize]
 pub struct TokenIdUnit();
 
 #[cfg(not(feature = "hacspec"))]
@@ -574,6 +581,7 @@ pub struct BurnEvent<T: IsTokenId> {
 
 #[cfg(feature = "hacspec")]
 // #[derive(Debug, Serialize, SchemaType)]
+#[serialize]
 pub enum OperatorUpdate {
     /// Remove the operator.
     Remove,
@@ -595,6 +603,7 @@ pub enum OperatorUpdate {
 
 #[cfg(feature = "hacspec")]
 // #[derive(Debug, Serialize, SchemaType)]
+#[serialize]
 pub struct UpdateOperatorEvent(pub OperatorUpdate, pub UserAddress, pub UserAddress);
 
 #[cfg(not(feature = "hacspec"))]
@@ -738,6 +747,7 @@ impl<X: From<ParseError>> From<ParseError> for Cis1Error<X> {
 }
 
 #[cfg_attr(feature = "hacspec", derive(Debug, Serialize))]
+#[serialize]
 pub enum ReceiverHacspec {
     Account(
         PublicByteSeq,
@@ -818,6 +828,7 @@ impl From<AccountAddress> for Receiver {
 }
 
 #[cfg_attr(feature = "hacspec", derive(Debug, Serialize))]
+#[serialize]
 pub struct AdditionalDataHacspec(Seq<u8>);
 
 #[cfg(not(feature = "hacspec"))]
@@ -939,6 +950,7 @@ pub struct UpdateOperator {
 // Note: For the serialization to be derived according to the CIS1
 // specification, the order of the fields cannot be changed.
 #[derive(Debug, Serialize, SchemaType)]
+#[serialize]
 pub struct UpdateOperatorHacspec (
     OperatorUpdate, UserAddress
 );
@@ -953,6 +965,7 @@ pub struct UpdateOperatorParams(
 
 #[cfg(feature = "hacspec")]
 /// The parameter type for the contract function `updateOperator`.
+#[serialize]
 #[derive(Debug, Serialize, SchemaType)]
 pub struct UpdateOperatorParamsHacspec(
     // #[concordium(size_length = 2)]
@@ -1043,9 +1056,11 @@ pub struct OperatorOfQueryParams {
 
 #[cfg(feature = "hacspec")]
 #[derive(Debug, Serialize, SchemaType)]
+#[serialize]
 pub struct OperatorOfQuery (UserAddress, UserAddress);
 
 #[cfg(feature = "hacspec")]
+#[serialize]
 pub struct OperatorOfQueryParams ( (u64, u64), u64, Seq<OperatorOfQuery>);
 
 
