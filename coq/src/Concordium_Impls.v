@@ -23,12 +23,15 @@ Notation "'reject_hacspec_t'" := (int32) : hacspec_scope.
 Definition reject_impl_deafult   : reject_hacspec_t :=
   - (@repr WORDSIZE32 (Z.neg 2147483648)).
 
+
 Definition new_reject_impl (x_26 : int32)  : (option int32) :=
   (if ((x_26) <.? (@repr WORDSIZE32 (0))):bool then (@Some int32 (x_26)) else (
       @None int32)).
 
+
 Definition reject_impl_convert_from_unit   : reject_hacspec_t :=
   (- (@repr WORDSIZE32 (Z.neg 2147483648))) .+ (@repr WORDSIZE32 (1)).
+
 
 Theorem ensures_reject_impl_convert_from_unit : forall result_27 ,
  @reject_impl_convert_from_unit  = result_27 ->
@@ -37,6 +40,7 @@ Theorem ensures_reject_impl_convert_from_unit : forall result_27 ,
 
 Definition reject_impl_convert_from_parse_error   : reject_hacspec_t :=
   (- (@repr WORDSIZE32 (Z.neg 2147483648))) .+ (@repr WORDSIZE32 (2)).
+
 
 Theorem ensures_reject_impl_convert_from_parse_error : forall result_27 ,
  @reject_impl_convert_from_parse_error  = result_27 ->
@@ -52,6 +56,7 @@ Definition reject_impl_from_log_error
   | Malformed => (- (@repr WORDSIZE32 (Z.neg 2147483648))) .+ (
     @repr WORDSIZE32 (4))
   end.
+
 
 Theorem ensures_reject_impl_from_log_error : forall result_27 (
   le_28 : log_error_t),
@@ -80,6 +85,7 @@ Definition reject_impl_from_new_contract_name_error
       @repr WORDSIZE32 (Z.neg 2147483648))) .+ (@repr WORDSIZE32 (10))
   end.
 
+
 Theorem ensures_reject_impl_from_new_contract_name_error : forall result_27 (
   nre_29 : new_contract_name_error_t),
  @reject_impl_from_new_contract_name_error nre_29 = result_27 ->
@@ -104,6 +110,7 @@ Definition reject_impl_from_new_receive_name_error
       @repr WORDSIZE32 (Z.neg 2147483648))) .+ (@repr WORDSIZE32 (11))
   end.
 
+
 Theorem ensures_reject_impl_from_new_receive_name_error : forall result_27 (
   nre_30 : new_receive_name_error_t),
  @reject_impl_from_new_receive_name_error nre_30 = result_27 ->
@@ -112,6 +119,7 @@ Theorem ensures_reject_impl_from_new_receive_name_error : forall result_27 (
 
 Definition reject_impl_from_not_payable_error   : reject_hacspec_t :=
   (- (@repr WORDSIZE32 (Z.neg 2147483648))) .+ (@repr WORDSIZE32 (12)).
+
 
 Theorem ensures_reject_impl_from_not_payable_error : forall result_27 ,
  @reject_impl_from_not_payable_error  = result_27 ->
@@ -177,6 +185,7 @@ Definition contract_state_impl_seek
       end))
   end.
 
+
 Definition contract_state_impl_read_read
   (current_position_42 : contract_state_hacspec_t)
   (buf_43 : public_byte_seq)
@@ -185,6 +194,7 @@ Definition contract_state_impl_read_read
   let '(buf_44, num_read_45) :=
     load_state_hacspec (buf_43) (current_position_42) in 
   ((current_position_42) .+ (num_read_45), @cast _ uint32 _ (num_read_45)).
+
 
 Definition contract_state_impl_read_read_u64
   (current_position_46 : contract_state_hacspec_t)
@@ -201,6 +211,7 @@ Definition contract_state_impl_read_read_u64
         @Err int64 unit (tt)))
   ).
 
+
 Definition contract_state_impl_read_read_u32
   (current_position_50 : contract_state_hacspec_t)
   
@@ -216,6 +227,7 @@ Definition contract_state_impl_read_read_u32
         @Err int32 unit (tt)))
   ).
 
+
 Definition contract_state_impl_read_read_u8
   (current_position_54 : contract_state_hacspec_t)
   
@@ -229,6 +241,7 @@ Definition contract_state_impl_read_read_u8
     (if ((num_read_57) =.? (@repr WORDSIZE32 (1))):bool then (@Ok int8 unit (
           seq_index (buf_56) (usize 0))) else (@Err int8 unit (tt)))
   ).
+
 
 Definition contract_state_impl_write
   (current_position_58 : contract_state_hacspec_t)
@@ -247,11 +260,13 @@ Definition contract_state_impl_write
       @cast _ uint32 _ (num_bytes_61)
     ))).
 
+
 Definition has_contract_state_impl_for_contract_state_open
   
   
   : contract_state_hacspec_t :=
   @repr WORDSIZE32 (0).
+
 
 Definition has_contract_state_impl_for_contract_state_reserve
   (len_62 : int32)
@@ -261,6 +276,7 @@ Definition has_contract_state_impl_for_contract_state_reserve
     state_size_hacspec  in 
   (if ((cur_size_63) <.? (len_62)):bool then ((resize_state_hacspec (
           len_62)) =.? (@repr WORDSIZE32 (1))) else (true)).
+
 
 Definition has_contract_state_impl_for_contract_state_truncate
   (current_position_64 : contract_state_hacspec_t)
@@ -275,6 +291,7 @@ Definition has_contract_state_impl_for_contract_state_truncate
   (if ((new_size_66) <.? (current_position_64)):bool then (new_size_66) else (
       current_position_64)).
 
+
 Notation "'parameter_hacspec_t'" := (int32) : hacspec_scope.
 
 Definition read_impl_for_parameter_read
@@ -285,6 +302,7 @@ Definition read_impl_for_parameter_read
   let '(buf_69, num_read_70) :=
     get_parameter_section_hacspec (buf_68) (current_position_67) in 
   ((current_position_67) .+ (num_read_70), @cast _ uint32 _ (num_read_70)).
+
 
 Notation "'attributes_cursor_hacspec_t'" := ((int32 '× int16)) : hacspec_scope.
 
@@ -321,6 +339,7 @@ Definition has_policy_impl_for_policy_attributes_cursor_next_item
         seq_index (tag_value_len_75) (usize 1)
       )
     )))).
+
 
 Notation "'policies_iterator_hacspec_t'" := ((int32 '× int16)) : hacspec_scope.
 
@@ -393,6 +412,7 @@ Definition iterator_impl_for_policies_iterator_next
       )
     ))).
 
+
 Definition user_address_t := nseq (int8) (usize 32).
 
 Inductive has_action_t :=
@@ -405,6 +425,7 @@ Notation "'list_action_t'" := (seq has_action_t) : hacspec_scope.
 
 Definition accept_action   : has_action_t :=
   Accept (tt).
+
 
 Inductive context_t :=
 | Context : (user_address_t '× user_address_t '× int64 '× int64
@@ -420,4 +441,5 @@ Definition send_wrap_hacspec
   : int32 :=
   send_hacspec (ca_index_93) (ca_subindex_94) (receive_name_bytes_95) (
     amount_96) (param_bytes_97).
+
 

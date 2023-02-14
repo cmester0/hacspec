@@ -1372,7 +1372,7 @@ fn translate_item<'a>(
                 RcDoc::line(),
             ))
             .append(RcDoc::as_string("."))
-            .append(// if item.tags.0.contains(&"Serialize".to_string()) {
+            .append(if item.tags.0.contains(&"serialize".to_string()) {
                 RcDoc::hardline()
                     .append(RcDoc::as_string("Global Instance serializable_"))
                     .append(translate_enum_name(name.0.clone()))
@@ -1395,10 +1395,9 @@ fn translate_item<'a>(
                             .nest(2)
                             .append(RcDoc::hardline()),
                     )
-            // } else {
-            //     RcDoc::nil()
-            // }
-    )
+            } else {
+                RcDoc::nil()
+            })
             .append(if item.tags.0.contains(&"PartialEq".to_string()) {
                 RcDoc::hardline()
                     .append(RcDoc::hardline())
@@ -1648,8 +1647,8 @@ fn translate_item<'a>(
                  RcDoc::nil()
             })
             .append(if item.tags.0.contains(&"contract_state".to_string()) {
-                RcDoc::as_string("Notation ")
-                // .append(x)
+                RcDoc::hardline()
+                    .append(RcDoc::as_string("Notation "))
                     .append(RcDoc::as_string("State :="))
                     .append(
                         RcDoc::line()

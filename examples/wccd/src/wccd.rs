@@ -3,6 +3,11 @@ extern crate hacspec_lib;
 
 use hacspec_lib::*;
 
+#[cfg(not(feature = "hacspec"))]
+extern crate hacspec_attributes;
+#[cfg(not(feature = "hacspec"))]
+use hacspec_attributes::*;
+
 // #[cfg(not(feature = "hacspec"))]
 // extern crate creusot_contracts;
 #[cfg(test)]
@@ -52,6 +57,7 @@ const TOKEN_METADATA_URL: &str = "https://some.example/token/wccd";
 /// The state tracked for each address.
 // #[cfg_attr(feature = "hacspec")]
 // #[derive(Serialize, SchemaType)]
+#[serialize]
 struct AddressStateHacspec (TokenAmount, PublicByteSeq);
 
 #[cfg(not(feature = "hacspec"))]
@@ -68,6 +74,7 @@ struct AddressState {
 
 #[contract_state(contract = "CIS1-wCCD")]
 // #[derive(Serialize, SchemaType)]
+#[serialize]
 struct StateHacspec(pub PublicByteSeq); // Map<Address, AddressState>
 
 #[cfg(not(feature = "hacspec"))]
@@ -80,6 +87,7 @@ struct State {
 }
 
 // #[cfg_attr(feature = "hacspec", derive(Serialize, SchemaType))]
+#[serialize]
 struct UnwrapParamsHacspec (TokenAmount, PublicByteSeq, ReceiverHacspec, AdditionalDataHacspec);
 
 #[cfg(not(feature = "hacspec"))]
@@ -98,6 +106,7 @@ struct UnwrapParams {
 }
 
 // #[cfg_attr(feature = "hacspec", derive(Serialize, SchemaType))]
+#[serialize]
 struct WrapParamsHacspec (ReceiverHacspec, AdditionalDataHacspec);
 
 #[cfg(not(feature = "hacspec"))]

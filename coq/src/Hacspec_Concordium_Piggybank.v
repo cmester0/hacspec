@@ -54,7 +54,8 @@ Build_EqDec (piggy_bank_state_hacspec_t) (eqb_piggy_bank_state_hacspec_t) (eqb_l
  end).
 Definition g_piggy_bank_state_hacspec_t : G (piggy_bank_state_hacspec_t) := oneOf_ (returnGen Intact) [returnGen Intact;returnGen Smashed].
 #[global] Instance gen_piggy_bank_state_hacspec_t : Gen (piggy_bank_state_hacspec_t) := Build_Gen piggy_bank_state_hacspec_t g_piggy_bank_state_hacspec_t.
-Definition State := context_t '× piggy_bank_state_hacspec_t.
+
+Notation State := (context_t '× piggy_bank_state_hacspec_t).
 
 
 Definition piggy_init_hacspec   : piggy_bank_state_hacspec_t :=
@@ -120,9 +121,6 @@ Definition insert (amount : int64) (st : State) :=
 Inductive smash_error_t :=
 | NotOwner : smash_error_t
 | AlreadySmashed : smash_error_t.
-Global Instance serializable_smash_error_t : Serializable smash_error_t :=
-  Derive Serializable smash_error_t_rect<NotOwner,AlreadySmashed>.
-
 
 Definition eqb_smash_error_t (x y : smash_error_t) : bool :=
 match x with
@@ -250,8 +248,8 @@ Definition test_smash_intact_not_owner
         Intact)) =.? (@Err piggy_bank_state_hacspec_t smash_error_t (
         NotOwner))).
 
-(* QuickChick ( *)
-(*   forAll g_user_address_t (fun owner_41 : user_address_t =>forAll g_user_address_t (fun sender_42 : user_address_t =>forAll g_int64 (fun balance_43 : int64 =>forAll g_int64 (fun metadata_44 : int64 =>test_smash_intact_not_owner owner_41 sender_42 balance_43 metadata_44))))). *)
+(*QuickChick (
+  forAll g_user_address_t (fun owner_41 : user_address_t =>forAll g_user_address_t (fun sender_42 : user_address_t =>forAll g_int64 (fun balance_43 : int64 =>forAll g_int64 (fun metadata_44 : int64 =>test_smash_intact_not_owner owner_41 sender_42 balance_43 metadata_44))))).*)
 
 
 Definition test_smash_smashed
@@ -278,10 +276,10 @@ Global Instance Msg_serializable : Serializable Msg :=
   Derive Serializable Msg_rect<INSERT,SMASH>.
 Definition PiggyBank_receive (chain : Chain) (ctx : ContractCallContext) (state : State) (msg : option Msg) : ResultMonad.result (State * list ActionBody) unit :=
   to_action_body_list ctx (match msg with
-    | Some INSERT => (insert (repr ctx.(ctx_amount)) state)
-    | Some SMASH => (smash state)
+    | Some (INSERT) => (insert (repr ctx.(ctx_amount)) state)
+    | Some (SMASH) => (smash state)
     | None => None
     end).
 
-Definition PiggyBank_contract : Contract Setup Msg State unit :=
+Definition PiggyBank_contract : Blockchain.Contract Setup Msg State unit :=
   build_contract PiggyBank_State PiggyBank_receive.

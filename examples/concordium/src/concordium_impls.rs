@@ -680,7 +680,7 @@ fn iterator_impl_for_policies_iterator_next(
 
 // TODO: Fix creusot issues?
 #[cfg(not(feature = "hacspec"))]
-impl Iterator for PoliciesIterator {
+impl core::iter::Iterator for PoliciesIterator {
     type Item = Policy<AttributesCursor>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -757,7 +757,7 @@ impl HasInitContext for ExternContext<InitContextExtern> {
 
     #[inline(always)]
     fn init_origin(&self) -> AccountAddress {
-        let mut address : [u8; ACCOUNT_ADDRESS_SIZE] = Default::default();
+        let mut address : [u8; ACCOUNT_ADDRESS_SIZE] = core::default::Default::default();
         let temp = coerce_hacspec_to_rust_public_byte_seq(get_init_origin_hacspec(
             PublicByteSeq::new(ACCOUNT_ADDRESS_SIZE),
         ));
@@ -779,7 +779,7 @@ impl HasReceiveContext for ExternContext<ReceiveContextExtern> {
     // TODO: Make usable by creusot
     #[inline(always)]
     fn invoker(&self) -> AccountAddress {
-        let mut address: [u8; ACCOUNT_ADDRESS_SIZE] = Default::default();
+        let mut address: [u8; ACCOUNT_ADDRESS_SIZE] = core::default::Default::default();
         address.clone_from_slice(
             &mut coerce_hacspec_to_rust_public_byte_seq(get_receive_invoker_hacspec(
                 PublicByteSeq::new(ACCOUNT_ADDRESS_SIZE),
@@ -791,7 +791,7 @@ impl HasReceiveContext for ExternContext<ReceiveContextExtern> {
     // TODO: Make usable by creusot
     #[inline(always)]
     fn self_address(&self) -> ContractAddress {
-        let mut address: [u8; ACCOUNT_ADDRESS_SIZE] = Default::default();
+        let mut address: [u8; ACCOUNT_ADDRESS_SIZE] = core::default::Default::default();
         address.clone_from_slice(
             &mut coerce_hacspec_to_rust_public_byte_seq(get_receive_self_address_hacspec(
                 PublicByteSeq::new(ACCOUNT_ADDRESS_SIZE),
@@ -837,7 +837,7 @@ impl HasReceiveContext for ExternContext<ReceiveContextExtern> {
     // TODO: Make usable by creusot
     #[inline(always)]
     fn owner(&self) -> AccountAddress {
-        let mut address: [u8; ACCOUNT_ADDRESS_SIZE] = Default::default();
+        let mut address: [u8; ACCOUNT_ADDRESS_SIZE] = core::default::Default::default();
         address.clone_from_slice(
             &mut coerce_hacspec_to_rust_public_byte_seq(get_receive_self_address_hacspec(
                 PublicByteSeq::new(ACCOUNT_ADDRESS_SIZE),
