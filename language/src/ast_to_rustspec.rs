@@ -555,6 +555,7 @@ fn translate_literal_expr(
             span.into(),
         )),
         _ => {
+            println!("Lit: {:?}", lit);
             sess.span_rustspec_err(span, "literal not allowed in Hacspec");
             Err(())
         }
@@ -562,6 +563,7 @@ fn translate_literal_expr(
 }
 
 fn translate_binop(x: ast::BinOpKind) -> BinOpKind {
+    println!("Binop: {:?}", x);
     match x {
         ast::BinOpKind::Add => BinOpKind::Add,
         ast::BinOpKind::Sub => BinOpKind::Sub,
@@ -593,15 +595,18 @@ fn translate_expr(
         ExprKind::IncludedBytes(..) => {
             unimplemented!();
         }
-        ExprKind::Binary(op, e1, e2) => Ok((
-            ExprTranslationResult::TransExpr(Expression::Binary(
-                (translate_binop(op.clone().node), op.clone().span.into()),
-                Box::new(translate_expr_expects_exp(sess, specials, e1)?),
-                Box::new(translate_expr_expects_exp(sess, specials, e2)?),
-                None,
-            )),
-            e.span.into(),
-        )),
+        ExprKind::Binary(op, e1, e2) => {
+            println!("bin3: {:?}", translate_binop(op.clone().node));
+            Ok((
+                ExprTranslationResult::TransExpr(Expression::Binary(
+                    (translate_binop(op.clone().node), op.clone().span.into()),
+                    Box::new(translate_expr_expects_exp(sess, specials, e1)?),
+                    Box::new(translate_expr_expects_exp(sess, specials, e2)?),
+                    None,
+                )),
+                e.span.into(),
+            ))
+        }
         ExprKind::Unary(op, e1) => Ok((
             ExprTranslationResult::TransExpr(Expression::Unary(
                 match *op {

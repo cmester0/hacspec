@@ -6,6 +6,7 @@ use std::convert::{Into, TryInto};
 
 use im::{HashMap, HashSet};
 use itertools::Itertools;
+use rustc_ast::node_id::NodeId;
 use rustc_session::Session;
 use rustc_span::DUMMY_SP;
 
@@ -503,7 +504,7 @@ fn bind_variable_type(
 }
 
 #[derive(Clone)]
-struct VarContext {
+pub(crate) struct VarContext {
     vars: HashMap<usize, (Typ, String, bool)>, // Type, Name, mutable
     mutable_vars: HashMap<usize, (Typ, String, bool)>, // Type, Name, External
 }
@@ -700,7 +701,7 @@ fn remove_var(x: &Ident, var_context: &VarContext) -> VarContext {
     }
 }
 
-fn add_var(x: &Ident, typ: &Typ, var_context: &VarContext) -> VarContext {
+pub(crate) fn add_var(x: &Ident, typ: &Typ, var_context: &VarContext) -> VarContext {
     log::trace!("add_var {} of type {:?}", x, typ);
     match x {
         Ident::Local(LocalIdent { id, name, mutable }) => VarContext {
@@ -2454,7 +2455,7 @@ fn typecheck_expression_qm(
 /// Typechecks and elaborate an expression which is expected to
 /// contain no question mark. In the case the expression is monadic
 /// (i.e. contains a question mark), the function throws an error.
-fn typecheck_expression_no_qm(
+pub(crate) fn typecheck_expression_no_qm(
     sess: &Session,
     (e, e_span): &Spanned<Expression>,
     func_return_type: &Option<&Spanned<BaseTyp>>,
@@ -2725,7 +2726,10 @@ fn typecheck_statement(
                     (new_e1, e1.1.clone()),
                     (new_e2, e2.1.clone()),
                     match (carrier1, carrier2) {
-                        (Some(_), _) | (_, Some(_)) => early_return_type_from_return_type(top_level_context, return_typ.clone().0),
+                        (Some(_), _) | (_, Some(_)) => early_return_type_from_return_type(
+                            top_level_context,
+                            return_typ.clone().0,
+                        ),
                         _ => None,
                     },
                     question_mark,
@@ -3109,6 +3113,7 @@ fn typecheck_item(
                 .fold(var_context, |var_context, ((x, _x_span), (t, _t_span))| {
                     add_var(&x, t, &var_context)
                 });
+            let attribute_var_context = var_context.clone();
             let (new_b, _final_var_context) = typecheck_block(
                 sess,
                 (b.clone(), b_span.clone()),
@@ -3137,6 +3142,42 @@ fn typecheck_item(
             }
             let mut new_sig = sig.clone();
             new_sig.mutable_vars = new_b.clone().mutable_vars;
+
+            new_sig.requires = sig
+                .requires
+                .iter()
+                .map(|x| {
+                    crate::pearlite::typecheck_quantified_expression(
+                        sess,
+                        x.clone(),
+                        top_level_context,
+                        &attribute_var_context.clone(),
+                    )
+                })
+                .collect();
+            let result_var_context = add_var(
+                &Ident::Local(LocalIdent {
+                    id: NodeId::MAX.as_usize(),
+                    name: "result".to_string(),
+                    mutable: false,
+                }),
+                &((Borrowing::Consumed, DUMMY_SP.into()), sig.ret.clone()),
+                &attribute_var_context.clone(),
+            );
+
+            new_sig.ensures = sig
+                .ensures
+                .iter()
+                .map(|x| {
+                    crate::pearlite::typecheck_quantified_expression(
+                        sess,
+                        x.clone(),
+                        top_level_context,
+                        &result_var_context.clone(),
+                    )
+                })
+                .collect();
+
             top_level_context.functions.insert(
                 FnKey::Independent(f.clone()),
                 FnValue::Local(new_sig.clone()),

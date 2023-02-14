@@ -3,15 +3,15 @@ extern crate hacspec_lib;
 
 use hacspec_lib::*;
 
-#[cfg(not(feature = "hacspec"))]
-extern crate hacspec_attributes;
-#[cfg(not(feature = "hacspec"))]
-use hacspec_attributes::*;
+// #[cfg(not(feature = "hacspec"))]
+// extern crate hacspec_attributes;
+// #[cfg(not(feature = "hacspec"))]
+// use hacspec_attributes::*;
 
-#[cfg(not(feature = "hacspec"))]
-extern crate creusot_contracts;
-#[cfg(not(feature = "hacspec"))]
-use creusot_contracts::{ensures, requires};
+// #[cfg(not(feature = "hacspec"))]
+// extern crate creusot_contracts;
+// #[cfg(not(feature = "hacspec"))]
+// use creusot_contracts::{ensures, requires};
 
 use hacspec_concordium::*;
 
@@ -33,7 +33,7 @@ enum PiggyBankState {
 /// The state of the piggy bank
 #[derive(Debug, PartialEq, Eq, Serialize)]
 #[contract_state(contract = "CIS1-wCCD")]
-#[serialize]
+// #[serialize]
 pub enum PiggyBankStateHacspec {
     Intact,
     Smashed,

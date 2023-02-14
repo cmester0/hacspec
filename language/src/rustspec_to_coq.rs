@@ -485,6 +485,8 @@ pub(crate) fn translate_expression<'a>(
             let e1 = e1.0;
             let e2 = e2.0;
 
+            println!("lst bin: {:?} {:?} {:?} {:?}", op, e1, e2, op_typ);
+
             make_paren(translate_expression(e1, top_ctx))
                 .append(RcDoc::space())
                 .append(translate_binop(

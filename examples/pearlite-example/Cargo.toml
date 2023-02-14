@@ -13,7 +13,6 @@ creusot-contracts = { git = "https://github.com/cmester0/creusot", branch = "add
 
 [features]
 hacspec = []
-# use_attributes = ["hacspec-attributes", "hacspec-attributes/print_attributes"]
 contracts = ["creusot-contracts/contracts"]
 
 [dev-dependencies]
