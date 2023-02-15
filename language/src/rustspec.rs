@@ -585,6 +585,8 @@ pub enum Quantified<I, T> {
     Implication(Box<Quantified<I, T>>, Box<Quantified<I, T>>),
     Eq(Box<Quantified<I, T>>, Box<Quantified<I, T>>),
     Not(Box<Quantified<I, T>>),
+    And(Box<Quantified<I, T>>, Box<Quantified<I, T>>),
+    Or(Box<Quantified<I, T>>, Box<Quantified<I, T>>),
 }
 
 #[derive(Clone, Debug, Serialize)]

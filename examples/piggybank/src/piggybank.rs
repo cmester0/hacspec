@@ -150,15 +150,14 @@ fn coerce_rust_to_hacspec_context(ctx: &impl HasReceiveContext) -> Result<Contex
 
 type PiggySmashResult = Result<PiggyBankStateHacspec, SmashError>;
 
-#[ensures(!(state == PiggyBankStateHacspec::Intact) ==> result == PiggySmashResult::Err(SmashError::AlreadySmashed))]
-#[ensures(forall<owner : UserAddress>
-          forall<sender : UserAddress>
-          forall<balance : u64>
-          forall<metadata : u64>
-          ctx == Context(owner, sender, balance, metadata) ==>
-          !(owner == sender) ==>
-          result == PiggySmashResult::Err(SmashError::NotOwner)
-)]
+#[ensures((!(state == PiggyBankStateHacspec::Intact) ==> result == PiggySmashResult::Err(SmashError::AlreadySmashed)) ||
+          (forall<owner : UserAddress>
+           forall<sender : UserAddress>
+           forall<balance : u64>
+           forall<metadata : u64>
+           ctx == Context(owner, sender, balance, metadata) ==>
+           !(owner == sender) ==>
+           result == PiggySmashResult::Err(SmashError::NotOwner)))]
 fn piggy_smash_hacspec(ctx: Context, state: PiggyBankStateHacspec) -> PiggySmashResult {
     // Get the contract owner, i.e. the account who initialized the contract.
     let Context(owner, sender, _balance, _metadata) = ctx;
