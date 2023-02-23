@@ -19,6 +19,8 @@
 //!
 //! ###
 
+use creusot_contracts::std::fmt;
+
 #[macro_export]
 #[doc(hidden)]
 macro_rules! _array_base {
@@ -28,7 +30,7 @@ macro_rules! _array_base {
         // compile time there's no generic fixed length byte array here.
         // Use this to define the fixed length byte arrays needed in your code.
         #[allow(non_camel_case_types)]
-        #[derive(Clone, Copy)]
+        #[derive(core::clone::Clone, Copy)]
         pub struct $name(pub [$t; $l]);
 
         impl $name {
@@ -300,7 +302,7 @@ macro_rules! generic_array {
         // compile time there's no generic fixed length byte array here.
         // Use this to define the fixed length byte arrays needed in your code.
         #[allow(non_camel_case_types)]
-        #[derive(Clone, Copy)]
+        #[derive(core::clone::Clone, Copy)]
         pub struct $name<T>(pub [T; $l]);
 
         impl<T: Numeric + Copy> $name<T> {
@@ -539,13 +541,13 @@ macro_rules! generic_array {
             }
         }
 
-        /// **Warning:** declassifies secret integer types.
-        impl<T: Numeric + Copy> fmt::Debug for $name<T> {
-            #[cfg_attr(feature = "use_attributes", not_hacspec($name))]
-            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-                self.0[..].iter().collect::<Vec<_>>().fmt(f)
-            }
-        }
+        // /// **Warning:** declassifies secret integer types.
+        // impl<T: Numeric + Copy> fmt::Debug for $name<T> {
+        //     #[cfg_attr(feature = "use_attributes", not_hacspec($name))]
+        //     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        //         self.0[..].iter().collect::<Vec<_>>().fmt(f)
+        //     }
+        // }
     };
 }
 
@@ -558,16 +560,16 @@ macro_rules! _secret_array {
         _array_base!($name, $l, $t);
 
         /// **Warning:** declassifies secret integer types.
-        impl fmt::Debug for $name {
-            #[cfg_attr(feature = "use_attributes", not_hacspec($name))]
-            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-                self.0[..]
-                    .iter()
-                    .map(|x| <$t>::declassify(*x))
-                    .collect::<Vec<_>>()
-                    .fmt(f)
-            }
-        }
+        // impl fmt::Debug for $name {
+        //     #[cfg_attr(feature = "use_attributes", not_hacspec($name))]
+        //     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        //         self.0[..]
+        //             .iter()
+        //             .map(|x| <$t>::declassify(*x))
+        //             .collect::<Vec<_>>()
+        //             .fmt(f)
+        //     }
+        // }
         /// **Warning:** declassifies secret integer types.
         impl $name {
             #[cfg_attr(feature = "use_attributes", unsafe_hacspec($name))]
@@ -583,19 +585,19 @@ macro_rules! _secret_array {
             }
         }
         impl $name {
-            #[cfg_attr(feature = "use_attributes", unsafe_hacspec)]
-            pub fn to_be_bytes(&self) -> Seq<U8> {
-                const FACTOR: usize = core::mem::size_of::<$t>();
-                let mut out: Seq<U8> = Seq::new($l * FACTOR);
-                for i in 0..$l {
-                    let tmp: $t = self[i];
-                    let tmp = <$t>::to_be_bytes(&[tmp]);
-                    for j in 0..FACTOR {
-                        out[i * FACTOR + j] = tmp[j];
-                    }
-                }
-                out
-            }
+            // #[cfg_attr(feature = "use_attributes", unsafe_hacspec)]
+            // pub fn to_be_bytes(&self) -> Seq<U8> {
+            //     const FACTOR: usize = core::mem::size_of::<$t>();
+            //     let mut out: Seq<U8> = Seq::new($l * FACTOR);
+            //     for i in 0..$l {
+            //         let tmp: $t = self[i];
+            //         let tmp = <$t>::to_be_bytes(&[tmp]);
+            //         for j in 0..FACTOR {
+            //             out[i * FACTOR + j] = tmp[j];
+            //         }
+            //     }
+            //     out
+            // }
 
             #[cfg_attr(feature = "use_attributes", unsafe_hacspec($name))]
             pub fn to_le_bytes(&self) -> Seq<U8> {
@@ -677,12 +679,12 @@ macro_rules! _public_array {
             }
         }
 
-        impl fmt::Debug for $name {
-            #[cfg_attr(feature = "use_attributes", not_hacspec($name))]
-            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-                self.0[..].fmt(f)
-            }
-        }
+        // impl fmt::Debug for $name {
+        //     #[cfg_attr(feature = "use_attributes", not_hacspec($name))]
+        //     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        //         self.0[..].fmt(f)
+        //     }
+        // }
         impl PartialEq for $name {
             #[cfg_attr(feature = "use_attributes", unsafe_hacspec($name))]
             fn eq(&self, other: &Self) -> bool {

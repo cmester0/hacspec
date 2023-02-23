@@ -4,6 +4,11 @@ use crate::*;
 use hacspec_lib::*;
 
 #[cfg(not(feature = "hacspec"))]
+extern crate creusot_contracts;
+#[cfg(not(feature = "hacspec"))]
+use creusot_contracts::{trusted, *};
+
+#[cfg(not(feature = "hacspec"))]
 pub fn coerce_rust_to_hacspec_public_byte_seq(buf: &[u8]) -> PublicByteSeq {
     PublicByteSeq::from_native_slice(buf)
 }

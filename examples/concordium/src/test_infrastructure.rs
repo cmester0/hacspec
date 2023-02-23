@@ -53,16 +53,9 @@
 use crate::{constants::MAX_CONTRACT_STATE_SIZE, *};
 
 #[cfg(not(feature = "hacspec"))]
-#[cfg(not(feature = "std"))]
-use alloc::boxed::Box;
-#[cfg(not(feature = "hacspec"))]
 use convert::TryInto;
 #[cfg(not(feature = "hacspec"))]
-#[cfg(not(feature = "std"))]
-use core::{cmp, num};
-#[cfg(not(feature = "hacspec"))]
-#[cfg(feature = "std")]
-use std::{boxed::Box, cmp, num};
+use creusot_contracts::std::{boxed::Box, cmp, num};
 
 #[cfg(not(feature = "hacspec"))]
 /// Placeholder for the context chain meta data.
@@ -74,7 +67,7 @@ use std::{boxed::Box, cmp, num};
 /// Use only in unit tests!
 ///
 /// Defaults to having all of the fields unset
-#[derive(core::default::Default, Clone)]
+#[derive(Default)] // , Clone
 pub struct ChainMetaTest {
     pub(crate) slot_time: Option<SlotTime>,
 }
@@ -83,7 +76,7 @@ pub struct ChainMetaTest {
 /// Policy type used by init and receive contexts for testing.
 /// This type should not be used directly, but rather through
 /// its `HasPolicy` interface.
-#[derive(Debug, Clone)]
+#[derive(Debug)] // , Clone
 pub struct TestPolicy {
     /// Current position in the vector of policies. Used to implement
     /// `next_item`.
@@ -109,7 +102,7 @@ impl TestPolicy {
 /// # Default
 /// Defaults to having all the fields unset, and constructing
 /// [`ChainMetaTest`](struct.ChainMetaTest.html) using default.
-#[derive(core::default::Default, Clone)]
+#[derive(Default)] // , core::clone::Clone
 #[doc(hidden)]
 pub struct CommonDataTest<'a> {
     pub(crate) metadata:  ChainMetaTest,
@@ -123,7 +116,7 @@ pub struct CommonDataTest<'a> {
 #[cfg(not(feature = "hacspec"))]
 /// Context used for testing. The type parameter C is used to determine whether
 /// this will be an init or receive context.
-#[derive(core::default::Default, Clone)]
+// #[derive(core::default::Default, core::clone::Clone)]
 pub struct ContextTest<'a, C> {
     pub(crate) common: CommonDataTest<'a>,
     pub(crate) custom: C,
@@ -191,7 +184,7 @@ pub struct ContextTest<'a, C> {
 pub type InitContextTest<'a> = ContextTest<'a, InitOnlyDataTest>;
 
 #[cfg(not(feature = "hacspec"))]
-#[derive(core::default::Default)]
+// #[derive(core::default::Default)]
 #[doc(hidden)]
 pub struct InitOnlyDataTest {
     init_origin: Option<AccountAddress>,
@@ -261,7 +254,7 @@ pub struct InitOnlyDataTest {
 pub type ReceiveContextTest<'a> = ContextTest<'a, ReceiveOnlyDataTest>;
 
 #[cfg(not(feature = "hacspec"))]
-#[derive(core::default::Default)]
+// #[derive(core::default::Default)]
 #[doc(hidden)]
 pub struct ReceiveOnlyDataTest {
     pub(crate) invoker:      Option<AccountAddress>,
@@ -274,9 +267,12 @@ pub struct ReceiveOnlyDataTest {
 #[cfg(not(feature = "hacspec"))]
 // Setters for testing-context
 impl ChainMetaTest {
-    /// Create an `ChainMetaTest` where every field is unset, and getting any of
-    /// the fields will result in [`fail!`](../macro.fail.html).
-    pub fn empty() -> Self { core::default::Default::default() }
+    // /// Create an `ChainMetaTest` where every field is unset, and getting any of
+    // /// the fields will result in [`fail!`](../macro.fail.html).
+    // pub fn empty() -> Self {
+    //     ChainMetaTest { }
+    //     // core::default::Default::default()
+    // }
 
     /// Set the block slot time
     pub fn set_slot_time(&mut self, value: SlotTime) -> &mut Self {
@@ -285,99 +281,101 @@ impl ChainMetaTest {
     }
 }
 
-#[cfg(not(feature = "hacspec"))]
-impl<'a, C> ContextTest<'a, C> {
-    /// Push a new sender policy to the context.
-    /// When the first policy is pushed this will set the policy vector
-    /// to 'Some', even if it was undefined previously.
-    pub fn push_policy(&mut self, value: OwnedPolicy) -> &mut Self {
-        if let Some(policies) = self.common.policies.as_mut() {
-            policies.push(TestPolicy::new(value));
-        } else {
-            self.common.policies = Some(vec![TestPolicy::new(value)])
-        }
-        self
-    }
+// #[cfg(not(feature = "hacspec"))]
+// impl<'a, C> ContextTest<'a, C> {
+//     /// Push a new sender policy to the context.
+//     /// When the first policy is pushed this will set the policy vector
+//     /// to 'Some', even if it was undefined previously.
+//     pub fn push_policy(&mut self, value: OwnedPolicy) -> &mut Self {
+//         if let Some(policies) = self.common.policies.as_mut() {
+//             policies.push(TestPolicy::new(value));
+//         } else {
+//             self.common.policies = Some(vec![TestPolicy::new(value)])
+//         }
+//         self
+//     }
 
-    /// Set the policies to be defined, but an empty list.
-    /// Such a situation can not realistically happen on the chain,
-    /// but we provide functionality for it in case smart contract
-    /// writers wish to program defensively.
-    pub fn empty_policies(&mut self) -> &mut Self {
-        self.common.policies = Some(Vec::new());
-        self
-    }
+//     /// Set the policies to be defined, but an empty list.
+//     /// Such a situation can not realistically happen on the chain,
+//     /// but we provide functionality for it in case smart contract
+//     /// writers wish to program defensively.
+//     pub fn empty_policies(&mut self) -> &mut Self {
+//         self.common.policies = Some(Vec::new());
+//         self
+//     }
 
-    pub fn set_parameter(&mut self, value: &'a [u8]) -> &mut Self {
-        self.common.parameter = Some(value);
-        self
-    }
+//     pub fn set_parameter(&mut self, value: &'a [u8]) -> &mut Self {
+//         self.common.parameter = Some(value);
+//         self
+//     }
 
-    /// Get a mutable reference to the chain meta data placeholder
-    pub fn metadata_mut(&mut self) -> &mut ChainMetaTest { &mut self.common.metadata }
+//     /// Get a mutable reference to the chain meta data placeholder
+//     pub fn metadata_mut(&mut self) -> &mut ChainMetaTest { &mut self.common.metadata }
 
-    /// Set the metadata block slot time
-    pub fn set_metadata_slot_time(&mut self, value: SlotTime) -> &mut Self {
-        self.metadata_mut().set_slot_time(value);
-        self
-    }
-}
+//     /// Set the metadata block slot time
+//     pub fn set_metadata_slot_time(&mut self, value: SlotTime) -> &mut Self {
+//         self.metadata_mut().set_slot_time(value);
+//         self
+//     }
+// }
 
-#[cfg(not(feature = "hacspec"))]
-impl<'a> InitContextTest<'a> {
-    /// Create an `InitContextTest` where every field is unset, and getting any
-    /// of the fields will result in [`fail!`](../macro.fail.html).
-    pub fn empty() -> Self { core::default::Default::default() }
+// #[cfg(not(feature = "hacspec"))]
+// impl<'a> InitContextTest<'a> {
+//     /// Create an `InitContextTest` where every field is unset, and getting any
+//     /// of the fields will result in [`fail!`](../macro.fail.html).
+//     pub fn empty() -> Self { core::default::Default::default() }
 
-    /// Set `init_origin` in the `InitContextTest`
-    pub fn set_init_origin(&mut self, value: AccountAddress) -> &mut Self {
-        self.custom.init_origin = Some(value);
-        self
-    }
-}
+//     /// Set `init_origin` in the `InitContextTest`
+//     pub fn set_init_origin(&mut self, value: AccountAddress) -> &mut Self {
+//         self.custom.init_origin = Some(value);
+//         self
+//     }
+// }
 
-#[cfg(not(feature = "hacspec"))]
-impl<'a> ReceiveContextTest<'a> {
-    /// Create a `ReceiveContextTest` where every field is unset, and getting
-    /// any of the fields will result in [`fail!`](../macro.fail.html).
-    pub fn empty() -> Self { core::default::Default::default() }
+// #[cfg(not(feature = "hacspec"))]
+// impl<'a> ReceiveContextTest<'a> {
+//     /// Create a `ReceiveContextTest` where every field is unset, and getting
+//     /// any of the fields will result in [`fail!`](../macro.fail.html).
+//     pub fn empty() -> Self { core::default::Default::default() }
 
-    pub fn set_invoker(&mut self, value: AccountAddress) -> &mut Self {
-        self.custom.invoker = Some(value);
-        self
-    }
+//     pub fn set_invoker(&mut self, value: AccountAddress) -> &mut Self {
+//         self.custom.invoker = Some(value);
+//         self
+//     }
 
-    pub fn set_self_address(&mut self, value: ContractAddress) -> &mut Self {
-        self.custom.self_address = Some(value);
-        self
-    }
+//     pub fn set_self_address(&mut self, value: ContractAddress) -> &mut Self {
+//         self.custom.self_address = Some(value);
+//         self
+//     }
 
-    pub fn set_self_balance(&mut self, value: Amount) -> &mut Self {
-        self.custom.self_balance = Some(value);
-        self
-    }
+//     pub fn set_self_balance(&mut self, value: Amount) -> &mut Self {
+//         self.custom.self_balance = Some(value);
+//         self
+//     }
 
-    pub fn set_sender(&mut self, value: Address) -> &mut Self {
-        self.custom.sender = Some(value);
-        self
-    }
+//     pub fn set_sender(&mut self, value: Address) -> &mut Self {
+//         self.custom.sender = Some(value);
+//         self
+//     }
 
-    pub fn set_owner(&mut self, value: AccountAddress) -> &mut Self {
-        self.custom.owner = Some(value);
-        self
-    }
-}
+//     pub fn set_owner(&mut self, value: AccountAddress) -> &mut Self {
+//         self.custom.owner = Some(value);
+//         self
+//     }
+// }
 
 #[cfg(not(feature = "hacspec"))]
 // Error handling when unwrapping
 fn unwrap_ctx_field<A>(opt: Option<A>, name: &str) -> A {
     match opt {
         Some(v) => v,
-        None => fail!(
-            "Unset field on test context '{}', make sure to set all the field necessary for the \
-             contract",
-            name
-        ),
+        None => // fail!(
+        //     "Unset field on test context '{}', make sure to set all the field necessary for the \
+        //      contract",
+        //     name
+        // )
+            panic!()
+            ,
     }
 }
 
@@ -407,150 +405,150 @@ impl HasPolicy for TestPolicy {
     }
 }
 
-#[cfg(not(feature = "hacspec"))]
-impl<'a, C> HasCommonData for ContextTest<'a, C> {
-    type MetadataType = ChainMetaTest;
-    type ParamType = Cursor<&'a [u8]>;
-    type PolicyIteratorType = crate::vec::IntoIter<TestPolicy>;
-    type PolicyType = TestPolicy;
+// #[cfg(not(feature = "hacspec"))]
+// impl<'a, C> HasCommonData for ContextTest<'a, C> {
+//     type MetadataType = ChainMetaTest;
+//     type ParamType = Cursor<&'a [u8]>;
+//     type PolicyIteratorType = crate::vec::IntoIter<TestPolicy>;
+//     type PolicyType = TestPolicy;
 
-    fn parameter_cursor(&self) -> Self::ParamType {
-        Cursor::new(unwrap_ctx_field(self.common.parameter, "parameter"))
-    }
+//     fn parameter_cursor(&self) -> Self::ParamType {
+//         Cursor::new(unwrap_ctx_field(self.common.parameter, "parameter"))
+//     }
 
-    fn metadata(&self) -> &Self::MetadataType { &self.common.metadata }
+//     fn metadata(&self) -> &Self::MetadataType { &self.common.metadata }
 
-    fn policies(&self) -> Self::PolicyIteratorType {
-        unwrap_ctx_field(self.common.policies.clone(), "policies").into_iter()
-    }
-}
+//     fn policies(&self) -> Self::PolicyIteratorType {
+//         unwrap_ctx_field(self.common.policies.clone(), "policies").into_iter()
+//     }
+// }
 
-#[cfg(not(feature = "hacspec"))]
-impl<'a> HasInitContext for InitContextTest<'a> {
-    type InitData = ();
+// #[cfg(not(feature = "hacspec"))]
+// impl<'a> HasInitContext for InitContextTest<'a> {
+//     type InitData = ();
 
-    fn open(_data: Self::InitData) -> Self { InitContextTest::default() }
+//     fn open(_data: Self::InitData) -> Self { InitContextTest::default() }
 
-    fn init_origin(&self) -> AccountAddress {
-        unwrap_ctx_field(self.custom.init_origin, "init_origin")
-    }
-}
+//     fn init_origin(&self) -> AccountAddress {
+//         unwrap_ctx_field(self.custom.init_origin, "init_origin")
+//     }
+// }
 
-#[cfg(not(feature = "hacspec"))]
-impl<'a> HasReceiveContext for ReceiveContextTest<'a> {
-    type ReceiveData = ();
+// #[cfg(not(feature = "hacspec"))]
+// impl<'a> HasReceiveContext for ReceiveContextTest<'a> {
+//     type ReceiveData = ();
 
-    fn open(_data: Self::ReceiveData) -> Self { ReceiveContextTest::default() }
+//     fn open(_data: Self::ReceiveData) -> Self { ReceiveContextTest::default() }
 
-    fn invoker(&self) -> AccountAddress { unwrap_ctx_field(self.custom.invoker, "invoker") }
+//     fn invoker(&self) -> AccountAddress { unwrap_ctx_field(self.custom.invoker, "invoker") }
 
-    fn self_address(&self) -> ContractAddress {
-        unwrap_ctx_field(self.custom.self_address, "self_address")
-    }
+//     fn self_address(&self) -> ContractAddress {
+//         unwrap_ctx_field(self.custom.self_address, "self_address")
+//     }
 
-    fn self_balance(&self) -> Amount { unwrap_ctx_field(self.custom.self_balance, "self_balance") }
+//     fn self_balance(&self) -> Amount { unwrap_ctx_field(self.custom.self_balance, "self_balance") }
 
-    fn sender(&self) -> Address { unwrap_ctx_field(self.custom.sender, "sender") }
+//     fn sender(&self) -> Address { unwrap_ctx_field(self.custom.sender, "sender") }
 
-    fn owner(&self) -> AccountAddress { unwrap_ctx_field(self.custom.owner, "owner") }
-}
+//     fn owner(&self) -> AccountAddress { unwrap_ctx_field(self.custom.owner, "owner") }
+// }
 
-#[cfg(not(feature = "hacspec"))]
-impl<'a> HasParameter for Cursor<&'a [u8]> {
-    fn size(&self) -> u32 { self.data.len() as u32 }
-}
+// #[cfg(not(feature = "hacspec"))]
+// impl<'a> HasParameter for Cursor<&'a [u8]> {
+//     fn size(&self) -> u32 { self.data.len() as u32 }
+// }
 
-/// A logger that simply accumulates all the logged items to be inspected at the
-/// end of execution.
-#[cfg(not(feature = "hacspec"))]
-pub struct LogRecorder {
-    pub logs: Vec<Vec<u8>>,
-}
+// /// A logger that simply accumulates all the logged items to be inspected at the
+// /// end of execution.
+// #[cfg(not(feature = "hacspec"))]
+// pub struct LogRecorder {
+//     pub logs: Vec<Vec<u8>>,
+// }
 
-#[cfg(not(feature = "hacspec"))]
-impl HasLogger for LogRecorder {
-    fn init() -> Self {
-        Self {
-            logs: Vec::new(),
-        }
-    }
+// #[cfg(not(feature = "hacspec"))]
+// impl HasLogger for LogRecorder {
+//     fn init() -> Self {
+//         Self {
+//             logs: Vec::new(),
+//         }
+//     }
 
-    fn log_raw(&mut self, event: &[u8]) -> Result<(), LogError> {
-        if event.len() > constants::MAX_LOG_SIZE {
-            return Err(LogError::Malformed);
-        }
-        if self.logs.len() >= constants::MAX_NUM_LOGS {
-            return Err(LogError::Full);
-        }
-        self.logs.push(event.to_vec());
-        Ok(())
-    }
-}
+//     fn log_raw(&mut self, event: &[u8]) -> Result<(), LogError> {
+//         if event.len() > constants::MAX_LOG_SIZE {
+//             return Err(LogError::Malformed);
+//         }
+//         if self.logs.len() >= constants::MAX_NUM_LOGS {
+//             return Err(LogError::Full);
+//         }
+//         self.logs.push(event.to_vec());
+//         Ok(())
+//     }
+// }
 
-#[cfg(not(feature = "hacspec"))]
-/// An actions tree, used to provide a simpler presentation for testing.
-#[derive(Eq, PartialEq, Debug)]
-pub enum ActionsTree {
-    Accept,
-    SimpleTransfer {
-        to:     AccountAddress,
-        amount: Amount,
-    },
-    Send {
-        to:           ContractAddress,
-        receive_name: OwnedReceiveName,
-        amount:       Amount,
-        parameter:    Vec<u8>,
-    },
-    AndThen {
-        left:  Box<ActionsTree>,
-        right: Box<ActionsTree>,
-    },
-    OrElse {
-        left:  Box<ActionsTree>,
-        right: Box<ActionsTree>,
-    },
-}
+// #[cfg(not(feature = "hacspec"))]
+// /// An actions tree, used to provide a simpler presentation for testing.
+// // #[derive(Eq, core::cmp::PartialEq, Debug)]
+// pub enum ActionsTree {
+//     Accept,
+//     SimpleTransfer {
+//         to:     AccountAddress,
+//         amount: Amount,
+//     },
+//     Send {
+//         to:           ContractAddress,
+//         receive_name: OwnedReceiveName,
+//         amount:       Amount,
+//         parameter:    Vec<u8>,
+//     },
+//     AndThen {
+//         left:  Box<ActionsTree>,
+//         right: Box<ActionsTree>,
+//     },
+//     OrElse {
+//         left:  Box<ActionsTree>,
+//         right: Box<ActionsTree>,
+//     },
+// }
 
-#[cfg(not(feature = "hacspec"))]
-impl HasActions for ActionsTree {
-    fn accept() -> Self { ActionsTree::Accept }
+// #[cfg(not(feature = "hacspec"))]
+// impl HasActions for ActionsTree {
+//     fn accept() -> Self { ActionsTree::Accept }
 
-    fn simple_transfer(acc: &AccountAddress, amount: Amount) -> Self {
-        ActionsTree::SimpleTransfer {
-            to: *acc,
-            amount,
-        }
-    }
+//     fn simple_transfer(acc: &AccountAddress, amount: Amount) -> Self {
+//         ActionsTree::SimpleTransfer {
+//             to: *acc,
+//             amount,
+//         }
+//     }
 
-    fn send_raw(
-        ca: &ContractAddress,
-        receive_name: ReceiveName,
-        amount: Amount,
-        parameter: &[u8],
-    ) -> Self {
-        ActionsTree::Send {
-            to: *ca,
-            receive_name: receive_name.to_owned(),
-            amount,
-            parameter: parameter.to_vec(),
-        }
-    }
+//     fn send_raw(
+//         ca: &ContractAddress,
+//         receive_name: ReceiveName,
+//         amount: Amount,
+//         parameter: &[u8],
+//     ) -> Self {
+//         ActionsTree::Send {
+//             to: *ca,
+//             receive_name: receive_name.to_owned(),
+//             amount,
+//             parameter: parameter.to_vec(),
+//         }
+//     }
 
-    fn and_then(self, then: Self) -> Self {
-        ActionsTree::AndThen {
-            left:  Box::new(self),
-            right: Box::new(then),
-        }
-    }
+//     fn and_then(self, then: Self) -> Self {
+//         ActionsTree::AndThen {
+//             left:  Box::new(self),
+//             right: Box::new(then),
+//         }
+//     }
 
-    fn or_else(self, el: Self) -> Self {
-        ActionsTree::OrElse {
-            left:  Box::new(self),
-            right: Box::new(el),
-        }
-    }
-}
+//     fn or_else(self, el: Self) -> Self {
+//         ActionsTree::OrElse {
+//             left:  Box::new(self),
+//             right: Box::new(el),
+//         }
+//     }
+// }
 
 #[cfg(not(feature = "hacspec"))]
 /// Reports back an error to the host when compiled to wasm
@@ -579,261 +577,261 @@ pub fn report_error(message: &str, filename: &str, line: u32, column: u32) {
 #[cfg(not(all(feature = "wasm-test", target_arch = "wasm32")))]
 pub fn report_error(_message: &str, _filename: &str, _line: u32, _column: u32) {}
 
-/// Contract state for testing, mimicking the operations the scheduler allows,
-/// including the limit on the size of the maximum size of the contract state.
-#[cfg(not(feature = "hacspec"))]
-pub struct ContractStateTest<T> {
-    pub cursor: Cursor<T>,
-}
+// /// Contract state for testing, mimicking the operations the scheduler allows,
+// /// including the limit on the size of the maximum size of the contract state.
+// #[cfg(not(feature = "hacspec"))]
+// pub struct ContractStateTest<T> {
+//     pub cursor: Cursor<T>,
+// }
 
-#[cfg(not(feature = "hacspec"))]
-/// A borrowed instantiation of `ContractStateTest`.
-pub type ContractStateTestBorrowed<'a> = ContractStateTest<&'a mut Vec<u8>>;
+// #[cfg(not(feature = "hacspec"))]
+// /// A borrowed instantiation of `ContractStateTest`.
+// pub type ContractStateTestBorrowed<'a> = ContractStateTest<&'a mut Vec<u8>>;
 
-#[cfg(not(feature = "hacspec"))]
-/// An owned variant that can be more convenient for testing since the type
-/// itself owns the data.
-pub type ContractStateTestOwned = ContractStateTest<Vec<u8>>;
+// #[cfg(not(feature = "hacspec"))]
+// /// An owned variant that can be more convenient for testing since the type
+// /// itself owns the data.
+// pub type ContractStateTestOwned = ContractStateTest<Vec<u8>>;
 
-#[cfg(not(feature = "hacspec"))]
-#[derive(Debug, PartialEq, Eq)]
-/// An error that is raised when operating with `Seek`, `Write`, or `Read` trait
-/// methods of the `ContractStateTest` type.
-pub enum ContractStateError {
-    /// The computation of the new offset would result in an overflow.
-    Overflow,
-    /// An error occurred when writing to the contract state.
-    Write,
-    /// The new offset would be out of bounds of the state.
-    Offset,
-    /// Some other error occurred.
-    Default,
-}
+// #[cfg(not(feature = "hacspec"))]
+// // #[derive(Debug, core::cmp::PartialEq, Eq)]
+// /// An error that is raised when operating with `Seek`, `Write`, or `Read` trait
+// /// methods of the `ContractStateTest` type.
+// pub enum ContractStateError {
+//     /// The computation of the new offset would result in an overflow.
+//     Overflow,
+//     /// An error occurred when writing to the contract state.
+//     Write,
+//     /// The new offset would be out of bounds of the state.
+//     Offset,
+//     /// Some other error occurred.
+//     Default,
+// }
 
-#[cfg(not(feature = "hacspec"))]
-impl<T: convert::AsRef<[u8]>> Read for ContractStateTest<T> {
-    fn read(&mut self, buf: &mut [u8]) -> ParseResult<usize> { self.cursor.read(buf) }
-}
+// #[cfg(not(feature = "hacspec"))]
+// impl<T: convert::AsRef<[u8]>> Read for ContractStateTest<T> {
+//     fn read(&mut self, buf: &mut [u8]) -> ParseResult<usize> { self.cursor.read(buf) }
+// }
 
-#[cfg(not(feature = "hacspec"))]
-impl<T: convert::AsMut<Vec<u8>>> Write for ContractStateTest<T> {
-    type Err = ContractStateError;
+// #[cfg(not(feature = "hacspec"))]
+// impl<T: convert::AsMut<Vec<u8>>> Write for ContractStateTest<T> {
+//     type Err = ContractStateError;
 
-    fn write(&mut self, buf: &[u8]) -> Result<usize, Self::Err> {
-        // The chain automatically resizes the state up until MAX_CONTRACT_STATE_SIZE.
-        let end = cmp::min(MAX_CONTRACT_STATE_SIZE as usize, self.cursor.offset + buf.len());
-        if self.cursor.data.as_mut().len() < end {
-            self.cursor.data.as_mut().resize(end as usize, 0u8);
-        }
-        let data = &mut self.cursor.data.as_mut()[self.cursor.offset..];
-        let to_write = cmp::min(data.len(), buf.len());
-        data[..to_write].copy_from_slice(&buf[..to_write]);
-        self.cursor.offset += to_write;
-        Ok(to_write)
-    }
-}
+//     fn write(&mut self, buf: &[u8]) -> Result<usize, Self::Err> {
+//         // The chain automatically resizes the state up until MAX_CONTRACT_STATE_SIZE.
+//         let end = cmp::min(MAX_CONTRACT_STATE_SIZE as usize, self.cursor.offset + buf.len());
+//         if self.cursor.data.as_mut().len() < end {
+//             self.cursor.data.as_mut().resize(end as usize, 0u8);
+//         }
+//         let data = &mut self.cursor.data.as_mut()[self.cursor.offset..];
+//         let to_write = cmp::min(data.len(), buf.len());
+//         data[..to_write].copy_from_slice(&buf[..to_write]);
+//         self.cursor.offset += to_write;
+//         Ok(to_write)
+//     }
+// }
 
-#[cfg(not(feature = "hacspec"))]
-impl<T: AsMut<Vec<u8>> + AsMut<[u8]> + AsRef<[u8]>> HasContractState<ContractStateError>
-    for ContractStateTest<T>
-{
-    type ContractStateData = T;
+// #[cfg(not(feature = "hacspec"))]
+// impl<T: AsMut<Vec<u8>> + AsMut<[u8]> + AsRef<[u8]>> HasContractState<ContractStateError>
+//     for ContractStateTest<T>
+// {
+//     type ContractStateData = T;
 
-    fn open(data: Self::ContractStateData) -> Self {
-        Self {
-            cursor: Cursor::new(data),
-        }
-    }
+//     fn open(data: Self::ContractStateData) -> Self {
+//         Self {
+//             cursor: Cursor::new(data),
+//         }
+//     }
 
-    fn size(&self) -> u32 { self.cursor.data.as_ref().len() as u32 }
+//     fn size(&self) -> u32 { self.cursor.data.as_ref().len() as u32 }
 
-    fn truncate(&mut self, new_size: u32) {
-        if self.size() > new_size {
-            let new_size = new_size as usize;
-            let data: &mut Vec<u8> = self.cursor.data.as_mut();
-            data.truncate(new_size);
-            if self.cursor.offset > new_size {
-                self.cursor.offset = new_size
-            }
-        }
-    }
+//     fn truncate(&mut self, new_size: u32) {
+//         if self.size() > new_size {
+//             let new_size = new_size as usize;
+//             let data: &mut Vec<u8> = self.cursor.data.as_mut();
+//             data.truncate(new_size);
+//             if self.cursor.offset > new_size {
+//                 self.cursor.offset = new_size
+//             }
+//         }
+//     }
 
-    fn reserve(&mut self, len: u32) -> bool {
-        if len <= constants::MAX_CONTRACT_STATE_SIZE {
-            if self.size() < len {
-                let data: &mut Vec<u8> = self.cursor.data.as_mut();
-                data.resize(len as usize, 0u8);
-            }
-            true
-        } else {
-            false
-        }
-    }
-}
+//     fn reserve(&mut self, len: u32) -> bool {
+//         if len <= constants::MAX_CONTRACT_STATE_SIZE {
+//             if self.size() < len {
+//                 let data: &mut Vec<u8> = self.cursor.data.as_mut();
+//                 data.resize(len as usize, 0u8);
+//             }
+//             true
+//         } else {
+//             false
+//         }
+//     }
+// }
 
-#[cfg(not(feature = "hacspec"))]
-impl core::default::Default for ContractStateError {
-    fn default() -> Self { Self::Default }
-}
+// #[cfg(not(feature = "hacspec"))]
+// impl core::default::Default for ContractStateError {
+//     fn default() -> Self { Self::Default }
+// }
 
-#[cfg(not(feature = "hacspec"))]
-impl From<num::TryFromIntError> for ContractStateError {
-    fn from(_: num::TryFromIntError) -> Self { ContractStateError::Overflow }
-}
+// #[cfg(not(feature = "hacspec"))]
+// impl From<num::TryFromIntError> for ContractStateError {
+//     fn from(_: num::TryFromIntError) -> Self { ContractStateError::Overflow }
+// }
 
-#[cfg(not(feature = "hacspec"))]
-impl<T: AsRef<[u8]>> Seek for ContractStateTest<T> {
-    type Err = ContractStateError;
+// #[cfg(not(feature = "hacspec"))]
+// impl<T: AsRef<[u8]>> Seek for ContractStateTest<T> {
+//     type Err = ContractStateError;
 
-    fn seek(&mut self, pos: SeekFrom) -> Result<u64, Self::Err> {
-        use ContractStateError::*;
-        match pos {
-            SeekFrom::Start(x) => {
-                // We can set the position to just after the end of the current length.
-                let new_offset = x.try_into()?;
-                if new_offset <= self.cursor.data.as_ref().len() {
-                    self.cursor.offset = new_offset;
-                    Ok(x)
-                } else {
-                    Err(Offset)
-                }
-            }
-            SeekFrom::End(x) => {
-                // cannot seek beyond end, nor before beginning
-                if x <= 0 {
-                    let end: u32 = self.cursor.data.as_ref().len().try_into()?;
-                    let minus_x = x.checked_abs().ok_or(Overflow)?;
-                    if let Some(new_pos) = end.checked_sub(minus_x.try_into()?) {
-                        self.cursor.offset = new_pos.try_into()?;
-                        Ok(u64::from(new_pos))
-                    } else {
-                        Err(Offset)
-                    }
-                } else {
-                    Err(Offset)
-                }
-            }
-            SeekFrom::Current(x) => match x {
-                0 => Ok(self.cursor.offset.try_into()?),
-                x if x > 0 => {
-                    let x = x.try_into()?;
-                    let new_pos = self.cursor.offset.checked_add(x).ok_or(Overflow)?;
-                    if new_pos <= self.cursor.data.as_ref().len() {
-                        self.cursor.offset = new_pos;
-                        new_pos.try_into().map_err(Self::Err::from)
-                    } else {
-                        Err(Offset)
-                    }
-                }
-                x => {
-                    let x = (-x).try_into()?;
-                    let new_pos = self.cursor.offset.checked_sub(x).ok_or(Overflow)?;
-                    self.cursor.offset = new_pos;
-                    new_pos.try_into().map_err(Self::Err::from)
-                }
-            },
-        }
-    }
-}
+//     fn seek(&mut self, pos: SeekFrom) -> Result<u64, Self::Err> {
+//         use ContractStateError::*;
+//         match pos {
+//             SeekFrom::Start(x) => {
+//                 // We can set the position to just after the end of the current length.
+//                 let new_offset = x.try_into()?;
+//                 if new_offset <= self.cursor.data.as_ref().len() {
+//                     self.cursor.offset = new_offset;
+//                     Ok(x)
+//                 } else {
+//                     Err(Offset)
+//                 }
+//             }
+//             SeekFrom::End(x) => {
+//                 // cannot seek beyond end, nor before beginning
+//                 if x <= 0 {
+//                     let end: u32 = self.cursor.data.as_ref().len().try_into()?;
+//                     let minus_x = x.checked_abs().ok_or(Overflow)?;
+//                     if let Some(new_pos) = end.checked_sub(minus_x.try_into()?) {
+//                         self.cursor.offset = new_pos.try_into()?;
+//                         Ok(u64::from(new_pos))
+//                     } else {
+//                         Err(Offset)
+//                     }
+//                 } else {
+//                     Err(Offset)
+//                 }
+//             }
+//             SeekFrom::Current(x) => match x {
+//                 0 => Ok(self.cursor.offset.try_into()?),
+//                 x if x > 0 => {
+//                     let x = x.try_into()?;
+//                     let new_pos = self.cursor.offset.checked_add(x).ok_or(Overflow)?;
+//                     if new_pos <= self.cursor.data.as_ref().len() {
+//                         self.cursor.offset = new_pos;
+//                         new_pos.try_into().map_err(Self::Err::from)
+//                     } else {
+//                         Err(Offset)
+//                     }
+//                 }
+//                 x => {
+//                     let x = (-x).try_into()?;
+//                     let new_pos = self.cursor.offset.checked_sub(x).ok_or(Overflow)?;
+//                     self.cursor.offset = new_pos;
+//                     new_pos.try_into().map_err(Self::Err::from)
+//                 }
+//             },
+//         }
+//     }
+// }
 
-#[cfg(not(feature = "hacspec"))]
-#[cfg(test)]
-mod test {
-    use concordium_contracts_common::{Read, Seek, SeekFrom, Write};
+// #[cfg(not(feature = "hacspec"))]
+// #[cfg(test)]
+// mod test {
+//     use concordium_contracts_common::{Read, Seek, SeekFrom, Write};
 
-    use super::ContractStateTest;
-    use crate::{constants, traits::HasContractState};
+//     use super::ContractStateTest;
+//     use crate::{constants, traits::HasContractState};
 
-    #[test]
-    // Perform a number of operations from Seek, Read, Write and HasContractState
-    // classes on the ContractStateTest structure and check that they behave as
-    // specified.
-    fn test_contract_state() {
-        let data = vec![1; 100];
-        let mut state = ContractStateTest::open(data);
-        assert_eq!(state.seek(SeekFrom::Start(100)), Ok(100), "Seeking to the end failed.");
-        assert_eq!(
-            state.seek(SeekFrom::Current(0)),
-            Ok(100),
-            "Seeking from current position with offset 0 failed."
-        );
-        assert!(
-            state.seek(SeekFrom::Current(1)).is_err(),
-            "Seeking from current position with offset 1 succeeded."
-        );
-        assert_eq!(state.cursor.offset, 100, "Cursor position changed on failed seek.");
-        assert_eq!(
-            state.seek(SeekFrom::Current(-1)),
-            Ok(99),
-            "Seeking from current position backwards with offset 1 failed."
-        );
-        assert!(state.seek(SeekFrom::Current(-100)).is_err(), "Seeking beyond beginning succeeds");
-        assert_eq!(state.seek(SeekFrom::Current(-99)), Ok(0), "Seeking to the beginning fails.");
-        assert_eq!(state.seek(SeekFrom::End(0)), Ok(100), "Seeking from end fails.");
-        assert!(
-            state.seek(SeekFrom::End(1)).is_err(),
-            "Seeking beyond the end succeeds but should fail."
-        );
-        assert_eq!(state.cursor.offset, 100, "Cursor position changed on failed seek.");
-        assert_eq!(
-            state.seek(SeekFrom::End(-20)),
-            Ok(80),
-            "Seeking from end leads to incorrect position."
-        );
-        assert_eq!(state.write(&[0; 21]), Ok(21), "Writing writes an incorrect amount of data.");
-        assert_eq!(state.cursor.offset, 101, "After writing the cursor is at the end.");
-        assert_eq!(state.write(&[0; 21]), Ok(21), "Writing again writes incorrect amount of data.");
-        let mut buf = [0; 30];
-        assert_eq!(state.read(&mut buf), Ok(0), "Reading from the end should read 0 bytes.");
-        assert_eq!(state.seek(SeekFrom::End(-20)), Ok(102));
-        assert_eq!(state.read(&mut buf), Ok(20), "Reading from offset 80 should read 20 bytes.");
-        assert_eq!(&buf[0..20], &state.cursor.data[80..100], "Incorrect data was read.");
-        assert_eq!(
-            state.cursor.offset, 122,
-            "After reading the offset is in the correct position."
-        );
-        assert!(state.reserve(222), "Could not increase state to 222.");
-        assert!(
-            !state.reserve(constants::MAX_CONTRACT_STATE_SIZE + 1),
-            "State should not be resizable beyond max limit."
-        );
-        assert_eq!(state.write(&[2; 100]), Ok(100), "Should have written 100 bytes.");
-        assert_eq!(state.cursor.offset, 222, "After writing the offset should be 200.");
-        state.truncate(50);
-        assert_eq!(state.cursor.offset, 50, "After truncation the state should be 50.");
-        assert!(state.reserve(constants::MAX_CONTRACT_STATE_SIZE), "Could not increase state MAX.");
-        assert_eq!(
-            state.seek(SeekFrom::End(0)),
-            Ok(u64::from(constants::MAX_CONTRACT_STATE_SIZE)),
-            "State should be full now."
-        );
-        assert_eq!(
-            state.write(&[1; 1000]),
-            Ok(0),
-            "Writing at the end after truncation should do nothing."
-        );
-        assert_eq!(
-            state.cursor.data.len(),
-            constants::MAX_CONTRACT_STATE_SIZE as usize,
-            "State size should not increase beyond max."
-        )
-    }
+//     #[test]
+//     // Perform a number of operations from Seek, Read, Write and HasContractState
+//     // classes on the ContractStateTest structure and check that they behave as
+//     // specified.
+//     fn test_contract_state() {
+//         let data = vec![1; 100];
+//         let mut state = ContractStateTest::open(data);
+//         assert_eq!(state.seek(SeekFrom::Start(100)), Ok(100), "Seeking to the end failed.");
+//         assert_eq!(
+//             state.seek(SeekFrom::Current(0)),
+//             Ok(100),
+//             "Seeking from current position with offset 0 failed."
+//         );
+//         assert!(
+//             state.seek(SeekFrom::Current(1)).is_err(),
+//             "Seeking from current position with offset 1 succeeded."
+//         );
+//         assert_eq!(state.cursor.offset, 100, "Cursor position changed on failed seek.");
+//         assert_eq!(
+//             state.seek(SeekFrom::Current(-1)),
+//             Ok(99),
+//             "Seeking from current position backwards with offset 1 failed."
+//         );
+//         assert!(state.seek(SeekFrom::Current(-100)).is_err(), "Seeking beyond beginning succeeds");
+//         assert_eq!(state.seek(SeekFrom::Current(-99)), Ok(0), "Seeking to the beginning fails.");
+//         assert_eq!(state.seek(SeekFrom::End(0)), Ok(100), "Seeking from end fails.");
+//         assert!(
+//             state.seek(SeekFrom::End(1)).is_err(),
+//             "Seeking beyond the end succeeds but should fail."
+//         );
+//         assert_eq!(state.cursor.offset, 100, "Cursor position changed on failed seek.");
+//         assert_eq!(
+//             state.seek(SeekFrom::End(-20)),
+//             Ok(80),
+//             "Seeking from end leads to incorrect position."
+//         );
+//         assert_eq!(state.write(&[0; 21]), Ok(21), "Writing writes an incorrect amount of data.");
+//         assert_eq!(state.cursor.offset, 101, "After writing the cursor is at the end.");
+//         assert_eq!(state.write(&[0; 21]), Ok(21), "Writing again writes incorrect amount of data.");
+//         let mut buf = [0; 30];
+//         assert_eq!(state.read(&mut buf), Ok(0), "Reading from the end should read 0 bytes.");
+//         assert_eq!(state.seek(SeekFrom::End(-20)), Ok(102));
+//         assert_eq!(state.read(&mut buf), Ok(20), "Reading from offset 80 should read 20 bytes.");
+//         assert_eq!(&buf[0..20], &state.cursor.data[80..100], "Incorrect data was read.");
+//         assert_eq!(
+//             state.cursor.offset, 122,
+//             "After reading the offset is in the correct position."
+//         );
+//         assert!(state.reserve(222), "Could not increase state to 222.");
+//         assert!(
+//             !state.reserve(constants::MAX_CONTRACT_STATE_SIZE + 1),
+//             "State should not be resizable beyond max limit."
+//         );
+//         assert_eq!(state.write(&[2; 100]), Ok(100), "Should have written 100 bytes.");
+//         assert_eq!(state.cursor.offset, 222, "After writing the offset should be 200.");
+//         state.truncate(50);
+//         assert_eq!(state.cursor.offset, 50, "After truncation the state should be 50.");
+//         assert!(state.reserve(constants::MAX_CONTRACT_STATE_SIZE), "Could not increase state MAX.");
+//         assert_eq!(
+//             state.seek(SeekFrom::End(0)),
+//             Ok(u64::from(constants::MAX_CONTRACT_STATE_SIZE)),
+//             "State should be full now."
+//         );
+//         assert_eq!(
+//             state.write(&[1; 1000]),
+//             Ok(0),
+//             "Writing at the end after truncation should do nothing."
+//         );
+//         assert_eq!(
+//             state.cursor.data.len(),
+//             constants::MAX_CONTRACT_STATE_SIZE as usize,
+//             "State size should not increase beyond max."
+//         )
+//     }
 
-    #[test]
-    fn test_contract_state_write() {
-        let data = vec![0u8; 10];
-        let mut state = ContractStateTest::open(data);
-        assert_eq!(state.write(&1u64.to_le_bytes()), Ok(8), "Incorrect number of bytes written.");
-        assert_eq!(
-            state.write(&2u64.to_le_bytes()),
-            Ok(8),
-            "State should be resized automatically."
-        );
-        assert_eq!(state.cursor.offset, 16, "Pos should be at the end.");
-        assert_eq!(
-            state.cursor.data,
-            vec![1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0],
-            "Correct data was written."
-        );
-    }
-}
+//     #[test]
+//     fn test_contract_state_write() {
+//         let data = vec![0u8; 10];
+//         let mut state = ContractStateTest::open(data);
+//         assert_eq!(state.write(&1u64.to_le_bytes()), Ok(8), "Incorrect number of bytes written.");
+//         assert_eq!(
+//             state.write(&2u64.to_le_bytes()),
+//             Ok(8),
+//             "State should be resized automatically."
+//         );
+//         assert_eq!(state.cursor.offset, 16, "Pos should be at the end.");
+//         assert_eq!(
+//             state.cursor.data,
+//             vec![1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0],
+//             "Correct data was written."
+//         );
+//     }
+// }
