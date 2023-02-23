@@ -18,7 +18,6 @@ hacspec-attributes = { path = "../../utils/attributes/" }
 wee_alloc="0.4.5"
 
 [features]
-# use_attributes = ["hacspec-attributes/print_attributes", "hacspec-attributes/hacspec_unsafe"]
 contracts = ["creusot-contracts/contracts"]
 hacspec = []
 

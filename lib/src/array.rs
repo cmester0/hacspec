@@ -19,6 +19,8 @@
 //!
 //! ###
 
+use creusot_contracts::std::fmt;
+
 #[macro_export]
 #[doc(hidden)]
 macro_rules! _array_base {
@@ -28,7 +30,7 @@ macro_rules! _array_base {
         // compile time there's no generic fixed length byte array here.
         // Use this to define the fixed length byte arrays needed in your code.
         #[allow(non_camel_case_types)]
-        #[derive(Clone, Copy)]
+        #[derive(core::clone::Clone, Copy)]
         pub struct $name(pub [$t; $l]);
 
         impl $name {
@@ -333,7 +335,7 @@ macro_rules! generic_array {
         // compile time there's no generic fixed length byte array here.
         // Use this to define the fixed length byte arrays needed in your code.
         #[allow(non_camel_case_types)]
-        #[derive(Clone, Copy)]
+        #[derive(core::clone::Clone, Copy)]
         pub struct $name<T>(pub [T; $l]);
 
         impl<T: Numeric + Copy> $name<T> {

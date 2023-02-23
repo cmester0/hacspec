@@ -94,7 +94,8 @@ impl From<LogError> for Reject {
     }
 }
 
-#[derive(Clone)] // , Debug, PartialEq, Eq
+// #[derive(Clone)]
+// , Debug, PartialEq, Eq
 pub enum NewContractNameError {
     NewContractNameErrorMissingInitPrefix,
     NewContractNameErrorTooLong,
@@ -123,7 +124,8 @@ impl From<NewContractNameError> for Reject {
     }
 }
 
-#[derive(Clone)] // , Debug, PartialEq, Eq
+// #[derive(Clone)]
+// , Debug, PartialEq, Eq
 pub enum NewReceiveNameError {
     NewReceiveNameErrorMissingDotSeparator,
     NewReceiveNameErrorTooLong,
@@ -165,7 +167,8 @@ impl From<NotPayableError> for Reject {
 
 pub type ContractStateHacspec = u32;
 
-#[derive(Copy, Clone)] // , Debug, PartialEq, Eq
+// #[derive(Copy, Clone)]
+// , Debug, PartialEq, Eq
 pub enum SeekFromHacspec {
     /// Sets the offset to the provided number of bytes.
     Start(u64),
@@ -191,41 +194,41 @@ pub type I64Option = Option<i64>;
 // #[requires(forall<delta : i64> pos === SeekFrom::End(delta) ==> exists<b : u32> current_position.checked_add(delta as u32) == U32Option::Some(b))]
 pub fn contract_state_impl_seek(current_position: ContractStateHacspec, end : u32, pos: SeekFromHacspec) -> Result<(ContractStateHacspec, u64), ()> {
     match pos {
-        SeekFromHacspec::Start(offset) => Result::<(ContractStateHacspec, u64), ()>::Ok((offset as u32, offset)),
+        SeekFromHacspec::Start(offset) => Ok((offset as u32, offset)),
         SeekFromHacspec::End(delta) => {
             if delta >= 0_i64 {
                 match current_position.checked_add(delta as u32) {
-                    U32Option::Some(b) => Result::<(ContractStateHacspec, u64), ()>::Ok((b, b as u64)),
-                    U32Option::None => Result::<(ContractStateHacspec, u64), ()>::Err(()),
+                    U32Option::Some(b) => Ok((b, b as u64)),
+                    U32Option::None => Err(()),
                 }
             } else {
                 match delta.checked_abs() {
                     I64Option::Some(before) =>
                     {
                         if (before as u32) <= end {
-                            Result::<(ContractStateHacspec, u64), ()>::Ok(((end - (before as u32)), (end - (before as u32)) as u64))
+                            Ok(((end - (before as u32)), (end - (before as u32)) as u64))
                         }
                         else {
-                            Result::<(ContractStateHacspec, u64), ()>::Err(())
+                            Err(())
                         }
                     }
-                    I64Option::None => Result::<(ContractStateHacspec, u64), ()>::Err(()),
+                    I64Option::None => Err(()),
                 }
             }
         }
         SeekFromHacspec::Current(delta) => {
             if delta >= 0_i64 {
                 match current_position.checked_add(delta as u32) {
-                    U32Option::Some(offset) => Result::<(ContractStateHacspec, u64), ()>::Ok((offset, offset as u64)),
-                    U32Option::None => Result::<(ContractStateHacspec, u64), ()>::Err(()),
+                    U32Option::Some(offset) => Ok((offset, offset as u64)),
+                    U32Option::None => Err(()),
                 }
             } else {
                 match delta.checked_abs() {
                     I64Option::Some(b) => match current_position.checked_sub(b as u32) {
-                        U32Option::Some(offset) => Result::<(ContractStateHacspec, u64), ()>::Ok((offset, offset as u64)),
-                        U32Option::None => Result::<(ContractStateHacspec, u64), ()>::Err(()),
+                        U32Option::Some(offset) => Ok((offset, offset as u64)),
+                        U32Option::None => Err(()),
                     },
-                    I64Option::None => Result::<(ContractStateHacspec, u64), ()>::Err(()),
+                    I64Option::None => Err(()),
                 }
             }
         }
@@ -302,9 +305,9 @@ pub fn contract_state_impl_read_read_u64(
     let (buf, num_read) = load_state_hacspec(buf, current_position);
     (current_position + num_read,
      if num_read == 8u32 {
-         Result::<u64, ()>::Ok(u64_from_le_bytes(u64Word::from_seq(&buf)))
+         Ok(u64_from_le_bytes(u64Word::from_seq(&buf)))
      } else {
-         Result::<u64, ()>::Err(())
+         Err(())
      }) // num_read as u64
 }
 
@@ -318,9 +321,9 @@ pub fn contract_state_impl_read_read_u32(
     let (buf, num_read) = load_state_hacspec(buf, current_position);
     (current_position + num_read,
      if num_read == 4u32 {
-         Result::<u32, ()>::Ok(u32_from_le_bytes(u32Word::from_seq(&buf)))
+         Ok(u32_from_le_bytes(u32Word::from_seq(&buf)))
      } else {
-         Result::<u32, ()>::Err(())
+         Err(())
      }) // num_read as u64
 }
 
@@ -333,9 +336,9 @@ pub fn contract_state_impl_read_read_u8(
     let (buf, num_read) = load_state_hacspec(buf, current_position);
     (current_position + num_read,
      if num_read == 1u32 {
-         Result::<u8, ()>::Ok(buf[0])
+         Ok(buf[0])
      } else {
-         Result::<u8, ()>::Err(())
+         Err(())
      }) // num_read as u64
 }
 
@@ -358,8 +361,11 @@ impl Read for ContractState {
             contract_state_impl_read_read_u64(coerce_rust_to_hacspec_contract_state(self));
         coerce_hacspec_to_rust_contract_state(self, cs);
         match nr {
-            Result::<u64, ()>::Ok(a) => ParseResult::<u64>::Ok(a),
-            Result::<u64, ()>::Err(_) => ParseResult::<u64>::Err(ParseError::default()),
+            // Result::<u64, ()>::
+            Ok(a) => Ok(a),
+            // Result::<u64, ()>::
+            Err(_) => Err(ParseError {}// ::default()
+            ),
         }
     }
 
@@ -370,8 +376,11 @@ impl Read for ContractState {
             contract_state_impl_read_read_u32(coerce_rust_to_hacspec_contract_state(self));
         coerce_hacspec_to_rust_contract_state(self, cs);
         match nr {
-            Result::<u32, ()>::Ok(a) => ParseResult::<u32>::Ok(a),
-            Result::<u32, ()>::Err(_) => ParseResult::<u32>::Err(ParseError::default()),
+            // Result::<u32, ()>::
+            Ok(a) => Ok(a),
+            // Result::<u32, ()>::
+            Err(_) => Err(ParseError {} // ::default()
+            ),
         }
     }
 
@@ -382,8 +391,9 @@ impl Read for ContractState {
             contract_state_impl_read_read_u8(coerce_rust_to_hacspec_contract_state(self));
         coerce_hacspec_to_rust_contract_state(self, cs);
         match nr {
-            Result::<u8, ()>::Ok(a) => ParseResult::<u8>::Ok(a),
-            Result::<u8, ()>::Err(_) => ParseResult::<u8>::Err(ParseError::default()),
+            Ok(a) => Ok(a),
+            Err(_) => Err(ParseError {}// ::default()
+            ),
         }
     }
 }
@@ -393,10 +403,10 @@ pub fn contract_state_impl_write(
     buf: PublicByteSeq,
 ) -> Result<(ContractStateHacspec, usize), ()> {
     if current_position.checked_add(buf.len() as u32).is_none() {
-        Result::<(ContractStateHacspec, usize), ()>::Err(())?;
+        Err(())?;
     }
     let (_buf, num_bytes) = write_state_hacspec(buf, current_position);
-    Result::<(ContractStateHacspec, usize), ()>::Ok((
+    Ok((
         current_position + num_bytes,
         num_bytes as usize,
     ))
@@ -678,9 +688,20 @@ fn iterator_impl_for_policies_iterator_next(
     ))
 }
 
+use creusot_contracts::invariant::Invariant;
+use creusot_contracts::std::iter::MapInv;
+impl Invariant for PoliciesIterator {
+    #[predicate]
+    fn invariant(self) -> bool {
+        true
+    }
+}
+
+
+
 // TODO: Fix creusot issues?
 #[cfg(not(feature = "hacspec"))]
-impl core::iter::Iterator for PoliciesIterator {
+impl ::std::iter::Iterator for PoliciesIterator {
     type Item = Policy<AttributesCursor>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -705,6 +726,52 @@ impl core::iter::Iterator for PoliciesIterator {
     fn size_hint(&self) -> (usize, Option<usize>) {
         let rem = self.remaining_items as usize;
         (rem, Some(rem))
+    }
+}
+
+// TODO: Fix creusot issues?
+#[cfg(not(feature = "hacspec"))]
+impl creusot_contracts::Iterator for PoliciesIterator {
+    #[predicate]
+    fn produces(self, visited: creusot_contracts::Seq<Self::Item>, _: Self) -> bool {
+        true
+    }
+
+    #[predicate]
+    fn completed(&mut self) -> bool {
+        false
+    }
+
+    #[law]
+    #[requires(a.invariant())]
+    #[ensures(a.produces(Seq::EMPTY, a))]
+    fn produces_refl(a: Self) {
+
+    }
+
+    #[law]
+    #[requires(a.invariant())]
+    #[requires(b.invariant())]
+    #[requires(c.invariant())]
+    #[requires(a.produces(ab, b))]
+    #[requires(b.produces(bc, c))]
+    #[ensures(a.produces(ab.concat(bc), c))]
+    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {
+
+    }
+
+    #[requires(forall<e : Self::Item, i2 : Self> i2.invariant() ==> self.produces(Seq::singleton(e), i2) ==> func.precondition((e, Ghost::new(Seq::EMPTY))))]
+    #[requires(MapInv::<Self, _, F>::reinitialize())]
+    #[requires(MapInv::<Self, Self::Item, F>::preservation(self, func))]
+    #[requires(self.invariant())]
+    #[ensures(result.invariant())]
+    #[ensures(result == MapInv { iter: self, func, produced: Ghost::new(Seq::EMPTY) })]
+    fn map_inv<B, F>(self, func: F) -> MapInv<Self, Self::Item, F>
+    where
+        Self: Sized,
+        F: FnMut(Self::Item, Ghost<Seq<Self::Item>>) -> B,
+    {
+        MapInv { iter: self, func, produced: ghost! {Seq::EMPTY} }
     }
 }
 
@@ -757,7 +824,7 @@ impl HasInitContext for ExternContext<InitContextExtern> {
 
     #[inline(always)]
     fn init_origin(&self) -> AccountAddress {
-        let mut address : [u8; ACCOUNT_ADDRESS_SIZE] = core::default::Default::default();
+        let mut address : [u8; ACCOUNT_ADDRESS_SIZE] = Default::default();
         let temp = coerce_hacspec_to_rust_public_byte_seq(get_init_origin_hacspec(
             PublicByteSeq::new(ACCOUNT_ADDRESS_SIZE),
         ));
@@ -779,7 +846,7 @@ impl HasReceiveContext for ExternContext<ReceiveContextExtern> {
     // TODO: Make usable by creusot
     #[inline(always)]
     fn invoker(&self) -> AccountAddress {
-        let mut address: [u8; ACCOUNT_ADDRESS_SIZE] = core::default::Default::default();
+        let mut address: [u8; ACCOUNT_ADDRESS_SIZE] = Default::default();
         address.clone_from_slice(
             &mut coerce_hacspec_to_rust_public_byte_seq(get_receive_invoker_hacspec(
                 PublicByteSeq::new(ACCOUNT_ADDRESS_SIZE),
@@ -791,7 +858,7 @@ impl HasReceiveContext for ExternContext<ReceiveContextExtern> {
     // TODO: Make usable by creusot
     #[inline(always)]
     fn self_address(&self) -> ContractAddress {
-        let mut address: [u8; ACCOUNT_ADDRESS_SIZE] = core::default::Default::default();
+        let mut address: [u8; ACCOUNT_ADDRESS_SIZE] = Default::default();
         address.clone_from_slice(
             &mut coerce_hacspec_to_rust_public_byte_seq(get_receive_self_address_hacspec(
                 PublicByteSeq::new(ACCOUNT_ADDRESS_SIZE),
@@ -818,7 +885,7 @@ impl HasReceiveContext for ExternContext<ReceiveContextExtern> {
         let tag = unsafe { *ptr };
         match tag {
             0u8 => {
-                match concordium_contracts_common::from_bytes(unsafe { core::slice::from_raw_parts(
+                match concordium_contracts_common::from_bytes(unsafe { slice::from_raw_parts(
                     ptr.add(1),
                     ACCOUNT_ADDRESS_SIZE,
                 )} ) {
@@ -826,7 +893,7 @@ impl HasReceiveContext for ExternContext<ReceiveContextExtern> {
                     Err(_) => trap(),
                 }
             }
-            1u8 => match concordium_contracts_common::from_bytes(unsafe { core::slice::from_raw_parts(ptr.add(1), 16) }) {
+            1u8 => match concordium_contracts_common::from_bytes(unsafe { slice::from_raw_parts(ptr.add(1), 16) }) {
                 Ok(v) => Address::Contract(v),
                 Err(_) => trap(),
             },
@@ -837,7 +904,7 @@ impl HasReceiveContext for ExternContext<ReceiveContextExtern> {
     // TODO: Make usable by creusot
     #[inline(always)]
     fn owner(&self) -> AccountAddress {
-        let mut address: [u8; ACCOUNT_ADDRESS_SIZE] = core::default::Default::default();
+        let mut address: [u8; ACCOUNT_ADDRESS_SIZE] = Default::default();
         address.clone_from_slice(
             &mut coerce_hacspec_to_rust_public_byte_seq(get_receive_self_address_hacspec(
                 PublicByteSeq::new(ACCOUNT_ADDRESS_SIZE),
@@ -996,9 +1063,9 @@ pub fn put_in_memory(input: &[u8]) -> *mut u8 {
     bytes.extend_from_slice(input);
     let ptr = bytes.as_mut_ptr();
     #[cfg(feature = "std")]
-    ::std::mem::forget(bytes);
+    creusot_contracts::std::mem::forget(bytes);
     #[cfg(not(feature = "std"))]
-    core::mem::forget(bytes);
+    mem::forget(bytes);
     ptr
 }
 
@@ -1112,7 +1179,7 @@ impl<A> ExpectReport for Option<A> {
     fn expect_report(self, msg: &str) -> Self::Unwrap {
         match self {
             Some(v) => v,
-            None => fail!(), // ("{}", msg),
+            None => panic!(), // fail!("{}", msg),
         }
     }
 }
@@ -1128,18 +1195,18 @@ impl<A> ExpectReport for Option<A> {
 //     }
 // }
 
-// TODO: Remove / is not in concordium-std??
-#[cfg(not(feature = "hacspec"))]
-/// Write a [BTreeSet](https://doc.rust-lang.org/std/collections/struct.BTreeSet.html) as an ascending list of keys, without the length information.
-pub fn serial_set_no_length<W: Write, K: Serial>(
-    map: &BTreeSet<K>,
-    out: &mut W,
-) -> Result<(), W::Err> {
-    for k in map.iter() {
-        k.serial(out)?;
-    }
-    Ok(())
-}
+// // TODO: Remove / is not in concordium-std??
+// #[cfg(not(feature = "hacspec"))]
+// /// Write a [BTreeSet](https://doc.rust-lang.org/std/collections/struct.BTreeSet.html) as an ascending list of keys, without the length information.
+// pub fn serial_set_no_length<W: Write, K: Serial>(
+//     map: &BTreeSet<K>,
+//     out: &mut W,
+// ) -> Result<(), W::Err> {
+//     for k in map.iter() {
+//         k.serial(out)?;
+//     }
+//     Ok(())
+// }
 
 #[cfg(not(feature = "hacspec"))]
 impl<K: Serial + Ord> SerialCtx for BTreeSet<K> {
@@ -1154,48 +1221,48 @@ impl<K: Serial + Ord> SerialCtx for BTreeSet<K> {
     }
 }
 
-// TODO: Remove / is not in concordium-std??
-#[cfg(not(feature = "hacspec"))]
-/// Read a [BTreeSet](https://doc.rust-lang.org/std/collections/struct.BTreeSet.html) as a list of keys, given some length.
-/// NB: This ensures there are no duplicates, hence the specialized type.
-/// Moreover this will only succeed if keys are listed in order.
-pub fn deserial_set_no_length<R: Read, K: Deserial + Ord + Copy>(
-    source: &mut R,
-    len: usize,
-) -> ParseResult<BTreeSet<K>> {
-    let mut out = BTreeSet::new();
-    let mut prev = None;
-    for _ in 0..len {
-        let key = source.get()?;
-        let next = Some(key);
-        if next <= prev {
-            return Err(ParseError::default());
-        }
-        out.insert(key);
-        prev = next;
-    }
-    Ok(out)
-}
+// // TODO: Remove / is not in concordium-std??
+// #[cfg(not(feature = "hacspec"))]
+// /// Read a [BTreeSet](https://doc.rust-lang.org/std/collections/struct.BTreeSet.html) as a list of keys, given some length.
+// /// NB: This ensures there are no duplicates, hence the specialized type.
+// /// Moreover this will only succeed if keys are listed in order.
+// pub fn deserial_set_no_length<R: Read, K: Deserial + Ord + Copy>(
+//     source: &mut R,
+//     len: usize,
+// ) -> ParseResult<BTreeSet<K>> {
+//     let mut out = BTreeSet::new();
+//     let mut prev = None;
+//     for _ in 0..len {
+//         let key = source.get()?;
+//         let next = Some(key);
+//         if next <= prev {
+//             return Err(ParseError::default());
+//         }
+//         out.insert(key);
+//         prev = next;
+//     }
+//     Ok(out)
+// }
 
-// TODO: Remove / is not in concordium-std??
-#[cfg(not(feature = "hacspec"))]
-/// Read a [BTreeSet](https://doc.rust-lang.org/std/collections/struct.BTreeSet.html) as an list of key-value pairs given some length.
-/// Slightly faster version of `deserial_set_no_length` as it is skipping the
-/// order checking. The only check that is made to the set is that there are no
-/// duplicates.
-pub fn deserial_set_no_length_no_order_check<R: Read, K: Deserial + Ord>(
-    source: &mut R,
-    len: usize,
-) -> ParseResult<BTreeSet<K>> {
-    let mut out = BTreeSet::new();
-    for _ in 0..len {
-        let key = source.get()?;
-        if !out.insert(key) {
-            return Err(ParseError::default());
-        }
-    }
-    Ok(out)
-}
+// // TODO: Remove / is not in concordium-std??
+// #[cfg(not(feature = "hacspec"))]
+// /// Read a [BTreeSet](https://doc.rust-lang.org/std/collections/struct.BTreeSet.html) as an list of key-value pairs given some length.
+// /// Slightly faster version of `deserial_set_no_length` as it is skipping the
+// /// order checking. The only check that is made to the set is that there are no
+// /// duplicates.
+// pub fn deserial_set_no_length_no_order_check<R: Read, K: Deserial + Ord>(
+//     source: &mut R,
+//     len: usize,
+// ) -> ParseResult<BTreeSet<K>> {
+//     let mut out = BTreeSet::new();
+//     for _ in 0..len {
+//         let key = source.get()?;
+//         if !out.insert(key) {
+//             return Err(ParseError::default());
+//         }
+//     }
+//     Ok(out)
+// }
 
 #[cfg(not(feature = "hacspec"))]
 impl<K: Deserial + Ord + Copy> DeserialCtx for BTreeSet<K> {
@@ -1215,20 +1282,20 @@ impl<K: Deserial + Ord + Copy> DeserialCtx for BTreeSet<K> {
     }
 }
 
-// TODO: Remove / is not in concordium-std??
-#[cfg(not(feature = "hacspec"))]
-/// Write a Map as a list of key-value pairs ordered by the key, without the
-/// length information.
-pub fn serial_map_no_length<W: Write, K: Serial, V: Serial>(
-    map: &BTreeMap<K, V>,
-    out: &mut W,
-) -> Result<(), W::Err> {
-    for (k, v) in map.iter() {
-        k.serial(out)?;
-        v.serial(out)?;
-    }
-    Ok(())
-}
+// // TODO: Remove / is not in concordium-std??
+// #[cfg(not(feature = "hacspec"))]
+// /// Write a Map as a list of key-value pairs ordered by the key, without the
+// /// length information.
+// pub fn serial_map_no_length<W: Write, K: Serial, V: Serial>(
+//     map: &BTreeMap<K, V>,
+//     out: &mut W,
+// ) -> Result<(), W::Err> {
+//     for (k, v) in map.iter() {
+//         k.serial(out)?;
+//         v.serial(out)?;
+//     }
+//     Ok(())
+// }
 
 #[cfg(not(feature = "hacspec"))]
 impl<K: Serial + Ord, V: Serial> SerialCtx for BTreeMap<K, V> {
@@ -1243,56 +1310,56 @@ impl<K: Serial + Ord, V: Serial> SerialCtx for BTreeMap<K, V> {
     }
 }
 
-// TODO: Remove / is not in concordium-std??
-#[cfg(not(feature = "hacspec"))]
-/// Read a [BTreeMap](https://doc.rust-lang.org/std/collections/struct.BTreeMap.html) as a list of key-value pairs given some length.
-/// NB: This ensures there are no duplicates, hence the specialized type.
-/// Moreover this will only succeed if keys are listed in order.
-pub fn deserial_map_no_length<R: Read, K: Deserial + Ord + Copy, V: Deserial>(
-    source: &mut R,
-    len: usize,
-) -> ParseResult<BTreeMap<K, V>> {
-    let mut out = BTreeMap::new();
-    let mut x = None;
-    for _ in 0..len {
-        let k = source.get()?;
-        let v = source.get()?;
-        match x {
-            None => {
-                out.insert(k, v);
-            }
-            Some(kk) => {
-                if k > kk {
-                    out.insert(k, v);
-                } else {
-                    return Err(ParseError::default());
-                }
-            }
-        }
-        x = Some(k);
-    }
-    Ok(out)
-}
+// // TODO: Remove / is not in concordium-std??
+// #[cfg(not(feature = "hacspec"))]
+// /// Read a [BTreeMap](https://doc.rust-lang.org/std/collections/struct.BTreeMap.html) as a list of key-value pairs given some length.
+// /// NB: This ensures there are no duplicates, hence the specialized type.
+// /// Moreover this will only succeed if keys are listed in order.
+// pub fn deserial_map_no_length<R: Read, K: Deserial + Ord + Copy, V: Deserial>(
+//     source: &mut R,
+//     len: usize,
+// ) -> ParseResult<BTreeMap<K, V>> {
+//     let mut out = BTreeMap::new();
+//     let mut x = None;
+//     for _ in 0..len {
+//         let k = source.get()?;
+//         let v = source.get()?;
+//         match x {
+//             None => {
+//                 out.insert(k, v);
+//             }
+//             Some(kk) => {
+//                 if k > kk {
+//                     out.insert(k, v);
+//                 } else {
+//                     return Err(ParseError::default());
+//                 }
+//             }
+//         }
+//         x = Some(k);
+//     }
+//     Ok(out)
+// }
 
-// TODO: Remove / is not in concordium-std??
-#[cfg(not(feature = "hacspec"))]  
-/// Read a [BTreeMap](https://doc.rust-lang.org/std/collections/struct.BTreeMap.html) as a list of key-value pairs given some length.
-/// Slightly faster version of `deserial_map_no_length` as it is skipping the
-/// order checking
-pub fn deserial_map_no_length_no_order_check<R: Read, K: Deserial + Ord, V: Deserial>(
-    source: &mut R,
-    len: usize,
-) -> ParseResult<BTreeMap<K, V>> {
-    let mut out = BTreeMap::new();
-    for _ in 0..len {
-        let k = source.get()?;
-        let v = source.get()?;
-        if out.insert(k, v).is_some() {
-            return Err(ParseError::default());
-        }
-    }
-    Ok(out)
-}
+// // TODO: Remove / is not in concordium-std??
+// #[cfg(not(feature = "hacspec"))]  
+// /// Read a [BTreeMap](https://doc.rust-lang.org/std/collections/struct.BTreeMap.html) as a list of key-value pairs given some length.
+// /// Slightly faster version of `deserial_map_no_length` as it is skipping the
+// /// order checking
+// pub fn deserial_map_no_length_no_order_check<R: Read, K: Deserial + Ord, V: Deserial>(
+//     source: &mut R,
+//     len: usize,
+// ) -> ParseResult<BTreeMap<K, V>> {
+//     let mut out = BTreeMap::new();
+//     for _ in 0..len {
+//         let k = source.get()?;
+//         let v = source.get()?;
+//         if out.insert(k, v).is_some() {
+//             return Err(ParseError::default());
+//         }
+//     }
+//     Ok(out)
+// }
 
 #[cfg(not(feature = "hacspec"))]  
 impl<K: Deserial + Ord + Copy, V: Deserial> DeserialCtx for BTreeMap<K, V> {
@@ -1312,18 +1379,18 @@ impl<K: Deserial + Ord + Copy, V: Deserial> DeserialCtx for BTreeMap<K, V> {
     }
 }
 
-// TODO: Remove / is not in concordium-std??
-#[cfg(not(feature = "hacspec"))]
-/// Write a [HashSet](https://doc.rust-lang.org/std/collections/struct.HashSet.html) as a list of keys in no particular order, without the length information.
-pub fn serial_hashset_no_length<W: Write, K: Serial>(
-    map: &HashSet<K>,
-    out: &mut W,
-) -> Result<(), W::Err> {
-    for k in map.iter() {
-        k.serial(out)?;
-    }
-    Ok(())
-}
+// // TODO: Remove / is not in concordium-std??
+// #[cfg(not(feature = "hacspec"))]
+// /// Write a [HashSet](https://doc.rust-lang.org/std/collections/struct.HashSet.html) as a list of keys in no particular order, without the length information.
+// pub fn serial_hashset_no_length<W: Write, K: Serial>(
+//     map: &HashSet<K>,
+//     out: &mut W,
+// ) -> Result<(), W::Err> {
+//     for k in map.iter() {
+//         k.serial(out)?;
+//     }
+//     Ok(())
+// }
 
 #[cfg(not(feature = "hacspec"))]
 /// Serialization for HashSet given a size_len.
@@ -1340,23 +1407,23 @@ impl<K: Serial> SerialCtx for HashSet<K> {
     }
 }
 
-// TODO: Remove / is not in concordium-std??
-#[cfg(not(feature = "hacspec"))]
-/// Read a [HashSet](https://doc.rust-lang.org/std/collections/struct.HashSet.html) as a list of keys, given some length.
-/// NB: This ensures there are no duplicates.
-pub fn deserial_hashset_no_length<R: Read, K: Deserial + Eq + Hash>(
-    source: &mut R,
-    len: usize,
-) -> ParseResult<HashSet<K>> {
-    let mut out = HashSet::default();
-    for _ in 0..len {
-        let key = source.get()?;
-        if !out.insert(key) {
-            return Err(ParseError::default());
-        }
-    }
-    Ok(out)
-}
+// // TODO: Remove / is not in concordium-std??
+// #[cfg(not(feature = "hacspec"))]
+// /// Read a [HashSet](https://doc.rust-lang.org/std/collections/struct.HashSet.html) as a list of keys, given some length.
+// /// NB: This ensures there are no duplicates.
+// pub fn deserial_hashset_no_length<R: Read, K: Deserial + Eq + Hash>(
+//     source: &mut R,
+//     len: usize,
+// ) -> ParseResult<HashSet<K>> {
+//     let mut out = HashSet::default();
+//     for _ in 0..len {
+//         let key = source.get()?;
+//         if !out.insert(key) {
+//             return Err(ParseError::default());
+//         }
+//     }
+//     Ok(out)
+// }
 
 #[cfg(not(feature = "hacspec"))]  
 /// Deserialization for HashSet given a size_len.
@@ -1373,20 +1440,20 @@ impl<K: Deserial + Eq + Hash> DeserialCtx for HashSet<K> {
     }
 }
 
-// TODO: Remove / is not in concordium-std??
-#[cfg(not(feature = "hacspec"))]  
-/// Write a HashMap as a list of key-value pairs in to particular order, without
-/// the length information.
-pub fn serial_hashmap_no_length<W: Write, K: Serial, V: Serial>(
-    map: &HashMap<K, V>,
-    out: &mut W,
-) -> Result<(), W::Err> {
-    for (k, v) in map.iter() {
-        k.serial(out)?;
-        v.serial(out)?;
-    }
-    Ok(())
-}
+// // TODO: Remove / is not in concordium-std??
+// #[cfg(not(feature = "hacspec"))]  
+// /// Write a HashMap as a list of key-value pairs in to particular order, without
+// /// the length information.
+// pub fn serial_hashmap_no_length<W: Write, K: Serial, V: Serial>(
+//     map: &HashMap<K, V>,
+//     out: &mut W,
+// ) -> Result<(), W::Err> {
+//     for (k, v) in map.iter() {
+//         k.serial(out)?;
+//         v.serial(out)?;
+//     }
+//     Ok(())
+// }
 
 #[cfg(not(feature = "hacspec"))]  
 /// Serialization for HashMap given a size_len.
@@ -1402,23 +1469,23 @@ impl<K: Serial, V: Serial> SerialCtx for HashMap<K, V> {
     }
 }
 
-// TODO: Remove / is not in concordium-std??
-#[cfg(not(feature = "hacspec"))]
-/// Read a [HashMap](https://doc.rust-lang.org/std/collections/struct.HashMap.html) as a list of key-value pairs given some length.
-pub fn deserial_hashmap_no_length<R: Read, K: Deserial + Eq + Hash, V: Deserial>(
-    source: &mut R,
-    len: usize,
-) -> ParseResult<HashMap<K, V>> {
-    let mut out = HashMap::default();
-    for _ in 0..len {
-        let k = source.get()?;
-        let v = source.get()?;
-        if out.insert(k, v).is_some() {
-            return Err(ParseError::default());
-        }
-    }
-    Ok(out)
-}
+// // TODO: Remove / is not in concordium-std??
+// #[cfg(not(feature = "hacspec"))]
+// /// Read a [HashMap](https://doc.rust-lang.org/std/collections/struct.HashMap.html) as a list of key-value pairs given some length.
+// pub fn deserial_hashmap_no_length<R: Read, K: Deserial + Eq + Hash, V: Deserial>(
+//     source: &mut R,
+//     len: usize,
+// ) -> ParseResult<HashMap<K, V>> {
+//     let mut out = HashMap::default();
+//     for _ in 0..len {
+//         let k = source.get()?;
+//         let v = source.get()?;
+//         if out.insert(k, v).is_some() {
+//             return Err(ParseError::default());
+//         }
+//     }
+//     Ok(out)
+// }
 
 #[cfg(not(feature = "hacspec"))]
 /// Deserialization for HashMap given a size_len.
@@ -1474,7 +1541,8 @@ impl<T: Serial> SerialCtx for Vec<T> {
 
 // TODO: Remove / is not in concordium-std??
 #[cfg(not(feature = "hacspec"))]
-pub(crate) static MAX_PREALLOCATED_CAPACITY: usize = 4096;
+pub(crate) // static 
+    const MAX_PREALLOCATED_CAPACITY: usize = 4096;
 
 // TODO: Remove / is not in concordium-std??
 #[cfg(not(feature = "hacspec"))]
@@ -1525,17 +1593,17 @@ impl SerialCtx for String {
     }
 }
 
-#[cfg(not(feature = "hacspec"))]  
-impl DeserialCtx for String {
-    fn deserial_ctx<R: Read>(
-        size_len: concordium_contracts_common::schema::SizeLength,
-        _ensure_ordered: bool,
-        source: &mut R,
-    ) -> ParseResult<Self> {
-        let len = concordium_contracts_common::schema::deserial_length(source, size_len)?;
-        let bytes = deserial_vector_no_length(source, len)?;
-        let res = String::from_utf8(bytes).map_err(|_| ParseError::default())?;
-        Ok(res)
-    }
-}
+// #[cfg(not(feature = "hacspec"))]  
+// impl DeserialCtx for String {
+//     fn deserial_ctx<R: Read>(
+//         size_len: concordium_contracts_common::schema::SizeLength,
+//         _ensure_ordered: bool,
+//         source: &mut R,
+//     ) -> ParseResult<Self> {
+//         let len = concordium_contracts_common::schema::deserial_length(source, size_len)?;
+//         let bytes = deserial_vector_no_length(source, len)?;
+//         let res = String::from_utf8(bytes).map_err(|_| ParseError::default())?;
+//         Ok(res)
+//     }
+// }
 

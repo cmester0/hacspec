@@ -72,13 +72,26 @@
 //! ```
 //!
 
-#![no_std]
+// #![no_std]
 
-extern crate alloc;
-use alloc::vec::Vec;
+// extern crate alloc;
+// use alloc::vec::Vec;
 
-use core::num::Wrapping;
-use core::ops::*;
+// use core::num::Wrapping;
+// use core::ops::*;
+
+extern crate creusot_contracts;
+use creusot_contracts::*;
+use creusot_contracts::std::*;
+
+use creusot_contracts::{
+    std::{clone::Clone, cmp::PartialEq},
+    *,
+};
+
+use creusot_contracts::std::ops::*;
+use creusot_contracts::std::num::Wrapping;
+use creusot_contracts::std::fmt;
 
 use creusot_contracts::pearlite;
 use creusot_contracts::predicate;
@@ -436,6 +449,7 @@ macro_rules! define_secret_unsigned_integer {
             /// Produces a new integer which is all ones if the first argument is different from
             /// the second argument, and all zeroes otherwise.
             #[inline]
+            #[trusted]
             pub fn comp_ne(self, rhs: Self) -> Self {
                 !self.comp_eq(rhs)
             }
@@ -461,6 +475,7 @@ macro_rules! define_secret_unsigned_integer {
             /// Produces a new integer which is all ones if the first argument is strictly greater
             /// than the second argument, and all zeroes otherwise.
             #[inline]
+            #[trusted]
             pub fn comp_gt(self, rhs: Self) -> Self {
                 self.comp_gte(rhs) ^ self.comp_eq(rhs)
             }
@@ -468,6 +483,7 @@ macro_rules! define_secret_unsigned_integer {
             /// Produces a new integer which is all ones if the first argument is less than or
             /// equal to the second argument, and all zeroes otherwise.
             #[inline]
+            #[trusted]
             pub fn comp_lte(self, rhs: Self) -> Self {
                 !self.comp_gt(rhs)
             }
@@ -475,6 +491,7 @@ macro_rules! define_secret_unsigned_integer {
             /// Produces a new integer which is all ones if the first argument is strictly less than
             /// the second argument, and all zeroes otherwise.
             #[inline]
+            #[trusted]
             pub fn comp_lt(self, rhs: Self) -> Self {
                 !self.comp_gte(rhs)
             }

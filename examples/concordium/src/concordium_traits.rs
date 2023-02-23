@@ -1,9 +1,9 @@
 #[cfg(not(feature = "hacspec"))]
 use crate::*;
 
-// //! This module implements traits for the contract interface.
-// //! This allows setting-up mock objects for testing individual
-// //! contract invocations.
+///! This module implements traits for the contract interface.
+///! This allows setting-up mock objects for testing individual
+///! contract invocations.
 
 #[cfg(not(feature = "hacspec"))]
 /// Objects which can access parameters to contracts.
