@@ -7,6 +7,7 @@ Open Scope Z_scope.
 Open Scope bool_scope.
 Open Scope hacspec_scope.
 Require Import Hacspec_Lib.
+Export Hacspec_Lib.
 
 Definition state_t := nseq (uint32) (usize 16).
 
@@ -29,195 +30,215 @@ Definition cha_cha_iv_t := nseq (uint8) (usize 12).
 Definition cha_cha_key_t := nseq (uint8) (usize 32).
 
 Definition chacha20_line
-  (a_345 : state_idx_t)
-  (b_346 : state_idx_t)
-  (d_347 : state_idx_t)
-  (s_348 : uint_size)
-  (m_349 : state_t)
+  (a_195 : state_idx_t)
+  (b_196 : state_idx_t)
+  (d_197 : state_idx_t)
+  (s_198 : uint_size)
+  (m_199 : state_t)
+  
   : state_t :=
-  let state_350 : state_t :=
-    m_349 in 
-  let state_350 :=
-    array_upd state_350 (a_345) ((array_index (state_350) (a_345)) .+ (
-        array_index (state_350) (b_346))) in 
-  let state_350 :=
-    array_upd state_350 (d_347) ((array_index (state_350) (d_347)) .^ (
-        array_index (state_350) (a_345))) in 
-  let state_350 :=
-    array_upd state_350 (d_347) (uint32_rotate_left (array_index (state_350) (
-          d_347)) (s_348)) in 
-  state_350.
+  let state_200 : state_t :=
+    m_199 in 
+  let state_200 :=
+    array_upd state_200 (a_195) ((array_index (state_200) (a_195)) .+ (
+        array_index (state_200) (b_196))) in 
+  let state_200 :=
+    array_upd state_200 (d_197) ((array_index (state_200) (d_197)) .^ (
+        array_index (state_200) (a_195))) in 
+  let state_200 :=
+    array_upd state_200 (d_197) (uint32_rotate_left (array_index (state_200) (
+          d_197)) (s_198)) in 
+  state_200.
+
 
 Definition chacha20_quarter_round
-  (a_351 : state_idx_t)
-  (b_352 : state_idx_t)
-  (c_353 : state_idx_t)
-  (d_354 : state_idx_t)
-  (state_355 : state_t)
+  (a_201 : state_idx_t)
+  (b_202 : state_idx_t)
+  (c_203 : state_idx_t)
+  (d_204 : state_idx_t)
+  (state_205 : state_t)
+  
   : state_t :=
-  let state_356 : state_t :=
-    chacha20_line (a_351) (b_352) (d_354) (usize 16) (state_355) in 
-  let state_357 : state_t :=
-    chacha20_line (c_353) (d_354) (b_352) (usize 12) (state_356) in 
-  let state_358 : state_t :=
-    chacha20_line (a_351) (b_352) (d_354) (usize 8) (state_357) in 
-  chacha20_line (c_353) (d_354) (b_352) (usize 7) (state_358).
+  let state_206 : state_t :=
+    chacha20_line (a_201) (b_202) (d_204) (usize 16) (state_205) in 
+  let state_207 : state_t :=
+    chacha20_line (c_203) (d_204) (b_202) (usize 12) (state_206) in 
+  let state_208 : state_t :=
+    chacha20_line (a_201) (b_202) (d_204) (usize 8) (state_207) in 
+  chacha20_line (c_203) (d_204) (b_202) (usize 7) (state_208).
 
-Definition chacha20_double_round (state_359 : state_t) : state_t :=
-  let state_360 : state_t :=
+
+Definition chacha20_double_round (state_209 : state_t)  : state_t :=
+  let state_210 : state_t :=
     chacha20_quarter_round (usize 0) (usize 4) (usize 8) (usize 12) (
-      state_359) in 
-  let state_361 : state_t :=
+      state_209) in 
+  let state_211 : state_t :=
     chacha20_quarter_round (usize 1) (usize 5) (usize 9) (usize 13) (
-      state_360) in 
-  let state_362 : state_t :=
+      state_210) in 
+  let state_212 : state_t :=
     chacha20_quarter_round (usize 2) (usize 6) (usize 10) (usize 14) (
-      state_361) in 
-  let state_363 : state_t :=
+      state_211) in 
+  let state_213 : state_t :=
     chacha20_quarter_round (usize 3) (usize 7) (usize 11) (usize 15) (
-      state_362) in 
-  let state_364 : state_t :=
+      state_212) in 
+  let state_214 : state_t :=
     chacha20_quarter_round (usize 0) (usize 5) (usize 10) (usize 15) (
-      state_363) in 
-  let state_365 : state_t :=
+      state_213) in 
+  let state_215 : state_t :=
     chacha20_quarter_round (usize 1) (usize 6) (usize 11) (usize 12) (
-      state_364) in 
-  let state_366 : state_t :=
+      state_214) in 
+  let state_216 : state_t :=
     chacha20_quarter_round (usize 2) (usize 7) (usize 8) (usize 13) (
-      state_365) in 
-  chacha20_quarter_round (usize 3) (usize 4) (usize 9) (usize 14) (state_366).
+      state_215) in 
+  chacha20_quarter_round (usize 3) (usize 4) (usize 9) (usize 14) (state_216).
 
-Definition chacha20_rounds (state_367 : state_t) : state_t :=
-  let st_368 : state_t :=
-    state_367 in 
-  let st_368 :=
-    foldi (usize 0) (usize 10) (fun i_369 st_368 =>
-      let st_368 :=
-        chacha20_double_round (st_368) in 
-      (st_368))
-    st_368 in 
-  st_368.
 
-Definition chacha20_core (ctr_370 : uint32) (st0_371 : state_t) : state_t :=
-  let state_372 : state_t :=
-    st0_371 in 
-  let state_372 :=
-    array_upd state_372 (usize 12) ((array_index (state_372) (usize 12)) .+ (
-        ctr_370)) in 
-  let k_373 : state_t :=
-    chacha20_rounds (state_372) in 
-  (k_373) array_add (state_372).
+Definition chacha20_rounds (state_217 : state_t)  : state_t :=
+  let st_218 : state_t :=
+    state_217 in 
+  let st_218 :=
+    foldi (usize 0) (usize 10) (fun i_219 st_218 =>
+      let st_218 :=
+        chacha20_double_round (st_218) in 
+      (st_218))
+    st_218 in 
+  st_218.
 
-Definition chacha20_constants_init  : constants_t :=
-  let constants_374 : constants_t :=
+
+Definition chacha20_core (ctr_220 : uint32) (st0_221 : state_t)  : state_t :=
+  let state_222 : state_t :=
+    st0_221 in 
+  let state_222 :=
+    array_upd state_222 (usize 12) ((array_index (state_222) (usize 12)) .+ (
+        ctr_220)) in 
+  let k_223 : state_t :=
+    chacha20_rounds (state_222) in 
+  (k_223) array_add (state_222).
+
+
+Definition chacha20_constants_init   : constants_t :=
+  let constants_224 : constants_t :=
     array_new_ (default : uint32) (4) in 
-  let constants_374 :=
-    array_upd constants_374 (usize 0) (secret (
-        @repr WORDSIZE32 1634760805) : int32) in 
-  let constants_374 :=
-    array_upd constants_374 (usize 1) (secret (
-        @repr WORDSIZE32 857760878) : int32) in 
-  let constants_374 :=
-    array_upd constants_374 (usize 2) (secret (
-        @repr WORDSIZE32 2036477234) : int32) in 
-  let constants_374 :=
-    array_upd constants_374 (usize 3) (secret (
-        @repr WORDSIZE32 1797285236) : int32) in 
-  constants_374.
+  let constants_224 :=
+    array_upd constants_224 (usize 0) (secret (
+        @repr WORDSIZE32 (1634760805)) : int32) in 
+  let constants_224 :=
+    array_upd constants_224 (usize 1) (secret (
+        @repr WORDSIZE32 (857760878)) : int32) in 
+  let constants_224 :=
+    array_upd constants_224 (usize 2) (secret (
+        @repr WORDSIZE32 (2036477234)) : int32) in 
+  let constants_224 :=
+    array_upd constants_224 (usize 3) (secret (
+        @repr WORDSIZE32 (1797285236)) : int32) in 
+  constants_224.
+
 
 Definition chacha20_init
-  (key_375 : cha_cha_key_t)
-  (iv_376 : cha_cha_iv_t)
-  (ctr_377 : uint32)
+  (key_225 : cha_cha_key_t)
+  (iv_226 : cha_cha_iv_t)
+  (ctr_227 : uint32)
+  
   : state_t :=
-  let st_378 : state_t :=
+  let st_228 : state_t :=
     array_new_ (default : uint32) (16) in 
-  let st_378 :=
-    array_update (st_378) (usize 0) (
+  let st_228 :=
+    array_update (st_228) (usize 0) (
       array_to_seq (chacha20_constants_init )) in 
-  let st_378 :=
-    array_update (st_378) (usize 4) (array_to_le_uint32s (key_375)) in 
-  let st_378 :=
-    array_upd st_378 (usize 12) (ctr_377) in 
-  let st_378 :=
-    array_update (st_378) (usize 13) (array_to_le_uint32s (iv_376)) in 
-  st_378.
+  let st_228 :=
+    array_update (st_228) (usize 4) (array_to_le_uint32s (key_225)) in 
+  let st_228 :=
+    array_upd st_228 (usize 12) (ctr_227) in 
+  let st_228 :=
+    array_update (st_228) (usize 13) (array_to_le_uint32s (iv_226)) in 
+  st_228.
 
-Definition chacha20_key_block (state_379 : state_t) : block_t :=
-  let state_380 : state_t :=
-    chacha20_core (secret (@repr WORDSIZE32 0) : int32) (state_379) in 
-  array_from_seq (64) (array_to_le_bytes (state_380)).
+
+Definition chacha20_key_block (state_229 : state_t)  : block_t :=
+  let state_230 : state_t :=
+    chacha20_core (secret (@repr WORDSIZE32 (0)) : int32) (state_229) in 
+  array_from_seq (64) (array_to_le_bytes (state_230)).
+
 
 Definition chacha20_key_block0
-  (key_381 : cha_cha_key_t)
-  (iv_382 : cha_cha_iv_t)
+  (key_231 : cha_cha_key_t)
+  (iv_232 : cha_cha_iv_t)
+  
   : block_t :=
-  let state_383 : state_t :=
-    chacha20_init (key_381) (iv_382) (secret (@repr WORDSIZE32 0) : int32) in 
-  chacha20_key_block (state_383).
+  let state_233 : state_t :=
+    chacha20_init (key_231) (iv_232) (secret (@repr WORDSIZE32 (0)) : int32) in 
+  chacha20_key_block (state_233).
+
 
 Definition chacha20_encrypt_block
-  (st0_384 : state_t)
-  (ctr_385 : uint32)
-  (plain_386 : block_t)
+  (st0_234 : state_t)
+  (ctr_235 : uint32)
+  (plain_236 : block_t)
+  
   : block_t :=
-  let st_387 : state_t :=
-    chacha20_core (ctr_385) (st0_384) in 
-  let pl_388 : state_t :=
-    array_from_seq (16) (array_to_le_uint32s (plain_386)) in 
-  let st_389 : state_t :=
-    (pl_388) array_xor (st_387) in 
-  array_from_seq (64) (array_to_le_bytes (st_389)).
+  let st_237 : state_t :=
+    chacha20_core (ctr_235) (st0_234) in 
+  let pl_238 : state_t :=
+    array_from_seq (16) (array_to_le_uint32s (plain_236)) in 
+  let st_239 : state_t :=
+    (pl_238) array_xor (st_237) in 
+  array_from_seq (64) (array_to_le_bytes (st_239)).
+
 
 Definition chacha20_encrypt_last
-  (st0_390 : state_t)
-  (ctr_391 : uint32)
-  (plain_392 : byte_seq)
+  (st0_240 : state_t)
+  (ctr_241 : uint32)
+  (plain_242 : byte_seq)
+  
   : byte_seq :=
-  let b_393 : block_t :=
+  let b_243 : block_t :=
     array_new_ (default : uint8) (64) in 
-  let b_393 :=
-    array_update (b_393) (usize 0) (plain_392) in 
-  let b_393 :=
-    chacha20_encrypt_block (st0_390) (ctr_391) (b_393) in 
-  array_slice (b_393) (usize 0) (seq_len (plain_392)).
+  let b_243 :=
+    array_update (b_243) (usize 0) (plain_242) in 
+  let b_243 :=
+    chacha20_encrypt_block (st0_240) (ctr_241) (b_243) in 
+  array_slice (b_243) (usize 0) (seq_len (plain_242)).
 
-Definition chacha20_update (st0_394 : state_t) (m_395 : byte_seq) : byte_seq :=
-  let blocks_out_396 : seq uint8 :=
-    seq_new_ (default : uint8) (seq_len (m_395)) in 
-  let n_blocks_397 : uint_size :=
-    seq_num_exact_chunks (m_395) (usize 64) in 
-  let blocks_out_396 :=
-    foldi (usize 0) (n_blocks_397) (fun i_398 blocks_out_396 =>
-      let msg_block_399 : seq uint8 :=
-        seq_get_exact_chunk (m_395) (usize 64) (i_398) in 
-      let b_400 : block_t :=
-        chacha20_encrypt_block (st0_394) (secret (pub_u32 (i_398)) : int32) (
-          array_from_seq (64) (msg_block_399)) in 
-      let blocks_out_396 :=
-        seq_set_exact_chunk (blocks_out_396) (usize 64) (i_398) (
-          array_to_seq (b_400)) in 
-      (blocks_out_396))
-    blocks_out_396 in 
-  let last_block_401 : seq uint8 :=
-    seq_get_remainder_chunk (m_395) (usize 64) in 
-  let '(blocks_out_396) :=
-    if (seq_len (last_block_401)) !=.? (usize 0):bool then (
-      let b_402 : seq uint8 :=
-        chacha20_encrypt_last (st0_394) (secret (pub_u32 (
-              n_blocks_397)) : int32) (last_block_401) in 
-      let blocks_out_396 :=
-        seq_set_chunk (blocks_out_396) (usize 64) (n_blocks_397) (b_402) in 
-      (blocks_out_396)) else ((blocks_out_396)) in 
-  blocks_out_396.
+
+Definition chacha20_update (st0_244 : state_t) (m_245 : byte_seq)  : byte_seq :=
+  let blocks_out_246 : seq uint8 :=
+    seq_new_ (default : uint8) (seq_len (m_245)) in 
+  let n_blocks_247 : uint_size :=
+    seq_num_exact_chunks (m_245) (usize 64) in 
+  let blocks_out_246 :=
+    foldi (usize 0) (n_blocks_247) (fun i_248 blocks_out_246 =>
+      let msg_block_249 : seq uint8 :=
+        seq_get_exact_chunk (m_245) (usize 64) (i_248) in 
+      let b_250 : block_t :=
+        chacha20_encrypt_block (st0_244) (secret (pub_u32 (i_248)) : int32) (
+          array_from_seq (64) (msg_block_249)) in 
+      let blocks_out_246 :=
+        seq_set_exact_chunk (blocks_out_246) (usize 64) (i_248) (
+          array_to_seq (b_250)) in 
+      (blocks_out_246))
+    blocks_out_246 in 
+  let last_block_251 : seq uint8 :=
+    seq_get_remainder_chunk (m_245) (usize 64) in 
+  let '(blocks_out_246) :=
+    if (seq_len (last_block_251)) !=.? (usize 0):bool then (
+      let b_252 : seq uint8 :=
+        chacha20_encrypt_last (st0_244) (secret (pub_u32 (
+              n_blocks_247)) : int32) (last_block_251) in 
+      let blocks_out_246 :=
+        seq_set_chunk (blocks_out_246) (usize 64) (n_blocks_247) (b_252) in 
+      (blocks_out_246)) else ((blocks_out_246)) in 
+  blocks_out_246.
+
 
 Definition chacha20
-  (key_403 : cha_cha_key_t)
-  (iv_404 : cha_cha_iv_t)
-  (ctr_405 : int32)
-  (m_406 : byte_seq)
+  (key_253 : cha_cha_key_t)
+  (iv_254 : cha_cha_iv_t)
+  (ctr_255 : int32)
+  (m_256 : byte_seq)
+  
   : byte_seq :=
-  let state_407 : state_t :=
-    chacha20_init (key_403) (iv_404) (secret (ctr_405) : int32) in 
-  chacha20_update (state_407) (m_406).
+  let state_257 : state_t :=
+    chacha20_init (key_253) (iv_254) (secret (ctr_255) : int32) in 
+  chacha20_update (state_257) (m_256).
+
 

@@ -7,132 +7,146 @@ Open Scope Z_scope.
 Open Scope bool_scope.
 Open Scope hacspec_scope.
 Require Import Hacspec_Lib.
+Export Hacspec_Lib.
 
-Definition build_irreducible (p_1256 : uint_size) : seq int128 :=
-  let irr_1257 : seq int128 :=
-    seq_new_ (default : int128) ((p_1256) + (usize 1)) in 
-  let irr_1257 :=
-    seq_upd irr_1257 (usize 0) (- (@repr WORDSIZE128 1)) in 
-  let irr_1257 :=
-    seq_upd irr_1257 (usize 1) (- (@repr WORDSIZE128 1)) in 
-  let irr_1257 :=
-    seq_upd irr_1257 (p_1256) (@repr WORDSIZE128 1) in 
-  irr_1257.
+Definition build_irreducible (p_1106 : uint_size)  : seq int128 :=
+  let irr_1107 : seq int128 :=
+    seq_new_ (default : int128) ((p_1106) + (usize 1)) in 
+  let irr_1107 :=
+    seq_upd irr_1107 (usize 0) (- (@repr WORDSIZE128 (1))) in 
+  let irr_1107 :=
+    seq_upd irr_1107 (usize 1) (- (@repr WORDSIZE128 (1))) in 
+  let irr_1107 :=
+    seq_upd irr_1107 (p_1106) (@repr WORDSIZE128 (1)) in 
+  irr_1107.
 
-Definition round_to_3 (poly_1258 : seq int128) (q_1259 : int128) : seq int128 :=
-  let result_1260 : seq int128 :=
-    (poly_1258) in 
-  let q_12_1261 : int128 :=
-    ((q_1259) .- (@repr WORDSIZE128 1)) ./ (@repr WORDSIZE128 2) in 
-  let result_1260 :=
-    foldi (usize 0) (seq_len (poly_1258)) (fun i_1262 result_1260 =>
-      let '(result_1260) :=
-        if (seq_index (poly_1258) (i_1262)) >.? (q_12_1261):bool then (
-          let result_1260 :=
-            seq_upd result_1260 (i_1262) ((seq_index (poly_1258) (i_1262)) .- (
-                q_1259)) in 
-          (result_1260)) else ((result_1260)) in 
-      (result_1260))
-    result_1260 in 
-  let result_1260 :=
-    foldi (usize 0) (seq_len (result_1260)) (fun i_1263 result_1260 =>
-      let '(result_1260) :=
-        if ((seq_index (result_1260) (i_1263)) .% (@repr WORDSIZE128 3)) !=.? (
-          @repr WORDSIZE128 0):bool then (let result_1260 :=
-            seq_upd result_1260 (i_1263) ((seq_index (result_1260) (
-                  i_1263)) .- (@repr WORDSIZE128 1)) in 
-          let '(result_1260) :=
-            if ((seq_index (result_1260) (i_1263)) .% (
-                @repr WORDSIZE128 3)) !=.? (@repr WORDSIZE128 0):bool then (
-              let result_1260 :=
-                seq_upd result_1260 (i_1263) ((seq_index (result_1260) (
-                      i_1263)) .+ (@repr WORDSIZE128 2)) in 
-              (result_1260)) else ((result_1260)) in 
-          (result_1260)) else ((result_1260)) in 
-      (result_1260))
-    result_1260 in 
-  result_1260.
+
+Definition round_to_3
+  (poly_1108 : seq int128)
+  (q_1109 : int128)
+  
+  : seq int128 :=
+  let result_1110 : seq int128 :=
+    (poly_1108) in 
+  let q_12_1111 : int128 :=
+    ((q_1109) .- (@repr WORDSIZE128 (1))) ./ (@repr WORDSIZE128 (2)) in 
+  let result_1110 :=
+    foldi (usize 0) (seq_len (poly_1108)) (fun i_1112 result_1110 =>
+      let '(result_1110) :=
+        if (seq_index (poly_1108) (i_1112)) >.? (q_12_1111):bool then (
+          let result_1110 :=
+            seq_upd result_1110 (i_1112) ((seq_index (poly_1108) (i_1112)) .- (
+                q_1109)) in 
+          (result_1110)) else ((result_1110)) in 
+      (result_1110))
+    result_1110 in 
+  let result_1110 :=
+    foldi (usize 0) (seq_len (result_1110)) (fun i_1113 result_1110 =>
+      let '(result_1110) :=
+        if ((seq_index (result_1110) (i_1113)) .% (
+            @repr WORDSIZE128 (3))) !=.? (@repr WORDSIZE128 (0)):bool then (
+          let result_1110 :=
+            seq_upd result_1110 (i_1113) ((seq_index (result_1110) (
+                  i_1113)) .- (@repr WORDSIZE128 (1))) in 
+          let '(result_1110) :=
+            if ((seq_index (result_1110) (i_1113)) .% (
+                @repr WORDSIZE128 (3))) !=.? (@repr WORDSIZE128 (0)):bool then (
+              let result_1110 :=
+                seq_upd result_1110 (i_1113) ((seq_index (result_1110) (
+                      i_1113)) .+ (@repr WORDSIZE128 (2))) in 
+              (result_1110)) else ((result_1110)) in 
+          (result_1110)) else ((result_1110)) in 
+      (result_1110))
+    result_1110 in 
+  result_1110.
+
 
 Definition encrypt
-  (r_1264 : seq int128)
-  (h_1265 : seq int128)
-  (q_1266 : int128)
-  (irreducible_1267 : seq int128)
+  (r_1114 : seq int128)
+  (h_1115 : seq int128)
+  (q_1116 : int128)
+  (irreducible_1117 : seq int128)
+  
   : seq int128 :=
-  let pre_1268 : seq int128 :=
-    mul_poly_irr (r_1264) (h_1265) (irreducible_1267) (q_1266) in 
-  round_to_3 (pre_1268) (q_1266).
+  let pre_1118 : seq int128 :=
+    mul_poly_irr (r_1114) (h_1115) (irreducible_1117) (q_1116) in 
+  round_to_3 (pre_1118) (q_1116).
+
 
 Definition ntru_prime_653_encrypt
-  (r_1269 : seq int128)
-  (h_1270 : seq int128)
+  (r_1119 : seq int128)
+  (h_1120 : seq int128)
+  
   : seq int128 :=
-  let p_1271 : uint_size :=
+  let p_1121 : uint_size :=
     usize 653 in 
-  let q_1272 : int128 :=
-    @repr WORDSIZE128 4621 in 
-  let w_1273 : uint_size :=
+  let q_1122 : int128 :=
+    @repr WORDSIZE128 (4621) in 
+  let w_1123 : uint_size :=
     usize 288 in 
-  let irreducible_1274 : seq int128 :=
-    build_irreducible (p_1271) in 
-  encrypt (r_1269) (h_1270) (q_1272) (irreducible_1274).
+  let irreducible_1124 : seq int128 :=
+    build_irreducible (p_1121) in 
+  encrypt (r_1119) (h_1120) (q_1122) (irreducible_1124).
+
 
 Definition ntru_prime_653_decrypt
-  (c_1275 : seq int128)
-  (key_f_1276 : seq int128)
-  (key_v_1277 : seq int128)
+  (c_1125 : seq int128)
+  (key_f_1126 : seq int128)
+  (key_v_1127 : seq int128)
+  
   : (seq int128 '× bool) :=
-  let p_1278 : uint_size :=
+  let p_1128 : uint_size :=
     usize 653 in 
-  let q_1279 : int128 :=
-    @repr WORDSIZE128 4621 in 
-  let w_1280 : uint_size :=
+  let q_1129 : int128 :=
+    @repr WORDSIZE128 (4621) in 
+  let w_1130 : uint_size :=
     usize 288 in 
-  let irreducible_1281 : seq int128 :=
-    build_irreducible (p_1278) in 
-  let f_c_1282 : seq int128 :=
-    mul_poly_irr (key_f_1276) (c_1275) (irreducible_1281) (q_1279) in 
-  let f_3_c_and_decryption_ok_1283 : (seq int128 '× bool) :=
-    poly_to_ring (irreducible_1281) (add_poly (f_c_1282) (add_poly (f_c_1282) (
-          f_c_1282) (q_1279)) (q_1279)) (q_1279) in 
-  let '(f_3_c_1284, ok_decrypt_1285) :=
-    f_3_c_and_decryption_ok_1283 in 
-  let f_3_c_1286 : seq int128 :=
-    f_3_c_1284 in 
-  let q_12_1287 : int128 :=
-    ((q_1279) .- (@repr WORDSIZE128 1)) ./ (@repr WORDSIZE128 2) in 
-  let f_3_c_1286 :=
-    foldi (usize 0) (seq_len (f_3_c_1286)) (fun i_1288 f_3_c_1286 =>
-      let '(f_3_c_1286) :=
-        if (seq_index (f_3_c_1286) (i_1288)) >.? (q_12_1287):bool then (
-          let f_3_c_1286 :=
-            seq_upd f_3_c_1286 (i_1288) ((seq_index (f_3_c_1286) (i_1288)) .- (
-                q_1279)) in 
-          (f_3_c_1286)) else ((f_3_c_1286)) in 
-      (f_3_c_1286))
-    f_3_c_1286 in 
-  let e_1289 : seq int128 :=
-    seq_new_ (default : int128) (seq_len (f_3_c_1286)) in 
-  let e_1289 :=
-    foldi (usize 0) (seq_len (e_1289)) (fun i_1290 e_1289 =>
-      let e_1289 :=
-        seq_upd e_1289 (i_1290) ((seq_index (f_3_c_1286) (i_1290)) .% (
-            @repr WORDSIZE128 3)) in 
-      (e_1289))
-    e_1289 in 
-  let e_1289 :=
-    make_positive (e_1289) (@repr WORDSIZE128 3) in 
-  let r_1291 : seq int128 :=
-    mul_poly_irr (e_1289) (key_v_1277) (irreducible_1281) (
-      @repr WORDSIZE128 3) in 
-  let r_1291 :=
-    foldi (usize 0) (seq_len (r_1291)) (fun i_1292 r_1291 =>
-      let '(r_1291) :=
-        if (seq_index (r_1291) (i_1292)) =.? (@repr WORDSIZE128 2):bool then (
-          let r_1291 :=
-            seq_upd r_1291 (i_1292) (- (@repr WORDSIZE128 1)) in 
-          (r_1291)) else ((r_1291)) in 
-      (r_1291))
-    r_1291 in 
-  (r_1291, ok_decrypt_1285).
+  let irreducible_1131 : seq int128 :=
+    build_irreducible (p_1128) in 
+  let f_c_1132 : seq int128 :=
+    mul_poly_irr (key_f_1126) (c_1125) (irreducible_1131) (q_1129) in 
+  let f_3_c_and_decryption_ok_1133 : (seq int128 '× bool) :=
+    poly_to_ring (irreducible_1131) (add_poly (f_c_1132) (add_poly (f_c_1132) (
+          f_c_1132) (q_1129)) (q_1129)) (q_1129) in 
+  let '(f_3_c_1134, ok_decrypt_1135) :=
+    f_3_c_and_decryption_ok_1133 in 
+  let f_3_c_1136 : seq int128 :=
+    f_3_c_1134 in 
+  let q_12_1137 : int128 :=
+    ((q_1129) .- (@repr WORDSIZE128 (1))) ./ (@repr WORDSIZE128 (2)) in 
+  let f_3_c_1136 :=
+    foldi (usize 0) (seq_len (f_3_c_1136)) (fun i_1138 f_3_c_1136 =>
+      let '(f_3_c_1136) :=
+        if (seq_index (f_3_c_1136) (i_1138)) >.? (q_12_1137):bool then (
+          let f_3_c_1136 :=
+            seq_upd f_3_c_1136 (i_1138) ((seq_index (f_3_c_1136) (i_1138)) .- (
+                q_1129)) in 
+          (f_3_c_1136)) else ((f_3_c_1136)) in 
+      (f_3_c_1136))
+    f_3_c_1136 in 
+  let e_1139 : seq int128 :=
+    seq_new_ (default : int128) (seq_len (f_3_c_1136)) in 
+  let e_1139 :=
+    foldi (usize 0) (seq_len (e_1139)) (fun i_1140 e_1139 =>
+      let e_1139 :=
+        seq_upd e_1139 (i_1140) ((seq_index (f_3_c_1136) (i_1140)) .% (
+            @repr WORDSIZE128 (3))) in 
+      (e_1139))
+    e_1139 in 
+  let e_1139 :=
+    make_positive (e_1139) (@repr WORDSIZE128 (3)) in 
+  let r_1141 : seq int128 :=
+    mul_poly_irr (e_1139) (key_v_1127) (irreducible_1131) (
+      @repr WORDSIZE128 (3)) in 
+  let r_1141 :=
+    foldi (usize 0) (seq_len (r_1141)) (fun i_1142 r_1141 =>
+      let '(r_1141) :=
+        if (seq_index (r_1141) (i_1142)) =.? (@repr WORDSIZE128 (2)):bool then (
+          let r_1141 :=
+            seq_upd r_1141 (i_1142) (- (@repr WORDSIZE128 (1))) in 
+          (r_1141)) else ((r_1141)) in 
+      (r_1141))
+    r_1141 in 
+  (r_1141, ok_decrypt_1135).
+
 

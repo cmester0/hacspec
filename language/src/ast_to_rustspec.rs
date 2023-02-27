@@ -555,6 +555,7 @@ fn translate_literal_expr(
             span.into(),
         )),
         _ => {
+            println!("Lit: {:?}", lit);
             sess.span_rustspec_err(span, "literal not allowed in Hacspec");
             Err(())
         }
@@ -562,6 +563,7 @@ fn translate_literal_expr(
 }
 
 fn translate_binop(x: ast::BinOpKind) -> BinOpKind {
+    println!("Binop: {:?}", x);
     match x {
         ast::BinOpKind::Add => BinOpKind::Add,
         ast::BinOpKind::Sub => BinOpKind::Sub,
@@ -594,6 +596,7 @@ fn translate_expr(
             unimplemented!();
         }
         ExprKind::Binary(op, e1, e2) => {
+            println!("bin3: {:?}", translate_binop(op.clone().node));
             Ok((
                 ExprTranslationResult::TransExpr(Expression::Binary(
                     (translate_binop(op.clone().node), op.clone().span.into()),
@@ -2489,10 +2492,11 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
             let requires = i.attrs.iter().fold(Vec::new(), |mut v, attr| {
                 match crate::pearlite::attribute_requires(attr) {
                     Some(a) => {
-                        let term: pearlite_syn::term::Term =
-                            syn::parse_str(a.clone().as_str()).unwrap();
-
-                        let expr = crate::pearlite::translate_pearlite(sess, term, attr.span);
+                        let expr = translate_pearlite(
+                            sess,
+                            syn::parse_str(a.clone().as_str()).unwrap(),
+                            attr.span,
+                        );
 
                         let expression =
                             crate::pearlite::translate_quantified_expr(sess, specials, expr);
@@ -2510,8 +2514,15 @@ fn translate_items<F: Fn(&Vec<Spanned<String>>) -> ExternalData>(
                         Some(a) => {
                             let term: pearlite_syn::term::Term =
                                 syn::parse_str(a.clone().as_str()).unwrap();
-                            let expr = translate_pearlite(sess, term, attr.span);
+
+                            let expr = translate_pearlite(
+                                sess,
+                                syn::parse_str(a.clone().as_str()).unwrap(),
+                                attr.span,
+                            );
+
                             let expression = translate_quantified_expr(sess, specials, expr);
+
                             v.push(expression);
                             v
                         }

@@ -18,7 +18,6 @@ hacspec-attributes = { path = "../../utils/attributes/" }
 wee_alloc="0.4.5"
 
 [features]
-contracts = ["creusot-contracts/contracts"]
 hacspec = []
 
 [dev-dependencies]

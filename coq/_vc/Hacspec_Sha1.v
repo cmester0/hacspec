@@ -7,6 +7,7 @@ Open Scope Z_scope.
 Open Scope bool_scope.
 Open Scope hacspec_scope.
 Require Import Hacspec_Lib.
+Export Hacspec_Lib.
 
 Definition schedule_t := nseq (uint32) (usize 80).
 
@@ -33,173 +34,189 @@ Definition sha1_digest_t := nseq (uint8) (hash_bytes_v).
 Definition bitlength_bytes_v : uint_size :=
   (usize 64) / (usize 8).
 
-Definition ch (x_1225 : uint32) (y_1226 : uint32) (z_1227 : uint32) : uint32 :=
-  ((x_1225) .& (y_1226)) .^ ((not (x_1225)) .& (z_1227)).
+Definition ch (x_1075 : uint32) (y_1076 : uint32) (z_1077 : uint32)  : uint32 :=
+  ((x_1075) .& (y_1076)) .^ ((not (x_1075)) .& (z_1077)).
+
 
 Definition parity
-  (x_1228 : uint32)
-  (y_1229 : uint32)
-  (z_1230 : uint32)
+  (x_1078 : uint32)
+  (y_1079 : uint32)
+  (z_1080 : uint32)
+  
   : uint32 :=
-  ((x_1228) .^ (y_1229)) .^ (z_1230).
+  ((x_1078) .^ (y_1079)) .^ (z_1080).
 
-Definition maj (x_1231 : uint32) (y_1232 : uint32) (z_1233 : uint32) : uint32 :=
-  (((x_1231) .& (y_1232)) .^ ((x_1231) .& (z_1233))) .^ ((y_1232) .& (z_1233)).
+
+Definition maj
+  (x_1081 : uint32)
+  (y_1082 : uint32)
+  (z_1083 : uint32)
+  
+  : uint32 :=
+  (((x_1081) .& (y_1082)) .^ ((x_1081) .& (z_1083))) .^ ((y_1082) .& (z_1083)).
+
 
 Definition hash_init_v : hash_t :=
   array_from_list uint32 (let l :=
       [
-        secret (@repr WORDSIZE32 1732584193) : int32;
-        secret (@repr WORDSIZE32 4023233417) : int32;
-        secret (@repr WORDSIZE32 2562383102) : int32;
-        secret (@repr WORDSIZE32 271733878) : int32;
-        secret (@repr WORDSIZE32 3285377520) : int32
+        secret (@repr WORDSIZE32 (1732584193)) : int32;
+        secret (@repr WORDSIZE32 (4023233417)) : int32;
+        secret (@repr WORDSIZE32 (2562383102)) : int32;
+        secret (@repr WORDSIZE32 (271733878)) : int32;
+        secret (@repr WORDSIZE32 (3285377520)) : int32
       ] in  l).
 
-Definition compress (m_bytes_1234 : block_bytes_t) (h_1235 : hash_t) : hash_t :=
-  let m_1236 : seq uint32 :=
-    array_to_be_uint32s (m_bytes_1234) in 
-  let w_1237 : schedule_t :=
+Definition compress
+  (m_bytes_1084 : block_bytes_t)
+  (h_1085 : hash_t)
+  
+  : hash_t :=
+  let m_1086 : seq uint32 :=
+    array_to_be_uint32s (m_bytes_1084) in 
+  let w_1087 : schedule_t :=
     array_new_ (default : uint32) (80) in 
-  let w_1237 :=
-    foldi (usize 0) (usize 80) (fun t_1238 w_1237 =>
-      let '(w_1237) :=
-        if (t_1238) <.? (usize 16):bool then (let w_1237 :=
-            array_upd w_1237 (t_1238) (seq_index (m_1236) (t_1238)) in 
-          (w_1237)) else (let w_1237 :=
-            array_upd w_1237 (t_1238) (uint32_rotate_left ((((array_index (
-                        w_1237) ((t_1238) - (usize 3))) .^ (array_index (
-                        w_1237) ((t_1238) - (usize 8)))) .^ (array_index (
-                      w_1237) ((t_1238) - (usize 14)))) .^ (array_index (
-                    w_1237) ((t_1238) - (usize 16)))) (usize 1)) in 
-          (w_1237)) in 
-      (w_1237))
-    w_1237 in 
-  let a_1239 : uint32 :=
-    array_index (h_1235) (usize 0) in 
-  let b_1240 : uint32 :=
-    array_index (h_1235) (usize 1) in 
-  let c_1241 : uint32 :=
-    array_index (h_1235) (usize 2) in 
-  let d_1242 : uint32 :=
-    array_index (h_1235) (usize 3) in 
-  let e_1243 : uint32 :=
-    array_index (h_1235) (usize 4) in 
-  let '(a_1239, b_1240, c_1241, d_1242, e_1243) :=
-    foldi (usize 0) (usize 80) (fun t_1244 '(
-        a_1239,
-        b_1240,
-        c_1241,
-        d_1242,
-        e_1243
+  let w_1087 :=
+    foldi (usize 0) (usize 80) (fun t_1088 w_1087 =>
+      let '(w_1087) :=
+        if (t_1088) <.? (usize 16):bool then (let w_1087 :=
+            array_upd w_1087 (t_1088) (seq_index (m_1086) (t_1088)) in 
+          (w_1087)) else (let w_1087 :=
+            array_upd w_1087 (t_1088) (uint32_rotate_left ((((array_index (
+                        w_1087) ((t_1088) - (usize 3))) .^ (array_index (
+                        w_1087) ((t_1088) - (usize 8)))) .^ (array_index (
+                      w_1087) ((t_1088) - (usize 14)))) .^ (array_index (
+                    w_1087) ((t_1088) - (usize 16)))) (usize 1)) in 
+          (w_1087)) in 
+      (w_1087))
+    w_1087 in 
+  let a_1089 : uint32 :=
+    array_index (h_1085) (usize 0) in 
+  let b_1090 : uint32 :=
+    array_index (h_1085) (usize 1) in 
+  let c_1091 : uint32 :=
+    array_index (h_1085) (usize 2) in 
+  let d_1092 : uint32 :=
+    array_index (h_1085) (usize 3) in 
+  let e_1093 : uint32 :=
+    array_index (h_1085) (usize 4) in 
+  let '(a_1089, b_1090, c_1091, d_1092, e_1093) :=
+    foldi (usize 0) (usize 80) (fun t_1094 '(
+        a_1089,
+        b_1090,
+        c_1091,
+        d_1092,
+        e_1093
       ) =>
-      let t_1245 : uint32 :=
+      let t_1095 : uint32 :=
         uint32_zero  in 
-      let '(t_1245) :=
-        if ((usize 0) <=.? (t_1244)) && ((t_1244) <.? (usize 20)):bool then (
-          let t_1245 :=
-            ((((uint32_rotate_left (a_1239) (usize 5)) .+ (ch (b_1240) (
-                      c_1241) (d_1242))) .+ (e_1243)) .+ (secret (
-                  @repr WORDSIZE32 1518500249) : int32)) .+ (array_index (
-                w_1237) (t_1244)) in 
-          (t_1245)) else ((t_1245)) in 
-      let '(t_1245) :=
-        if ((usize 20) <=.? (t_1244)) && ((t_1244) <.? (usize 40)):bool then (
-          let t_1245 :=
-            ((((uint32_rotate_left (a_1239) (usize 5)) .+ (parity (b_1240) (
-                      c_1241) (d_1242))) .+ (e_1243)) .+ (secret (
-                  @repr WORDSIZE32 1859775393) : int32)) .+ (array_index (
-                w_1237) (t_1244)) in 
-          (t_1245)) else ((t_1245)) in 
-      let '(t_1245) :=
-        if ((usize 40) <=.? (t_1244)) && ((t_1244) <.? (usize 60)):bool then (
-          let t_1245 :=
-            ((((uint32_rotate_left (a_1239) (usize 5)) .+ (maj (b_1240) (
-                      c_1241) (d_1242))) .+ (e_1243)) .+ (secret (
-                  @repr WORDSIZE32 2400959708) : int32)) .+ (array_index (
-                w_1237) (t_1244)) in 
-          (t_1245)) else ((t_1245)) in 
-      let '(t_1245) :=
-        if ((usize 60) <=.? (t_1244)) && ((t_1244) <.? (usize 80)):bool then (
-          let t_1245 :=
-            ((((uint32_rotate_left (a_1239) (usize 5)) .+ (parity (b_1240) (
-                      c_1241) (d_1242))) .+ (e_1243)) .+ (secret (
-                  @repr WORDSIZE32 3395469782) : int32)) .+ (array_index (
-                w_1237) (t_1244)) in 
-          (t_1245)) else ((t_1245)) in 
-      let e_1243 :=
-        d_1242 in 
-      let d_1242 :=
-        c_1241 in 
-      let c_1241 :=
-        uint32_rotate_left (b_1240) (usize 30) in 
-      let b_1240 :=
-        a_1239 in 
-      let a_1239 :=
-        t_1245 in 
-      (a_1239, b_1240, c_1241, d_1242, e_1243))
-    (a_1239, b_1240, c_1241, d_1242, e_1243) in 
-  let h_1235 :=
-    array_upd h_1235 (usize 0) ((a_1239) .+ (array_index (h_1235) (
+      let '(t_1095) :=
+        if ((usize 0) <=.? (t_1094)) && ((t_1094) <.? (usize 20)):bool then (
+          let t_1095 :=
+            ((((uint32_rotate_left (a_1089) (usize 5)) .+ (ch (b_1090) (
+                      c_1091) (d_1092))) .+ (e_1093)) .+ (secret (
+                  @repr WORDSIZE32 (1518500249)) : int32)) .+ (array_index (
+                w_1087) (t_1094)) in 
+          (t_1095)) else ((t_1095)) in 
+      let '(t_1095) :=
+        if ((usize 20) <=.? (t_1094)) && ((t_1094) <.? (usize 40)):bool then (
+          let t_1095 :=
+            ((((uint32_rotate_left (a_1089) (usize 5)) .+ (parity (b_1090) (
+                      c_1091) (d_1092))) .+ (e_1093)) .+ (secret (
+                  @repr WORDSIZE32 (1859775393)) : int32)) .+ (array_index (
+                w_1087) (t_1094)) in 
+          (t_1095)) else ((t_1095)) in 
+      let '(t_1095) :=
+        if ((usize 40) <=.? (t_1094)) && ((t_1094) <.? (usize 60)):bool then (
+          let t_1095 :=
+            ((((uint32_rotate_left (a_1089) (usize 5)) .+ (maj (b_1090) (
+                      c_1091) (d_1092))) .+ (e_1093)) .+ (secret (
+                  @repr WORDSIZE32 (2400959708)) : int32)) .+ (array_index (
+                w_1087) (t_1094)) in 
+          (t_1095)) else ((t_1095)) in 
+      let '(t_1095) :=
+        if ((usize 60) <=.? (t_1094)) && ((t_1094) <.? (usize 80)):bool then (
+          let t_1095 :=
+            ((((uint32_rotate_left (a_1089) (usize 5)) .+ (parity (b_1090) (
+                      c_1091) (d_1092))) .+ (e_1093)) .+ (secret (
+                  @repr WORDSIZE32 (3395469782)) : int32)) .+ (array_index (
+                w_1087) (t_1094)) in 
+          (t_1095)) else ((t_1095)) in 
+      let e_1093 :=
+        d_1092 in 
+      let d_1092 :=
+        c_1091 in 
+      let c_1091 :=
+        uint32_rotate_left (b_1090) (usize 30) in 
+      let b_1090 :=
+        a_1089 in 
+      let a_1089 :=
+        t_1095 in 
+      (a_1089, b_1090, c_1091, d_1092, e_1093))
+    (a_1089, b_1090, c_1091, d_1092, e_1093) in 
+  let h_1085 :=
+    array_upd h_1085 (usize 0) ((a_1089) .+ (array_index (h_1085) (
           usize 0))) in 
-  let h_1235 :=
-    array_upd h_1235 (usize 1) ((b_1240) .+ (array_index (h_1235) (
+  let h_1085 :=
+    array_upd h_1085 (usize 1) ((b_1090) .+ (array_index (h_1085) (
           usize 1))) in 
-  let h_1235 :=
-    array_upd h_1235 (usize 2) ((c_1241) .+ (array_index (h_1235) (
+  let h_1085 :=
+    array_upd h_1085 (usize 2) ((c_1091) .+ (array_index (h_1085) (
           usize 2))) in 
-  let h_1235 :=
-    array_upd h_1235 (usize 3) ((d_1242) .+ (array_index (h_1235) (
+  let h_1085 :=
+    array_upd h_1085 (usize 3) ((d_1092) .+ (array_index (h_1085) (
           usize 3))) in 
-  let h_1235 :=
-    array_upd h_1235 (usize 4) ((e_1243) .+ (array_index (h_1235) (
+  let h_1085 :=
+    array_upd h_1085 (usize 4) ((e_1093) .+ (array_index (h_1085) (
           usize 4))) in 
-  h_1235.
+  h_1085.
 
-Definition hash (msg_1246 : byte_seq) : sha1_digest_t :=
-  let h_1247 : hash_t :=
+
+Definition hash (msg_1096 : byte_seq)  : sha1_digest_t :=
+  let h_1097 : hash_t :=
     hash_init_v in 
-  let h_1247 :=
-    foldi (usize 0) (seq_num_exact_chunks (msg_1246) (
-          block_bytes_v)) (fun i_1248 h_1247 =>
-      let raw_bytes_1249 : seq uint8 :=
-        seq_get_exact_chunk (msg_1246) (block_bytes_v) (i_1248) in 
-      let block_bytes_1250 : block_bytes_t :=
-        array_from_seq (block_bytes_v) (raw_bytes_1249) in 
-      let h_1247 :=
-        compress (block_bytes_1250) (h_1247) in 
-      (h_1247))
-    h_1247 in 
-  let raw_bytes_1251 : seq uint8 :=
-    seq_get_remainder_chunk (msg_1246) (block_bytes_v) in 
-  let block_bytes_1252 : block_bytes_t :=
+  let h_1097 :=
+    foldi (usize 0) (seq_num_exact_chunks (msg_1096) (
+          block_bytes_v)) (fun i_1098 h_1097 =>
+      let raw_bytes_1099 : seq uint8 :=
+        seq_get_exact_chunk (msg_1096) (block_bytes_v) (i_1098) in 
+      let block_bytes_1100 : block_bytes_t :=
+        array_from_seq (block_bytes_v) (raw_bytes_1099) in 
+      let h_1097 :=
+        compress (block_bytes_1100) (h_1097) in 
+      (h_1097))
+    h_1097 in 
+  let raw_bytes_1101 : seq uint8 :=
+    seq_get_remainder_chunk (msg_1096) (block_bytes_v) in 
+  let block_bytes_1102 : block_bytes_t :=
     array_update_start (array_new_ (default : uint8) (block_bytes_v)) (
-      raw_bytes_1251) in 
-  let block_bytes_1252 :=
-    array_upd block_bytes_1252 (seq_len (raw_bytes_1251)) (secret (
+      raw_bytes_1101) in 
+  let block_bytes_1102 :=
+    array_upd block_bytes_1102 (seq_len (raw_bytes_1101)) (secret (
         @repr WORDSIZE8 128) : int8) in 
-  let message_bitlength_1253 : uint64 :=
-    secret (pub_u64 ((seq_len (msg_1246)) * (usize 8))) : int64 in 
-  let '(h_1247, block_bytes_1252) :=
-    if (seq_len (raw_bytes_1251)) <.? ((block_bytes_v) - (
-        bitlength_bytes_v)):bool then (let block_bytes_1252 :=
-        array_update (block_bytes_1252) ((block_bytes_v) - (
+  let message_bitlength_1103 : uint64 :=
+    secret (pub_u64 ((seq_len (msg_1096)) * (usize 8))) : int64 in 
+  let '(h_1097, block_bytes_1102) :=
+    if (seq_len (raw_bytes_1101)) <.? ((block_bytes_v) - (
+        bitlength_bytes_v)):bool then (let block_bytes_1102 :=
+        array_update (block_bytes_1102) ((block_bytes_v) - (
             bitlength_bytes_v)) (array_to_seq (uint64_to_be_bytes (
-            message_bitlength_1253))) in 
-      let h_1247 :=
-        compress (block_bytes_1252) (h_1247) in 
-      (h_1247, block_bytes_1252)) else (let h_1247 :=
-        compress (block_bytes_1252) (h_1247) in 
-      let pad_block_1254 : block_bytes_t :=
+            message_bitlength_1103))) in 
+      let h_1097 :=
+        compress (block_bytes_1102) (h_1097) in 
+      (h_1097, block_bytes_1102)) else (let h_1097 :=
+        compress (block_bytes_1102) (h_1097) in 
+      let pad_block_1104 : block_bytes_t :=
         array_new_ (default : uint8) (block_bytes_v) in 
-      let pad_block_1254 :=
-        array_update (pad_block_1254) ((block_bytes_v) - (bitlength_bytes_v)) (
-          array_to_seq (uint64_to_be_bytes (message_bitlength_1253))) in 
-      let h_1247 :=
-        compress (pad_block_1254) (h_1247) in 
-      (h_1247, block_bytes_1252)) in 
-  array_from_seq (hash_bytes_v) (array_to_be_bytes (h_1247)).
+      let pad_block_1104 :=
+        array_update (pad_block_1104) ((block_bytes_v) - (bitlength_bytes_v)) (
+          array_to_seq (uint64_to_be_bytes (message_bitlength_1103))) in 
+      let h_1097 :=
+        compress (pad_block_1104) (h_1097) in 
+      (h_1097, block_bytes_1102)) in 
+  array_from_seq (hash_bytes_v) (array_to_be_bytes (h_1097)).
 
-Definition sha1 (msg_1255 : byte_seq) : sha1_digest_t :=
-  hash (msg_1255).
+
+Definition sha1 (msg_1105 : byte_seq)  : sha1_digest_t :=
+  hash (msg_1105).
+
 

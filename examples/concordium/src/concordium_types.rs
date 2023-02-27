@@ -1,24 +1,15 @@
 #[cfg(not(feature = "hacspec"))]
-extern crate creusot_contracts;
-#[cfg(not(feature = "hacspec"))]
-use creusot_contracts::*;
-
-use core::cmp::PartialEq;
-use core::clone::Clone;
-use core::default::Default;
-
-#[cfg(not(feature = "hacspec"))]
 use crate::num::NonZeroI32;
 
 #[cfg(not(feature = "hacspec"))]
 /// A type representing the constract state bytes.
-// #[derive(core::default::Default)]
+#[derive(Default)]
 pub struct ContractState {
     pub(crate) current_position: u32,
 }
 
 #[cfg(not(feature = "hacspec"))]
-// #[derive(core::default::Default)]
+#[derive(Default)]
 /// A type representing the parameter to init and receive methods.
 pub struct Parameter {
     pub(crate) current_position: u32,
@@ -26,7 +17,7 @@ pub struct Parameter {
 
 #[cfg(not(feature = "hacspec"))]
 /// A type representing the attributes, lazily acquired from the host.
-// #[derive(core::default::Default)]
+#[derive(Default)]
 pub struct AttributesCursor {
     /// Current position of the cursor, starting from 0.
     /// Note that this is only for the variable attributes.
@@ -38,14 +29,14 @@ pub struct AttributesCursor {
 
 #[cfg(not(feature = "hacspec"))]
 /// A type representing the logger.
-// #[derive(core::default::Default)]
+#[derive(Default)]
 pub struct Logger {
     pub(crate) _private: (),
 }
 
-#[cfg(not(feature = "hacspec"))]
+// #[cfg(not(feature = "hacspec"))]
 /// Errors that can occur during logging.
-// #[derive(Debug, Copy, core::clone::Clone, Eq, core::cmp::PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 #[repr(u8)]
 pub enum LogError {
     /// The log is full.
@@ -57,7 +48,7 @@ pub enum LogError {
 #[cfg(not(feature = "hacspec"))]
 /// Error triggered when a non-zero amount of CCD is sent to a contract
 /// init or receive function that is not marked as `payable`.
-// #[derive(core::clone::Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct NotPayableError;
 
 #[cfg(not(feature = "hacspec"))]
@@ -85,22 +76,22 @@ impl Action {
 /// The client will see the error code as a reject reason; if a schema is
 /// provided, the error message corresponding to the error code will be
 /// displayed. The valid range for an error code is from i32::MIN to  -1.
-// #[derive(Debug, Eq, core::cmp::PartialEq)] // TODO: Creusot issue re-add "Debug" attribute
+#[derive(Debug, Eq, PartialEq)] // TODO: Creusot issue re-add "Debug" attribute
 #[repr(transparent)]
 pub struct Reject {
     pub error_code: NonZeroI32,
 }
 
-// #[cfg(not(feature = "hacspec"))]
-// /// Default error is i32::MIN.
-// impl Default for Reject {
-//     #[inline(always)]
-//     fn default() -> Self {
-//         Self {
-//             error_code: unsafe { NonZeroI32::new_unchecked(i32::MIN) },
-//         }
-//     }
-// }
+#[cfg(not(feature = "hacspec"))]
+/// Default error is i32::MIN.
+impl Default for Reject {
+    #[inline(always)]
+    fn default() -> Self {
+        Self {
+            error_code: unsafe { NonZeroI32::new_unchecked(i32::MIN) },
+        }
+    }
+}
 
 #[cfg(not(feature = "hacspec"))]
 impl Reject {
@@ -335,7 +326,7 @@ pub type InitResult<S> = Result<S, Reject>;
 
 #[cfg(not(feature = "hacspec"))]
 /// Context backed by host functions.
-#[derive(creusot_contracts::Default)]
+#[derive(Default)]
 #[doc(hidden)]
 pub struct ExternContext<T: sealed::ContextType> {
     marker: crate::marker::PhantomData<T>,
@@ -346,11 +337,11 @@ pub struct ExternContext<T: sealed::ContextType> {
 pub struct ChainMetaExtern {}
 
 #[cfg(not(feature = "hacspec"))]
-#[derive(creusot_contracts::Default)]
+#[derive(Default)]
 #[doc(hidden)]
 pub struct InitContextExtern;
 #[cfg(not(feature = "hacspec"))]
-// #[derive(Default)]
+#[derive(Default)]
 #[doc(hidden)]
 pub struct ReceiveContextExtern;
 

@@ -7,6 +7,7 @@ Open Scope Z_scope.
 Open Scope bool_scope.
 Open Scope hacspec_scope.
 Require Import Hacspec_Lib.
+Export Hacspec_Lib.
 
 Inductive error_t :=
 | InvalidAddition : error_t.
@@ -38,86 +39,91 @@ Notation "'jacobian_result_t'" := ((
 
 Definition element_t := nseq (uint8) (usize 32).
 
-Definition jacobian_to_affine (p_569 : p256_jacobian_t) : affine_t :=
-  let '(x_570, y_571, z_572) :=
-    p_569 in 
-  let z2_573 : p256_field_element_t :=
-    nat_mod_exp (z_572) (@repr WORDSIZE32 2) in 
-  let z2i_574 : p256_field_element_t :=
-    nat_mod_inv (z2_573) in 
-  let z3_575 : p256_field_element_t :=
-    (z_572) *% (z2_573) in 
-  let z3i_576 : p256_field_element_t :=
-    nat_mod_inv (z3_575) in 
-  let x_577 : p256_field_element_t :=
-    (x_570) *% (z2i_574) in 
-  let y_578 : p256_field_element_t :=
-    (y_571) *% (z3i_576) in 
-  (x_577, y_578).
+Definition jacobian_to_affine (p_419 : p256_jacobian_t)  : affine_t :=
+  let '(x_420, y_421, z_422) :=
+    p_419 in 
+  let z2_423 : p256_field_element_t :=
+    nat_mod_exp (z_422) (@repr WORDSIZE32 (2)) in 
+  let z2i_424 : p256_field_element_t :=
+    nat_mod_inv (z2_423) in 
+  let z3_425 : p256_field_element_t :=
+    (z_422) *% (z2_423) in 
+  let z3i_426 : p256_field_element_t :=
+    nat_mod_inv (z3_425) in 
+  let x_427 : p256_field_element_t :=
+    (x_420) *% (z2i_424) in 
+  let y_428 : p256_field_element_t :=
+    (y_421) *% (z3i_426) in 
+  (x_427, y_428).
 
-Definition affine_to_jacobian (p_579 : affine_t) : p256_jacobian_t :=
-  let '(x_580, y_581) :=
-    p_579 in 
+
+Definition affine_to_jacobian (p_429 : affine_t)  : p256_jacobian_t :=
+  let '(x_430, y_431) :=
+    p_429 in 
   (
-    x_580,
-    y_581,
+    x_430,
+    y_431,
     nat_mod_from_literal (
       0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff) (
       @repr WORDSIZE128 1) : p256_field_element_t
   ).
 
-Definition point_double (p_582 : p256_jacobian_t) : p256_jacobian_t :=
-  let '(x1_583, y1_584, z1_585) :=
-    p_582 in 
-  let delta_586 : p256_field_element_t :=
-    nat_mod_exp (z1_585) (@repr WORDSIZE32 2) in 
-  let gamma_587 : p256_field_element_t :=
-    nat_mod_exp (y1_584) (@repr WORDSIZE32 2) in 
-  let beta_588 : p256_field_element_t :=
-    (x1_583) *% (gamma_587) in 
-  let alpha_1_589 : p256_field_element_t :=
-    (x1_583) -% (delta_586) in 
-  let alpha_2_590 : p256_field_element_t :=
-    (x1_583) +% (delta_586) in 
-  let alpha_591 : p256_field_element_t :=
+
+Definition point_double (p_432 : p256_jacobian_t)  : p256_jacobian_t :=
+  let '(x1_433, y1_434, z1_435) :=
+    p_432 in 
+  let delta_436 : p256_field_element_t :=
+    nat_mod_exp (z1_435) (@repr WORDSIZE32 (2)) in 
+  let gamma_437 : p256_field_element_t :=
+    nat_mod_exp (y1_434) (@repr WORDSIZE32 (2)) in 
+  let beta_438 : p256_field_element_t :=
+    (x1_433) *% (gamma_437) in 
+  let alpha_1_439 : p256_field_element_t :=
+    (x1_433) -% (delta_436) in 
+  let alpha_2_440 : p256_field_element_t :=
+    (x1_433) +% (delta_436) in 
+  let alpha_441 : p256_field_element_t :=
     (nat_mod_from_literal (
         0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff) (
-        @repr WORDSIZE128 3) : p256_field_element_t) *% ((alpha_1_589) *% (
-        alpha_2_590)) in 
-  let x3_592 : p256_field_element_t :=
-    (nat_mod_exp (alpha_591) (@repr WORDSIZE32 2)) -% ((nat_mod_from_literal (
+        @repr WORDSIZE128 3) : p256_field_element_t) *% ((alpha_1_439) *% (
+        alpha_2_440)) in 
+  let x3_442 : p256_field_element_t :=
+    (nat_mod_exp (alpha_441) (@repr WORDSIZE32 (2))) -% ((nat_mod_from_literal (
           0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff) (
-          @repr WORDSIZE128 8) : p256_field_element_t) *% (beta_588)) in 
-  let z3_593 : p256_field_element_t :=
-    nat_mod_exp ((y1_584) +% (z1_585)) (@repr WORDSIZE32 2) in 
-  let z3_594 : p256_field_element_t :=
-    (z3_593) -% ((gamma_587) +% (delta_586)) in 
-  let y3_1_595 : p256_field_element_t :=
+          @repr WORDSIZE128 8) : p256_field_element_t) *% (beta_438)) in 
+  let z3_443 : p256_field_element_t :=
+    nat_mod_exp ((y1_434) +% (z1_435)) (@repr WORDSIZE32 (2)) in 
+  let z3_444 : p256_field_element_t :=
+    (z3_443) -% ((gamma_437) +% (delta_436)) in 
+  let y3_1_445 : p256_field_element_t :=
     ((nat_mod_from_literal (
           0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff) (
-          @repr WORDSIZE128 4) : p256_field_element_t) *% (beta_588)) -% (
-      x3_592) in 
-  let y3_2_596 : p256_field_element_t :=
+          @repr WORDSIZE128 4) : p256_field_element_t) *% (beta_438)) -% (
+      x3_442) in 
+  let y3_2_446 : p256_field_element_t :=
     (nat_mod_from_literal (
         0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff) (
-        @repr WORDSIZE128 8) : p256_field_element_t) *% ((gamma_587) *% (
-        gamma_587)) in 
-  let y3_597 : p256_field_element_t :=
-    ((alpha_591) *% (y3_1_595)) -% (y3_2_596) in 
-  (x3_592, y3_597, z3_594).
+        @repr WORDSIZE128 8) : p256_field_element_t) *% ((gamma_437) *% (
+        gamma_437)) in 
+  let y3_447 : p256_field_element_t :=
+    ((alpha_441) *% (y3_1_445)) -% (y3_2_446) in 
+  (x3_442, y3_447, z3_444).
 
-Definition is_point_at_infinity (p_598 : p256_jacobian_t) : bool :=
-  let '(x_599, y_600, z_601) :=
-    p_598 in 
-  nat_mod_equal (z_601) (nat_mod_from_literal (
+
+Definition is_point_at_infinity (p_448 : p256_jacobian_t)  : bool :=
+  let '(x_449, y_450, z_451) :=
+    p_448 in 
+  nat_mod_equal (z_451) (nat_mod_from_literal (
       0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff) (
       @repr WORDSIZE128 0) : p256_field_element_t).
 
+
 Definition s1_equal_s2
-  (s1_602 : p256_field_element_t)
-  (s2_603 : p256_field_element_t)
+  (s1_452 : p256_field_element_t)
+  (s2_453 : p256_field_element_t)
+  
   : jacobian_result_t :=
-  (if (nat_mod_equal (s1_602) (s2_603)):bool then (
+  (if (nat_mod_equal (s1_452) (s2_453)):bool then (
       @Err p256_jacobian_t error_t (InvalidAddition)) else (
       @Ok p256_jacobian_t error_t ((
           nat_mod_from_literal (
@@ -131,84 +137,88 @@ Definition s1_equal_s2
             @repr WORDSIZE128 0) : p256_field_element_t
         )))).
 
+
 Definition point_add_jacob
-  (p_604 : p256_jacobian_t)
-  (q_605 : p256_jacobian_t)
+  (p_454 : p256_jacobian_t)
+  (q_455 : p256_jacobian_t)
+  
   : jacobian_result_t :=
-  let result_606 : (result p256_jacobian_t error_t) :=
-    @Ok p256_jacobian_t error_t (q_605) in 
-  let '(result_606) :=
-    if negb (is_point_at_infinity (p_604)):bool then (let '(result_606) :=
-        if is_point_at_infinity (q_605):bool then (let result_606 :=
-            @Ok p256_jacobian_t error_t (p_604) in 
-          (result_606)) else (let '(x1_607, y1_608, z1_609) :=
-            p_604 in 
-          let '(x2_610, y2_611, z2_612) :=
-            q_605 in 
-          let z1z1_613 : p256_field_element_t :=
-            nat_mod_exp (z1_609) (@repr WORDSIZE32 2) in 
-          let z2z2_614 : p256_field_element_t :=
-            nat_mod_exp (z2_612) (@repr WORDSIZE32 2) in 
-          let u1_615 : p256_field_element_t :=
-            (x1_607) *% (z2z2_614) in 
-          let u2_616 : p256_field_element_t :=
-            (x2_610) *% (z1z1_613) in 
-          let s1_617 : p256_field_element_t :=
-            ((y1_608) *% (z2_612)) *% (z2z2_614) in 
-          let s2_618 : p256_field_element_t :=
-            ((y2_611) *% (z1_609)) *% (z1z1_613) in 
-          let '(result_606) :=
-            if nat_mod_equal (u1_615) (u2_616):bool then (let result_606 :=
-                s1_equal_s2 (s1_617) (s2_618) in 
-              (result_606)) else (let h_619 : p256_field_element_t :=
-                (u2_616) -% (u1_615) in 
-              let i_620 : p256_field_element_t :=
+  let result_456 : (result p256_jacobian_t error_t) :=
+    @Ok p256_jacobian_t error_t (q_455) in 
+  let '(result_456) :=
+    if negb (is_point_at_infinity (p_454)):bool then (let '(result_456) :=
+        if is_point_at_infinity (q_455):bool then (let result_456 :=
+            @Ok p256_jacobian_t error_t (p_454) in 
+          (result_456)) else (let '(x1_457, y1_458, z1_459) :=
+            p_454 in 
+          let '(x2_460, y2_461, z2_462) :=
+            q_455 in 
+          let z1z1_463 : p256_field_element_t :=
+            nat_mod_exp (z1_459) (@repr WORDSIZE32 (2)) in 
+          let z2z2_464 : p256_field_element_t :=
+            nat_mod_exp (z2_462) (@repr WORDSIZE32 (2)) in 
+          let u1_465 : p256_field_element_t :=
+            (x1_457) *% (z2z2_464) in 
+          let u2_466 : p256_field_element_t :=
+            (x2_460) *% (z1z1_463) in 
+          let s1_467 : p256_field_element_t :=
+            ((y1_458) *% (z2_462)) *% (z2z2_464) in 
+          let s2_468 : p256_field_element_t :=
+            ((y2_461) *% (z1_459)) *% (z1z1_463) in 
+          let '(result_456) :=
+            if nat_mod_equal (u1_465) (u2_466):bool then (let result_456 :=
+                s1_equal_s2 (s1_467) (s2_468) in 
+              (result_456)) else (let h_469 : p256_field_element_t :=
+                (u2_466) -% (u1_465) in 
+              let i_470 : p256_field_element_t :=
                 nat_mod_exp ((nat_mod_from_literal (
                       0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff) (
-                      @repr WORDSIZE128 2) : p256_field_element_t) *% (h_619)) (
-                  @repr WORDSIZE32 2) in 
-              let j_621 : p256_field_element_t :=
-                (h_619) *% (i_620) in 
-              let r_622 : p256_field_element_t :=
+                      @repr WORDSIZE128 2) : p256_field_element_t) *% (h_469)) (
+                  @repr WORDSIZE32 (2)) in 
+              let j_471 : p256_field_element_t :=
+                (h_469) *% (i_470) in 
+              let r_472 : p256_field_element_t :=
                 (nat_mod_from_literal (
                     0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff) (
                     @repr WORDSIZE128 2) : p256_field_element_t) *% ((
-                    s2_618) -% (s1_617)) in 
-              let v_623 : p256_field_element_t :=
-                (u1_615) *% (i_620) in 
-              let x3_1_624 : p256_field_element_t :=
+                    s2_468) -% (s1_467)) in 
+              let v_473 : p256_field_element_t :=
+                (u1_465) *% (i_470) in 
+              let x3_1_474 : p256_field_element_t :=
                 (nat_mod_from_literal (
                     0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff) (
-                    @repr WORDSIZE128 2) : p256_field_element_t) *% (v_623) in 
-              let x3_2_625 : p256_field_element_t :=
-                (nat_mod_exp (r_622) (@repr WORDSIZE32 2)) -% (j_621) in 
-              let x3_626 : p256_field_element_t :=
-                (x3_2_625) -% (x3_1_624) in 
-              let y3_1_627 : p256_field_element_t :=
+                    @repr WORDSIZE128 2) : p256_field_element_t) *% (v_473) in 
+              let x3_2_475 : p256_field_element_t :=
+                (nat_mod_exp (r_472) (@repr WORDSIZE32 (2))) -% (j_471) in 
+              let x3_476 : p256_field_element_t :=
+                (x3_2_475) -% (x3_1_474) in 
+              let y3_1_477 : p256_field_element_t :=
                 ((nat_mod_from_literal (
                       0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff) (
                       @repr WORDSIZE128 2) : p256_field_element_t) *% (
-                    s1_617)) *% (j_621) in 
-              let y3_2_628 : p256_field_element_t :=
-                (r_622) *% ((v_623) -% (x3_626)) in 
-              let y3_629 : p256_field_element_t :=
-                (y3_2_628) -% (y3_1_627) in 
-              let z3_630 : p256_field_element_t :=
-                nat_mod_exp ((z1_609) +% (z2_612)) (@repr WORDSIZE32 2) in 
-              let z3_631 : p256_field_element_t :=
-                ((z3_630) -% ((z1z1_613) +% (z2z2_614))) *% (h_619) in 
-              let result_606 :=
-                @Ok p256_jacobian_t error_t ((x3_626, y3_629, z3_631)) in 
-              (result_606)) in 
-          (result_606)) in 
-      (result_606)) else ((result_606)) in 
-  result_606.
+                    s1_467)) *% (j_471) in 
+              let y3_2_478 : p256_field_element_t :=
+                (r_472) *% ((v_473) -% (x3_476)) in 
+              let y3_479 : p256_field_element_t :=
+                (y3_2_478) -% (y3_1_477) in 
+              let z3_480 : p256_field_element_t :=
+                nat_mod_exp ((z1_459) +% (z2_462)) (@repr WORDSIZE32 (2)) in 
+              let z3_481 : p256_field_element_t :=
+                ((z3_480) -% ((z1z1_463) +% (z2z2_464))) *% (h_469) in 
+              let result_456 :=
+                @Ok p256_jacobian_t error_t ((x3_476, y3_479, z3_481)) in 
+              (result_456)) in 
+          (result_456)) in 
+      (result_456)) else ((result_456)) in 
+  result_456.
+
 
 Definition ltr_mul
-  (k_632 : p256_scalar_t)
-  (p_633 : p256_jacobian_t)
+  (k_482 : p256_scalar_t)
+  (p_483 : p256_jacobian_t)
+  
   : jacobian_result_t :=
-  let q_634 : (
+  let q_484 : (
       p256_field_element_t '×
       p256_field_element_t '×
       p256_field_element_t
@@ -224,32 +234,35 @@ Definition ltr_mul
         0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff) (
         @repr WORDSIZE128 0) : p256_field_element_t
     ) in 
-  bind (foldibnd (usize 0) to (bits_v) for q_634 >> (fun i_635 q_634 =>
-    let q_634 :=
-      point_double (q_634) in 
-    ifbnd nat_mod_equal (nat_mod_get_bit (k_632) (((bits_v) - (usize 1)) - (
-          i_635))) (nat_mod_one ) : bool
-    thenbnd (bind (point_add_jacob (q_634) (p_633)) (fun q_634  => @Ok (
+  bind (foldibnd (usize 0) to (bits_v) for q_484 >> (fun i_485 q_484 =>
+    let q_484 :=
+      point_double (q_484) in 
+    ifbnd nat_mod_equal (nat_mod_get_bit (k_482) (((bits_v) - (usize 1)) - (
+          i_485))) (nat_mod_one ) : bool
+    thenbnd (bind (point_add_jacob (q_484) (p_483)) (fun q_484  => @Ok (
           (
             p256_field_element_t '×
             p256_field_element_t '×
             p256_field_element_t
           )
-        ) error_t ((q_634))))
-    else ((q_634)) >> (fun '(q_634) =>
+        ) error_t ((q_484))))
+    else ((q_484)) >> (fun '(q_484) =>
     @Ok (
       (p256_field_element_t '× p256_field_element_t '× p256_field_element_t)
-    ) error_t ((q_634))))) (fun q_634 => @Ok p256_jacobian_t error_t (q_634)).
+    ) error_t ((q_484))))) (fun q_484 => @Ok p256_jacobian_t error_t (q_484)).
+
 
 Definition p256_point_mul
-  (k_636 : p256_scalar_t)
-  (p_637 : affine_t)
+  (k_486 : p256_scalar_t)
+  (p_487 : affine_t)
+  
   : affine_result_t :=
-  bind (ltr_mul (k_636) (affine_to_jacobian (p_637))) (fun jac_638 =>
-    @Ok affine_t error_t (jacobian_to_affine (jac_638))).
+  bind (ltr_mul (k_486) (affine_to_jacobian (p_487))) (fun jac_488 =>
+    @Ok affine_t error_t (jacobian_to_affine (jac_488))).
 
-Definition p256_point_mul_base (k_639 : p256_scalar_t) : affine_result_t :=
-  let base_point_640 : (p256_field_element_t '× p256_field_element_t) :=
+
+Definition p256_point_mul_base (k_489 : p256_scalar_t)  : affine_result_t :=
+  let base_point_490 : (p256_field_element_t '× p256_field_element_t) :=
     (
       nat_mod_from_byte_seq_be (array_to_seq (array_from_list uint8 (let l :=
             [
@@ -322,48 +335,53 @@ Definition p256_point_mul_base (k_639 : p256_scalar_t) : affine_result_t :=
               secret (@repr WORDSIZE8 245) : int8
             ] in  l))) : p256_field_element_t
     ) in 
-  p256_point_mul (k_639) (base_point_640).
+  p256_point_mul (k_489) (base_point_490).
+
 
 Definition point_add_distinct
-  (p_641 : affine_t)
-  (q_642 : affine_t)
+  (p_491 : affine_t)
+  (q_492 : affine_t)
+  
   : affine_result_t :=
-  bind (point_add_jacob (affine_to_jacobian (p_641)) (affine_to_jacobian (
-        q_642))) (fun r_643 => @Ok affine_t error_t (jacobian_to_affine (
-        r_643))).
+  bind (point_add_jacob (affine_to_jacobian (p_491)) (affine_to_jacobian (
+        q_492))) (fun r_493 => @Ok affine_t error_t (jacobian_to_affine (
+        r_493))).
 
-Definition point_add (p_644 : affine_t) (q_645 : affine_t) : affine_result_t :=
-  (if ((p_644) !=.? (q_645)):bool then (point_add_distinct (p_644) (
-        q_645)) else (@Ok affine_t error_t (jacobian_to_affine (point_double (
-            affine_to_jacobian (p_644)))))).
 
-Definition p256_validate_private_key (k_646 : byte_seq) : bool :=
-  let valid_647 : bool :=
+Definition point_add (p_494 : affine_t) (q_495 : affine_t)  : affine_result_t :=
+  (if ((p_494) !=.? (q_495)):bool then (point_add_distinct (p_494) (
+        q_495)) else (@Ok affine_t error_t (jacobian_to_affine (point_double (
+            affine_to_jacobian (p_494)))))).
+
+
+Definition p256_validate_private_key (k_496 : byte_seq)  : bool :=
+  let valid_497 : bool :=
     true in 
-  let k_element_648 : p256_scalar_t :=
-    nat_mod_from_byte_seq_be (k_646) : p256_scalar_t in 
-  let k_element_bytes_649 : seq uint8 :=
-    nat_mod_to_byte_seq_be (k_element_648) in 
-  let all_zero_650 : bool :=
+  let k_element_498 : p256_scalar_t :=
+    nat_mod_from_byte_seq_be (k_496) : p256_scalar_t in 
+  let k_element_bytes_499 : seq uint8 :=
+    nat_mod_to_byte_seq_be (k_element_498) in 
+  let all_zero_500 : bool :=
     true in 
-  let '(valid_647, all_zero_650) :=
-    foldi (usize 0) (seq_len (k_646)) (fun i_651 '(valid_647, all_zero_650) =>
-      let '(all_zero_650) :=
-        if negb (uint8_equal (seq_index (k_646) (i_651)) (secret (
-              @repr WORDSIZE8 0) : int8)):bool then (let all_zero_650 :=
+  let '(valid_497, all_zero_500) :=
+    foldi (usize 0) (seq_len (k_496)) (fun i_501 '(valid_497, all_zero_500) =>
+      let '(all_zero_500) :=
+        if negb (uint8_equal (seq_index (k_496) (i_501)) (secret (
+              @repr WORDSIZE8 0) : int8)):bool then (let all_zero_500 :=
             false in 
-          (all_zero_650)) else ((all_zero_650)) in 
-      let '(valid_647) :=
-        if negb (uint8_equal (seq_index (k_element_bytes_649) (i_651)) (
-            seq_index (k_646) (i_651))):bool then (let valid_647 :=
+          (all_zero_500)) else ((all_zero_500)) in 
+      let '(valid_497) :=
+        if negb (uint8_equal (seq_index (k_element_bytes_499) (i_501)) (
+            seq_index (k_496) (i_501))):bool then (let valid_497 :=
             false in 
-          (valid_647)) else ((valid_647)) in 
-      (valid_647, all_zero_650))
-    (valid_647, all_zero_650) in 
-  (valid_647) && (negb (all_zero_650)).
+          (valid_497)) else ((valid_497)) in 
+      (valid_497, all_zero_500))
+    (valid_497, all_zero_500) in 
+  (valid_497) && (negb (all_zero_500)).
 
-Definition p256_validate_public_key (p_652 : affine_t) : bool :=
-  let b_653 : p256_field_element_t :=
+
+Definition p256_validate_public_key (p_502 : affine_t)  : bool :=
+  let b_503 : p256_field_element_t :=
     nat_mod_from_byte_seq_be ([
         secret (@repr WORDSIZE8 90) : int8;
         secret (@repr WORDSIZE8 198) : int8;
@@ -398,22 +416,24 @@ Definition p256_validate_public_key (p_652 : affine_t) : bool :=
         secret (@repr WORDSIZE8 96) : int8;
         secret (@repr WORDSIZE8 75) : int8
       ]) : p256_field_element_t in 
-  let point_at_infinity_654 : bool :=
-    is_point_at_infinity (affine_to_jacobian (p_652)) in 
-  let '(x_655, y_656) :=
-    p_652 in 
-  let on_curve_657 : bool :=
-    ((y_656) *% (y_656)) =.? (((((x_655) *% (x_655)) *% (x_655)) -% ((
+  let point_at_infinity_504 : bool :=
+    is_point_at_infinity (affine_to_jacobian (p_502)) in 
+  let '(x_505, y_506) :=
+    p_502 in 
+  let on_curve_507 : bool :=
+    ((y_506) *% (y_506)) =.? (((((x_505) *% (x_505)) *% (x_505)) -% ((
             nat_mod_from_literal (
               0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff) (
-              @repr WORDSIZE128 3) : p256_field_element_t) *% (x_655))) +% (
-        b_653)) in 
-  (negb (point_at_infinity_654)) && (on_curve_657).
+              @repr WORDSIZE128 3) : p256_field_element_t) *% (x_505))) +% (
+        b_503)) in 
+  (negb (point_at_infinity_504)) && (on_curve_507).
+
 
 Definition p256_calculate_w
-  (x_658 : p256_field_element_t)
+  (x_508 : p256_field_element_t)
+  
   : p256_field_element_t :=
-  let b_659 : p256_field_element_t :=
+  let b_509 : p256_field_element_t :=
     nat_mod_from_byte_seq_be ([
         secret (@repr WORDSIZE8 90) : int8;
         secret (@repr WORDSIZE8 198) : int8;
@@ -448,7 +468,7 @@ Definition p256_calculate_w
         secret (@repr WORDSIZE8 96) : int8;
         secret (@repr WORDSIZE8 75) : int8
       ]) : p256_field_element_t in 
-  let exp_660 : p256_field_element_t :=
+  let exp_510 : p256_field_element_t :=
     nat_mod_from_byte_seq_be ([
         secret (@repr WORDSIZE8 63) : int8;
         secret (@repr WORDSIZE8 255) : int8;
@@ -483,12 +503,13 @@ Definition p256_calculate_w
         secret (@repr WORDSIZE8 0) : int8;
         secret (@repr WORDSIZE8 0) : int8
       ]) : p256_field_element_t in 
-  let z_661 : p256_field_element_t :=
-    ((((x_658) *% (x_658)) *% (x_658)) -% ((nat_mod_from_literal (
+  let z_511 : p256_field_element_t :=
+    ((((x_508) *% (x_508)) *% (x_508)) -% ((nat_mod_from_literal (
             0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff) (
-            @repr WORDSIZE128 3) : p256_field_element_t) *% (x_658))) +% (
-      b_659) in 
-  let w_662 : p256_field_element_t :=
-    nat_mod_pow_felem (z_661) (exp_660) in 
-  w_662.
+            @repr WORDSIZE128 3) : p256_field_element_t) *% (x_508))) +% (
+      b_509) in 
+  let w_512 : p256_field_element_t :=
+    nat_mod_pow_felem (z_511) (exp_510) in 
+  w_512.
+
 

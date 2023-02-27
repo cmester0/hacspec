@@ -41,7 +41,9 @@ fn make_let_binding<'a>(
         .append(if toplevel {
             RcDoc::as_string(".")
         } else {
-            RcDoc::space().append(RcDoc::as_string("in"))
+            RcDoc::space()
+                .append(RcDoc::as_string("in"))
+                .append(RcDoc::space())
         })
 }
 
@@ -483,6 +485,9 @@ pub(crate) fn translate_expression<'a>(
         Expression::Binary((op, _), e1, e2, op_typ) => {
             let e1 = e1.0;
             let e2 = e2.0;
+
+            println!("lst bin: {:?} {:?} {:?} {:?}", op, e1, e2, op_typ);
+
             make_paren(translate_expression(e1, top_ctx))
                 .append(RcDoc::space())
                 .append(translate_binop(
@@ -1146,15 +1151,15 @@ fn translate_item<'a>(
                 } else {
                     RcDoc::nil()
                 })
+                .append(RcDoc::line())
                 .append(if sig.requires.len() > 0 {
-                    RcDoc::line()
-                        .append(sig.requires.iter().fold(RcDoc::nil(), |rc, e| {
-                            rc
-                                .append(RcDoc::line())
-                                .append(RcDoc::as_string("`{"))
-                                .append(crate::pearlite::translate_quantified_expression(e.clone(), top_ctx))
-                                .append(RcDoc::as_string("}"))
-                        }))
+                    sig.requires.iter().fold(RcDoc::nil(), |rc, e| {
+                        rc
+                            .append(RcDoc::line())
+                            .append(RcDoc::as_string("`{"))
+                            .append(crate::pearlite::translate_quantified_expression(e.clone(), top_ctx))
+                            .append(RcDoc::as_string("}"))
+                    })
                 } else {
                     RcDoc::nil()
                 })

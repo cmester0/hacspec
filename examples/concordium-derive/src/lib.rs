@@ -52,7 +52,7 @@ fn get_attribute_value<'a, I: IntoIterator<Item = &'a Meta>>(
 		      } else {
 			  return Err(syn::Error::new(
 			      mnv.span(),
-                              name, // format!("The `{}` attribute must be a string literal.", name),
+			      format!("The `{}` attribute must be a string literal.", name),
 			  ));
 		      }
 		  }
@@ -61,7 +61,7 @@ fn get_attribute_value<'a, I: IntoIterator<Item = &'a Meta>>(
 		  if p.is_ident(name) {
 		      return Err(syn::Error::new(
 			  attr.span(),
-			  name, // format!("The `{}` attribute must have a string literal value.", name),
+			  format!("The `{}` attribute must have a string literal value.", name),
 		      ));
 		  }
 	      }
@@ -69,7 +69,7 @@ fn get_attribute_value<'a, I: IntoIterator<Item = &'a Meta>>(
 		  if p.path.is_ident(name) {
 		      return Err(syn::Error::new(
 			  attr.span(),
-			  name, // format!("The `{}` attribute must have a string literal value.", name),
+			  format!("The `{}` attribute must have a string literal value.", name),
 		      ));
 		  }
 	      }

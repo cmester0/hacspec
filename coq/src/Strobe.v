@@ -7,8 +7,10 @@ Open Scope Z_scope.
 Open Scope bool_scope.
 Open Scope hacspec_scope.
 Require Import Hacspec_Lib.
+Export Hacspec_Lib.
 
 Require Import Hacspec_Sha3.
+Export Hacspec_Sha3.
 
 Definition strobe_r_v : int8 :=
   @repr WORDSIZE8 166.
@@ -36,213 +38,223 @@ Notation "'strobe_t'" := ((state_uint8_t '× int8 '× int8 '× int8
 )) : hacspec_scope.
 
 Definition transmute_state_to_u64
-  (state_986 : state_uint8_t)
+  (state_836 : state_uint8_t)
+  
   : state_uint64_t :=
-  let new_state_987 : state_t :=
+  let new_state_837 : state_t :=
     array_new_ (default : uint64) (25) in 
-  let new_state_987 :=
-    foldi (usize 0) (array_len (new_state_987)) (fun i_988 new_state_987 =>
-      let word_989 : uint64_word_t :=
+  let new_state_837 :=
+    foldi (usize 0) (array_len (new_state_837)) (fun i_838 new_state_837 =>
+      let word_839 : uint64_word_t :=
         array_new_ (default : uint8) (8) in 
-      let word_989 :=
-        foldi (usize 0) (array_len (word_989)) (fun j_990 word_989 =>
-          let word_989 :=
-            array_upd word_989 (j_990) (array_index (state_986) (((i_988) * (
-                    usize 8)) + (j_990))) in 
-          (word_989))
-        word_989 in 
-      let new_state_987 :=
-        array_upd new_state_987 (i_988) (uint64_from_le_bytes (word_989)) in 
-      (new_state_987))
-    new_state_987 in 
-  new_state_987.
+      let word_839 :=
+        foldi (usize 0) (array_len (word_839)) (fun j_840 word_839 =>
+          let word_839 :=
+            array_upd word_839 (j_840) (array_index (state_836) (((i_838) * (
+                    usize 8)) + (j_840))) in 
+          (word_839))
+        word_839 in 
+      let new_state_837 :=
+        array_upd new_state_837 (i_838) (uint64_from_le_bytes (word_839)) in 
+      (new_state_837))
+    new_state_837 in 
+  new_state_837.
 
-Definition transmute_state_to_u8 (state_991 : state_uint64_t) : state_uint8_t :=
-  let new_state_992 : state_uint8_t :=
+
+Definition transmute_state_to_u8
+  (state_841 : state_uint64_t)
+  
+  : state_uint8_t :=
+  let new_state_842 : state_uint8_t :=
     array_new_ (default : uint8) (200) in 
-  let new_state_992 :=
-    foldi (usize 0) (array_len (state_991)) (fun i_993 new_state_992 =>
-      let bytes_994 : seq uint8 :=
-        uint64_to_le_bytes (array_index (state_991) (i_993)) in 
-      let new_state_992 :=
-        foldi (usize 0) (seq_len (bytes_994)) (fun j_995 new_state_992 =>
-          let new_state_992 :=
-            array_upd new_state_992 (((i_993) * (usize 8)) + (j_995)) (
-              seq_index (bytes_994) (j_995)) in 
-          (new_state_992))
-        new_state_992 in 
-      (new_state_992))
-    new_state_992 in 
-  new_state_992.
+  let new_state_842 :=
+    foldi (usize 0) (array_len (state_841)) (fun i_843 new_state_842 =>
+      let bytes_844 : seq uint8 :=
+        uint64_to_le_bytes (array_index (state_841) (i_843)) in 
+      let new_state_842 :=
+        foldi (usize 0) (seq_len (bytes_844)) (fun j_845 new_state_842 =>
+          let new_state_842 :=
+            array_upd new_state_842 (((i_843) * (usize 8)) + (j_845)) (
+              seq_index (bytes_844) (j_845)) in 
+          (new_state_842))
+        new_state_842 in 
+      (new_state_842))
+    new_state_842 in 
+  new_state_842.
 
-Definition run_f (strobe_996 : strobe_t) : strobe_t :=
-  let '(state_997, pos_998, pos_begin_999, cur_fl_1000) :=
-    strobe_996 in 
-  let state_997 :=
-    array_upd state_997 (pos_998) ((array_index (state_997) (pos_998)) .^ (
-        secret (pos_begin_999) : int8)) in 
-  let state_997 :=
-    array_upd state_997 ((pos_998) .+ (@repr WORDSIZE8 1)) ((array_index (
-          state_997) ((pos_998) .+ (@repr WORDSIZE8 1))) .^ (secret (
+
+Definition run_f (strobe_846 : strobe_t)  : strobe_t :=
+  let '(state_847, pos_848, pos_begin_849, cur_fl_850) :=
+    strobe_846 in 
+  let state_847 :=
+    array_upd state_847 (pos_848) ((array_index (state_847) (pos_848)) .^ (
+        secret (pos_begin_849) : int8)) in 
+  let state_847 :=
+    array_upd state_847 ((pos_848) .+ (@repr WORDSIZE8 1)) ((array_index (
+          state_847) ((pos_848) .+ (@repr WORDSIZE8 1))) .^ (secret (
           @repr WORDSIZE8 4) : int8)) in 
-  let state_997 :=
-    array_upd state_997 ((strobe_r_v) .+ (@repr WORDSIZE8 1)) ((array_index (
-          state_997) ((strobe_r_v) .+ (@repr WORDSIZE8 1))) .^ (secret (
+  let state_847 :=
+    array_upd state_847 ((strobe_r_v) .+ (@repr WORDSIZE8 1)) ((array_index (
+          state_847) ((strobe_r_v) .+ (@repr WORDSIZE8 1))) .^ (secret (
           @repr WORDSIZE8 128) : int8)) in 
-  let state_uint64_1001 : state_t :=
-    transmute_state_to_u64 (state_997) in 
-  let state_997 :=
-    transmute_state_to_u8 (keccakf1600 (state_uint64_1001)) in 
-  let pos_998 :=
+  let state_uint64_851 : state_t :=
+    transmute_state_to_u64 (state_847) in 
+  let state_847 :=
+    transmute_state_to_u8 (keccakf1600 (state_uint64_851)) in 
+  let pos_848 :=
     @repr WORDSIZE8 0 in 
-  let pos_begin_999 :=
+  let pos_begin_849 :=
     @repr WORDSIZE8 0 in 
-  (state_997, pos_998, pos_begin_999, cur_fl_1000).
+  (state_847, pos_848, pos_begin_849, cur_fl_850).
 
-Definition absorb (strobe_1002 : strobe_t) (data_1003 : seq uint8) : strobe_t :=
-  let '(state_1004, pos_1005, pos_begin_1006, cur_fl_1007) :=
-    strobe_1002 in 
-  let '(state_1004, pos_1005, pos_begin_1006, cur_fl_1007) :=
-    foldi (usize 0) (seq_len (data_1003)) (fun i_1008 '(
-        state_1004,
-        pos_1005,
-        pos_begin_1006,
-        cur_fl_1007
+
+Definition absorb (strobe_852 : strobe_t) (data_853 : seq uint8)  : strobe_t :=
+  let '(state_854, pos_855, pos_begin_856, cur_fl_857) :=
+    strobe_852 in 
+  let '(state_854, pos_855, pos_begin_856, cur_fl_857) :=
+    foldi (usize 0) (seq_len (data_853)) (fun i_858 '(
+        state_854,
+        pos_855,
+        pos_begin_856,
+        cur_fl_857
       ) =>
-      let state_1004 :=
-        array_upd state_1004 (pos_1005) ((array_index (state_1004) (
-              pos_1005)) .^ (seq_index (data_1003) (i_1008))) in 
-      let pos_1005 :=
-        (pos_1005) .+ (@repr WORDSIZE8 1) in 
-      let '(state_1004, pos_1005, pos_begin_1006, cur_fl_1007) :=
-        if (pos_1005) =.? (strobe_r_v):bool then (let '(
-              s_1009,
-              p_1010,
-              pb_1011,
-              cf_1012
+      let state_854 :=
+        array_upd state_854 (pos_855) ((array_index (state_854) (pos_855)) .^ (
+            seq_index (data_853) (i_858))) in 
+      let pos_855 :=
+        (pos_855) .+ (@repr WORDSIZE8 1) in 
+      let '(state_854, pos_855, pos_begin_856, cur_fl_857) :=
+        if (pos_855) =.? (strobe_r_v):bool then (let '(
+              s_859,
+              p_860,
+              pb_861,
+              cf_862
             ) :=
-            run_f ((state_1004, pos_1005, pos_begin_1006, cur_fl_1007)) in 
-          let state_1004 :=
-            s_1009 in 
-          let pos_1005 :=
-            p_1010 in 
-          let pos_begin_1006 :=
-            pb_1011 in 
-          let cur_fl_1007 :=
-            cf_1012 in 
-          (state_1004, pos_1005, pos_begin_1006, cur_fl_1007)) else ((
-            state_1004,
-            pos_1005,
-            pos_begin_1006,
-            cur_fl_1007
+            run_f ((state_854, pos_855, pos_begin_856, cur_fl_857)) in 
+          let state_854 :=
+            s_859 in 
+          let pos_855 :=
+            p_860 in 
+          let pos_begin_856 :=
+            pb_861 in 
+          let cur_fl_857 :=
+            cf_862 in 
+          (state_854, pos_855, pos_begin_856, cur_fl_857)) else ((
+            state_854,
+            pos_855,
+            pos_begin_856,
+            cur_fl_857
           )) in 
-      (state_1004, pos_1005, pos_begin_1006, cur_fl_1007))
-    (state_1004, pos_1005, pos_begin_1006, cur_fl_1007) in 
-  (state_1004, pos_1005, pos_begin_1006, cur_fl_1007).
+      (state_854, pos_855, pos_begin_856, cur_fl_857))
+    (state_854, pos_855, pos_begin_856, cur_fl_857) in 
+  (state_854, pos_855, pos_begin_856, cur_fl_857).
+
 
 Definition squeeze
-  (strobe_1013 : strobe_t)
-  (data_1014 : seq uint8)
+  (strobe_863 : strobe_t)
+  (data_864 : seq uint8)
+  
   : (strobe_t '× seq uint8) :=
-  let '(state_1015, pos_1016, pos_begin_1017, cur_fl_1018) :=
-    strobe_1013 in 
-  let '(data_1014, state_1015, pos_1016, pos_begin_1017, cur_fl_1018) :=
-    foldi (usize 0) (seq_len (data_1014)) (fun i_1019 '(
-        data_1014,
-        state_1015,
-        pos_1016,
-        pos_begin_1017,
-        cur_fl_1018
+  let '(state_865, pos_866, pos_begin_867, cur_fl_868) :=
+    strobe_863 in 
+  let '(data_864, state_865, pos_866, pos_begin_867, cur_fl_868) :=
+    foldi (usize 0) (seq_len (data_864)) (fun i_869 '(
+        data_864,
+        state_865,
+        pos_866,
+        pos_begin_867,
+        cur_fl_868
       ) =>
-      let data_1014 :=
-        seq_upd data_1014 (i_1019) (array_index (state_1015) (pos_1016)) in 
-      let state_1015 :=
-        array_upd state_1015 (pos_1016) (uint8_classify (@repr WORDSIZE8 0)) in 
-      let pos_1016 :=
-        (pos_1016) .+ (@repr WORDSIZE8 1) in 
-      let '(state_1015, pos_1016, pos_begin_1017, cur_fl_1018) :=
-        if (pos_1016) =.? (strobe_r_v):bool then (let '(
-              s_1020,
-              p_1021,
-              pb_1022,
-              cf_1023
+      let data_864 :=
+        seq_upd data_864 (i_869) (array_index (state_865) (pos_866)) in 
+      let state_865 :=
+        array_upd state_865 (pos_866) (uint8_classify (@repr WORDSIZE8 0)) in 
+      let pos_866 :=
+        (pos_866) .+ (@repr WORDSIZE8 1) in 
+      let '(state_865, pos_866, pos_begin_867, cur_fl_868) :=
+        if (pos_866) =.? (strobe_r_v):bool then (let '(
+              s_870,
+              p_871,
+              pb_872,
+              cf_873
             ) :=
-            run_f (((state_1015), pos_1016, pos_begin_1017, cur_fl_1018)) in 
-          let state_1015 :=
-            s_1020 in 
-          let pos_1016 :=
-            p_1021 in 
-          let pos_begin_1017 :=
-            pb_1022 in 
-          let cur_fl_1018 :=
-            cf_1023 in 
-          (state_1015, pos_1016, pos_begin_1017, cur_fl_1018)) else ((
-            state_1015,
-            pos_1016,
-            pos_begin_1017,
-            cur_fl_1018
+            run_f (((state_865), pos_866, pos_begin_867, cur_fl_868)) in 
+          let state_865 :=
+            s_870 in 
+          let pos_866 :=
+            p_871 in 
+          let pos_begin_867 :=
+            pb_872 in 
+          let cur_fl_868 :=
+            cf_873 in 
+          (state_865, pos_866, pos_begin_867, cur_fl_868)) else ((
+            state_865,
+            pos_866,
+            pos_begin_867,
+            cur_fl_868
           )) in 
-      (data_1014, state_1015, pos_1016, pos_begin_1017, cur_fl_1018))
-    (data_1014, state_1015, pos_1016, pos_begin_1017, cur_fl_1018) in 
-  ((state_1015, pos_1016, pos_begin_1017, cur_fl_1018), data_1014).
+      (data_864, state_865, pos_866, pos_begin_867, cur_fl_868))
+    (data_864, state_865, pos_866, pos_begin_867, cur_fl_868) in 
+  ((state_865, pos_866, pos_begin_867, cur_fl_868), data_864).
+
 
 Definition begin_op
-  (strobe_1024 : strobe_t)
-  (flags_1025 : int8)
-  (more_1026 : bool)
+  (strobe_874 : strobe_t)
+  (flags_875 : int8)
+  (more_876 : bool)
+  
   : strobe_t :=
-  let '(state_1027, pos_1028, pos_begin_1029, cur_fl_1030) :=
-    strobe_1024 in 
-  let ret_1031 : (state_uint8_t '× int8 '× int8 '× int8) :=
-    (state_1027, pos_1028, pos_begin_1029, cur_fl_1030) in 
-  let '(state_1027, pos_1028, pos_begin_1029, cur_fl_1030, ret_1031) :=
-    if negb (more_1026):bool then (let old_begin_1032 : int8 :=
-        pos_begin_1029 in 
-      let pos_begin_1029 :=
-        (pos_1028) .+ (@repr WORDSIZE8 1) in 
-      let cur_fl_1030 :=
-        flags_1025 in 
-      let data_1033 : seq uint8 :=
+  let '(state_877, pos_878, pos_begin_879, cur_fl_880) :=
+    strobe_874 in 
+  let ret_881 : (state_uint8_t '× int8 '× int8 '× int8) :=
+    (state_877, pos_878, pos_begin_879, cur_fl_880) in 
+  let '(state_877, pos_878, pos_begin_879, cur_fl_880, ret_881) :=
+    if negb (more_876):bool then (let old_begin_882 : int8 :=
+        pos_begin_879 in 
+      let pos_begin_879 :=
+        (pos_878) .+ (@repr WORDSIZE8 1) in 
+      let cur_fl_880 :=
+        flags_875 in 
+      let data_883 : seq uint8 :=
         seq_new_ (default : uint8) (usize 2) in 
-      let data_1033 :=
-        seq_upd data_1033 (usize 0) (secret (old_begin_1032) : int8) in 
-      let data_1033 :=
-        seq_upd data_1033 (usize 1) (secret (flags_1025) : int8) in 
-      let '(s_1034, p_1035, pb_1036, cf_1037) :=
-        absorb ((state_1027, pos_1028, pos_begin_1029, cur_fl_1030)) (
-          data_1033) in 
-      let state_1027 :=
-        s_1034 in 
-      let pos_1028 :=
-        p_1035 in 
-      let pos_begin_1029 :=
-        pb_1036 in 
-      let cur_fl_1030 :=
-        cf_1037 in 
-      let force_f_1038 : bool :=
-        (@repr WORDSIZE8 0) !=.? ((flags_1025) .& ((flag_c_v) .| (
-              flag_k_v))) in 
-      let '(ret_1031) :=
-        if (force_f_1038) && ((pos_1028) !=.? (@repr WORDSIZE8 0)):bool then (
-          let ret_1031 :=
-            run_f ((state_1027, pos_1028, pos_begin_1029, cur_fl_1030)) in 
-          (ret_1031)) else (let ret_1031 :=
-            (state_1027, pos_1028, pos_begin_1029, cur_fl_1030) in 
-          (ret_1031)) in 
-      (state_1027, pos_1028, pos_begin_1029, cur_fl_1030, ret_1031)) else ((
-        state_1027,
-        pos_1028,
-        pos_begin_1029,
-        cur_fl_1030,
-        ret_1031
+      let data_883 :=
+        seq_upd data_883 (usize 0) (secret (old_begin_882) : int8) in 
+      let data_883 :=
+        seq_upd data_883 (usize 1) (secret (flags_875) : int8) in 
+      let '(s_884, p_885, pb_886, cf_887) :=
+        absorb ((state_877, pos_878, pos_begin_879, cur_fl_880)) (data_883) in 
+      let state_877 :=
+        s_884 in 
+      let pos_878 :=
+        p_885 in 
+      let pos_begin_879 :=
+        pb_886 in 
+      let cur_fl_880 :=
+        cf_887 in 
+      let force_f_888 : bool :=
+        (@repr WORDSIZE8 0) !=.? ((flags_875) .& ((flag_c_v) .| (flag_k_v))) in 
+      let '(ret_881) :=
+        if (force_f_888) && ((pos_878) !=.? (@repr WORDSIZE8 0)):bool then (
+          let ret_881 :=
+            run_f ((state_877, pos_878, pos_begin_879, cur_fl_880)) in 
+          (ret_881)) else (let ret_881 :=
+            (state_877, pos_878, pos_begin_879, cur_fl_880) in 
+          (ret_881)) in 
+      (state_877, pos_878, pos_begin_879, cur_fl_880, ret_881)) else ((
+        state_877,
+        pos_878,
+        pos_begin_879,
+        cur_fl_880,
+        ret_881
       )) in 
-  ret_1031.
+  ret_881.
 
-Definition new_strobe (protocol_label_1039 : seq uint8) : strobe_t :=
-  let st_1040 : state_uint8_t :=
+
+Definition new_strobe (protocol_label_889 : seq uint8)  : strobe_t :=
+  let st_890 : state_uint8_t :=
     array_new_ (default : uint8) (200) in 
-  let st_1040 :=
-    array_set_chunk (st_1040) (usize 6) (usize 0) ([
+  let st_890 :=
+    array_set_chunk (st_890) (usize 6) (usize 0) ([
         secret (@repr WORDSIZE8 1) : int8;
         secret (@repr WORDSIZE8 168) : int8;
         secret (@repr WORDSIZE8 1) : int8;
@@ -250,8 +262,8 @@ Definition new_strobe (protocol_label_1039 : seq uint8) : strobe_t :=
         secret (@repr WORDSIZE8 1) : int8;
         secret (@repr WORDSIZE8 96) : int8
       ]) in 
-  let st_1040 :=
-    array_set_chunk (st_1040) (usize 6) (usize 1) ([
+  let st_890 :=
+    array_set_chunk (st_890) (usize 6) (usize 1) ([
         secret (@repr WORDSIZE8 83) : int8;
         secret (@repr WORDSIZE8 84) : int8;
         secret (@repr WORDSIZE8 82) : int8;
@@ -259,8 +271,8 @@ Definition new_strobe (protocol_label_1039 : seq uint8) : strobe_t :=
         secret (@repr WORDSIZE8 66) : int8;
         secret (@repr WORDSIZE8 69) : int8
       ]) in 
-  let st_1040 :=
-    array_set_chunk (st_1040) (usize 6) (usize 2) ([
+  let st_890 :=
+    array_set_chunk (st_890) (usize 6) (usize 2) ([
         secret (@repr WORDSIZE8 118) : int8;
         secret (@repr WORDSIZE8 49) : int8;
         secret (@repr WORDSIZE8 46) : int8;
@@ -268,38 +280,45 @@ Definition new_strobe (protocol_label_1039 : seq uint8) : strobe_t :=
         secret (@repr WORDSIZE8 46) : int8;
         secret (@repr WORDSIZE8 50) : int8
       ]) in 
-  let st_uint64_1041 : state_t :=
-    transmute_state_to_u64 (st_1040) in 
-  let st_1040 :=
-    transmute_state_to_u8 (keccakf1600 (st_uint64_1041)) in 
-  meta_ad ((st_1040, @repr WORDSIZE8 0, @repr WORDSIZE8 0, @repr WORDSIZE8 0)) (
-    protocol_label_1039) (false).
+  let st_uint64_891 : state_t :=
+    transmute_state_to_u64 (st_890) in 
+  let st_890 :=
+    transmute_state_to_u8 (keccakf1600 (st_uint64_891)) in 
+  meta_ad ((st_890, @repr WORDSIZE8 0, @repr WORDSIZE8 0, @repr WORDSIZE8 0)) (
+    protocol_label_889) (false).
+
 
 Definition meta_ad
-  (strobe_1042 : strobe_t)
-  (data_1043 : seq uint8)
-  (more_1044 : bool)
+  (strobe_892 : strobe_t)
+  (data_893 : seq uint8)
+  (more_894 : bool)
+  
   : strobe_t :=
-  let strobe_1042 :=
-    begin_op (strobe_1042) ((flag_m_v) .| (flag_a_v)) (more_1044) in 
-  absorb (strobe_1042) (data_1043).
+  let strobe_892 :=
+    begin_op (strobe_892) ((flag_m_v) .| (flag_a_v)) (more_894) in 
+  absorb (strobe_892) (data_893).
+
 
 Definition ad
-  (strobe_1045 : strobe_t)
-  (data_1046 : seq uint8)
-  (more_1047 : bool)
+  (strobe_895 : strobe_t)
+  (data_896 : seq uint8)
+  (more_897 : bool)
+  
   : strobe_t :=
-  let strobe_1045 :=
-    begin_op (strobe_1045) (flag_a_v) (more_1047) in 
-  absorb (strobe_1045) (data_1046).
+  let strobe_895 :=
+    begin_op (strobe_895) (flag_a_v) (more_897) in 
+  absorb (strobe_895) (data_896).
+
 
 Definition prf
-  (strobe_1048 : strobe_t)
-  (data_1049 : seq uint8)
-  (more_1050 : bool)
+  (strobe_898 : strobe_t)
+  (data_899 : seq uint8)
+  (more_900 : bool)
+  
   : (strobe_t '× seq uint8) :=
-  let strobe_1048 :=
-    begin_op (strobe_1048) (((flag_i_v) .| (flag_a_v)) .| (flag_c_v)) (
-      more_1050) in 
-  squeeze (strobe_1048) (data_1049).
+  let strobe_898 :=
+    begin_op (strobe_898) (((flag_i_v) .| (flag_a_v)) .| (flag_c_v)) (
+      more_900) in 
+  squeeze (strobe_898) (data_899).
+
 

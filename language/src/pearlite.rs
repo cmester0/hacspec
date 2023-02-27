@@ -172,40 +172,22 @@ pub(crate) fn translate_pearlite(
     let kind = match t {
         // pearlite_syn::term::Term::Array(_) => RcDoc::as_string("TODOArray"),
         pearlite_syn::term::Term::Binary(pearlite_syn::term::TermBinary { left, op, right }) => {
-            let trans_op = translate_pearlite_binop(op);
-            match trans_op {
-                ast::BinOpKind::Eq => {
-                    return Quantified::Eq(
-                        Box::new(translate_pearlite(sess, *left, span)),
-                        Box::new(translate_pearlite(sess, *right, span)),
-                    );
-                }
-                ast::BinOpKind::Or => {
-                    return Quantified::Or(
-                        Box::new(translate_pearlite(sess, *left, span)),
-                        Box::new(translate_pearlite(sess, *right, span)),
-                    );
-                }
-                ast::BinOpKind::And => {
-                    return Quantified::And(
-                        Box::new(translate_pearlite(sess, *left, span)),
-                        Box::new(translate_pearlite(sess, *right, span)),
-                    );
-                }
-                _ => {
-                    let expr_left = P(translate_pearlite_unquantified(sess, *left, span).unwrap());
-                    let expr_right =
-                        P(translate_pearlite_unquantified(sess, *right, span).unwrap());
-                    ExprKind::Binary(
-                        rustc_span::source_map::Spanned {
-                            node: trans_op,
-                            span,
-                        },
-                        expr_left,
-                        expr_right,
-                    )
-                }
+            if translate_pearlite_binop(op) == ast::BinOpKind::Eq {
+                return Quantified::Eq(
+                    Box::new(translate_pearlite(sess, *left, span)),
+                    Box::new(translate_pearlite(sess, *right, span)),
+                );
             }
+
+            println!("kbin2: {:?}", translate_pearlite_binop(op));
+            ExprKind::Binary(
+                rustc_span::source_map::Spanned {
+                    node: translate_pearlite_binop(op),
+                    span,
+                },
+                P(translate_pearlite_unquantified(sess, *left, span).unwrap()),
+                P(translate_pearlite_unquantified(sess, *right, span).unwrap()),
+            )
         }
         // pearlite_syn::term::Term::Block(pearlite_syn::term::TermBlock { block, .. }) => {
         //     ExprKind::Block(
@@ -479,14 +461,6 @@ pub(crate) fn translate_quantified_expr(
         Quantified::Not(a) => {
             Quantified::Not(Box::new(translate_quantified_expr(sess, specials, *a)))
         }
-        Quantified::And(a, b) => Quantified::And(
-            Box::new(translate_quantified_expr(sess, specials, *a)),
-            Box::new(translate_quantified_expr(sess, specials, *b)),
-        ),
-        Quantified::Or(a, b) => Quantified::Or(
-            Box::new(translate_quantified_expr(sess, specials, *a)),
-            Box::new(translate_quantified_expr(sess, specials, *b)),
-        ),
     }
 }
 
@@ -680,34 +654,6 @@ pub(crate) fn resolve_quantified_expression(
             name_context,
             top_level_ctx,
         )?))),
-        Quantified::And(a, b) => Ok(Quantified::And(
-            Box::new(resolve_quantified_expression(
-                sess,
-                *a,
-                name_context,
-                top_level_ctx,
-            )?),
-            Box::new(resolve_quantified_expression(
-                sess,
-                *b,
-                name_context,
-                top_level_ctx,
-            )?),
-        )),
-        Quantified::Or(a, b) => Ok(Quantified::Or(
-            Box::new(resolve_quantified_expression(
-                sess,
-                *a,
-                name_context,
-                top_level_ctx,
-            )?),
-            Box::new(resolve_quantified_expression(
-                sess,
-                *b,
-                name_context,
-                top_level_ctx,
-            )?),
-        )),
     }
 }
 
@@ -758,16 +704,6 @@ pub(crate) fn translate_quantified_expression<'a>(
         Quantified::Not(qex) => RcDoc::as_string("~").append(RcDoc::space()).append(
             crate::rustspec_to_coq_base::make_paren(translate_quantified_expression(*qex, top_ctx)),
         ),
-        Quantified::And(qe2, qe3) => translate_quantified_expression(*qe2, top_ctx)
-            .append(RcDoc::space())
-            .append(RcDoc::as_string("/\\"))
-            .append(RcDoc::space())
-            .append(translate_quantified_expression(*qe3, top_ctx)),
-        Quantified::Or(qe2, qe3) => translate_quantified_expression(*qe2, top_ctx)
-            .append(RcDoc::space())
-            .append(RcDoc::as_string("\\/"))
-            .append(RcDoc::space())
-            .append(translate_quantified_expression(*qe3, top_ctx)),
     }
 }
 
@@ -865,33 +801,5 @@ pub(crate) fn typecheck_quantified_expression(
             top_level_context,
             var_context,
         ))),
-        Quantified::And(a, b) => Quantified::And(
-            Box::new(typecheck_quantified_expression(
-                sess,
-                *a,
-                top_level_context,
-                var_context,
-            )),
-            Box::new(typecheck_quantified_expression(
-                sess,
-                *b,
-                top_level_context,
-                var_context,
-            )),
-        ),
-        Quantified::Or(a, b) => Quantified::Or(
-            Box::new(typecheck_quantified_expression(
-                sess,
-                *a,
-                top_level_context,
-                var_context,
-            )),
-            Box::new(typecheck_quantified_expression(
-                sess,
-                *b,
-                top_level_context,
-                var_context,
-            )),
-        ),
     }
 }
