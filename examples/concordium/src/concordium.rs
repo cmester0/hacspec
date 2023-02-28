@@ -5,7 +5,7 @@
 // pub use std::{convert, hash, marker, mem, num, string::String, vec::Vec};
 // #[cfg(not(feature = "hacspec"))]
 // pub use std::collections;
-use creusot_contracts::{std::{process::abort as trap, *}, Ghost, *};
+use creusot_contracts::{std::{process::abort as trap, *}, Ghost};
 
 mod concordium_impls;
 mod concordium_prims;
