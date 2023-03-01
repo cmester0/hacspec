@@ -760,19 +760,19 @@ impl creusot_contracts::Iterator for PoliciesIterator {
 
     }
 
-    #[requires(forall<e : Self::Item, i2 : Self> i2.invariant() ==> self.produces(Seq::singleton(e), i2) ==> func.precondition((e, Ghost::new(Seq::EMPTY))))]
-    #[requires(MapInv::<Self, _, F>::reinitialize())]
-    #[requires(MapInv::<Self, Self::Item, F>::preservation(self, func))]
-    #[requires(self.invariant())]
-    #[ensures(result.invariant())]
-    #[ensures(result == MapInv { iter: self, func, produced: Ghost::new(Seq::EMPTY) })]
-    fn map_inv<B, F>(self, func: F) -> MapInv<Self, Self::Item, F>
-    where
-        Self: Sized,
-        F: FnMut(Self::Item, Ghost<Seq<Self::Item>>) -> B,
-    {
-        MapInv { iter: self, func, produced: ghost! {Seq::EMPTY} }
-    }
+    // #[requires(forall<e : Self::Item, i2 : Self> i2.invariant() ==> self.produces(Seq::singleton(e), i2) ==> func.precondition((e, Ghost::new(Seq::EMPTY))))]
+    // #[requires(MapInv::<Self, _, F>::reinitialize())]
+    // #[requires(MapInv::<Self, Self::Item, F>::preservation(self, func))]
+    // #[requires(self.invariant())]
+    // #[ensures(result.invariant())]
+    // #[ensures(result == MapInv { iter: self, func, produced: Ghost::new(Seq::EMPTY) })]
+    // fn map_inv<B, F>(self, func: F) -> MapInv<Self, Self::Item, F>
+    // where
+    //     Self: Sized,
+    //     F: FnMut(Self::Item, Ghost<Seq<Self::Item>>) -> B,
+    // {
+    //     MapInv { iter: self, func, produced: ghost! {Seq::EMPTY} }
+    // }
 }
 
 #[cfg(not(feature = "hacspec"))]
@@ -1469,23 +1469,23 @@ impl<K: Serial, V: Serial> SerialCtx for HashMap<K, V> {
     }
 }
 
-// // TODO: Remove / is not in concordium-std??
-// #[cfg(not(feature = "hacspec"))]
-// /// Read a [HashMap](https://doc.rust-lang.org/std/collections/struct.HashMap.html) as a list of key-value pairs given some length.
-// pub fn deserial_hashmap_no_length<R: Read, K: Deserial + Eq + Hash, V: Deserial>(
-//     source: &mut R,
-//     len: usize,
-// ) -> ParseResult<HashMap<K, V>> {
-//     let mut out = HashMap::default();
-//     for _ in 0..len {
-//         let k = source.get()?;
-//         let v = source.get()?;
-//         if out.insert(k, v).is_some() {
-//             return Err(ParseError::default());
-//         }
-//     }
-//     Ok(out)
-// }
+// TODO: Remove / is not in concordium-std??
+#[cfg(not(feature = "hacspec"))]
+/// Read a [HashMap](https://doc.rust-lang.org/std/collections/struct.HashMap.html) as a list of key-value pairs given some length.
+pub fn deserial_hashmap_no_length<R: Read, K: Deserial + Eq + Hash, V: Deserial>(
+    source: &mut R,
+    len: usize,
+) -> ParseResult<HashMap<K, V>> {
+    let mut out = HashMap::default();
+    for _ in 0..len {
+        let k = source.get()?;
+        let v = source.get()?;
+        if out.insert(k, v).is_some() {
+            return Err(ParseError::default());
+        }
+    }
+    Ok(out)
+}
 
 #[cfg(not(feature = "hacspec"))]
 /// Deserialization for HashMap given a size_len.
@@ -1593,17 +1593,17 @@ impl SerialCtx for String {
     }
 }
 
-// #[cfg(not(feature = "hacspec"))]  
-// impl DeserialCtx for String {
-//     fn deserial_ctx<R: Read>(
-//         size_len: concordium_contracts_common::schema::SizeLength,
-//         _ensure_ordered: bool,
-//         source: &mut R,
-//     ) -> ParseResult<Self> {
-//         let len = concordium_contracts_common::schema::deserial_length(source, size_len)?;
-//         let bytes = deserial_vector_no_length(source, len)?;
-//         let res = String::from_utf8(bytes).map_err(|_| ParseError::default())?;
-//         Ok(res)
-//     }
-// }
+#[cfg(not(feature = "hacspec"))]  
+impl DeserialCtx for String {
+    fn deserial_ctx<R: Read>(
+        size_len: concordium_contracts_common::schema::SizeLength,
+        _ensure_ordered: bool,
+        source: &mut R,
+    ) -> ParseResult<Self> {
+        let len = concordium_contracts_common::schema::deserial_length(source, size_len)?;
+        let bytes = deserial_vector_no_length(source, len)?;
+        let res = String::from_utf8(bytes).map_err(|_| ParseError::default())?;
+        Ok(res)
+    }
+}
 

@@ -20,7 +20,7 @@ use concert_lib::*;
 
 #[cfg(not(feature = "hacspec"))]
 /// The state of the piggy bank
-// #[derive(Debug, Serialize, PartialEq, Eq)]
+#[derive(Debug, Serialize, PartialEq, Eq)]
 enum PiggyBankState {
     /// Alive and well, allows for GTU to be inserted.
     Intact,

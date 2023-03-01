@@ -37,7 +37,7 @@ members = [
     "xor",
     "concordium",
     "concordium-derive",
-    "auction",
     "piggybank",
-    "wccd",
+    # "auction",
+    # "wccd",
 ]

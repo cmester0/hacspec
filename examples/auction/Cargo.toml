@@ -9,7 +9,7 @@ path = "src/auction.rs"
 
 [dependencies]
 hacspec-lib = { path = "../../lib" }
-creusot-contracts = { git = "https://github.com/xldenis/creusot", rev = "417b958b11c5a4a4f89da510b9e0a87433d5836e" }
+creusot-contracts = { git = "https://github.com/xldenis/creusot", rev = "1f8670f" } # branch = "master"
 # concordium-std = "5.1"
 concordium-contracts-common = { git = "https://github.com/Concordium/concordium-contracts-common", rev = "84ff7db509ca1fbf958b47e5e5903b7662295850" ,  version = "=2.0.0" , default-features = false }
 hacspec-concordium = { path = "../concordium" }

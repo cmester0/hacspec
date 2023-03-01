@@ -13,7 +13,7 @@ members = [
     # "utils/rc-tests",
     # "utils/util",
     # "examples-unsafe",
-    "no_std",
+    # "no_std",
 ]
 default-members = [
     "lib",

@@ -18,7 +18,7 @@ name = "chacha20"
 crate-type = ["staticlib"]
 
 [dependencies]
-creusot-contracts = { git = "https://github.com/cmester0/creusot", branch = "add_default_to_vec" } # branch = "master"
+creusot-contracts = { git = "https://github.com/xldenis/creusot", rev = "1f8670f" } # branch = "master"
 
 [features]
 contracts = ["creusot-contracts/contracts"]

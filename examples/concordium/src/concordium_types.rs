@@ -12,7 +12,7 @@ use crate::num::NonZeroI32;
 
 #[cfg(not(feature = "hacspec"))]
 /// A type representing the constract state bytes.
-// #[derive(core::default::Default)]
+#[derive(Default)]
 pub struct ContractState {
     pub(crate) current_position: u32,
 }
@@ -335,7 +335,7 @@ pub type InitResult<S> = Result<S, Reject>;
 
 #[cfg(not(feature = "hacspec"))]
 /// Context backed by host functions.
-#[derive(creusot_contracts::Default)]
+#[derive(Default)]
 #[doc(hidden)]
 pub struct ExternContext<T: sealed::ContextType> {
     marker: crate::marker::PhantomData<T>,
@@ -346,11 +346,11 @@ pub struct ExternContext<T: sealed::ContextType> {
 pub struct ChainMetaExtern {}
 
 #[cfg(not(feature = "hacspec"))]
-#[derive(creusot_contracts::Default)]
+#[derive(Default)]
 #[doc(hidden)]
 pub struct InitContextExtern;
 #[cfg(not(feature = "hacspec"))]
-// #[derive(Default)]
+#[derive(Default)]
 #[doc(hidden)]
 pub struct ReceiveContextExtern;
 
