@@ -132,141 +132,141 @@ where
     fn reserve(&mut self, len: u32) -> bool;
 }
 
-#[cfg(not(feature = "hacspec"))]
-/// Objects which can serve as loggers.
-///
-/// Logging functionality can be used by smart contracts to record events that
-/// might be of interest to external parties. These events are not used on the
-/// chain, and cannot be observed by other contracts, but they are stored by the
-/// node, and can be queried to provide information to off-chain actors.
-pub trait HasLogger {
-    /// Initialize a logger.
-    fn init() -> Self;
+// #[cfg(not(feature = "hacspec"))]
+// /// Objects which can serve as loggers.
+// ///
+// /// Logging functionality can be used by smart contracts to record events that
+// /// might be of interest to external parties. These events are not used on the
+// /// chain, and cannot be observed by other contracts, but they are stored by the
+// /// node, and can be queried to provide information to off-chain actors.
+// pub trait HasLogger {
+//     /// Initialize a logger.
+//     fn init() -> Self;
 
-    /// Log the given slice as-is. If logging is not successful an error will be
-    /// returned.
-    fn log_raw(&mut self, event: &[u8]) -> Result<(), LogError>;
+//     /// Log the given slice as-is. If logging is not successful an error will be
+//     /// returned.
+//     fn log_raw(&mut self, event: &[u8]) -> Result<(), LogError>;
 
-    #[inline(always)]
-    /// Log a serializable event by serializing it with a supplied serializer.
-    fn log<S: Serial>(&mut self, event: &S) -> Result<(), LogError> {
-        let mut out = Vec::new();
-        if event.serial(&mut out).is_err() {
-            trap(); // should not happen
-        }
-        self.log_raw(&out)
-    }
-}
+//     #[inline(always)]
+//     /// Log a serializable event by serializing it with a supplied serializer.
+//     fn log<S: Serial>(&mut self, event: &S) -> Result<(), LogError> {
+//         let mut out = Vec::new();
+//         if event.serial(&mut out).is_err() {
+//             trap(); // should not happen
+//         }
+//         self.log_raw(&out)
+//     }
+// }
 
-#[cfg(not(feature = "hacspec"))]
-/// An object that can serve to construct actions.
-///
-/// The actions that a smart contract can produce as a
-/// result of its execution. These actions form a tree and are executed by
-/// the scheduler in the predefined order.
-pub trait HasActions {
-    /// Default accept action.
-    fn accept() -> Self;
+// #[cfg(not(feature = "hacspec"))]
+// /// An object that can serve to construct actions.
+// ///
+// /// The actions that a smart contract can produce as a
+// /// result of its execution. These actions form a tree and are executed by
+// /// the scheduler in the predefined order.
+// pub trait HasActions {
+//     /// Default accept action.
+//     fn accept() -> Self;
 
-    /// Send a given amount to an account.
-    fn simple_transfer(acc: &AccountAddress, amount: Amount) -> Self;
+//     /// Send a given amount to an account.
+//     fn simple_transfer(acc: &AccountAddress, amount: Amount) -> Self;
 
-    /// Send a message to a contract.
-    fn send_raw(
-        ca: &ContractAddress,
-        receive_name: ReceiveName,
-        amount: Amount,
-        parameter: &[u8],
-    ) -> Self;
+//     /// Send a message to a contract.
+//     fn send_raw(
+//         ca: &ContractAddress,
+//         receive_name: ReceiveName,
+//         amount: Amount,
+//         parameter: &[u8],
+//     ) -> Self;
 
-    /// If the execution of the first action succeeds, run the second action
-    /// as well.
-    fn and_then(self, then: Self) -> Self;
+//     /// If the execution of the first action succeeds, run the second action
+//     /// as well.
+//     fn and_then(self, then: Self) -> Self;
 
-    /// If the execution of the first action fails, try the second.
-    fn or_else(self, el: Self) -> Self;
-}
+//     /// If the execution of the first action fails, try the second.
+//     fn or_else(self, el: Self) -> Self;
+// }
 
-#[cfg(not(feature = "hacspec"))]
-/// Add optimized unwrap behaviour that aborts the process instead of
-/// panicking.
-pub trait UnwrapAbort {
-    /// The underlying result type of the unwrap, in case of success.
-    type Unwrap;
-    /// Unwrap or call [trap](./fn.trap.html). In contrast to
-    /// the unwrap methods on [Option::unwrap](https://doc.rust-lang.org/std/option/enum.Option.html#method.unwrap)
-    /// this method will tend to produce smaller code, at the cost of the
-    /// ability to handle the panic.
-    /// This is intended to be used only in `Wasm` code, where panics cannot be
-    /// handled anyhow.
-    fn unwrap_abort(self) -> Self::Unwrap;
-}
+// #[cfg(not(feature = "hacspec"))]
+// /// Add optimized unwrap behaviour that aborts the process instead of
+// /// panicking.
+// pub trait UnwrapAbort {
+//     /// The underlying result type of the unwrap, in case of success.
+//     type Unwrap;
+//     /// Unwrap or call [trap](./fn.trap.html). In contrast to
+//     /// the unwrap methods on [Option::unwrap](https://doc.rust-lang.org/std/option/enum.Option.html#method.unwrap)
+//     /// this method will tend to produce smaller code, at the cost of the
+//     /// ability to handle the panic.
+//     /// This is intended to be used only in `Wasm` code, where panics cannot be
+//     /// handled anyhow.
+//     fn unwrap_abort(self) -> Self::Unwrap;
+// }
 
-#[cfg(not(feature = "hacspec"))]
-/// Analogue of the `expect` methods on types such as [Option](https://doc.rust-lang.org/std/option/enum.Option.html),
-/// but useful in a Wasm setting.
-pub trait ExpectReport {
-    type Unwrap;
-    /// Like the default `expect` on, e.g., `Result`, but calling
-    /// [fail](macro.fail.html) with the given message, instead of `panic`.
-    fn expect_report(self, msg: &str) -> Self::Unwrap;
-}
+// #[cfg(not(feature = "hacspec"))]
+// /// Analogue of the `expect` methods on types such as [Option](https://doc.rust-lang.org/std/option/enum.Option.html),
+// /// but useful in a Wasm setting.
+// pub trait ExpectReport {
+//     type Unwrap;
+//     /// Like the default `expect` on, e.g., `Result`, but calling
+//     /// [fail](macro.fail.html) with the given message, instead of `panic`.
+//     fn expect_report(self, msg: &str) -> Self::Unwrap;
+// }
 
-#[cfg(not(feature = "hacspec"))]
-/// Analogue of the `expect_err` methods on [Result](https://doc.rust-lang.org/std/result/enum.Result.html),
-/// but useful in a Wasm setting.
-pub trait ExpectErrReport {
-    type Unwrap;
-    /// Like the default `expect_err` on, e.g., `Result`, but calling
-    /// [fail](macro.fail.html) with the given message, instead of `panic`.
-    fn expect_err_report(self, msg: &str) -> Self::Unwrap;
-}
+// #[cfg(not(feature = "hacspec"))]
+// /// Analogue of the `expect_err` methods on [Result](https://doc.rust-lang.org/std/result/enum.Result.html),
+// /// but useful in a Wasm setting.
+// pub trait ExpectErrReport {
+//     type Unwrap;
+//     /// Like the default `expect_err` on, e.g., `Result`, but calling
+//     /// [fail](macro.fail.html) with the given message, instead of `panic`.
+//     fn expect_err_report(self, msg: &str) -> Self::Unwrap;
+// }
 
-#[cfg(not(feature = "hacspec"))]
-/// Analogue of the `expect_none` methods on [Option](https://doc.rust-lang.org/std/option/enum.Option.html),
-/// but useful in a Wasm setting.
-pub trait ExpectNoneReport {
-    /// Like the default `expect_none_report` on, e.g., `Option`, but calling
-    /// [fail](macro.fail.html) with the given message, instead of `panic`.
-    fn expect_none_report(self, msg: &str);
-}
+// #[cfg(not(feature = "hacspec"))]
+// /// Analogue of the `expect_none` methods on [Option](https://doc.rust-lang.org/std/option/enum.Option.html),
+// /// but useful in a Wasm setting.
+// pub trait ExpectNoneReport {
+//     /// Like the default `expect_none_report` on, e.g., `Option`, but calling
+//     /// [fail](macro.fail.html) with the given message, instead of `panic`.
+//     fn expect_none_report(self, msg: &str);
+// }
 
-#[cfg(not(feature = "hacspec"))]
-/// The `SerialCtx` trait provides a means of writing structures into byte-sinks
-/// (`Write`) using contextual information.
-/// The contextual information is:
-///
-///   - `size_length`: The number of bytes used to record the length of the
-///     data.
-pub trait SerialCtx {
-    /// Attempt to write the structure into the provided writer, failing if
-    /// if the length cannot be represented in the provided `size_length` or
-    /// only part of the structure could be written.
-    ///
-    /// NB: We use Result instead of Option for better composability with other
-    /// constructs.
-    fn serial_ctx<W: Write>(
-        &self,
-        size_length: schema::SizeLength,
-        out: &mut W,
-    ) -> Result<(), W::Err>;
-}
+// #[cfg(not(feature = "hacspec"))]
+// /// The `SerialCtx` trait provides a means of writing structures into byte-sinks
+// /// (`Write`) using contextual information.
+// /// The contextual information is:
+// ///
+// ///   - `size_length`: The number of bytes used to record the length of the
+// ///     data.
+// pub trait SerialCtx {
+//     /// Attempt to write the structure into the provided writer, failing if
+//     /// if the length cannot be represented in the provided `size_length` or
+//     /// only part of the structure could be written.
+//     ///
+//     /// NB: We use Result instead of Option for better composability with other
+//     /// constructs.
+//     fn serial_ctx<W: Write>(
+//         &self,
+//         size_length: schema::SizeLength,
+//         out: &mut W,
+//     ) -> Result<(), W::Err>;
+// }
 
-#[cfg(not(feature = "hacspec"))]
-/// The `DeserialCtx` trait provides a means of reading structures from
-/// byte-sources (`Read`) using contextual information.
-/// The contextual information is:
-///
-///   - `size_length`: The expected number of bytes used for the length of the
-///     data.
-///   - `ensure_ordered`: Whether the ordering should be ensured, for example
-///     that keys in `BTreeMap` and `BTreeSet` are in strictly increasing order.
-pub trait DeserialCtx: Sized {
-    /// Attempt to read a structure from a given source and context, failing if
-    /// an error occurs during deserialization or reading.
-    fn deserial_ctx<R: Read>(
-        size_length: schema::SizeLength,
-        ensure_ordered: bool,
-        source: &mut R,
-    ) -> ParseResult<Self>;
-}
+// #[cfg(not(feature = "hacspec"))]
+// /// The `DeserialCtx` trait provides a means of reading structures from
+// /// byte-sources (`Read`) using contextual information.
+// /// The contextual information is:
+// ///
+// ///   - `size_length`: The expected number of bytes used for the length of the
+// ///     data.
+// ///   - `ensure_ordered`: Whether the ordering should be ensured, for example
+// ///     that keys in `BTreeMap` and `BTreeSet` are in strictly increasing order.
+// pub trait DeserialCtx: Sized {
+//     /// Attempt to read a structure from a given source and context, failing if
+//     /// an error occurs during deserialization or reading.
+//     fn deserial_ctx<R: Read>(
+//         size_length: schema::SizeLength,
+//         ensure_ordered: bool,
+//         source: &mut R,
+//     ) -> ParseResult<Self>;
+// }

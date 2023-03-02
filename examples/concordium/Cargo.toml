@@ -11,8 +11,7 @@ path = "src/concordium.rs"
 hacspec-lib = { path = "../../lib" }
 creusot-contracts = { git = "https://github.com/xldenis/creusot", rev = "1f8670f" } # branch = "master"
 concordium-contracts-common = { git = "https://github.com/Concordium/concordium-contracts-common", rev = "84ff7db509ca1fbf958b47e5e5903b7662295850", version = "=2.0.0", default-features = false }
-hacspec-concordium-derive = { path = "../concordium-derive" }
-hacspec-attributes = { path = "../../utils/attributes/" }
+hacspec-concordium-derive = { git = "https://github.com/cmester0/hacspec", branch="concordium" } # "../concordium-derive" }
 
 # Reduce code size, at the cost of performance in allocation heavy-code.
 wee_alloc="0.4.5"

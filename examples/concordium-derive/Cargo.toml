@@ -10,13 +10,17 @@ proc-macro = true
 
 [dependencies]
 hacspec-lib = { path = "../../lib" }
+creusot-contracts = { git = "https://github.com/xldenis/creusot", rev = "1f8670f" } # branch = "master"
 concordium-contracts-common = { git = "https://github.com/Concordium/concordium-contracts-common", rev = "84ff7db509ca1fbf958b47e5e5903b7662295850" ,  version = "=2.0.0" , default-features = false }
 syn = { version = "1.0.63", features = [ "full", "extra-traits" ] }
 quote = "=1.0.0"
 proc-macro2 = "1.0"
 
-# # Reduce code size, at the cost of performance in allocation heavy-code.
-# wee_alloc="0.4.5"
+# Reduce code size, at the cost of performance in allocation heavy-code.
+wee_alloc="0.4.5"
+
+# [features]
+# contracts = ["creusot-contracts/contracts"]
 
 # [dev-dependencies]
 # hacspec-dev = { path = "../../utils/dev" }

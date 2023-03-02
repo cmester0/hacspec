@@ -57,7 +57,7 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 #[cfg(not(feature = "hacspec"))]
 extern crate hacspec_lib;
-// pub use hacspec_lib::*;
+pub use hacspec_lib::*;
 
 // #[cfg(feature = "hacspec")]
 // use hacspec_attributes::*;
