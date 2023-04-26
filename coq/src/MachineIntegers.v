@@ -1267,7 +1267,7 @@ Qed.
 
 Theorem and_zero: forall x, and x zero = zero.
 Proof.
-  bit_solve. apply andb_b_false.
+  bit_solve. (* apply andb_b_false. *)
 Qed.
 
 Corollary and_zero_l: forall x, and zero x = zero.
@@ -1277,7 +1277,7 @@ Qed.
 
 Theorem and_mone: forall x, and x mone = x.
 Proof.
-  bit_solve. apply andb_b_true.
+  bit_solve. (* apply andb_b_true. *)
 Qed.
 
 Corollary and_mone_l: forall x, and mone x = x.
