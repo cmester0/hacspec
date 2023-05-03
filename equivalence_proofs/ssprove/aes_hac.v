@@ -20,7 +20,7 @@ Set Bullet Behavior "Strict Subproofs".
 From Coq Require Import Utf8.
 From extructures Require Import ord fset fmap.
 Require Import micromega.Lia.
-From mathcomp.word Require Import word ssrZ.
+From mathcomp Require Import word ssrZ.
 From JasminSSProve Require Import aes_jazz jasmin_utils.
 From JasminSSProve Require Import aes_utils.
 Import JasminNotation JasminCodeNotation.
@@ -151,21 +151,21 @@ Section Hacspec.
   Qed.
 
   Theorem shiftl_bounds : forall x (y z : nat),
-      (y <= z)%Z ->
+      (Z.of_nat y <= Z.of_nat z)%Z ->
       (0 <= x < modulus (z - y))%Z ->
-      (0 <= Z.shiftl x y < modulus z)%Z.
+      (0 <= Z.shiftl x (Z.of_nat y) < modulus z)%Z.
   Proof.
     intros.
     rewrite Z.shiftl_mul_pow2.
     2:{ cbn. lia. }
-    assert (modulus (z - y) * 2 ^ y = modulus z)%Z.
+    assert (modulus (z - y) * 2 ^ (Z.of_nat y) = modulus z)%Z.
     {
       unfold modulus.
       rewrite two_power_nat_correct.
       rewrite two_power_nat_correct.
       rewrite Zpower_nat_Z.
       rewrite Zpower_nat_Z.
-      rewrite <- Z.pow_add_r ; [ | lia | cbn ; lia ].
+      rewrite <- Z.pow_add_r ; [ | lia | lia ].
       f_equal.
       rewrite Nat2Z.inj_sub.
       rewrite Z.sub_simpl_r.
@@ -232,7 +232,7 @@ Section Hacspec.
   Proof.
     intros.
     rewrite modulusD.
-    rewrite mulZE.
+    rewrite word_ssrZ.mulZE.
     reflexivity.
   Qed.
 
@@ -241,14 +241,14 @@ Section Hacspec.
     intros.
     destruct n as [ | n | ] ; [ easy | | easy ].
     rewrite modulusD.
-    rewrite <- mulZE.
+    rewrite <- word_ssrZ.mulZE.
     split. easy.
     induction p.
     - rewrite Z.mul_1_r.
       apply H.
     - rewrite modulusS.
       rewrite GRing.Theory.mulr2n.
-      rewrite <- addZE.
+      rewrite <- word_ssrZ.addZE.
       eapply Z.lt_trans.
       apply IHp.
       apply Zmult_lt_compat_l.
@@ -368,7 +368,7 @@ Section Hacspec.
     destruct i as [ | [ | [ | [ | []] ]] ] ; easy.
   Qed.
 
-  Lemma num_smaller_if_modulus_le : (forall {WS} (x : 'word WS) z, (modulus WS <= z)%Z -> (0 <= x < z)%Z).
+  Lemma num_smaller_if_modulus_le : (forall {WS} (x : 'word WS) z, (modulus WS <= z)%Z -> (0 <= unsigned x < z)%Z).
   Proof.
     cbn.
     intros.
@@ -377,7 +377,7 @@ Section Hacspec.
     - eapply Z.lt_le_trans ; [ apply isword_Z | apply H ].
   Qed.
 
-  Lemma Z_lor_pow2 : (forall (x y : Z) (k : nat), (0 <= x < 2 ^ k)%Z -> (0 <= y < 2 ^ k)%Z -> (0 <= Z.lor x y < 2 ^ k)%Z).
+  Lemma Z_lor_pow2 : (forall (x y : Z) (k : nat), (0 <= x < 2 ^ (word_ssrZ.int_to_Z k))%Z -> (0 <= y < 2 ^ (word_ssrZ.int_to_Z k))%Z -> (0 <= Z.lor x y < 2 ^ (word_ssrZ.int_to_Z k))%Z).
   Proof.
     clear.
     intros.
@@ -467,7 +467,7 @@ Section Hacspec.
     assumption.
   Qed.
 
-  Theorem modulus_exact : forall {WS : wsize.wsize} (x : 'word WS), (0 <= x < modulus WS)%Z.
+  Theorem modulus_exact : forall {WS : wsize.wsize} (x : 'word WS), (0 <= unsigned x < modulus WS)%Z.
   Proof.
     intros.
     destruct x.
@@ -476,7 +476,7 @@ Section Hacspec.
     apply i.
   Qed.
 
-  Theorem modulus_smaller : forall (WS : wsize.wsize) (m : nat) {x : 'word WS}, (WS <= m)%Z -> (0 <= x < modulus m)%Z.
+  Theorem modulus_smaller : forall (WS : wsize.wsize) (m : nat) {x : 'word WS}, (WS <= Z.of_nat m)%Z -> (0 <= unsigned x < modulus m)%Z.
   Proof.
     intros.
     destruct x.
@@ -509,7 +509,7 @@ Section Hacspec.
             let fv := fresh in
             set (av := a)
             ; set (fv := f)
-            ; eapply (r_bind (ret p) av _ fv P (fun '(v0, h0) '(v1, h1) => v0 = repr v1 /\ P (h0, h1)) Q)
+            ; eapply (r_bind (ret p) av _ fv P (fun '(v0, h0) '(v1, h1) => v0 = v1 /\ P (h0, h1)) Q)
             ; subst av fv ; hnf ; [ | intros ; apply rpre_hypothesis_rule' ; intros ? ? [] ; apply rpre_weaken_rule with (pre := fun '(s₀, s₁) => P (s₀, s₁))
               ]
         end
@@ -563,7 +563,7 @@ Section Hacspec.
   Qed.
 
   Theorem loop_eq :
-    forall {acc : ChoiceEquality} v d (j : nat) id0 s_id id' y I L (y0 : @int U32 -> acc -> code L I acc) (pre : _ -> _ -> precond) (inv : _ -> _ -> precond) c,
+    forall {acc : choice_type} v d (j : nat) id0 s_id id' y I L (y0 : @int U32 -> acc -> code L I acc) (pre : _ -> _ -> precond) (inv : _ -> _ -> precond) c,
       (0 < d) ->
       (id0 ≺ s_id) ->
       (forall id, id ⪯ id' id) ->
@@ -572,18 +572,18 @@ Section Hacspec.
           j <= k < j + d ->
           ⊢ ⦃ set_lhs
                 (translate_var id0 (v_var v))
-                (@truncate_el chInt (vtype (v_var v)) (S k))
+                (@truncate_el chInt (vtype (v_var v)) (Z.of_nat (S k)))
                 (fun '(h0, h1) => (inv k c) (h0, h1) /\ (pre k c) (h0, h1)) ⦄
           y s_id
               ≈ y0 (repr (Pos.of_succ_nat k)) c
-              ⦃ λ '(_, h0) '(v1, h1), (inv (S k) (ct_T v1) (h0, h1)) /\ (pre (S k) (ct_T v1)) (h0, h1) ⦄) ->
+              ⦃ λ '(_, h0) '(v1, h1), (inv (S k) (v1) (h0, h1)) /\ (pre (S k) (v1)) (h0, h1) ⦄) ->
       (forall k c s_id, (id0 ≺ s_id) ->
           pdisj (pre k c) s_id fset0) ->
       ⊢ ⦃ fun '(h0, h1) => inv j c (h0, h1) /\ (pre j c) (h0, h1) ⦄
           (translate_for v
                          [seq (1 + Z.of_nat i)%Z | i <- iota j d] id0 (fun id => (id' id, y id)) s_id) ≈
           (foldi_ (I := I) (L := L) (d) (repr (S j)) y0 c )
-     ⦃ fun '(v0, h0) '(v1, h1) => (inv (j + d) (ct_T v1) (h0, h1)) /\ (pre (j + d) (ct_T v1)) (h0, h1) ⦄ .
+     ⦃ fun '(v0, h0) '(v1, h1) => (inv (j + d) (v1) (h0, h1)) /\ (pre (j + d) (v1)) (h0, h1) ⦄ .
   Proof.
     intros.
     generalize dependent j.
@@ -596,7 +596,6 @@ Section Hacspec.
     - rewrite unfold_translate_for.
       simpl.
       apply better_r_put_lhs.
-      setoid_rewrite T_ct_id.
       eapply r_bind.
       {
         apply H2.
@@ -613,7 +612,7 @@ Section Hacspec.
 
       apply better_r_put_lhs.
       setoid_rewrite bind_rewrite.
-      apply r_bind with (mid := λ '(_, h0) '(v1, h1), (inv (j.+1) (ct_T v1) ((h0, h1)) /\ (pre (j.+1) (ct_T v1) (h0, h1)))).
+      apply r_bind with (mid := λ '(_, h0) '(v1, h1), (inv (j.+1) (v1) ((h0, h1)) /\ (pre (j.+1) (v1) (h0, h1)))).
 
       2:{
         intros.
@@ -667,7 +666,7 @@ Section Hacspec.
   Qed.
 
   Theorem loop_eq_simpl :
-    forall {acc : ChoiceEquality} v d (j : nat) id0 s_id id' y I L (y0 : @int U32 -> acc -> code L I acc) (pre : _ -> _ -> precond) c,
+    forall {acc : choice_type} v d (j : nat) id0 s_id id' y I L (y0 : @int U32 -> acc -> code L I acc) (pre : _ -> _ -> precond) c,
       (0 < d) ->
       (id0 ≺ s_id) ->
       (forall id, id ⪯ id' id) ->
@@ -676,18 +675,18 @@ Section Hacspec.
           j <= k < j + d ->
           ⊢ ⦃ set_lhs
                 (translate_var id0 (v_var v))
-                (@truncate_el chInt (vtype (v_var v)) (S k))
+                (@truncate_el chInt (vtype (v_var v)) (Z.of_nat (S k)))
                 (pre k c) ⦄
           y s_id
               ≈ y0 (repr (Pos.of_succ_nat k)) c
-              ⦃ λ '(_, h0) '(v1, h1), (pre (S k) (ct_T v1)) (h0, h1) ⦄) ->
+              ⦃ λ '(_, h0) '(v1, h1), (pre (S k) (v1)) (h0, h1) ⦄) ->
       (forall k c s_id, (id0 ≺ s_id) ->
           pdisj (pre k c) s_id fset0) ->
       ⊢ ⦃ (pre j c) ⦄
           (translate_for v
                          [seq (1 + Z.of_nat i)%Z | i <- iota j d] id0 (fun id => (id' id, y id)) s_id) ≈
           (foldi_ (I := I) (L := L) (d) (repr (S j)) y0 c )
-     ⦃ fun '(v0, h0) '(v1, h1) => (pre (j + d) (ct_T v1)) (h0, h1) ⦄ .
+     ⦃ fun '(v0, h0) '(v1, h1) => (pre (j + d) (v1)) (h0, h1) ⦄ .
   Proof.
     intros.
     generalize dependent j.
@@ -700,7 +699,6 @@ Section Hacspec.
     - rewrite unfold_translate_for.
       simpl.
       apply better_r_put_lhs.
-      setoid_rewrite T_ct_id.
       eapply r_bind.
       {
         apply H2.
@@ -717,7 +715,7 @@ Section Hacspec.
 
       apply better_r_put_lhs.
       setoid_rewrite bind_rewrite.
-      apply r_bind with (mid := λ '(_, h0) '(v1, h1), (pre (S j) (ct_T v1) (h0, h1))).
+      apply r_bind with (mid := λ '(_, h0) '(v1, h1), (pre (S j) (v1) (h0, h1))).
 
       2:{
         intros.
@@ -799,7 +797,7 @@ Section Hacspec.
     rewrite Z.shiftl_0_l.
     rewrite Z.lor_0_r.
     rewrite !Z.shiftl_lor.
-    simpl int_to_Z.
+    simpl word_ssrZ.int_to_Z.
     rewrite !Z.shiftl_shiftl ; try easy.
     simpl (_ + _)%Z.
 
@@ -824,12 +822,15 @@ Section Hacspec.
 
     all: try apply shiftl_bounds.
     all: try now apply (@num_smaller_if_modulus_le U32).
-    all: try easy.
+    all: try easy.    
     repeat (rewrite modulusZE ; apply Z_lor_pow2 ; rewrite <- modulusZE).
     all: try now apply (@num_smaller_if_modulus_le U32).
-    1: replace 32%Z with (int_to_Z 32) by reflexivity.
-    2: replace 64%Z with (int_to_Z 64) by reflexivity.
-    3: replace 96%Z with (int_to_Z 96) by reflexivity.
+
+    
+    1: replace 32%Z with (word_ssrZ.int_to_Z 32) by reflexivity.
+    2: replace 64%Z with (word_ssrZ.int_to_Z 64) by reflexivity.
+    3: replace 96%Z with (word_ssrZ.int_to_Z 96) by reflexivity.
+
     all: apply shiftl_bounds ; [ easy | ].
     all: try now apply (@num_smaller_if_modulus_le U32).
   Qed.
@@ -855,7 +856,7 @@ Section Hacspec.
     rewrite Z.shiftl_0_l.
     rewrite Z.lor_0_r.
     rewrite !Z.shiftl_lor.
-    simpl int_to_Z.
+    simpl word_ssrZ.int_to_Z.
     rewrite !Z.shiftl_shiftl ; try easy.
     simpl (_ + _)%Z.
 
@@ -883,9 +884,9 @@ Section Hacspec.
     all: try easy.
     repeat (rewrite modulusZE ; apply Z_lor_pow2 ; rewrite <- modulusZE).
     all: try now apply (@num_smaller_if_modulus_le U8).
-    1: replace 8%Z with (int_to_Z 8) by reflexivity.
-    2: replace 16%Z with (int_to_Z 16) by reflexivity.
-    3: replace 24%Z with (int_to_Z 24) by reflexivity.
+    1: replace 8%Z with (word_ssrZ.int_to_Z 8) by reflexivity.
+    2: replace 16%Z with (word_ssrZ.int_to_Z 16) by reflexivity.
+    3: replace 24%Z with (word_ssrZ.int_to_Z 24) by reflexivity.
     all: apply shiftl_bounds ; [ easy | ].
     all: try now apply (@num_smaller_if_modulus_le U8).
   Qed.
@@ -1439,7 +1440,7 @@ Section Hacspec.
       apply r_ret.
       intros.
       rewrite index_32_eq ; [ | easy ].
-      split. setoid_rewrite wrepr_unsigned. reflexivity. assumption.
+      split. reflexivity. assumption.
     }
 
     match_pattern_and_bind_repr (@word.subword (wsize_size_minus_1 U128).+1 (3 * U32) U32 v1).
@@ -1447,20 +1448,20 @@ Section Hacspec.
       apply r_ret.
       intros.
       rewrite index_32_eq ; [ | easy ].
-      split ; [ setoid_rewrite wrepr_unsigned | ] ; easy.
+      split ; easy.
     }
 
     match_pattern_and_bind (waes.SubWord a₀).
     {
       subst.
-      replace (is_pure (lift_to_both0 _)) with (@repr U32 a₁).
+      replace (is_pure (lift_to_both0 _)) with ( a₁).
       2:{
         pose (isword_Z _ a₁).
         destruct a₁.
         apply word_ext.
-        now rewrite Zmod_small.
+        reflexivity.
       }
-      rewrite (SubWord_eq (repr a₁)).
+      rewrite (SubWord_eq (a₁)).
       apply r_ret ; easy.
     }
 
@@ -1483,14 +1484,13 @@ Section Hacspec.
     match_pattern_and_bind (waes.SubWord a₀0).
     {
       subst.
-      replace (is_pure (lift_to_both0 _)) with (@repr U32 a₁0).
+      replace (is_pure (lift_to_both0 _)) with (a₁0).
       2:{
         pose (isword_Z _ a₁0).
         destruct a₁0.
-        apply word_ext.
-        now rewrite Zmod_small.
+        now apply word_ext.
       }
-      rewrite (SubWord_eq (repr a₁0)).
+      rewrite (SubWord_eq (a₁0)).
       apply r_ret ; easy.
     }
 
@@ -1688,7 +1688,7 @@ Section Hacspec.
         ≈
         is_state (array_index (rcon_v) (@repr U32 (S j)))
         ⦃ fun '(v0, h0) '(v1, h1) =>
-            (exists o1, v0 = [('int; o1)] /\ repr o1 = v1)  /\ pre (h0, h1) ⦄.
+            (exists (o1 : (λ i : choice_type_choiceType, i) _), v0 = [('int; o1)] /\ repr o1 = v1)  /\ pre (h0, h1) ⦄.
   Proof.
     intros.
     unfold JRCON.

@@ -12,6 +12,9 @@ Import RulesStateProb.
 Import RulesStateProb.RSemanticNotation.
 Open Scope rsemantic_scope.
 
+Notation "prod_ce( a , b )" := ((a , b) : chProd _ _) : hacspec_scope.
+Notation "prod_ce( a , b , .. , c )" := ((.. ((a , b) : chProd _ _) .. , c) : chProd _ _) : hacspec_scope.
+
 Definition lift_to_code {ce L I} (x : choice.Choice.sort ce) : code L I ce :=
   {code ret x}.
 

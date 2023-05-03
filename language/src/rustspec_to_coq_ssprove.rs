@@ -771,40 +771,13 @@ fn translate_item<'a>(item: DecoratedItem, top_ctx: &'a TopLevelContext) -> RcDo
                                     rustspec_to_coq_ssprove_state::translate_typ(tau.clone())
                                 }),
                                 RcDoc::space()
-                                    .append(RcDoc::as_string("'×"))
+                                    .append(RcDoc::as_string("×"))
                                     .append(RcDoc::space()),
                             )
                         }
                         .append(RcDoc::as_string(" : choice_type")),
                     ))
                     .append(RcDoc::as_string(" (in custom pack_type at level 2)."));
-
-                let fun_inp_notation_1 = RcDoc::as_string("Notation")
-                    .append(RcDoc::space())
-                    .append(RcDoc::as_string("\"'"))
-                    .append(
-                        translate_ident(Ident::TopLevel(f.clone()))
-                            .append(RcDoc::as_string("_inp")),
-                    )
-                    .append(RcDoc::as_string("'\""))
-                    .append(RcDoc::space())
-                    .append(RcDoc::as_string(":="))
-                    .append(make_paren(
-                        if sig.args.is_empty() {
-                            RcDoc::as_string("unit_ChoiceEquality")
-                        } else {
-                            RcDoc::intersperse(
-                                sig.args.iter().map(|((_x, _), (tau, _))| {
-                                    rustspec_to_coq_ssprove_state::translate_typ(tau.clone())
-                                }),
-                                RcDoc::space()
-                                    .append(RcDoc::as_string("'×"))
-                                    .append(RcDoc::space()),
-                            )
-                        }
-                        .append(RcDoc::as_string(" : ChoiceEquality")),
-                    ))
-                    .append(RcDoc::as_string(" (at level 2)."));
 
                 let fun_out_notation_0 = RcDoc::as_string("Notation")
                     .append(RcDoc::space())
@@ -821,22 +794,6 @@ fn translate_item<'a>(item: DecoratedItem, top_ctx: &'a TopLevelContext) -> RcDo
                             .append(RcDoc::as_string(" : choice_type")),
                     ))
                     .append(RcDoc::as_string(" (in custom pack_type at level 2)."));
-
-                let fun_out_notation_1 = RcDoc::as_string("Notation")
-                    .append(RcDoc::space())
-                    .append(RcDoc::as_string("\"'"))
-                    .append(
-                        translate_ident(Ident::TopLevel(f.clone()))
-                            .append(RcDoc::as_string("_out")),
-                    )
-                    .append(RcDoc::as_string("'\""))
-                    .append(RcDoc::space())
-                    .append(RcDoc::as_string(":="))
-                    .append(make_paren(
-                        rustspec_to_coq_ssprove_state::translate_base_typ(sig.ret.0.clone())
-                            .append(RcDoc::as_string(" : ChoiceEquality")),
-                    ))
-                    .append(RcDoc::as_string(" (at level 2)."));
 
                 let fun_ident_def = rustspec_to_coq_ssprove_state::make_definition(
                     RcDoc::as_string(f.clone().string.to_uppercase()),
@@ -865,11 +822,7 @@ fn translate_item<'a>(item: DecoratedItem, top_ctx: &'a TopLevelContext) -> RcDo
                 RcDoc::line()
                     .append(fun_inp_notation_0)
                     .append(RcDoc::line())
-                    .append(fun_inp_notation_1)
-                    .append(RcDoc::line())
                     .append(fun_out_notation_0)
-                    .append(RcDoc::line())
-                    .append(fun_out_notation_1)
                     .append(RcDoc::line())
                     .append(fun_ident_def)
                     .append(RcDoc::line())
@@ -941,7 +894,7 @@ pub fn translate_and_write_to_file(
          From Crypt Require Import choice_type Package Prelude.\n\
          Import PackageNotation.\n\
          From extructures Require Import ord fset.\n\
-         From mathcomp.word Require Import ssrZ word.\n\
+         From mathcomp Require Import ssrZ word.\n\
          From Jasmin Require Import word.\n\
          \n\
          From Coq Require Import ZArith.\n\
@@ -956,7 +909,8 @@ pub fn translate_and_write_to_file(
          Require Import Hacspec_Lib_Pre.\n\
          Require Import Hacspec_Lib.\n\
          \n\
-         Open Scope hacspec_scope.\n\n\
+         Open Scope hacspec_scope.\n\
+         Import choice.Choice.Exports.\n\n\
          Obligation Tactic := try timeout 8 solve_ssprove_obligations.\n",
     )
     .unwrap();

@@ -41,8 +41,8 @@ Open Scope list_scope.
 
 Import choice.Choice.Exports.
 
-Equations lift3_both {A B C : choice_type} L1 L2 I : (A -> B -> C) -> both L1 I A -> both L2 I B -> both (L1 :|: L2) I C :=
-  lift3_both _ _ _ f x y :=
+Equations lift3_both {A B C : choice_type} {L1 L2 I} : (A -> B -> C) -> both L1 I A -> both L2 I B -> both (L1 :|: L2) I C :=
+  lift3_both f x y :=
     {| is_pure := f x y ;
       is_state := {code temp_x ← x ;; temp_y ← y ;; ret (f (temp_x) (temp_y)) } |}.
 Next Obligation.
@@ -74,24 +74,22 @@ Next Obligation.
 Qed.
 Global Transparent lift2_both.
 
-Section IntType.
-  Definition int_modi {WS : wsize} {L1 L2} {I} := @lift3_both _ _ (@int WS) L1 L2 I int_modi.
-  Definition int_add {WS : wsize} {L1 L2} {I} := @lift3_both _ _ (@int WS) L1 L2 I int_add.
-  Definition int_sub {WS : wsize} {L1 L2} {I} := @lift3_both _ _ (@int WS) L1 L2 I int_sub.
-  Definition int_opp {WS : wsize} {L} {I} := @lift2_both _ (@int WS) L I int_opp.
-  Definition int_mul {WS : wsize} {L1 L2} {I} := @lift3_both _ _ (@int WS) L1 L2 I int_mul.
-  Definition int_div {WS : wsize} {L1 L2} {I} := @lift3_both _ _ (@int WS) L1 L2 I int_div.
-  Definition int_mod {WS : wsize} {L1 L2} {I} := @lift3_both _ _ (@int WS) L1 L2 I int_mod.
-  Definition int_xor {WS : wsize} {L1 L2} {I} := @lift3_both _ _ (@int WS) L1 L2 I  int_xor.
-  Definition int_and {WS : wsize} {L1 L2} {I} := @lift3_both _ _ (@int WS) L1 L2 I int_and.
-  Definition int_or  {WS : wsize} {L1 L2} {I} := @lift3_both _ _ (@int WS) L1 L2 I int_or.
-  Definition int_not {WS : wsize} {L} {I} := @lift2_both _ (@int WS) L I int_not.
+(* Section IntType. *)
+  Notation int_modi := (lift3_both int_modi).
+  Notation int_add := (lift3_both int_add).
+  Notation int_sub := (lift3_both int_sub).
+  Notation int_opp := (lift2_both int_opp).
+  Notation int_mul := (lift3_both int_mul).
+  Notation int_div := (lift3_both int_div).
+  Notation int_mod := (lift3_both int_mod).
+  Notation int_xor := (lift3_both int_xor).
+  Notation int_and := (lift3_both int_and).
+  Notation int_or := (lift3_both int_or).
+  Notation int_not := (lift2_both int_not).
+  Notation cast_int := (lift2_both (fun n => repr (unsigned n))).
+(* End IntType. *)
 
-  Program Definition cast_int {WS1 WS2 : wsize} {L I} := @lift2_both (@int WS1) (@int WS2) L I (fun n => repr (unsigned n)).
-End IntType.
-
-Definition secret : forall {WS : wsize},  ((@int WS)) -> both0 (@int WS) :=
-  fun {WS} x => lift_to_both (secret x).
+Notation secret := (lift2_both secret).
 
 Infix ".%%" := int_modi (at level 40, left associativity) : Z_scope.
 Infix ".+" := int_add (at level 77) : hacspec_scope.
@@ -105,91 +103,59 @@ Infix ".&" := int_and (at level 77) : hacspec_scope.
 Infix ".|" := int_or (at level 77) : hacspec_scope.
 Notation "'not'" := int_not (at level 77) : hacspec_scope.
 
-Section Uint.
-  Definition uint8_declassify (n : int8) : both0 int8 :=
-    lift_to_both (uint8_declassify n).
-  Definition int8_declassify (n : int8) : both0 int8 :=
-    lift_to_both (int8_declassify n).
-  Definition uint16_declassify (n : int16) : both0 int16 :=
-    lift_to_both (uint16_declassify n).
-  Definition int16_declassify (n : int16) : both0 int16 :=
-    lift_to_both (int16_declassify n).
-  Definition uint32_declassify (n : int32) : both0 int32 :=
-    lift_to_both (uint32_declassify n).
-  Definition int32_declassify (n : int32) : both0 int32 :=
-    lift_to_both (int32_declassify n).
-  Definition uint64_declassify (n : int64) : both0 int64 :=
-    lift_to_both (uint64_declassify n).
-  Definition int64_declassify (n : int64) : both0 int64 :=
-    lift_to_both (int64_declassify n).
-  Definition uint128_declassify (n : int128) : both0 int128 :=
-    lift_to_both (uint128_declassify n).
-  Definition int128_declassify (n : int128) : both0 int128 :=
-    lift_to_both (int128_declassify n).
+(* Section Uint. *)
+  Notation uint8_declassify := (lift2_both uint8_declassify).
+  Notation int8_declassify := (lift2_both int8_declassify).
+  Notation uint16_declassify := (lift2_both uint16_declassify).
+  Notation int16_declassify := (lift2_both int16_declassify).
+  Notation uint32_declassify := (lift2_both uint32_declassify).
+  Notation int32_declassify := (lift2_both int32_declassify).
+  Notation uint64_declassify := (lift2_both uint64_declassify).
+  Notation int64_declassify := (lift2_both int64_declassify).
+  Notation uint128_declassify := (lift2_both uint128_declassify).
+  Notation int128_declassify := (lift2_both int128_declassify).
 
-  Definition uint8_classify (n : int8) : both0 int8 :=
-    lift_to_both (uint8_classify n).
-  Definition int8_classify (n : int8) : both0 int8 :=
-    lift_to_both (int8_classify n).
-  Definition uint16_classify (n : int16) : both0 int16 :=
-    lift_to_both (uint16_classify n).
-  Definition int16_classify (n : int16) : both0 int16 :=
-    lift_to_both (int16_classify n).
-  Definition uint32_classify (n : int32) : both0 int32 :=
-    lift_to_both (uint32_classify n).
-  Definition int32_classify (n : int32) : both0 int32 :=
-    lift_to_both (int32_classify n).
-  Definition uint64_classify (n : int64) : both0 int64 :=
-    lift_to_both (uint64_classify n).
-  Definition int64_classify (n : int64) : both0 int64 :=
-    lift_to_both (int64_classify n).
-  Definition uint128_classify (n : int128) : both0 int128 :=
-    lift_to_both (uint128_classify n).
-  Definition int128_classify (n : int128) : both0 int128 :=
-    lift_to_both (int128_classify n).
+  Notation uint8_classify := (lift2_both uint8_classify).
+  Notation int8_classify := (lift2_both int8_classify).
+  Notation uint16_classify := (lift2_both uint16_classify).
+  Notation int16_classify := (lift2_both int16_classify).
+  Notation uint32_classify := (lift2_both uint32_classify).
+  Notation int32_classify := (lift2_both int32_classify).
+  Notation uint64_classify := (lift2_both uint64_classify).
+  Notation int64_classify := (lift2_both int64_classify).
+  Notation uint128_classify := (lift2_both uint128_classify).
+  Notation int128_classify := (lift2_both int128_classify).
 
   (* CompCert integers' signedness is only interpreted through 'signed' and 'unsigned',
    and not in the representation. Therefore, uints are just names for their respective ints.
    *)
 
-  Definition declassify_usize_from_uint8 (n : uint8) : both0 uint_size :=
-    lift_to_both (declassify_usize_from_uint8 n).
-  Definition declassify_u32_from_uint32 (n : uint32) : both0 uint32 :=
-    lift_to_both (declassify_u32_from_uint32 n).
+  Notation declassify_usize_from_uint8 := (lift2_both declassify_usize_from_uint8).
+  Notation declassify_u32_from_uint32 := (lift2_both declassify_u32_from_uint32).
 
-  Definition uint8_rotate_left (u: int8) (s: int8) : both0 int8 := lift_to_both (uint8_rotate_left u s).
+  Notation uint8_rotate_left := (lift3_both uint8_rotate_left).
 
-  Definition uint8_rotate_right (u: int8) (s: int8) : both0 (int8) := lift_to_both0 (uint8_rotate_right u s).
+  Notation uint8_rotate_right := (lift3_both uint8_rotate_right).
 
-  Definition uint16_rotate_left (u: int16) (s: int16) : both0 (int16) :=
-lift_to_both0 (uint16_rotate_left u s).
+  Notation uint16_rotate_left := (lift3_both uint16_rotate_left).
 
-  Definition uint16_rotate_right (u: int16) (s: int16) : both0 (int16) :=
-lift_to_both0 (uint16_rotate_right u s).
+  Notation uint16_rotate_right := (lift3_both uint16_rotate_right).
 
-  Definition uint32_rotate_left (u: int32) (s: int32) : both0 (int32) :=
-lift_to_both0 (uint32_rotate_left u s).
+  Notation uint32_rotate_left := (lift3_both uint32_rotate_left).
 
-  Definition uint32_rotate_right (u: int32) (s: int32) : both0 (int32) :=
-lift_to_both0 (uint32_rotate_right u s).
+  Notation uint32_rotate_right := (lift3_both uint32_rotate_right).
 
-  Definition uint64_rotate_left (u: int64) (s: int64) : both0 (int64) :=
-lift_to_both0 (uint64_rotate_left u s).
+  Notation uint64_rotate_left := (lift3_both uint64_rotate_left).
 
-  Definition uint64_rotate_right (u: int64) (s: int64) : both0 (int64) :=
-lift_to_both0 (uint64_rotate_right u s).
+  Notation uint64_rotate_right := (lift3_both uint64_rotate_right).
 
-  Definition uint128_rotate_left (u: int128) (s: int128) : both0 (int128) :=
-lift_to_both0 (uint128_rotate_left u s).
+  Notation uint128_rotate_left := (lift3_both uint128_rotate_left).
 
-  Definition uint128_rotate_right (u: int128) (s: int128) : both0 (int128) :=
-lift_to_both0 (uint128_rotate_right u s).
+  Notation uint128_rotate_right := (lift3_both uint128_rotate_right).
+  Notation usize_shift_right_ := (lift3_both (fun u s => u usize_shift_right s)).
 
-
-  Definition usize_shift_right_ (u: uint_size) (s: int32) : both0 (uint_size) :=
-    lift_to_both (u usize_shift_right s).
-
-  Program Definition usize_shift_left_ (u: both0 uint_size) (s: both0 int32) : both0 (uint_size) :=
+  Notation usize_shift_left_ :=
+    (fun (u: both0 uint_size) (s: both0 int32) =>
     {|
       is_pure := (is_pure u) usize_shift_left (is_pure s) ;
       is_state :=
@@ -198,28 +164,25 @@ lift_to_both0 (uint128_rotate_right u s).
          temp_s ← is_state s ;;
          ret (temp_u usize_shift_left temp_s)
       }
-    |}.
-  Next Obligation.
-    intros.
-    pattern_both Hb Hf Hg.
-    apply (@r_bind_trans_both (uint_size) (uint_size)).
-    subst Hf Hg Hb ; hnf.
-    pattern_both Hb Hf Hg.
-    apply (@r_bind_trans_both (int32)).
-    subst Hf Hg Hb ; hnf.
-    apply r_ret.
-    easy.
-  Qed.
+    |}).
+  (* Next Obligation. *)
+  (*   intros. *)
+  (*   pattern_both Hb Hf Hg. *)
+  (*   apply (@r_bind_trans_both (uint_size) (uint_size)). *)
+  (*   subst Hf Hg Hb ; hnf. *)
+  (*   pattern_both Hb Hf Hg. *)
+  (*   apply (@r_bind_trans_both (int32)). *)
+  (*   subst Hf Hg Hb ; hnf. *)
+  (*   apply r_ret. *)
+  (*   easy. *)
+  (* Qed. *)
 
   (**** Operations *)
 
-  Program Definition shift_left_ `{WS : wsize} {L1 L2} {I} :=
-    @lift3_both _ _ _ L1 L2 I (@shift_left_ WS).
+  Notation shift_left_ := (lift3_both shift_left_).
+  Notation shift_right_ := (lift3_both shift_right_).
 
-  Program Definition shift_right_ `{WS : wsize} {L1 L2} {I} :=
-    @lift3_both _ _ _ L1 L2 I (@shift_right_ WS).
-
-End Uint.
+(* End Uint. *)
 
 Infix "usize_shift_right" := (usize_shift_right_) (at level 77) : hacspec_scope.
 Infix "usize_shift_left" := (usize_shift_left_) (at level 77) : hacspec_scope.
@@ -242,7 +205,7 @@ Section Loops.
     | O => ret cur
     | S n' =>
         cur' ← f i cur ;;
-        Si ← (lift_to_both0 i) .+ (lift_to_both0 one) ;;
+        Si ← ret (Hacspec_Lib_Pre.int_add i one) ;;
         foldi_ n' Si f (cur')
     end.
 
@@ -298,7 +261,7 @@ Section Loops.
       {L I}
       (f : uint_size -> acc -> code L I (acc))
       (cur : acc),
-      (cur' ← f i cur ;; Si ← (lift_to_both0 i) .+ (lift_to_both0 one) ;; foldi_ fuel Si f (cur')) = foldi_ (S fuel) i f cur.
+      (cur' ← f i cur ;; Si ← ret (Hacspec_Lib_Pre.int_add i one) ;; foldi_ fuel Si f (cur')) = foldi_ (S fuel) i f cur.
   Proof. reflexivity. Qed.
 
   Lemma foldi__nat_move_S :
@@ -414,7 +377,7 @@ Section Loops.
       (cur : acc),
       (0 <= Z.of_nat fuel <= @wmax_unsigned U32)%Z ->
       (cur' ← foldi_ fuel i f cur ;;
-       fuel_add_i ← (lift_to_both0 (repr (Z.of_nat fuel))) .+ (lift_to_both0 i) ;;
+       fuel_add_i ← ret (Hacspec_Lib_Pre.int_add (repr (Z.of_nat fuel)) i) ;;
        f fuel_add_i (cur')
       ) = foldi_ (S (fuel)) i f cur.
   Proof.
@@ -434,8 +397,8 @@ Section Loops.
       apply functional_extensionality.
       intros.
 
-      unfold int_add at 1 3.
-      unfold lift_to_both, is_state at 1 3.
+      unfold Hacspec_Lib_Pre.int_add at 1 3.
+      (* unfold lift_to_both, is_state at 1 3. *)
       unfold prog, lift_to_code.
       do 2 setoid_rewrite bind_rewrite.
 
@@ -1044,39 +1007,39 @@ Section Arrays.
   (**** types *)
 
   (***** prelude.rs *)
-  Definition uint128_word_t : choice_type := nseq uint8 16.
-  Definition uint64_word_t : choice_type := nseq uint8 8.
-  Definition uint32_word_t : choice_type := nseq uint8 4.
-  Definition uint16_word_t : choice_type := nseq uint8 2.
+  Definition uint128_word_t : choice_type := nseq_ uint8 16.
+  Definition uint64_word_t : choice_type := nseq_ uint8 8.
+  Definition uint32_word_t : choice_type := nseq_ uint8 4.
+  Definition uint16_word_t : choice_type := nseq_ uint8 2.
 
   (**** Array manipulation *)
   Definition array_new_ {A: choice_type} (init:A) `(len: nat) :
-    both0 ((nseq A len)) :=
+    both0 ((nseq_ A len)) :=
     lift_to_both (array_new_ init len).
 
-  Definition array_index {A: choice_type} `{Default ( A)} {len : nat} (s: (nseq A len)) {WS} (i: @int WS) : both0 (A) :=
+  Definition array_index {A: choice_type} `{Default ( A)} {len : nat} (s: (nseq_ A len)) {WS} (i: @int WS) : both0 (A) :=
     lift_to_both (array_index s i).
 
-  Definition array_upd {A: choice_type} {len : nat} (s: (nseq A len)) {WS} (i: @int WS) (new_v: A) : both0 ((nseq A len)) :=
+  Definition array_upd {A: choice_type} {len : nat} (s: (nseq_ A len)) {WS} (i: @int WS) (new_v: A) : both0 ((nseq_ A len)) :=
     lift_to_both (array_upd s i new_v).
 
   (* substitutes a sequence (seq) into an array (nseq), given index interval  *)
-  Definition update_sub {A : choice_type} {len slen} `{Default ( A)} (v : (nseq A len)) (i : nat) (n : nat) (sub : (nseq A slen)) : both0 ((nseq A len)) :=
+  Definition update_sub {A : choice_type} {len slen} `{Default ( A)} (v : (nseq_ A len)) (i : nat) (n : nat) (sub : (nseq_ A slen)) : both0 ((nseq_ A len)) :=
     lift_to_both (update_sub v i n sub).
 
   Definition array_from_list
              {A: choice_type}
              (l: list ( A))
-    : both0 (nseq A (length l)) := lift_to_both (array_from_list l).
+    : both0 (nseq_ A (length l)) := lift_to_both (array_from_list l).
 
   Definition array_from_seq   {a: choice_type}
              `{Default ( a)}
              (out_len:nat)
              (input: (seq a))
-    : both0 (nseq a out_len) :=
+    : both0 (nseq_ a out_len) :=
     lift_to_both (array_from_seq out_len input).
 
-  Definition array_to_seq {A : choice_type} `{H_default : Default A} {n} (f : nseq A n) : both0 (seq _) :=
+  Definition array_to_seq {A : choice_type} `{H_default : Default A} {n} (f : nseq_ A n) : both0 (seq _) :=
     @lift_to_both (seq A) _ _ (array_to_seq f).
 
   Definition array_from_slice
@@ -1086,7 +1049,7 @@ Section Arrays.
              (out_len: nat)
              (input: (seq a))
              (start: uint_size)
-             (slice_len: uint_size)  : both0 ((nseq a out_len)) :=
+             (slice_len: uint_size)  : both0 ((nseq_ a out_len)) :=
     lift_to_both (array_from_slice default_value out_len input (from_uint_size start) (from_uint_size slice_len)).
 
   Definition array_slice
@@ -1095,7 +1058,7 @@ Section Arrays.
              (input: (seq a))
              (start: nat)
              (slice_len: nat)
-    : both0 ((nseq a slice_len)) :=
+    : both0 ((nseq_ a slice_len)) :=
     lift_to_both (array_slice input start slice_len).
 
   Definition array_from_slice_range
@@ -1105,14 +1068,14 @@ Section Arrays.
              (out_len: nat)
              (input: (seq a))
              (start_fin: (uint_size × uint_size))
-    : both0 ((nseq a out_len)) :=
+    : both0 ((nseq_ a out_len)) :=
     lift_to_both (array_from_slice_range default_value out_len input start_fin).
 
   Definition array_slice_range
              {a: choice_type}
              `{Default ( a)}
              {len : nat}
-             (input: (nseq a len))
+             (input: (nseq_ a len))
              (start_fin:(uint_size × uint_size))
     : both0 ((seq a)) :=
     lift_to_both (array_slice_range input start_fin).
@@ -1121,35 +1084,35 @@ Section Arrays.
              {a: choice_type}
              `{Default ( a)}
              {len: nat}
-             (s: (nseq a len))
+             (s: (nseq_ a len))
              (start : uint_size)
              (start_s: (seq a))
-    : both0 ((nseq a len)) :=
+    : both0 ((nseq_ a len)) :=
     lift_to_both (array_update s start start_s).
 
   Definition array_update_start
              {a: choice_type}
              `{Default ( a)}
              {len: nat}
-             (s: (nseq a len))
+             (s: (nseq_ a len))
              (start_s: (seq a))
-    : both0 ((nseq a len)) :=
+    : both0 ((nseq_ a len)) :=
     lift_to_both (array_update_start s start_s).
 
-  Definition array_len  {a: choice_type} {len: nat} (s: (nseq a len)) : both0 (uint_size) := lift_to_both (array_len s).
+  Definition array_len  {a: choice_type} {len: nat} (s: (nseq_ a len)) : both0 (uint_size) := lift_to_both (array_len s).
   (* May also come up as 'length' instead of 'len' *)
-  Definition array_length  {a: choice_type} {len: nat} (s: (nseq a len)) : both0 (uint_size) := lift_to_both (array_length s).
+  Definition array_length  {a: choice_type} {len: nat} (s: (nseq_ a len)) : both0 (uint_size) := lift_to_both (array_length s).
 
   Definition array_update_slice
              {a : choice_type}
              `{Default ( (a))}
              {l : nat}
-             (out: ( (nseq a l)))
+             (out: ( (nseq_ a l)))
              (start_out: uint_size)
              (input: ( (seq a)))
              (start_in: uint_size)
              (len: uint_size)
-    : both0 ((nseq a _)) :=
+    : both0 ((nseq_ a _)) :=
     lift_to_both (array_update_slice (l := l) out start_out input start_in (from_uint_size len)).
 
   (**** Numeric operations *)
@@ -1160,16 +1123,16 @@ Section Arrays.
              `{Default ( (a))}
              {len: nat}
              (op: ( (a)) -> ( (a)) -> ( (a)))
-             (s1: ( (nseq a len)))
-             (s2 : ( (nseq a len))) : both0 ((nseq a len)) :=
+             (s1: ( (nseq_ a len)))
+             (s2 : ( (nseq_ a len))) : both0 ((nseq_ a len)) :=
     lift_to_both (array_join_map op s1 s2).
 
   Fixpoint array_eq_
            {a: choice_type}
            {len: nat}
            (eq: ( (a)) -> ( (a)) -> bool)
-           (s1: ( (nseq a len)))
-           (s2 : ( (nseq a len)))
+           (s1: ( (nseq_ a len)))
+           (s2 : ( (nseq_ a len)))
            {struct len}
     : bool.
   Proof.
@@ -1197,28 +1160,28 @@ Infix "array_neq" := (fun s1 s2 => negb (array_eq_ eq s1 s2)) (at level 33) : ha
 
 
 (**** Integers to arrays *)
-Definition uint32_to_le_bytes (n : int32) : both0 ((nseq int8 4)) := lift_to_both (uint32_to_le_bytes n).
-Definition uint32_to_be_bytes (n : int32) : both0 ((nseq int8 4)) := lift_to_both (uint32_to_be_bytes n).
-Definition uint32_from_le_bytes (n : (nseq int8 4)) : both0 ((int32)) := lift_to_both (uint32_from_le_bytes n).
-Definition uint32_from_be_bytes (n : (nseq int8 4)) : both0 ((int32)) := lift_to_both (uint32_from_be_bytes n).
-Definition uint64_to_le_bytes (n : int64) : both0 ((nseq int8 8)) := lift_to_both (uint64_to_le_bytes n).
-Definition uint64_to_be_bytes (n : int64) : both0 ((nseq int8 8)) := lift_to_both (uint64_to_be_bytes n).
-Definition uint64_from_le_bytes (n : (nseq int8 8)) : both0 ((int64)) := lift_to_both (uint64_from_le_bytes n).
-Definition uint64_from_be_bytes (n : (nseq int8 8)) : both0 ((int64)) := lift_to_both (uint64_from_be_bytes n).
-Definition uint128_to_le_bytes (n : int128) : both0 ((nseq int8 16)) := lift_to_both (uint128_to_le_bytes n).
-Definition uint128_to_be_bytes (n : int128) : both0 ((nseq int8 16)) := lift_to_both (uint128_to_be_bytes n).
-Definition uint128_from_le_bytes (n : (nseq int8 16)) : both0 (int128) := lift_to_both (uint128_from_le_bytes n).
-Definition uint128_from_be_bytes (n : (nseq int8 16)) : both0 ((int128)) := lift_to_both (uint128_from_be_bytes n).
-Definition u32_to_le_bytes (n : int32) : both0 ((nseq int8 4)) := lift_to_both (u32_to_le_bytes n).
-Definition u32_to_be_bytes (n : int32) : both0 ((nseq int8 4)) := lift_to_both (u32_to_be_bytes n).
-Definition u32_from_le_bytes (n : (nseq int8 4)) : both0 ((int32)) := lift_to_both (u32_from_le_bytes n).
-Definition u32_from_be_bytes (n : (nseq int8 4)) : both0 ((int32)) := lift_to_both (u32_from_be_bytes n).
-Definition u64_to_le_bytes (n : int64) : both0 ((nseq int8 8)) := lift_to_both (u64_to_le_bytes n).
-Definition u64_from_le_bytes (n : (nseq int8 8)) : both0 ((int64)) := lift_to_both (u64_from_le_bytes n).
-Definition u128_to_le_bytes (n : int128) : both0 ((nseq int8 16)) := lift_to_both (u128_to_le_bytes n).
-Definition u128_to_be_bytes (n : int128) : both0 ((nseq int8 16)) := lift_to_both (u128_to_be_bytes n).
-Definition u128_from_le_bytes (n : (nseq int8 16)) : both0 ((int128)) := lift_to_both (u128_from_le_bytes n).
-Definition u128_from_be_bytes (n : (nseq int8 16)) : both0 ((int128)) := lift_to_both (u128_from_be_bytes n).
+Definition uint32_to_le_bytes (n : int32) : both0 ((nseq_ int8 4)) := lift_to_both (uint32_to_le_bytes n).
+Definition uint32_to_be_bytes (n : int32) : both0 ((nseq_ int8 4)) := lift_to_both (uint32_to_be_bytes n).
+Definition uint32_from_le_bytes (n : (nseq_ int8 4)) : both0 ((int32)) := lift_to_both (uint32_from_le_bytes n).
+Definition uint32_from_be_bytes (n : (nseq_ int8 4)) : both0 ((int32)) := lift_to_both (uint32_from_be_bytes n).
+Definition uint64_to_le_bytes (n : int64) : both0 ((nseq_ int8 8)) := lift_to_both (uint64_to_le_bytes n).
+Definition uint64_to_be_bytes (n : int64) : both0 ((nseq_ int8 8)) := lift_to_both (uint64_to_be_bytes n).
+Definition uint64_from_le_bytes (n : (nseq_ int8 8)) : both0 ((int64)) := lift_to_both (uint64_from_le_bytes n).
+Definition uint64_from_be_bytes (n : (nseq_ int8 8)) : both0 ((int64)) := lift_to_both (uint64_from_be_bytes n).
+Definition uint128_to_le_bytes (n : int128) : both0 ((nseq_ int8 16)) := lift_to_both (uint128_to_le_bytes n).
+Definition uint128_to_be_bytes (n : int128) : both0 ((nseq_ int8 16)) := lift_to_both (uint128_to_be_bytes n).
+Definition uint128_from_le_bytes (n : (nseq_ int8 16)) : both0 (int128) := lift_to_both (uint128_from_le_bytes n).
+Definition uint128_from_be_bytes (n : (nseq_ int8 16)) : both0 ((int128)) := lift_to_both (uint128_from_be_bytes n).
+Definition u32_to_le_bytes (n : int32) : both0 ((nseq_ int8 4)) := lift_to_both (u32_to_le_bytes n).
+Definition u32_to_be_bytes (n : int32) : both0 ((nseq_ int8 4)) := lift_to_both (u32_to_be_bytes n).
+Definition u32_from_le_bytes (n : (nseq_ int8 4)) : both0 ((int32)) := lift_to_both (u32_from_le_bytes n).
+Definition u32_from_be_bytes (n : (nseq_ int8 4)) : both0 ((int32)) := lift_to_both (u32_from_be_bytes n).
+Definition u64_to_le_bytes (n : int64) : both0 ((nseq_ int8 8)) := lift_to_both (u64_to_le_bytes n).
+Definition u64_from_le_bytes (n : (nseq_ int8 8)) : both0 ((int64)) := lift_to_both (u64_from_le_bytes n).
+Definition u128_to_le_bytes (n : int128) : both0 ((nseq_ int8 16)) := lift_to_both (u128_to_le_bytes n).
+Definition u128_to_be_bytes (n : int128) : both0 ((nseq_ int8 16)) := lift_to_both (u128_to_be_bytes n).
+Definition u128_from_le_bytes (n : (nseq_ int8 16)) : both0 ((int128)) := lift_to_both (u128_from_le_bytes n).
+Definition u128_from_be_bytes (n : (nseq_ int8 16)) : both0 ((int128)) := lift_to_both (u128_from_be_bytes n).
 
 (*** Nats *)
 
@@ -1272,15 +1235,15 @@ Definition nat_get_mod_bit {p} (a : nat_mod p) (i : uint_size) : both0 'bool := 
 Definition nat_mod_get_bit {p} (a : nat_mod p) n : both0 (nat_mod p) :=
   lift_to_both (nat_mod_get_bit a n).
 
-Definition array_declassify_eq {A l} (x : nseq A l) (y : nseq A l) : both0 'bool := lift_to_both0 (array_declassify_eq x y).
-Definition array_to_le_uint32s {A l} (x : nseq A l) : both0 (seq uint32) := lift_to_both0 (array_to_le_uint32s x).
-Definition array_to_be_uint32s {l} (x : nseq uint8 l) : both0 (seq uint32) := lift_to_both0 (array_to_be_uint32s x).
-Definition array_to_le_uint64s {A l} (x : nseq A l) : both0 (seq uint64) := lift_to_both0 (array_to_le_uint64s x).
-Definition array_to_be_uint64s {l} (x : nseq uint8 l) : both0 (seq uint64) := lift_to_both0 (array_to_be_uint64s x).
-Definition array_to_le_uint128s {A l} (x : nseq A l) : both0 (seq uint128) := lift_to_both0 (array_to_le_uint128s x).
-Definition array_to_be_uint128s {l} (x : nseq uint8 l) : both0 (seq uint128) := lift_to_both0 (array_to_be_uint128s x).
-Definition array_to_le_bytes {A l} (x : nseq A l) : both0 (seq uint8) := lift_to_both0 (array_to_le_bytes x).
-Definition array_to_be_bytes {A l} (x : nseq A l) : both0 (seq uint8) := lift_to_both0 (array_to_be_bytes x).
+Definition array_declassify_eq {A l} (x : nseq_ A l) (y : nseq_ A l) : both0 'bool := lift_to_both0 (array_declassify_eq x y).
+Definition array_to_le_uint32s {A l} (x : nseq_ A l) : both0 (seq uint32) := lift_to_both0 (array_to_le_uint32s x).
+Definition array_to_be_uint32s {l} (x : nseq_ uint8 l) : both0 (seq uint32) := lift_to_both0 (array_to_be_uint32s x).
+Definition array_to_le_uint64s {A l} (x : nseq_ A l) : both0 (seq uint64) := lift_to_both0 (array_to_le_uint64s x).
+Definition array_to_be_uint64s {l} (x : nseq_ uint8 l) : both0 (seq uint64) := lift_to_both0 (array_to_be_uint64s x).
+Definition array_to_le_uint128s {A l} (x : nseq_ A l) : both0 (seq uint128) := lift_to_both0 (array_to_le_uint128s x).
+Definition array_to_be_uint128s {l} (x : nseq_ uint8 l) : both0 (seq uint128) := lift_to_both0 (array_to_be_uint128s x).
+Definition array_to_le_bytes {A l} (x : nseq_ A l) : both0 (seq uint8) := lift_to_both0 (array_to_le_bytes x).
+Definition array_to_be_bytes {A l} (x : nseq_ A l) : both0 (seq uint8) := lift_to_both0 (array_to_be_bytes x).
 Definition nat_mod_from_byte_seq_le {A n} (x : seq A) : both0 (nat_mod n) := lift_to_both0 (nat_mod_from_byte_seq_le x).
 Definition most_significant_bit {m} (x : nat_mod m) (n : uint_size) : both0 (uint_size) := lift_to_both0 (most_significant_bit x n).
 
@@ -1636,7 +1599,8 @@ Qed.
 Notation "'letbm' x 'loc(' ℓ ')' ':=' y 'in' f" :=
   (let_mut_both ℓ (H_in := _) (lift_scope (H_loc_incl := _) (H_opsig_incl := _) y) (fun x => f)) (at level 200, x pattern, right associativity, format "'letbm'  x  'loc(' ℓ ')'  ':='  y  'in' '//' f").
 Notation "'letbm' ''' x 'loc(' ℓ ')' ':=' y 'in' f" :=
-  (let_mut_both ℓ (H_in := _) (lift_scope (H_loc_incl := _) (H_opsig_incl := _) y) (fun x => f)) (at level 200, x pattern, right associativity, format "'letbm'  ''' x  'loc(' ℓ ')'  ':='  y  'in' '//' f").
+  (let '(ℓT, ℓv) := ℓ in
+   let_mut_both ℓ (H_in := _) (lift_scope (H_loc_incl := _) (H_opsig_incl := _) y) (fun x => f)) (at level 200, x pattern, right associativity, format "'letbm'  ''' x  'loc(' ℓ ')'  ':='  y  'in' '//' f").
 
 Notation "'bnd(' M ',' A ',' B ',' L ')' x '⇠' y 'in' f" := (choice_typeMonad.bind_code (BindCode := M) (A := A) (B := B) (L := L) (lift_code_scope (H_loc_incl := _) (H_opsig_incl := _) y) (fun x => f)) (at level 100, x pattern, right associativity).
 Notation "'bnd(' M ',' A ',' B ',' L ')' ' x '⇠' y 'in' f" := (choice_typeMonad.bind_code (BindCode := M) (A := A) (B := B) (L := L) (lift_code_scope (H_loc_incl := _) (H_opsig_incl := _) y) (fun x => f)) (at level 100, x pattern, right associativity).
@@ -2362,8 +2326,8 @@ Ltac letbm_eq_code :=
 Ltac f_equal_fun_ext :=
   repeat (apply f_equal ; try (apply Coq.Logic.FunctionalExtensionality.functional_extensionality ; intros)).
 
-Definition u32_word_t := nseq uint8 4.
-Definition u128_word_t := nseq uint8 16.
+Definition u32_word_t := nseq_ uint8 4.
+Definition u128_word_t := nseq_ uint8 16.
 
 Lemma letbm_ret_r :
   forall {A : choice.Choice.type} {B : choice_type}

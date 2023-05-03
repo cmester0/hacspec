@@ -3,7 +3,7 @@ Set Warnings "-notation-overridden,-ambiguous-paths".
 From Crypt Require Import choice_type Package Prelude.
 Import PackageNotation.
 From extructures Require Import ord fset.
-From mathcomp Require Import ssrZ word.
+From mathcomp.word Require Import ssrZ word.
 From Jasmin Require Import word.
 
 From Coq Require Import ZArith.
@@ -19,6 +19,7 @@ Require Import Hacspec_Lib_Pre.
 Require Import Hacspec_Lib.
 
 Open Scope hacspec_scope.
+Import choice.Choice.Exports.
 
 Obligation Tactic := try timeout 8 solve_ssprove_obligations.
 
@@ -351,10 +352,8 @@ Definition st_0_loc : ChoiceEqualityLocation :=
   (block_t ; 1%nat).
 Notation "'sub_bytes_inp'" :=(
   block_t : choice_type) (in custom pack_type at level 2).
-Notation "'sub_bytes_inp'" :=(block_t : ChoiceEquality) (at level 2).
 Notation "'sub_bytes_out'" :=(
   block_t : choice_type) (in custom pack_type at level 2).
-Notation "'sub_bytes_out'" :=(block_t : ChoiceEquality) (at level 2).
 Definition SUB_BYTES : nat :=
   4.
 Program Definition sub_bytes (state_2 : block_t)
@@ -377,12 +376,9 @@ Fail Next Obligation.
 Definition out_5_loc : ChoiceEqualityLocation :=
   (block_t ; 6%nat).
 Notation "'shift_row_inp'" :=(
-  uint_size '× uint_size '× block_t : choice_type) (in custom pack_type at level 2).
-Notation "'shift_row_inp'" :=(
-  uint_size '× uint_size '× block_t : ChoiceEquality) (at level 2).
+  uint_size × uint_size × block_t : choice_type) (in custom pack_type at level 2).
 Notation "'shift_row_out'" :=(
   block_t : choice_type) (in custom pack_type at level 2).
-Notation "'shift_row_out'" :=(block_t : ChoiceEquality) (at level 2).
 Definition SHIFT_ROW : nat :=
   10.
 Program Definition shift_row (i_8 : uint_size) (shift_9 : uint_size) (
@@ -418,10 +414,8 @@ Fail Next Obligation.
 
 Notation "'shift_rows_inp'" :=(
   block_t : choice_type) (in custom pack_type at level 2).
-Notation "'shift_rows_inp'" :=(block_t : ChoiceEquality) (at level 2).
 Notation "'shift_rows_out'" :=(
   block_t : choice_type) (in custom pack_type at level 2).
-Notation "'shift_rows_out'" :=(block_t : ChoiceEquality) (at level 2).
 Definition SHIFT_ROWS : nat :=
   14.
 Program Definition shift_rows (state_11 : block_t)
@@ -440,9 +434,7 @@ Fail Next Obligation.
 
 
 Notation "'xtime_inp'" :=(uint8 : choice_type) (in custom pack_type at level 2).
-Notation "'xtime_inp'" :=(uint8 : ChoiceEquality) (at level 2).
 Notation "'xtime_out'" :=(uint8 : choice_type) (in custom pack_type at level 2).
-Notation "'xtime_out'" :=(uint8 : ChoiceEquality) (at level 2).
 Definition XTIME : nat :=
   20.
 Program Definition xtime (x_15 : uint8)
@@ -463,12 +455,9 @@ Fail Next Obligation.
 Definition st_21_loc : ChoiceEqualityLocation :=
   (block_t ; 22%nat).
 Notation "'mix_column_inp'" :=(
-  uint_size '× block_t : choice_type) (in custom pack_type at level 2).
-Notation "'mix_column_inp'" :=(
-  uint_size '× block_t : ChoiceEquality) (at level 2).
+  uint_size × block_t : choice_type) (in custom pack_type at level 2).
 Notation "'mix_column_out'" :=(
   block_t : choice_type) (in custom pack_type at level 2).
-Notation "'mix_column_out'" :=(block_t : ChoiceEquality) (at level 2).
 Definition MIX_COLUMN : nat :=
   31.
 Program Definition mix_column (c_23 : uint_size) (state_25 : block_t)
@@ -512,10 +501,8 @@ Fail Next Obligation.
 
 Notation "'mix_columns_inp'" :=(
   block_t : choice_type) (in custom pack_type at level 2).
-Notation "'mix_columns_inp'" :=(block_t : ChoiceEquality) (at level 2).
 Notation "'mix_columns_out'" :=(
   block_t : choice_type) (in custom pack_type at level 2).
-Notation "'mix_columns_out'" :=(block_t : ChoiceEquality) (at level 2).
 Definition MIX_COLUMNS : nat :=
   36.
 Program Definition mix_columns (state_32 : block_t)
@@ -534,12 +521,9 @@ Fail Next Obligation.
 Definition out_37_loc : ChoiceEqualityLocation :=
   (block_t ; 38%nat).
 Notation "'add_round_key_inp'" :=(
-  block_t '× round_key_t : choice_type) (in custom pack_type at level 2).
-Notation "'add_round_key_inp'" :=(
-  block_t '× round_key_t : ChoiceEquality) (at level 2).
+  block_t × round_key_t : choice_type) (in custom pack_type at level 2).
 Notation "'add_round_key_out'" :=(
   block_t : choice_type) (in custom pack_type at level 2).
-Notation "'add_round_key_out'" :=(block_t : ChoiceEquality) (at level 2).
 Definition ADD_ROUND_KEY : nat :=
   42.
 Program Definition add_round_key (state_39 : block_t) (key_41 : round_key_t)
@@ -562,12 +546,9 @@ Fail Next Obligation.
 
 
 Notation "'aes_enc_inp'" :=(
-  block_t '× round_key_t : choice_type) (in custom pack_type at level 2).
-Notation "'aes_enc_inp'" :=(
-  block_t '× round_key_t : ChoiceEquality) (at level 2).
+  block_t × round_key_t : choice_type) (in custom pack_type at level 2).
 Notation "'aes_enc_out'" :=(
   block_t : choice_type) (in custom pack_type at level 2).
-Notation "'aes_enc_out'" :=(block_t : ChoiceEquality) (at level 2).
 Definition AES_ENC : nat :=
   48.
 Program Definition aes_enc (state_43 : block_t) (round_key_47 : round_key_t)
@@ -585,12 +566,9 @@ Fail Next Obligation.
 
 
 Notation "'aes_enc_last_inp'" :=(
-  block_t '× round_key_t : choice_type) (in custom pack_type at level 2).
-Notation "'aes_enc_last_inp'" :=(
-  block_t '× round_key_t : ChoiceEquality) (at level 2).
+  block_t × round_key_t : choice_type) (in custom pack_type at level 2).
 Notation "'aes_enc_last_out'" :=(
   block_t : choice_type) (in custom pack_type at level 2).
-Notation "'aes_enc_last_out'" :=(block_t : ChoiceEquality) (at level 2).
 Definition AES_ENC_LAST : nat :=
   53.
 Program Definition aes_enc_last (state_49 : block_t) (
@@ -607,12 +585,9 @@ Fail Next Obligation.
 Definition out_54_loc : ChoiceEqualityLocation :=
   (block_t ; 55%nat).
 Notation "'rounds_aes_inp'" :=(
-  block_t '× byte_seq : choice_type) (in custom pack_type at level 2).
-Notation "'rounds_aes_inp'" :=(
-  block_t '× byte_seq : ChoiceEquality) (at level 2).
+  block_t × byte_seq : choice_type) (in custom pack_type at level 2).
 Notation "'rounds_aes_out'" :=(
   block_t : choice_type) (in custom pack_type at level 2).
-Notation "'rounds_aes_out'" :=(block_t : ChoiceEquality) (at level 2).
 Definition ROUNDS_AES : nat :=
   60.
 Program Definition rounds_aes (state_56 : block_t) (key_57 : byte_seq)
@@ -643,12 +618,9 @@ Fail Next Obligation.
 
 
 Notation "'block_cipher_aes_inp'" :=(
-  block_t '× byte_seq '× uint_size : choice_type) (in custom pack_type at level 2).
-Notation "'block_cipher_aes_inp'" :=(
-  block_t '× byte_seq '× uint_size : ChoiceEquality) (at level 2).
+  block_t × byte_seq × uint_size : choice_type) (in custom pack_type at level 2).
 Notation "'block_cipher_aes_out'" :=(
   block_t : choice_type) (in custom pack_type at level 2).
-Notation "'block_cipher_aes_out'" :=(block_t : ChoiceEquality) (at level 2).
 Definition BLOCK_CIPHER_AES : nat :=
   69.
 Program Definition block_cipher_aes (input_66 : block_t) (key_61 : byte_seq) (
@@ -685,10 +657,8 @@ Fail Next Obligation.
 
 Notation "'rotate_word_inp'" :=(
   word_t : choice_type) (in custom pack_type at level 2).
-Notation "'rotate_word_inp'" :=(word_t : ChoiceEquality) (at level 2).
 Notation "'rotate_word_out'" :=(
   word_t : choice_type) (in custom pack_type at level 2).
-Notation "'rotate_word_out'" :=(word_t : ChoiceEquality) (at level 2).
 Definition ROTATE_WORD : nat :=
   71.
 Program Definition rotate_word (w_70 : word_t)
@@ -705,10 +675,8 @@ Fail Next Obligation.
 
 Notation "'slice_word_inp'" :=(
   word_t : choice_type) (in custom pack_type at level 2).
-Notation "'slice_word_inp'" :=(word_t : ChoiceEquality) (at level 2).
 Notation "'slice_word_out'" :=(
   word_t : choice_type) (in custom pack_type at level 2).
-Notation "'slice_word_out'" :=(word_t : ChoiceEquality) (at level 2).
 Definition SLICE_WORD : nat :=
   73.
 Program Definition slice_word (w_72 : word_t)
@@ -729,12 +697,9 @@ Fail Next Obligation.
 Definition k_74_loc : ChoiceEqualityLocation :=
   (word_t ; 75%nat).
 Notation "'aes_keygen_assist_inp'" :=(
-  word_t '× uint8 : choice_type) (in custom pack_type at level 2).
-Notation "'aes_keygen_assist_inp'" :=(
-  word_t '× uint8 : ChoiceEquality) (at level 2).
+  word_t × uint8 : choice_type) (in custom pack_type at level 2).
 Notation "'aes_keygen_assist_out'" :=(
   word_t : choice_type) (in custom pack_type at level 2).
-Notation "'aes_keygen_assist_out'" :=(word_t : ChoiceEquality) (at level 2).
 Definition AES_KEYGEN_ASSIST : nat :=
   78.
 Program Definition aes_keygen_assist (w_76 : word_t) (rcon_77 : uint8)
@@ -748,18 +713,14 @@ Program Definition aes_keygen_assist (w_76 : word_t) (rcon_77 : uint8)
       ) : both (CEfset ([k_74_loc])) [interface] (word_t)).
 Fail Next Obligation.
 
-Definition k_79_loc : ChoiceEqualityLocation :=
-  (word_t ; 81%nat).
 Definition result_80_loc : ChoiceEqualityLocation :=
-  ((result (int8) (word_t)) ; 82%nat).
+  ((result (int8) (word_t)) ; 81%nat).
+Definition k_79_loc : ChoiceEqualityLocation :=
+  (word_t ; 82%nat).
 Notation "'key_expansion_word_inp'" :=(
-  word_t '× word_t '× uint_size '× uint_size '× uint_size : choice_type) (in custom pack_type at level 2).
-Notation "'key_expansion_word_inp'" :=(
-  word_t '× word_t '× uint_size '× uint_size '× uint_size : ChoiceEquality) (at level 2).
+  word_t × word_t × uint_size × uint_size × uint_size : choice_type) (in custom pack_type at level 2).
 Notation "'key_expansion_word_out'" :=(
   word_result_t : choice_type) (in custom pack_type at level 2).
-Notation "'key_expansion_word_out'" :=(
-  word_result_t : ChoiceEquality) (at level 2).
 Definition KEY_EXPANSION_WORD : nat :=
   89.
 Program Definition key_expansion_word (w0_88 : word_t) (w1_83 : word_t) (
@@ -846,13 +807,9 @@ Fail Next Obligation.
 Definition key_ex_90_loc : ChoiceEqualityLocation :=
   (seq uint8 ; 91%nat).
 Notation "'key_expansion_aes_inp'" :=(
-  byte_seq '× uint_size '× uint_size '× uint_size '× uint_size '× uint_size : choice_type) (in custom pack_type at level 2).
-Notation "'key_expansion_aes_inp'" :=(
-  byte_seq '× uint_size '× uint_size '× uint_size '× uint_size '× uint_size : ChoiceEquality) (at level 2).
+  byte_seq × uint_size × uint_size × uint_size × uint_size × uint_size : choice_type) (in custom pack_type at level 2).
 Notation "'key_expansion_aes_out'" :=(
   byte_seq_result_t : choice_type) (in custom pack_type at level 2).
-Notation "'key_expansion_aes_out'" :=(
-  byte_seq_result_t : ChoiceEquality) (at level 2).
 Definition KEY_EXPANSION_AES : nat :=
   102.
 Program Definition key_expansion_aes (key_93 : byte_seq) (nk_99 : uint_size) (
@@ -899,13 +856,9 @@ Fail Next Obligation.
 
 
 Notation "'aes_encrypt_block_inp'" :=(
-  byte_seq '× block_t '× uint_size '× uint_size '× uint_size '× uint_size '× uint_size : choice_type) (in custom pack_type at level 2).
-Notation "'aes_encrypt_block_inp'" :=(
-  byte_seq '× block_t '× uint_size '× uint_size '× uint_size '× uint_size '× uint_size : ChoiceEquality) (at level 2).
+  byte_seq × block_t × uint_size × uint_size × uint_size × uint_size × uint_size : choice_type) (in custom pack_type at level 2).
 Notation "'aes_encrypt_block_out'" :=(
   block_result_t : choice_type) (in custom pack_type at level 2).
-Notation "'aes_encrypt_block_out'" :=(
-  block_result_t : ChoiceEquality) (at level 2).
 Definition AES_ENCRYPT_BLOCK : nat :=
   111.
 Program Definition aes_encrypt_block (k_103 : byte_seq) (input_110 : block_t) (
@@ -929,12 +882,9 @@ Fail Next Obligation.
 
 
 Notation "'aes128_encrypt_block_inp'" :=(
-  key128_t '× block_t : choice_type) (in custom pack_type at level 2).
-Notation "'aes128_encrypt_block_inp'" :=(
-  key128_t '× block_t : ChoiceEquality) (at level 2).
+  key128_t × block_t : choice_type) (in custom pack_type at level 2).
 Notation "'aes128_encrypt_block_out'" :=(
   block_t : choice_type) (in custom pack_type at level 2).
-Notation "'aes128_encrypt_block_out'" :=(block_t : ChoiceEquality) (at level 2).
 Definition AES128_ENCRYPT_BLOCK : nat :=
   114.
 Program Definition aes128_encrypt_block (k_112 : key128_t) (input_113 : block_t)
@@ -955,13 +905,9 @@ Fail Next Obligation.
 Definition input_115_loc : ChoiceEqualityLocation :=
   (block_t ; 116%nat).
 Notation "'aes_ctr_key_block_inp'" :=(
-  byte_seq '× aes_nonce_t '× uint32 '× uint_size '× uint_size '× uint_size '× uint_size '× uint_size : choice_type) (in custom pack_type at level 2).
-Notation "'aes_ctr_key_block_inp'" :=(
-  byte_seq '× aes_nonce_t '× uint32 '× uint_size '× uint_size '× uint_size '× uint_size '× uint_size : ChoiceEquality) (at level 2).
+  byte_seq × aes_nonce_t × uint32 × uint_size × uint_size × uint_size × uint_size × uint_size : choice_type) (in custom pack_type at level 2).
 Notation "'aes_ctr_key_block_out'" :=(
   block_result_t : choice_type) (in custom pack_type at level 2).
-Notation "'aes_ctr_key_block_out'" :=(
-  block_result_t : ChoiceEquality) (at level 2).
 Definition AES_CTR_KEY_BLOCK : nat :=
   125.
 Program Definition aes_ctr_key_block (k_119 : byte_seq) (n_117 : aes_nonce_t) (
@@ -992,12 +938,9 @@ Fail Next Obligation.
 Definition out_126_loc : ChoiceEqualityLocation :=
   (block_t ; 127%nat).
 Notation "'xor_block_inp'" :=(
-  block_t '× block_t : choice_type) (in custom pack_type at level 2).
-Notation "'xor_block_inp'" :=(
-  block_t '× block_t : ChoiceEquality) (at level 2).
+  block_t × block_t : choice_type) (in custom pack_type at level 2).
 Notation "'xor_block_out'" :=(
   block_t : choice_type) (in custom pack_type at level 2).
-Notation "'xor_block_out'" :=(block_t : ChoiceEquality) (at level 2).
 Definition XOR_BLOCK : nat :=
   131.
 Program Definition xor_block (block_128 : block_t) (key_block_130 : block_t)
@@ -1018,18 +961,14 @@ Program Definition xor_block (block_128 : block_t) (key_block_130 : block_t)
       ) : both (CEfset ([out_126_loc])) [interface] (block_t)).
 Fail Next Obligation.
 
-Definition ctr_132_loc : ChoiceEqualityLocation :=
-  (uint32 ; 134%nat).
 Definition blocks_out_133_loc : ChoiceEqualityLocation :=
-  (seq uint8 ; 135%nat).
+  (seq uint8 ; 134%nat).
+Definition ctr_132_loc : ChoiceEqualityLocation :=
+  (uint32 ; 135%nat).
 Notation "'aes_counter_mode_inp'" :=(
-  byte_seq '× aes_nonce_t '× uint32 '× byte_seq '× uint_size '× uint_size '× uint_size '× uint_size '× uint_size : choice_type) (in custom pack_type at level 2).
-Notation "'aes_counter_mode_inp'" :=(
-  byte_seq '× aes_nonce_t '× uint32 '× byte_seq '× uint_size '× uint_size '× uint_size '× uint_size '× uint_size : ChoiceEquality) (at level 2).
+  byte_seq × aes_nonce_t × uint32 × byte_seq × uint_size × uint_size × uint_size × uint_size × uint_size : choice_type) (in custom pack_type at level 2).
 Notation "'aes_counter_mode_out'" :=(
   byte_seq_result_t : choice_type) (in custom pack_type at level 2).
-Notation "'aes_counter_mode_out'" :=(
-  byte_seq_result_t : ChoiceEquality) (at level 2).
 Definition AES_COUNTER_MODE : nat :=
   153.
 Program Definition aes_counter_mode (key_141 : byte_seq) (
@@ -1125,12 +1064,9 @@ Fail Next Obligation.
 
 
 Notation "'aes128_encrypt_inp'" :=(
-  key128_t '× aes_nonce_t '× uint32 '× byte_seq : choice_type) (in custom pack_type at level 2).
-Notation "'aes128_encrypt_inp'" :=(
-  key128_t '× aes_nonce_t '× uint32 '× byte_seq : ChoiceEquality) (at level 2).
+  key128_t × aes_nonce_t × uint32 × byte_seq : choice_type) (in custom pack_type at level 2).
 Notation "'aes128_encrypt_out'" :=(
   byte_seq : choice_type) (in custom pack_type at level 2).
-Notation "'aes128_encrypt_out'" :=(byte_seq : ChoiceEquality) (at level 2).
 Definition AES128_ENCRYPT : nat :=
   158.
 Program Definition aes128_encrypt (key_154 : key128_t) (
@@ -1152,12 +1088,9 @@ Fail Next Obligation.
 
 
 Notation "'aes128_decrypt_inp'" :=(
-  key128_t '× aes_nonce_t '× uint32 '× byte_seq : choice_type) (in custom pack_type at level 2).
-Notation "'aes128_decrypt_inp'" :=(
-  key128_t '× aes_nonce_t '× uint32 '× byte_seq : ChoiceEquality) (at level 2).
+  key128_t × aes_nonce_t × uint32 × byte_seq : choice_type) (in custom pack_type at level 2).
 Notation "'aes128_decrypt_out'" :=(
   byte_seq : choice_type) (in custom pack_type at level 2).
-Notation "'aes128_decrypt_out'" :=(byte_seq : ChoiceEquality) (at level 2).
 Definition AES128_DECRYPT : nat :=
   163.
 Program Definition aes128_decrypt (key_159 : key128_t) (

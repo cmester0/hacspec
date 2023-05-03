@@ -1928,7 +1928,7 @@ pub(crate) fn fset_from_scope<'a>(smvars: ScopeMutableVars) -> RcDoc<'a, ()> {
     if all.len() == 0 {
         RcDoc::as_string("fset.fset0")
     } else {
-        RcDoc::as_string("CEfset ").append(make_paren(list_of_loc_vars(smvars)))
+        RcDoc::as_string("fset ").append(make_paren(list_of_loc_vars(smvars)))
     }
 }
 
@@ -1938,7 +1938,7 @@ fn locations_from_scope<'a>(smvars: ScopeMutableVars) -> RcDoc<'a, ()> {
         locals.into_iter().map(|(i, typ)| {
             make_definition(
                 translate_ident(i.clone()).append("_loc"),
-                Some(RcDoc::as_string("ChoiceEqualityLocation")),
+                Some(RcDoc::as_string("Location")),
                 make_paren(
                     match typ {
                         Some(typ) => translate_typ(typ),
@@ -2344,7 +2344,7 @@ pub(crate) fn translate_item<'a>(
                         .iter()
                         .map(|((_x, _), (tau, _))| translate_typ(tau.clone())),
                     RcDoc::space()
-                        .append(RcDoc::as_string("'×"))
+                        .append(RcDoc::as_string("×"))
                         .append(RcDoc::space()),
                 )
             };
@@ -2657,7 +2657,7 @@ pub fn translate_and_write_to_file(
          From Crypt Require Import choice_type Package Prelude.\n\
          Import PackageNotation.\n\
          From extructures Require Import ord fset.\n\
-         From mathcomp.word Require Import ssrZ word.\n\
+         From mathcomp Require Import ssrZ word.\n\
          From Jasmin Require Import word.\n\
          \n\
          From Coq Require Import ZArith.\n\
@@ -2672,7 +2672,8 @@ pub fn translate_and_write_to_file(
          Require Import Hacspec_Lib_Pre.\n\
          Require Import Hacspec_Lib.\n\
          \n\
-         Open Scope hacspec_scope.\n\n\
+         Open Scope hacspec_scope.\n\
+         Import choice.Choice.Exports.\n\n\
          Obligation Tactic := try timeout 8 solve_ssprove_obligations.\n",
     )
     .unwrap();

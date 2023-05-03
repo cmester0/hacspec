@@ -129,7 +129,7 @@ fn make_typ_tuple<'a, I: IntoIterator<Item = RcDoc<'a, ()>>>(args: I) -> RcDoc<'
                 .append(RcDoc::intersperse(
                     args.into_iter(),
                     RcDoc::space()
-                        .append(RcDoc::as_string("'×"))
+                        .append(RcDoc::as_string("×"))
                         .append(RcDoc::line()),
                 ))
                 .group()
@@ -1578,7 +1578,7 @@ pub fn translate_and_write_to_file(
          From Crypt Require Import choice_type Package Prelude.\n\
          Import PackageNotation.\n\
          From extructures Require Import ord fset.\n\
-         From mathcomp.word Require Import ssrZ word.\n\
+         From mathcomp Require Import ssrZ word.\n\
          From Jasmin Require Import word.\n\
          Require Import ChoiceEquality.\n\
          \n\
@@ -1591,7 +1591,8 @@ pub fn translate_and_write_to_file(
          Require Import Hacspec_Lib_Comparable.\n\
          Require Import Hacspec_Lib_Pre.\n\
          \n\
-         Open Scope hacspec_scope.\n\n",
+         Open Scope hacspec_scope.\n\
+         Import choice.Choice.Exports.\n\n",
     )
     .unwrap();
     translate_program(p, top_ctx).render(width, &mut w).unwrap();
