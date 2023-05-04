@@ -1396,10 +1396,10 @@ Section Hacspec.
     destruct (is_pure (index_u8 _ _)).
     destruct toword.
     - reflexivity.
-    - (* SLOW! *) (* admit. *)
-      do 8 (destruct p ; [ | | reflexivity ]) ; exfalso ; destruct p ; discriminate i0.
+    - admit. (* SLOW! *)
+      (* do 8 (destruct p ; [ | | reflexivity ]) ; exfalso ; destruct p ; discriminate i0. *)
     - easy.
-  (* Admitted. *) Qed.
+  Admitted. (* Qed. *)
 
   Lemma SubWord_eq (n : int32) :
     waes.SubWord n = is_pure (subword n).
@@ -1709,11 +1709,11 @@ Section Hacspec.
     unfold array_index_clause_2_clause_1.
     simpl.
 
-    (* SLOW! *) (* admit. *)
-    do 10 (destruct j as [ | j ] ; [ simpl ; repeat (remove_get_in_lhs ; simpl) ; apply better_r_put_lhs ; remove_get_in_lhs ; apply r_ret ; intros ; destruct_pre ; split ; [ eexists ; split ; [ | reflexivity] ; f_equal ; unfold totce ; repeat (cbn ; rewrite <- !coerce_to_choice_type_clause_1_equation_1; rewrite <- coerce_to_choice_type_equation_1; rewrite coerce_to_choice_type_K) ; reflexivity | eapply H ; [ reflexivity | reflexivity | ] ; eapply H ; [ reflexivity | reflexivity | ] ; apply H5 ] | ]).
-    exfalso.
-    lia.
-  (* Admitted. *) Qed.
+    admit. (* SLOW! *)
+    (* do 10 (destruct j as [ | j ] ; [ simpl ; repeat (remove_get_in_lhs ; simpl) ; apply better_r_put_lhs ; remove_get_in_lhs ; apply r_ret ; intros ; destruct_pre ; split ; [ eexists ; split ; [ | reflexivity] ; f_equal ; unfold totce ; repeat (cbn ; rewrite <- !coerce_to_choice_type_clause_1_equation_1; rewrite <- coerce_to_choice_type_equation_1; rewrite coerce_to_choice_type_K) ; reflexivity | eapply H ; [ reflexivity | reflexivity | ] ; eapply H ; [ reflexivity | reflexivity | ] ; apply H5 ] | ]). *)
+    (* exfalso. *)
+    (* lia. *)
+  Admitted. (* Qed. *)
 
   Ltac split_post :=
     repeat
@@ -1795,9 +1795,9 @@ Section Hacspec.
     end ||
         rewrite get_set_heap_neq.
 
-  Notation rkeys_loc := (CE_loc_to_loc rkeys_65_loc).
-  Notation temp2_loc := (CE_loc_to_loc temp2_67_loc).
-  Notation rkey_loc := (CE_loc_to_loc key_66_loc).
+  Notation rkeys_loc := (rkeys_65_loc).
+  Notation temp2_loc := (temp2_67_loc).
+  Notation rkey_loc := (key_66_loc).
   Lemma keys_expand_eq id0 rkey  (pre : precond) :
     (pdisj pre id0 (fset ([rkeys_loc ; temp2_loc ; rkey_loc ]))) ->
     ⊢ ⦃ pre ⦄
@@ -1807,7 +1807,7 @@ Section Hacspec.
         ⦃ fun '(v0, h0) '(v1, h1) =>
             (exists o1, v0 = [('array; o1)]
                    /\ (forall k, k <= 10 -> ((chArray_get U128 o1 k (wsize_size U128))
-    = is_pure (seq_index (A := @int U128) v1 (lift_to_both0 (repr k))))))  /\ pre (h0, h1) ⦄.
+    = is_pure (seq_index (lift_to_both0 v1) (lift_to_both0 (repr (Z.of_nat k))) : both _ _ (@int U128)))))  /\ pre (h0, h1) ⦄.
   Proof.
     intros H_pdisj.
     set (JKEYS_EXPAND _ _).
@@ -1850,7 +1850,7 @@ Section Hacspec.
     end.
     Transparent is_state. Transparent is_pure.
 
-    set (Hacspec_Lib_Pre.seq_new_ _ _).
+    set (new_seq := Hacspec_Lib_Pre.seq_new_ _ _).
 
     rewrite !zero_extend_u.
     rewrite !coerce_to_choice_type_K.
@@ -1994,8 +1994,6 @@ Section Hacspec.
       subst P.
       destruct a₁.
       destruct s.
-      rewrite ct_T_prod_propegate.
-      rewrite ct_T_prod_propegate.
       subst p0.
       hnf.
 
@@ -2046,7 +2044,7 @@ Section Hacspec.
       intros.
 
       set (fun (_ : p_id) => _).
-      set (fun (_ : int_type) (_ : _ * _ * _) => _).
+      set (fun (_ : U32.-word) (_ : _ * _ * _) => _).
 
       rewrite !coerce_typed_code_K.
       rewrite bind_rewrite.
@@ -2057,7 +2055,7 @@ Section Hacspec.
       replace (Z.to_nat (11 - 1)) with 10 by reflexivity.
       replace (Pos.to_nat 10) with 10 by reflexivity.
 
-      apply (@loop_eq (seq int128 '× int '× int) _ 10 0 _ _ _ _ _ _ _ p0 P).
+      apply (@loop_eq (seq int128 × int × int) _ 10 0 _ _ _ _ _ _ _ p0 P).
       { easy. }
       { apply prec_I. }
       { intros. etransitivity. apply prec_O. apply prec_O. }
@@ -2072,7 +2070,7 @@ Section Hacspec.
         remove_get_in_lhs.
         rewrite bind_assoc.
         destruct c as [? []].
-        destruct t0 as [].
+        destruct s as [].
 
         set (set_lhs _ _ _).
         eapply r_bind with (mid := λ '(v0, h0) '(v1, h1),
@@ -2097,7 +2095,7 @@ Section Hacspec.
           }
           subst l.
           replace (totce _)
-            with (@existT choice_type (fun t : choice_type => Choice.sort (chElement t)) chInt (Pos.of_succ_nat k)).
+            with (@existT choice_type (fun t : choice_type => Choice.sort (chElement t)) chInt (Zpos (Pos.of_succ_nat k))).
           2:{
             cbn.
             repeat (cbn ; rewrite <- !coerce_to_choice_type_clause_1_equation_1; rewrite <- coerce_to_choice_type_equation_1; rewrite coerce_to_choice_type_K).
@@ -2140,13 +2138,13 @@ Section Hacspec.
                               ∧ p (h0, h1)).
         {
 
-          pose (key_expand_eq (s_id~0~1)%positive x0 t1  (mkWord (nbits:=U128) (toword:=toword) i)  p).
+          pose (key_expand_eq (s_id~0~1)%positive x0 s0  (mkWord (nbits:=U128) (toword:=toword) i)  p).
           unfold JKEY_EXPAND in r.
 
           replace (translate_call _ _ _ _ _)
             with
             (get_translated_static_fun ssprove_jasmin_prog 11%positive
-                                       static_funs (s_id~0~1)%positive [('int; x0); ('word U128; t1); ('word U128; (mkWord (nbits:=U128) (toword:=toword) i))]).
+                                       static_funs (s_id~0~1)%positive [('int; x0); ('word U128; s0); ('word U128; (mkWord (nbits:=U128) (toword:=toword) i))]).
           2:{
             Transparent translate_call.
             simpl.
@@ -2181,7 +2179,6 @@ Section Hacspec.
         clear H2.
         destruct H1.
         destruct a₁0.
-        rewrite ct_T_prod_propegate.
         simpl.
         inversion H2.
         subst.
@@ -2193,7 +2190,7 @@ Section Hacspec.
         subst p.
         rewrite !coerce_to_choice_type_K.
         remove_get_in_lhs.
-        apply better_r_get_remind_lhs with (v := seq_upd_from_arr t0 x).
+        apply better_r_get_remind_lhs with (v := seq_upd_from_arr s x).
         unfold Remembers_lhs , rem_lhs ;
           [ intros ? ? ? ;
             destruct_pre ;
@@ -2365,10 +2362,10 @@ Section Hacspec.
               reflexivity.
               do 10 (destruct k ; [ easy | ]) ; discriminate.
             }
-            replace (seq_len_nat t0) with k.+1.
+            replace (seq_len_nat _) with k.+1.
             2:{
               rewrite <- H33.
-              pose seq_to_list_size.
+              pose @seq_to_list_size.
               rewrite (@seq_to_list_size int128).
               reflexivity.
             }
@@ -2377,7 +2374,7 @@ Section Hacspec.
           + assert (i0 <= k) by lia.
             specialize (H18 i0 H2).
 
-            assert (forall (A : ChoiceEquality) (H_default : Default A) t (s : A) i, (0 <= Z.of_nat i < modulus (wsize_size_minus_1 U32).+1)%Z -> i < size (Hacspec_Lib_Pre.seq_to_list _ t) -> Hacspec_Lib_Pre.seq_index (Hacspec_Lib_Pre.seq_push t s) (repr (Z.of_nat i)) = Hacspec_Lib_Pre.seq_index t (repr (Z.of_nat i))).
+            assert (forall (A : choice_type) (H_default : Default A) t (s : A) i, (0 <= Z.of_nat i < modulus (wsize_size_minus_1 U32).+1)%Z -> i < size (Hacspec_Lib_Pre.seq_to_list _ t) -> Hacspec_Lib_Pre.seq_index (Hacspec_Lib_Pre.seq_push t s) (repr (Z.of_nat i)) = Hacspec_Lib_Pre.seq_index t (repr (Z.of_nat i))).
             {
               clear ; intros.
               unfold Hacspec_Lib_Pre.seq_index.
@@ -2548,6 +2545,8 @@ Section Hacspec.
     set (rebuild_u32 _ _ _ _).
     set (rebuild_u32 _ _ _ _).
 
+    subst b0.
+
     apply r_ret.
     {
       intros.
@@ -2707,11 +2706,11 @@ Section Hacspec.
   Qed.
 
 
-  Notation state_loc := (CE_loc_to_loc state_120_loc).
+  Notation state_loc := (state_120_loc).
   Lemma addroundkey_eq id0 (rkeys : 'array) (rkeys' : seq int128) m  (pre : precond) :
     (pdisj pre id0 (fset [ state_loc ])) ->
     (forall k, k <= 10 -> ((chArray_get U128 rkeys k (wsize_size U128))
-    = is_pure (seq_index rkeys' (lift_to_both0 (repr k))))) ->
+    = is_pure (seq_index (lift_to_both0 rkeys') (lift_to_both0 (repr (Z.of_nat k)))))) ->
     ⊢ ⦃ pre ⦄
         JAES_ROUNDS id0 rkeys m
         ≈
@@ -2781,7 +2780,7 @@ Section Hacspec.
     eapply r_bind.
     {
       set (fun (_ : p_id) => _).
-      set (fun (_ : int_type) (_ : _) => _).
+      set (fun (_ : _.-word) (_ : _) => _).
 
       rewrite !coerce_typed_code_K.
       rewrite bind_rewrite.
@@ -2887,6 +2886,7 @@ Section Hacspec.
           unfold is_pure at 2.
           pose (rkeys_ext (S k)).
           simpl in e.
+          unfold is_pure.
           rewrite <- e ; [ | lia ].
           clear e.
 

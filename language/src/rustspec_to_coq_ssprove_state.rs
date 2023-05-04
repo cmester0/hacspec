@@ -628,8 +628,10 @@ pub fn translate_func_name<'a>(
                     match &prefix_info {
                         FuncPrefix::Array(_, bt) | FuncPrefix::Seq(bt) => {
                             additional_args.push(
-                                RcDoc::as_string("default : ")
-                                    .append(translate_base_typ(bt.clone())),
+                                RcDoc::as_string("lift_to_both0 (")
+                                    .append(RcDoc::as_string("default : "))
+                                    .append(translate_base_typ(bt.clone()))
+                                    .append(RcDoc::as_string(")")),
                             );
                         }
                         _ => panic!(), // should not happen

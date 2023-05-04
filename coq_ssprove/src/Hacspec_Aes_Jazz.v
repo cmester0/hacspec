@@ -592,7 +592,7 @@ Program Definition keys_expand (key_71 : int128)
   : both (fset ([rkeys_65_loc ; key_66_loc ; temp2_67_loc])) [interface] (
     key_list_t) :=
   ((letbm rkeys_65 : key_list_t loc( rkeys_65_loc ) :=
-        seq_new_ (default : int128) (lift_to_both0 (usize 0)) in
+        seq_new_ (lift_to_both0 (default : int128)) (lift_to_both0 (usize 0)) in
       letbm key_66 : int128 loc( key_66_loc ) := lift_to_both0 key_71 in
       letbm rkeys_65 loc( rkeys_65_loc ) :=
         seq_push (lift_to_both0 rkeys_65) (lift_to_both0 key_66) in
@@ -822,20 +822,20 @@ Definition AES_ROUNDS : nat :=
 Program Definition aes_rounds (rkeys_123 : key_list_t) (inp_122 : int128)
   : both (fset ([state_120_loc])) [interface] (int128) :=
   ((letbm state_120 : int128 loc( state_120_loc ) :=
-        (lift_to_both0 inp_122) .^ (seq_index (rkeys_123) (lift_to_both0 (
+        (lift_to_both0 inp_122) .^ (seq_index (lift_to_both0 rkeys_123) (lift_to_both0 (
               usize 0))) in
       letb state_120 :=
         foldi_both' (lift_to_both0 (usize 1)) (lift_to_both0 (
               usize 10)) state_120 (L := (fset ([state_120_loc]))) (
             I := [interface]) (fun round_124 state_120 =>
             letbm state_120 loc( state_120_loc ) :=
-              aesenc (lift_to_both0 state_120) (seq_index (rkeys_123) (
+              aesenc (lift_to_both0 state_120) (seq_index (lift_to_both0 rkeys_123) (
                   lift_to_both0 round_124)) in
             lift_scope (H_loc_incl := _) (H_opsig_incl := _) (
               lift_to_both0 state_120)
             ) in
       lift_scope (H_loc_incl := _) (H_opsig_incl := _) (aesenclast (
-          lift_to_both0 state_120) (seq_index (rkeys_123) (lift_to_both0 (
+          lift_to_both0 state_120) (seq_index (lift_to_both0 rkeys_123) (lift_to_both0 (
               usize 10))))
       ) : both (fset ([state_120_loc])) [interface] (int128)).
 Fail Next Obligation.

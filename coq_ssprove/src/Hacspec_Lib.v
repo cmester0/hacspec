@@ -41,8 +41,37 @@ Open Scope list_scope.
 
 Import choice.Choice.Exports.
 
-Equations lift3_both {A B C : choice_type} {L1 L2 I} : (A -> B -> C) -> both L1 I A -> both L2 I B -> both (L1 :|: L2) I C :=
-  lift3_both f x y :=
+Equations lift3_both {A B C D : choice_type} {L1 L2 L3 I} : (A -> B -> C -> D) -> both L1 I A -> both L2 I B -> both L3 I C -> both (L1 :|: L2 :|: L3) I D :=
+  lift3_both f x y z :=
+    {| is_pure := f x y z ;
+      is_state := {code temp_x ← x ;; temp_y ← y ;; temp_z ← z ;; ret (f (temp_x) (temp_y) (temp_z)) } |}.
+Next Obligation.
+  intros.
+  ssprove_valid ; eapply valid_injectLocations ;
+    [ apply fsubsetUl
+    | eapply valid_injectLocations ; [ apply fsubsetUl | ]
+    | apply fsubsetUl
+    | eapply valid_injectLocations ; [ apply fsubsetUr | ]
+    | apply fsubsetUr
+    | ] ; apply (is_state _).
+Qed.
+Next Obligation.
+  intros.
+  pattern_both Hb Hf Hg.
+  apply (@r_bind_trans_both A D).
+  subst Hf Hg Hb ; hnf.
+  pattern_both Hb Hf Hg.
+  apply (@r_bind_trans_both B D).
+  subst Hf Hg Hb ; hnf.
+  pattern_both Hb Hf Hg.
+  apply (@r_bind_trans_both C D).
+  subst Hf Hg Hb ; hnf.
+  apply r_ret. easy.
+Qed.
+Global Transparent lift3_both.
+
+Equations lift2_both {A B C : choice_type} {L1 L2 I} : (A -> B -> C) -> both L1 I A -> both L2 I B -> both (L1 :|: L2) I C :=
+  lift2_both f x y :=
     {| is_pure := f x y ;
       is_state := {code temp_x ← x ;; temp_y ← y ;; ret (f (temp_x) (temp_y)) } |}.
 Next Obligation.
@@ -59,10 +88,10 @@ Next Obligation.
   subst Hf Hg Hb ; hnf.
   apply r_ret. easy.
 Qed.
-Global Transparent lift3_both.
+Global Transparent lift2_both.
 
-Equations lift2_both {A B : choice_type} {L} {I} : (A -> B) -> both L I A -> both L I B :=
-  lift2_both f x :=
+Equations lift1_both {A B : choice_type} {L} {I} : (A -> B) -> both L I A -> both L I B :=
+  lift1_both f x :=
     {| is_pure := f x ;
       is_state := {code temp_x ← x ;; ret (f (temp_x)) } |}.
 Next Obligation.
@@ -72,24 +101,24 @@ Next Obligation.
   subst Hf Hg Hb ; hnf.
   apply r_ret. easy.
 Qed.
-Global Transparent lift2_both.
+Global Transparent lift1_both.
 
 (* Section IntType. *)
-  Notation int_modi := (lift3_both int_modi).
-  Notation int_add := (lift3_both int_add).
-  Notation int_sub := (lift3_both int_sub).
-  Notation int_opp := (lift2_both int_opp).
-  Notation int_mul := (lift3_both int_mul).
-  Notation int_div := (lift3_both int_div).
-  Notation int_mod := (lift3_both int_mod).
-  Notation int_xor := (lift3_both int_xor).
-  Notation int_and := (lift3_both int_and).
-  Notation int_or := (lift3_both int_or).
-  Notation int_not := (lift2_both int_not).
-  Notation cast_int := (lift2_both (fun n => repr (unsigned n))).
+  Notation int_modi := (lift2_both int_modi).
+  Notation int_add := (lift2_both int_add).
+  Notation int_sub := (lift2_both int_sub).
+  Notation int_opp := (lift1_both int_opp).
+  Notation int_mul := (lift2_both int_mul).
+  Notation int_div := (lift2_both int_div).
+  Notation int_mod := (lift2_both int_mod).
+  Notation int_xor := (lift2_both int_xor).
+  Notation int_and := (lift2_both int_and).
+  Notation int_or := (lift2_both int_or).
+  Notation int_not := (lift1_both int_not).
+  Notation cast_int := (lift1_both (fun n => repr (unsigned n))).
 (* End IntType. *)
 
-Notation secret := (lift2_both secret).
+Notation secret := (lift1_both secret).
 
 Infix ".%%" := int_modi (at level 40, left associativity) : Z_scope.
 Infix ".+" := int_add (at level 77) : hacspec_scope.
@@ -104,55 +133,55 @@ Infix ".|" := int_or (at level 77) : hacspec_scope.
 Notation "'not'" := int_not (at level 77) : hacspec_scope.
 
 (* Section Uint. *)
-  Notation uint8_declassify := (lift2_both uint8_declassify).
-  Notation int8_declassify := (lift2_both int8_declassify).
-  Notation uint16_declassify := (lift2_both uint16_declassify).
-  Notation int16_declassify := (lift2_both int16_declassify).
-  Notation uint32_declassify := (lift2_both uint32_declassify).
-  Notation int32_declassify := (lift2_both int32_declassify).
-  Notation uint64_declassify := (lift2_both uint64_declassify).
-  Notation int64_declassify := (lift2_both int64_declassify).
-  Notation uint128_declassify := (lift2_both uint128_declassify).
-  Notation int128_declassify := (lift2_both int128_declassify).
+  Notation uint8_declassify := (lift1_both uint8_declassify).
+  Notation int8_declassify := (lift1_both int8_declassify).
+  Notation uint16_declassify := (lift1_both uint16_declassify).
+  Notation int16_declassify := (lift1_both int16_declassify).
+  Notation uint32_declassify := (lift1_both uint32_declassify).
+  Notation int32_declassify := (lift1_both int32_declassify).
+  Notation uint64_declassify := (lift1_both uint64_declassify).
+  Notation int64_declassify := (lift1_both int64_declassify).
+  Notation uint128_declassify := (lift1_both uint128_declassify).
+  Notation int128_declassify := (lift1_both int128_declassify).
 
-  Notation uint8_classify := (lift2_both uint8_classify).
-  Notation int8_classify := (lift2_both int8_classify).
-  Notation uint16_classify := (lift2_both uint16_classify).
-  Notation int16_classify := (lift2_both int16_classify).
-  Notation uint32_classify := (lift2_both uint32_classify).
-  Notation int32_classify := (lift2_both int32_classify).
-  Notation uint64_classify := (lift2_both uint64_classify).
-  Notation int64_classify := (lift2_both int64_classify).
-  Notation uint128_classify := (lift2_both uint128_classify).
-  Notation int128_classify := (lift2_both int128_classify).
+  Notation uint8_classify := (lift1_both uint8_classify).
+  Notation int8_classify := (lift1_both int8_classify).
+  Notation uint16_classify := (lift1_both uint16_classify).
+  Notation int16_classify := (lift1_both int16_classify).
+  Notation uint32_classify := (lift1_both uint32_classify).
+  Notation int32_classify := (lift1_both int32_classify).
+  Notation uint64_classify := (lift1_both uint64_classify).
+  Notation int64_classify := (lift1_both int64_classify).
+  Notation uint128_classify := (lift1_both uint128_classify).
+  Notation int128_classify := (lift1_both int128_classify).
 
   (* CompCert integers' signedness is only interpreted through 'signed' and 'unsigned',
    and not in the representation. Therefore, uints are just names for their respective ints.
    *)
 
-  Notation declassify_usize_from_uint8 := (lift2_both declassify_usize_from_uint8).
-  Notation declassify_u32_from_uint32 := (lift2_both declassify_u32_from_uint32).
+  Notation declassify_usize_from_uint8 := (lift1_both declassify_usize_from_uint8).
+  Notation declassify_u32_from_uint32 := (lift1_both declassify_u32_from_uint32).
 
-  Notation uint8_rotate_left := (lift3_both uint8_rotate_left).
+  Notation uint8_rotate_left := (lift2_both uint8_rotate_left).
 
-  Notation uint8_rotate_right := (lift3_both uint8_rotate_right).
+  Notation uint8_rotate_right := (lift2_both uint8_rotate_right).
 
-  Notation uint16_rotate_left := (lift3_both uint16_rotate_left).
+  Notation uint16_rotate_left := (lift2_both uint16_rotate_left).
 
-  Notation uint16_rotate_right := (lift3_both uint16_rotate_right).
+  Notation uint16_rotate_right := (lift2_both uint16_rotate_right).
 
-  Notation uint32_rotate_left := (lift3_both uint32_rotate_left).
+  Notation uint32_rotate_left := (lift2_both uint32_rotate_left).
 
-  Notation uint32_rotate_right := (lift3_both uint32_rotate_right).
+  Notation uint32_rotate_right := (lift2_both uint32_rotate_right).
 
-  Notation uint64_rotate_left := (lift3_both uint64_rotate_left).
+  Notation uint64_rotate_left := (lift2_both uint64_rotate_left).
 
-  Notation uint64_rotate_right := (lift3_both uint64_rotate_right).
+  Notation uint64_rotate_right := (lift2_both uint64_rotate_right).
 
-  Notation uint128_rotate_left := (lift3_both uint128_rotate_left).
+  Notation uint128_rotate_left := (lift2_both uint128_rotate_left).
 
-  Notation uint128_rotate_right := (lift3_both uint128_rotate_right).
-  Notation usize_shift_right_ := (lift3_both (fun u s => u usize_shift_right s)).
+  Notation uint128_rotate_right := (lift2_both uint128_rotate_right).
+  Notation usize_shift_right_ := (lift2_both (fun u s => u usize_shift_right s)).
 
   Notation usize_shift_left_ :=
     (fun (u: both0 uint_size) (s: both0 int32) =>
@@ -179,8 +208,8 @@ Notation "'not'" := int_not (at level 77) : hacspec_scope.
 
   (**** Operations *)
 
-  Notation shift_left_ := (lift3_both shift_left_).
-  Notation shift_right_ := (lift3_both shift_right_).
+  Notation shift_left_ := (lift2_both shift_left_).
+  Notation shift_right_ := (lift2_both shift_right_).
 
 (* End Uint. *)
 
@@ -840,40 +869,21 @@ End Loops.
 
 (*** Seq *)
 
-Section Seqs.
+(* Section Seqs. *)
 
   (**** Unsafe functions *)
 
-  Definition seq_new_ {A: choice_type} (init : A) {WS} (len: @int WS) : both0 (seq A) :=
-    lift_to_both (seq_new_ init (Z.to_nat (unsigned len))).
-
-  Definition seq_new {A: choice_type} `{Default A} (len: nat) : both0 (seq A) :=
-    lift_to_both (seq_new len).
-
-  Definition seq_len {A: choice_type} (s: (seq A)) : both0 (uint_size) :=
-    lift_to_both (seq_len s).
-
-  Definition seq_index {A: choice_type} `{Default (A)} (s: (seq A)) (i : uint_size) : both0 A :=
-    lift_to_both (seq_index s i).
+  Notation seq_new_ := (lift2_both seq_new_).
+  Notation seq_new := (lift1_both seq_new).
+  Notation seq_len := (lift1_both seq_len).
+  Notation seq_index := (lift2_both seq_index).
 
 (**** Seq manipulation *)
 
-Definition seq_slice
-  {a: choice_type}
- `{Default (a)}
-  (s: ((seq a)))
-  (start: uint_size)
-  (len: uint_size)
-    : both0 (seq a) :=
-  lift_to_both (seq_slice s start len).
+Notation seq_slice := (lift3_both seq_slice).
 
-Definition seq_slice_range
-  {a: choice_type}
- `{Default ((a))}
-  (input: ((seq a)))
-  (start_fin:(uint_size × uint_size))
-    : both0 (seq a) :=
-  lift_to_both (seq_slice_range input start_fin).
+Notation seq_slice_range :=
+  (lift2_both seq_slice_range).
 
 (* updating a subsequence in a sequence *)
 Definition seq_update
@@ -1000,7 +1010,7 @@ Definition seq_xor_ {WS} (x y : seq (@int WS)) : both0 (seq (@int WS)) :=
 Definition seq_truncate {a : choice_type} `{Default a} (x : seq a) (n : nat) : both0 (seq a) :=
   lift_to_both (seq_truncate x n).
 
-End Seqs.
+(* End Seqs. *)
 Infix "seq_xor" := seq_xor_ (at level 33) : hacspec_scope.
 
 Section Arrays.

@@ -1613,13 +1613,13 @@ Proof.
         apply (path_sorted_tl i).
 Qed.
 
-Definition seq_new_ {A: choice_type} (init : A) (len: nat) : (seq A) :=
-  fmap_of_seq (repeat init len).
+Definition seq_new_ {A: choice_type} (init : A) (len: uint_size) : (seq A) :=
+  fmap_of_seq (repeat init (Z.to_nat (unsigned len))).
 
-Definition seq_new {A: choice_type} `{Default (A)} (len: nat) : (seq A) :=
+Definition seq_new {A: choice_type} `{Default (A)} (len: uint_size) : (seq A) :=
   seq_new_ default len.
 
-Definition seq_create {A: choice_type} `{Default (A)} (len: nat) : (seq A) :=
+Definition seq_create {A: choice_type} `{Default (A)} (len: uint_size) : (seq A) :=
   seq_new len.
 
 Definition repr_Z_succ : forall WS z, @repr WS (Z.succ z) = (repr z .+ one).
