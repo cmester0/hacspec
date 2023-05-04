@@ -409,7 +409,7 @@ pub(crate) fn translate_func_name<'a>(
                     match &prefix_info {
                         FuncPrefix::Array(_, bt) | FuncPrefix::Seq(bt) => {
                             additional_args.push(
-                                RcDoc::as_string("default : ")
+                                RcDoc::as_string("default : (* both0 *)")
                                     .append(translate_base_typ(bt.clone())),
                             );
                         }

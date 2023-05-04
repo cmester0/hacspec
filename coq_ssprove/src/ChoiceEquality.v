@@ -763,3 +763,62 @@ Ltac match_bind_trans_both :=
   pattern_both Hx Hf Hg
   ; apply (@r_bind_trans_both) with (b := Hx) (f := Hf) (g := Hg)
   ; intros ; subst Hf ; subst Hg ; subst Hx ; hnf.
+
+Definition prod_to_prod {A B} {L I} (x : both L I (A × B)) : (both L I A * both L I B) :=
+  ({| is_pure := fst (is_pure x) ;
+     is_state := {code temp ← (is_state x) ;; ret (fst temp) } ;
+     code_eq_proof_statement := r_bind_trans (fun x0 : choice.Choice.sort (A × B) => ret (fst x0))
+                                             (fun x0 : choice.Choice.sort (A × B) => ret (fst x0)) x x true_precond true_precond
+                                             (pre_to_post_ret true_precond (fst _)) (code_eq_proof_statement x)
+                                             (r_ret (fst _) (fst _) true_precond
+                                                    (pre_to_post_ret true_precond (fst _))
+                                                    (fun (H H0 : heap) (H1 : true_precond (H, H0)) =>
+                                                       conj (conj eq_refl eq_refl) H1)) |} ,
+   {| is_pure := snd (is_pure x) ;
+     is_state := {code temp ← (is_state x) ;; ret (snd temp) };
+     code_eq_proof_statement := r_bind_trans (fun x0 : choice.Choice.sort (A × B) => ret (snd x0))
+                                             (fun x0 : choice.Choice.sort (A × B) => ret (snd x0)) x x true_precond true_precond
+                                             (pre_to_post_ret true_precond (snd _)) (code_eq_proof_statement x)
+                                             (r_ret (snd _) (snd _) true_precond
+                                                    (pre_to_post_ret true_precond (snd _))
+                                                    (fun (H H0 : heap) (H1 : true_precond (H, H0)) =>
+                                                       conj (conj eq_refl eq_refl) H1))|}).
+
+(* Definition prod_to_prod0 {A B} (x : both0 (A × .. × B)) : (both0 A * both0 B) := prod_to_prod x. *)
+
+Program Definition prod_to_prod_uncurry {A B C} {L I} (f : both L I (A × B) -> both L I C) (x : both L I A) (y : both L I B) : both L I C :=
+  f ({|
+        is_pure := (is_pure x, is_pure y) : choice.Choice.sort (chProd A B) ;
+        is_state :=
+        {code
+           temp_x ← is_state x ;;
+           temp_y ← is_state y ;;
+           ret ((temp_x, temp_y) : choice.Choice.sort (chProd A B))} ;
+      |} : both L I (A × B)).
+Next Obligation.
+  intros.
+
+  replace (ret _) with (temp_x ← ret x ;; temp_y ← ret y ;; ret ((temp_x , temp_y) : choice.Choice.sort (chProd A B))) by reflexivity.
+
+  apply r_bind with (mid := pre_to_post_ret true_precond (is_pure x)).
+  apply (code_eq_proof_statement x).
+  intros.
+
+  apply rpre_hypothesis_rule.
+  intros ? ? [[]] ; subst.
+  apply forget_precond.
+
+  apply r_bind with (mid := pre_to_post_ret true_precond (is_pure y)).
+  apply forget_precond.
+  apply (code_eq_proof_statement y).
+  intros.
+
+  apply rpre_hypothesis_rule.
+  intros ? ? [[]] ; subst.
+  apply forget_precond.
+
+  apply r_ret.
+  intros.
+
+  easy.
+Qed.

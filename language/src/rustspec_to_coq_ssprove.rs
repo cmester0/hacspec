@@ -140,9 +140,9 @@ fn make_let_binding<'a>(
                 None => translate_pattern_tick(pat.clone()),
                 Some(tau) => translate_pattern_tick(pat.clone())
                     .append(RcDoc::space())
-                    .append(RcDoc::as_string(":"))
+                    .append(RcDoc::as_string(": both0"))
                     .append(RcDoc::space())
-                    .append(tau),
+                    .append(make_paren(tau)),
             }
             .group(),
         )
@@ -242,16 +242,25 @@ fn translate_expression<'a>(e: Expression, top_ctx: &'a TopLevelContext) -> RcDo
                     .group(),
             }
         }
-        Expression::Named(p) => RcDoc::as_string("lift_to_both0")
-            .append(RcDoc::space())
-            .append(translate_ident(p.clone())),
+        Expression::Named(p) =>
+        // RcDoc::as_string("lift_to_both0")
+        // .append(RcDoc::space())
+        // .append(
+        {
+            translate_ident(p.clone())
+        } // )
         Expression::FuncCall(prefix, name, args, arg_types) => {
-            let (func_name, additional_args, func_ret_ty, extra_info) =
-                rustspec_to_coq_ssprove_pure::translate_func_name(
+            let (func_name, additional_args, func_ret_ty, (_, extra_info)) =
+                rustspec_to_coq_ssprove_state::translate_func_name( // pure
                     prefix.clone(),
                     Ident::TopLevel(name.0.clone()),
                     top_ctx,
+                    args.clone()
+                        .into_iter()
+                        .map(|((arg, _), _)| translate_expression(arg, top_ctx))
+                        .collect(),
                     arg_types.unwrap(),
+                    false,
                 );
             let total_args = args.len() + additional_args.len();
             func_name
@@ -265,11 +274,12 @@ fn translate_expression<'a>(e: Expression, top_ctx: &'a TopLevelContext) -> RcDo
                 .append(RcDoc::concat(args.into_iter().enumerate().map(
                     |(i, ((arg, _), _))| {
                         RcDoc::space().append(make_paren(if i < extra_info.len() {
-                            let (pre_arg, post_arg) = extra_info[i].clone();
-                            pre_arg
-                                .clone()
-                                .append(translate_expression(arg, top_ctx))
-                                .append(post_arg.clone())
+                            // let (pre_arg, post_arg) = 
+                                extra_info[i].clone()
+                            // pre_arg
+                            //     .clone()
+                            //     .append(translate_expression(arg, top_ctx))
+                            //     .append(post_arg.clone())
                         } else {
                             translate_expression(arg, top_ctx)
                         }))
@@ -290,12 +300,18 @@ fn translate_expression<'a>(e: Expression, top_ctx: &'a TopLevelContext) -> RcDo
                         RcDoc::space().append(make_paren(translate_expression(arg, top_ctx)))
                     })))
             } else {
-                let (func_name, additional_args, func_ret_ty, extra_info) =
-                    rustspec_to_coq_ssprove_pure::translate_func_name(
+                let (func_name, additional_args, func_ret_ty, (_, extra_info)) =
+                    rustspec_to_coq_ssprove_state::translate_func_name(
+                        // pure
                         sel_typ.clone().map(|x| x.1),
                         Ident::TopLevel(f.clone()),
                         top_ctx,
+                        args.clone()
+                            .into_iter()
+                            .map(|((arg, _), _)| translate_expression(arg, top_ctx))
+                            .collect(),
                         arg_types.unwrap(),
+                        false,
                     );
                 func_name // We append implicit arguments first
                     .append(RcDoc::concat(
@@ -310,11 +326,11 @@ fn translate_expression<'a>(e: Expression, top_ctx: &'a TopLevelContext) -> RcDo
                     .append(RcDoc::concat(args.into_iter().enumerate().map(
                         |(i, ((arg, _), _))| {
                             RcDoc::space().append(make_paren(if i < extra_info.len() {
-                                let (pre_arg, post_arg) = extra_info[i].clone();
-                                pre_arg
-                                    .clone()
-                                    .append(translate_expression(arg, top_ctx))
-                                    .append(post_arg.clone())
+                                // let (pre_arg, post_arg) = extra_info[i].clone();
+                                // pre_arg
+                                //     .clone()
+                                    extra_info[i].clone()// .append(translate_expression(arg, top_ctx))
+                                    // .append(post_arg.clone())
                             } else {
                                 translate_expression(arg, top_ctx)
                             }))
@@ -835,13 +851,13 @@ fn translate_item<'a>(item: DecoratedItem, top_ctx: &'a TopLevelContext) -> RcDo
                                     make_paren(
                                         translate_ident(x.clone())
                                             .append(RcDoc::space())
-                                            .append(RcDoc::as_string(":"))
+                                            .append(RcDoc::as_string(": both0 "))
                                             .append(RcDoc::space())
-                                            .append(
+                                            .append(make_paren(
                                                 rustspec_to_coq_ssprove_state::translate_base_typ(
                                                     tau.clone().1 .0,
                                                 ),
-                                            ),
+                                            )),
                                     )
                                 }),
                                 RcDoc::space(),

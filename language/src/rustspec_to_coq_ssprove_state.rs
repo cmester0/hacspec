@@ -1225,7 +1225,12 @@ fn translate_expression<'a>(
                 array_or_seq
                     .append(RcDoc::as_string("_index"))
                     .append(RcDoc::space())
-                    .append(make_paren(translate_ident(x.0.clone())))
+                    .append(
+                        make_paren(
+                            RcDoc::as_string("lift_to_both0")
+                                .append(RcDoc::space())
+                                .append(make_paren(translate_ident(x.0.clone())))
+                        ))
                     .append(RcDoc::space())
                     .append(make_paren(trans_e2)),
                 !inline,
@@ -1338,7 +1343,8 @@ fn translate_expression<'a>(
                         translate_expression(x.as_ref().0.clone(), top_ctx, inline);
                     (
                         ass_x,
-                        RcDoc::as_string("(fun x => lift_to_both0 (repr (unsigned x)))")
+                        RcDoc::as_string("cast_int")
+                            .append(RcDoc::space())
                             .append(make_paren(trans_x))
                             .group(),
                     )

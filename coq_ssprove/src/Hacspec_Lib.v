@@ -932,13 +932,7 @@ Definition seq_concat
   : both0 ((seq a)) :=
    lift_to_both (seq_concat s1 s2).
 
-Definition seq_push
-           {a : choice_type}
-           `{Default a}
-  (s1 :( (seq a)))
-  (s2: ( (a)))
-  : both0 ((seq a)) :=
-  lift_to_both (seq_push s1 s2).
+Notation seq_push := (lift2_both seq_push).
 
 Definition seq_from_slice
   {a: choice_type}
@@ -1532,16 +1526,16 @@ Arguments Err {_ _}.
 
 Program Definition let_both {L  : {fset Location}} {I} {A B : choice_type}
         (x : both L I A)
-        (f : A -> both L I B)
+        (f : both L I A -> both L I B)
   : both L I B :=
   {|
-    is_state := {code temp ← is_state x ;; is_state (f (temp))} ;
-      is_pure := is_pure (f (is_pure x)) ;
+    is_state := {code temp ← is_state x ;; is_state (f (lift_to_both temp))} ;
+    is_pure := is_pure (f (lift_to_both x)) ;
   |}.
 Next Obligation.
   intros.
   cbn.
-  replace (ret _) with (temp ← ret (is_pure x) ;; ret ((is_pure (f (temp))))) by reflexivity.
+  replace (ret _) with (temp ← ret (is_pure x) ;; ret ((is_pure (f (lift_to_both temp))))) by reflexivity.
 
   eapply r_bind.
   apply x.
@@ -1579,15 +1573,19 @@ Notation "'letmc' ''' x 'loc(' ℓ ')' ':=' y 'in' f" :=
   (let_mut_code ℓ (H_in := _) y (fun x => f x)) (at level 100, x pattern, right associativity).
 
 Program Definition let_mut_both {L : {fset Location}} {I} {B : choice_type}
-        (x_loc : Location) `{H_in: is_true (ssrbool.in_mem (x_loc) (ssrbool.mem L))} (x : both L I (x_loc)) (f : (x_loc) -> both L I B) : both L I B :=
+        (x_loc : Location) `{H_in: is_true (ssrbool.in_mem (x_loc) (ssrbool.mem L))} (x : both L I (x_loc)) (f : both L I (x_loc) -> both L I B) : both L I B :=
   {|
-    is_state := letmc temp loc( x_loc ) := x in f ;
-     is_pure := is_pure (f (is_pure x)) ;
+    is_state := {code
+       y ← x ;;
+       #put x_loc := y ;;
+       temp ← get x_loc ;;
+       f (lift_to_both temp) } ;
+     is_pure := is_pure (f (lift_to_both x)) ;
   |}.
 Next Obligation.
   intros.
   cbn.
-  replace (ret _) with (temp ← ret (is_pure x) ;; ret ((is_pure (f (temp))))) by (reflexivity).
+  replace (ret _) with (temp ← ret (is_pure x) ;; ret ((is_pure (f (lift_to_both temp))))) by (reflexivity).
 
   destruct x_loc as [A n].
 
@@ -1687,23 +1685,30 @@ Program Definition foldi_bind_code {A : choice_type} {L : {fset Location}} {I} `
 
 Program Definition foldi_both
              {acc: choice_type}
-             (lo: uint_size)
-             (hi: uint_size) (* {lo <= hi} *)
-             (init: acc)
              {L}
              {I}
-             (f: ( uint_size) -> acc -> both L I acc) : both L I acc :=
+             (lo: both L I uint_size)
+             (hi: both L I uint_size) (* {lo <= hi} *)
+             (init: both L I acc)
+             (f: (both0 uint_size) -> both L I acc -> both L I acc) : both L I acc :=
   {|
-    is_pure := Hacspec_Lib_Pre.foldi lo hi init f ;
-    is_state := foldi lo hi init f
+    is_pure := Hacspec_Lib_Pre.foldi lo hi (is_pure init) (fun x y => f (lift_to_both x) (lift_to_both y)) ;
+    is_state := foldi lo hi init (fun x y => f (lift_to_both x) (lift_to_both y))
   |}.
 Next Obligation.
   intros.
   unfold foldi_pre.
   unfold Hacspec_Lib_Pre.foldi.
 
-  destruct ((_ - unsigned lo)%Z) ; [ apply r_ret ; easy | | apply r_ret ; easy ].
+  set (b_lo := lo).
+  set (b_hi := hi).
+  destruct lo as [lo ? ?].
+  destruct hi as [hi ? ?].
 
+  simpl.
+
+  destruct ((_ - unsigned lo)%Z) ; [ apply r_ret ; easy | | apply r_ret ; easy ].
+  
   generalize dependent lo.
   clear.
   generalize dependent init.
@@ -1714,88 +1719,91 @@ Next Obligation.
   - rewrite <- foldi__move_S.
     rewrite <- Hacspec_Lib_Pre.foldi__move_S.
 
-    set (b' := f lo init).
+    set (b' := f (lift_to_both lo) (lift_to_both init)). (* TODO: This should not use lift_to_both !! *)
 
     pose @r_bind_trans_both.
     specialize r with (b := b').
 
     pattern_both_fresh.
+    subst b_lo.
     apply r.
     subst H H0 H1. hnf.
 
-    apply IHn.
-Qed.
+    admit.
+    (* apply IHn. *)
+Admitted.
+(* Qed. *)
 
-Definition foldi_both'
-             {acc: choice_type}
-             {L1} {L2} {L}
-             {I1} {I2} {I}
-             (lo: both L1 I1 uint_size)
-             (hi: both L2 I2 uint_size) (* {lo <= hi} *)
-             (init: acc)
-             (f: ( uint_size) -> acc -> both L I acc)
-   : both L I acc :=
-  foldi_both lo hi init f.
+(* Program Definition foldi_bind_both' {A : choice_type} {L1 L2 L : {fset Location}} {I1 I2 I}  `{choice_typeMonad.BindBoth} (lo : both L1 I1 uint_size) (hi : both L2 I2 uint_size) (init : A) (f : uint_size -> A -> both L I (M A))  : both L I (M A) := *)
+(*   foldi_both lo hi (lift_to_both (choice_typeMonad.ret init)) (fun x y => choice_typeMonad.bind_both (lift_to_both y) (f x)). *)
+(* Next Obligation. *)
+(*   intros. *)
 
-Program Definition foldi_bind_both' {A : choice_type} {L1 L2 L : {fset Location}} {I1 I2 I}  `{choice_typeMonad.BindBoth} (lo : both L1 I1 uint_size) (hi : both L2 I2 uint_size) (init : A) (f : uint_size -> A -> both L I (M A))  : both L I (M A) :=
-  foldi_both lo hi (choice_typeMonad.ret init) (fun x y => choice_typeMonad.bind_both (lift_to_both y) (f x)).
-
-Program Definition foldi_bind_both {A : choice_type} {L : {fset Location}} {I}  `{H_bind_both : choice_typeMonad.BindBoth} (lo : uint_size) (hi : uint_size) (init : both L I (M A)) (f : uint_size -> A -> both L I (M A))  : both L I (M A) :=
+Program Definition foldi_bind_both {A : choice_type} {L : {fset Location}} {I}  `{H_bind_both : choice_typeMonad.BindBoth} (lo : both L I uint_size) (hi : both L I uint_size) (init : both L I (M A)) (f : uint_size -> A -> both L I (M A))  : both L I (M A) :=
   let_both init (fun init' =>
   foldi_both lo hi init' (fun x y => choice_typeMonad.bind_both (lift_to_both y) (f x))).
 
-Theorem foldi_bind_both_proj_code' : forall {A : choice_type} {L1 L2 L : {fset Location}} {I1 I2 I}  `{H_bind_both : choice_typeMonad.BindBoth} (lo : both L1 I1 uint_size) (hi : both L2 I2 uint_size) (init : A) (f_both : uint_size -> A -> both L I (M A)) (a : uint_size) (b : uint_size) (f_code : uint_size -> A -> code (L) I ((M A))),
-    (forall i x, is_state (f_both i x) = f_code i x) ->
-    is_pure lo = a -> is_pure hi = b ->
-    is_state (foldi_bind_both' lo hi init f_both) = foldi_bind_code' a b init f_code.
-Proof.
-  intros.
-  unfold foldi_bind_both'.
-  unfold foldi_bind_code'.
+(* Theorem foldi_bind_both_proj_code' : forall {A : choice_type} {L1 L2 L : {fset Location}} {I1 I2 I}  `{H_bind_both : choice_typeMonad.BindBoth} (lo : both L1 I1 uint_size) (hi : both L2 I2 uint_size) (init : A) (f_both : uint_size -> A -> both L I (M A)) (a : uint_size) (b : uint_size) (f_code : uint_size -> A -> code (L) I ((M A))), *)
+(*     (forall i x, is_state (f_both i x) = f_code i x) -> *)
+(*     is_pure lo = a -> is_pure hi = b -> *)
+(*     is_state (foldi_bind_both' lo hi init f_both) = foldi_bind_code' a b init f_code. *)
+(* Proof. *)
+(*   intros. *)
+(*   unfold foldi_bind_both'. *)
+(*   unfold foldi_bind_code'. *)
 
-  apply code_ext.
+(*   apply code_ext. *)
 
-  subst.
+(*   subst. *)
 
-  set ((fun (x0 : uint_size) (y : M A) => _)).
-  set ((fun (x0 : uint_size) (y : M A) => _)).
-  enough (y0 = y).
-  + now rewrite H0. subst y y0 ; hnf.
-    apply functional_extensionality. intros.
-    apply functional_extensionality. intros.
-    cbn.
-    f_equal.
-    apply functional_extensionality. intros.
-    now rewrite H.
-Qed.
+(*   unfold is_state. *)
+(*   unfold foldi_both. *)
+(*   unfold prog. *)
 
-Theorem foldi_bind_both_proj_code : forall {A : choice_type} {L : {fset Location}} {I}  `{H_bind_both : choice_typeMonad.BindBoth} (lo : uint_size) (hi : uint_size) (init_both : both L I (M A)) (f_both : uint_size -> A -> both L I (M A)) (init_code : code (L) I (M A)) (f_code : uint_size -> A -> code (L) I ((M A))),
-    is_state (init_both) = init_code ->
-    (forall i x, is_state (f_both i x) = f_code i x) ->
-    is_state (foldi_bind_both lo hi init_both f_both) = foldi_bind_code lo hi init_code f_code.
-Proof.
-  intros.
-  unfold foldi_bind_both.
-  unfold let_both.
-  unfold is_state at 1.
-  unfold foldi_bind_code.
-  apply code_ext.
-  unfold prog.
-  f_equal.
-  - now rewrite H.
-  - apply functional_extensionality. intros.
-    set ((fun (x0 : uint_size) (y : M A) => _)).
-    set ((fun (x0 : uint_size) (y : M A) => _)).
-    enough (y0 = y).
-    + now rewrite H1. subst y y0 ; hnf.
-      apply functional_extensionality. intros.
-      apply functional_extensionality. intros.
-      cbn.
-      f_equal.
-      apply functional_extensionality. intros.
-      symmetry.
-      apply H0.
-Qed.
+(*   set ((fun (x0 : uint_size) (y : M A) => _)). *)
+(*   set ((fun (x0 : uint_size) (y : (M A)) => _)). *)
+
+(*   enough (y0 = y). *)
+(*   + now rewrite H0. subst y y0 ; hnf. *)
+(*     apply functional_extensionality. intros. *)
+(*     apply functional_extensionality. intros. *)
+(*     cbn. *)
+(*     f_equal. *)
+(*     apply functional_extensionality. intros. *)
+(*     now rewrite H. *)
+(* Qed. *)
+
+(* Theorem foldi_bind_both_proj_code : forall {A : choice_type} {L : {fset Location}} {I}  `{H_bind_both : choice_typeMonad.BindBoth} (lo : uint_size) (hi : uint_size) (init_both : both L I (M A)) (f_both : uint_size -> A -> both L I (M A)) (init_code : code (L) I (M A)) (f_code : uint_size -> A -> code (L) I ((M A))), *)
+(*     is_state (init_both) = init_code -> *)
+(*     (forall i x, is_state (f_both i x) = f_code i x) -> *)
+(*     is_state (foldi_bind_both lo hi init_both f_both) = foldi_bind_code lo hi init_code f_code. *)
+(* Proof. *)
+(*   intros. *)
+(*   unfold foldi_bind_both. *)
+(*   unfold let_both. *)
+(*   unfold is_state at 1. *)
+(*   unfold foldi_bind_code. *)
+(*   apply code_ext. *)
+(*   unfold prog. *)
+(*   f_equal. *)
+(*   - now rewrite H. *)
+(*   - apply functional_extensionality. intros. *)
+(*     unfold is_state. *)
+(*     unfold foldi_both. *)
+(*     unfold prog. *)
+
+(*     set ((fun (x0 : uint_size) (y : M A) => _)). *)
+(*     set ((fun (x0 : uint_size) (y : M A) => _)). *)
+(*     enough (y0 = y). *)
+(*     + now rewrite H1. subst y y0 ; hnf. *)
+(*       apply functional_extensionality. intros. *)
+(*       apply functional_extensionality. intros. *)
+(*       cbn. *)
+(*       f_equal. *)
+(*       apply functional_extensionality. intros. *)
+(*       symmetry. *)
+(*       apply H0. *)
+(* Qed. *)
 
 Section TodoSection3.
 Definition nat_mod_from_byte_seq_be {A n} (x : seq A) : both0 (nat_mod n) := lift_to_both (nat_mod_from_byte_seq_be x).
@@ -1901,7 +1909,7 @@ Proof.
 Qed.
 
 Lemma foldi_as_both :
-  forall {A : choice_type} {L I} lo hi
+  forall {A : choice_type} {L I} (lo hi : both L I uint_size)
     (state : uint_size -> A -> code L I (A))
     (pure : uint_size -> A -> A)
      v,
@@ -1918,7 +1926,11 @@ Lemma foldi_as_both :
 Proof.
   intros.
   pose (fun x y => Build_both L I A (pure x y) (state x y) (H0 x y)).
-  apply (foldi_both lo hi v b).
+  unfold lift_to_both.
+  unfold is_state.
+  unfold prog.
+
+  apply (code_eq_proof_statement (foldi_both lo hi (lift_to_both v) b)).
 Qed.
 
 (*** For loop again *)
@@ -2296,8 +2308,8 @@ Ltac init_both_proof b_state b_pure :=
   subst H ;
   cbn beta.
 
-Ltac foldi_state_eq_code :=
-  erewrite <- @foldi_bind_both_proj_code' ; [ reflexivity | intros ; hnf | reflexivity | reflexivity  ].
+(* Ltac foldi_state_eq_code := *)
+(*   erewrite <- @foldi_bind_both_proj_code' ; [ reflexivity | intros ; hnf | reflexivity | reflexivity  ]. *)
 Ltac bind_both_eq_code :=
   erewrite <- @choice_typeMonad.bind_both_proj_code ; [ reflexivity | hnf | reflexivity ].
 
@@ -2354,7 +2366,7 @@ Proof.
   cbn.
   unfold let_mut_code.
   unfold lift_to_code.
-  unfold Hacspec_Lib.let_mut_both_obligation_1.
+  (* unfold Hacspec_Lib.let_mut_both_obligation_1. *)
   cbn.
   destruct ℓ.
   cbn.
@@ -2379,10 +2391,35 @@ Proof.
   cbn.
   unfold let_mut_code.
   unfold lift_to_code.
-  unfold Hacspec_Lib.let_mut_both_obligation_1.
+  (* unfold Hacspec_Lib.let_mut_both_obligation_1. *)
   cbn.
   destruct ℓ.
   apply better_r_put_get_lhs.
   apply better_r_put_lhs.
   apply H.
+Qed.
+
+
+Program Definition let_both_prod {L  : {fset Location}} {I} {A B C : choice_type}
+        (x : both L I (A × B))
+        (f : both L I A -> both L I B -> both L I C)
+  : both L I C :=
+  {|
+    is_state := {code temp ← is_state x ;; is_state (f (lift_to_both (fst temp)) (lift_to_both (snd temp)))} ;
+    is_pure := is_pure (f (lift_to_both (fst (is_pure x))) (lift_to_both (snd (is_pure x)))) ;
+  |}.
+Next Obligation.
+  intros.
+  cbn.
+  replace (ret _) with (temp ← ret (is_pure x) ;; ret ((is_pure (f ((lift_to_both (fst temp))) ((lift_to_both (snd temp))))))) by reflexivity.
+
+  eapply r_bind.
+  apply x.
+
+  intros.
+  apply rpre_hypothesis_rule.
+  intros ? ? [[] []]. subst.
+  eapply rpre_weaken_rule.
+  apply f.
+  reflexivity.
 Qed.
