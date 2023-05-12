@@ -228,34 +228,35 @@ Section Loops.
            (fuel : nat)
            (i : uint_size)
            {L I}
-           (f: (uint_size) -> acc -> code L I (acc))
-           (cur : acc) {struct fuel} : raw_code (acc) :=
+           (f: code L I (chArrow uint_size (chArrow acc acc)))
+           (cur : code L I acc) {struct fuel} : raw_code (acc) :=
     match fuel with
-    | O => ret cur
+    | O => cur
     | S n' =>
-        cur' ← f i cur ;;
         Si ← ret (Hacspec_Lib_Pre.int_add i one) ;;
-        foldi_ n' Si f (cur')
+        foldi_ n' Si f ({code temp_cur ← cur ;;
+                         temp_f ← f ;;
+                         ret (temp_f i temp_cur)})
     end.
 
   Lemma valid_foldi_ :
-    forall {acc : choice_type} L I n i (f : uint_size -> acc -> code L I (acc)) init,
+    forall {acc : choice_type} L I n i (f : code L I (chArrow uint_size (chArrow acc acc))) init,
       ValidCode L I (foldi_ n i f init).
   Proof.
     induction n ; intros ; cbn ; ssprove_valid.
-    apply f.
+    apply init.
   Qed.
 
   Definition foldi_pre
              {acc: choice_type}
              (lo: uint_size)
              (hi: uint_size) (* {lo <= hi} *)
-             {I L}
-             (f: (uint_size) -> acc -> code I L (acc)) (* {i < hi} *)
-             (init: acc) : raw_code (acc) :=
+             {L I}
+             (f:  code L I (chArrow uint_size (chArrow acc acc))) (* {i < hi} *)
+             (init: code L I acc) : raw_code (acc) :=
     match Z.sub (unsigned hi) (unsigned lo) with
-    | Z0 => ret (init)
-    | Zneg p => ret (init)
+    | Z0 => init
+    | Zneg p => init
     | Zpos p => foldi_ (Pos.to_nat p) lo f init
     end.
 
@@ -288,9 +289,12 @@ Section Loops.
       (fuel : nat)
       (i : uint_size)
       {L I}
-      (f : uint_size -> acc -> code L I (acc))
-      (cur : acc),
-      (cur' ← f i cur ;; Si ← ret (Hacspec_Lib_Pre.int_add i one) ;; foldi_ fuel Si f (cur')) = foldi_ (S fuel) i f cur.
+      (f : code L I (chArrow uint_size (chArrow acc acc)))
+      (cur : code L I acc),
+      (Si ← ret (Hacspec_Lib_Pre.int_add i one) ;; foldi_ fuel Si f ({code 
+                                                                        temp_cur ← cur ;;
+                                                                      temp_f ← f ;;
+                                                                      ret (temp_f i temp_cur)})) = foldi_ (S fuel) i f cur.
   Proof. reflexivity. Qed.
 
   Lemma foldi__nat_move_S :
@@ -396,70 +400,71 @@ Section Loops.
     reflexivity.
   Qed.
 
-  (* You can do one iteration of the fold by burning a unit of fuel *)
-  Lemma foldi__move_S_fuel :
-    forall {acc: choice_type}
-      (fuel : nat)
-      (i : uint_size)
-      {L I}
-      (f : uint_size -> acc -> code L I (acc))
-      (cur : acc),
-      (0 <= Z.of_nat fuel <= @wmax_unsigned U32)%Z ->
-      (cur' ← foldi_ fuel i f cur ;;
-       fuel_add_i ← ret (Hacspec_Lib_Pre.int_add (repr (Z.of_nat fuel)) i) ;;
-       f fuel_add_i (cur')
-      ) = foldi_ (S (fuel)) i f cur.
-  Proof.
-    intros acc fuel.
-    induction fuel ; intros.
-    - cbn.
-      replace (repr 0) with (@zero U32) by (apply word_ext ; reflexivity).
-      unfold Hacspec_Lib_Pre.int_add.
-      rewrite add0w.
-      rewrite raw_code_type_from_choice_type_id.
-      reflexivity.
-    - unfold foldi_.
-      fold (@foldi_ acc fuel).
+  (* (* You can do one iteration of the fold by burning a unit of fuel *) *)
+  (* Lemma foldi__move_S_fuel : *)
+  (*   forall {acc: choice_type} *)
+  (*     (fuel : nat) *)
+  (*     (i : uint_size) *)
+  (*     {L I} *)
+  (*     (f : code L I (chArrow uint_size (chArrow acc acc))) *)
+  (*     (cur : code L I acc), *)
+  (*     (0 <= Z.of_nat fuel <= @wmax_unsigned U32)%Z -> *)
+  (*     (cur' ← foldi_ fuel i f cur ;; *)
+  (*      fuel_add_i ← ret (Hacspec_Lib_Pre.int_add (repr (Z.of_nat fuel)) i) ;; *)
+  (*      temp_f ← f ;; *)
+  (*      ret (temp_f fuel_add_i (cur')) *)
+  (*     ) = foldi_ (S (fuel)) i f cur. *)
+  (* Proof. *)
+  (*   intros acc fuel. *)
+  (*   induction fuel ; intros. *)
+  (*   - cbn. *)
+  (*     replace (repr 0) with (@zero U32) by (apply word_ext ; reflexivity). *)
+  (*     unfold Hacspec_Lib_Pre.int_add. *)
+  (*     rewrite add0w. *)
+  (*     reflexivity. *)
+  (*   - unfold foldi_. *)
+  (*     fold (@foldi_ acc fuel). *)
 
-      rewrite bind_assoc.
-      f_equal.
-      apply functional_extensionality.
-      intros.
+  (*     rewrite bind_assoc. *)
+  (*     f_equal. *)
+  (*     apply functional_extensionality. *)
+  (*     intros. *)
 
-      unfold Hacspec_Lib_Pre.int_add at 1 3.
-      (* unfold lift_to_both, is_state at 1 3. *)
-      unfold prog, lift_to_code.
-      do 2 setoid_rewrite bind_rewrite.
+  (*     unfold Hacspec_Lib_Pre.int_add at 1. *)
+  (*     (* unfold Hacspec_Lib_Pre.int_add at 1 3. *) *)
+  (*     (* unfold lift_to_both, is_state at 1 3. *) *)
+  (*     unfold prog, lift_to_code. *)
+  (*     (* do 2 setoid_rewrite bind_rewrite. *) *)
 
-      specialize (IHfuel (Hacspec_Lib_Pre.int_add i one) L I f (x)).
+  (*     specialize (IHfuel (Hacspec_Lib_Pre.int_add i one) L I f). *)
 
 
 
-      replace (Hacspec_Lib_Pre.int_add (repr (Z.of_nat (S fuel))) _)
-        with (Hacspec_Lib_Pre.int_add (repr (Z.of_nat fuel)) (Hacspec_Lib_Pre.int_add i one)).
-      2 : {
-        unfold int_add.
-        unfold Hacspec_Lib_Pre.int_add.
-        rewrite <- addwC.
-        rewrite <- addwA.
-        rewrite addwC.
-        f_equal.
-        apply word_ext.
-        rewrite Z.add_1_l.
-        rewrite Nat2Z.inj_succ.
+  (*     replace (Hacspec_Lib_Pre.int_add (repr (Z.of_nat (S fuel))) _) *)
+  (*       with (Hacspec_Lib_Pre.int_add (repr (Z.of_nat fuel)) (Hacspec_Lib_Pre.int_add i one)). *)
+  (*     2 : { *)
+  (*       unfold int_add. *)
+  (*       unfold Hacspec_Lib_Pre.int_add. *)
+  (*       rewrite <- addwC. *)
+  (*       rewrite <- addwA. *)
+  (*       rewrite addwC. *)
+  (*       f_equal. *)
+  (*       apply word_ext. *)
+  (*       rewrite Z.add_1_l. *)
+  (*       rewrite Nat2Z.inj_succ. *)
 
-        f_equal.
-        f_equal.
-        apply Zmod_small.
-        unfold wmax_unsigned in H.
-        unfold wbase in H.
-        lia.
-      }
+  (*       f_equal. *)
+  (*       f_equal. *)
+  (*       apply Zmod_small. *)
+  (*       unfold wmax_unsigned in H. *)
+  (*       unfold wbase in H. *)
+  (*       lia. *)
+  (*     } *)
 
-      setoid_rewrite IHfuel.
-      reflexivity.
-      lia.
-  Qed.
+  (*     setoid_rewrite IHfuel. *)
+  (*     reflexivity. *)
+  (*     lia. *)
+  (* Qed. *)
 
   (* You can do one iteration of the fold by burning a unit of fuel *)
   Lemma foldi__nat_move_S_fuel :
@@ -487,116 +492,117 @@ Section Loops.
       + lia.
   Qed.
 
-  (* folds and natural number folds compute the same thing *)
-  Lemma foldi_to_foldi_nat :
-    forall {acc: choice_type}
-      (lo: uint_size)
-      (hi: uint_size) (* {lo <= hi} *)
-      {L I}
-      (f: (uint_size) -> acc -> code L I (acc)) (* {i < hi} *)
-      (init: acc),
-      (unsigned lo <= unsigned hi)%Z ->
-      foldi_pre lo hi f init = foldi_nat (Z.to_nat (unsigned lo)) (Z.to_nat (unsigned hi)) (fun x => f (repr (Z.of_nat x))) init.
-  Proof.
-    intros.
+  (* (* folds and natural number folds compute the same thing *) *)
+  (* Lemma foldi_to_foldi_nat : *)
+  (*   forall {acc: choice_type} *)
+  (*     (lo: uint_size) *)
+  (*     (hi: uint_size) (* {lo <= hi} *) *)
+  (*     {L I} *)
+  (*     (f: code L I (chArrow uint_size (chArrow acc acc))) (* {i < hi} *) *)
+  (*     (init: acc), *)
+  (*     (unsigned lo <= unsigned hi)%Z -> *)
+  (*     foldi_pre lo hi f init = *)
+  (*     foldi_nat (Z.to_nat (unsigned lo)) (Z.to_nat (unsigned hi)) (fun x y => {code f_temp ← f ;; ret (f_temp (repr (Z.of_nat x)) y) }) init. *)
+  (* Proof. *)
+  (*   intros. *)
 
-    unfold foldi_pre.
-    unfold foldi_nat.
+  (*   unfold foldi_pre. *)
+  (*   unfold foldi_nat. *)
 
-    destruct (uint_size_as_nat hi) as [ hi_n [ hi_eq hi_H ] ] ; subst.
-    rewrite (@unsigned_repr_alt U32 _ hi_H) in *.
-    rewrite Nat2Z.id.
+  (*   destruct (uint_size_as_nat hi) as [ hi_n [ hi_eq hi_H ] ] ; subst. *)
+  (*   rewrite (@unsigned_repr_alt U32 _ hi_H) in *. *)
+  (*   rewrite Nat2Z.id. *)
 
-    destruct (uint_size_as_nat lo) as [ lo_n [ lo_eq lo_H ] ] ; subst.
-    rewrite (@unsigned_repr_alt U32 _ lo_H) in *.
-    rewrite Nat2Z.id.
+  (*   destruct (uint_size_as_nat lo) as [ lo_n [ lo_eq lo_H ] ] ; subst. *)
+  (*   rewrite (@unsigned_repr_alt U32 _ lo_H) in *. *)
+  (*   rewrite Nat2Z.id. *)
 
-    remember (hi_n - lo_n)%nat as n.
-    apply f_equal with (f := Z.of_nat) in Heqn.
-    rewrite (Nat2Z.inj_sub) in Heqn by (apply Nat2Z.inj_le ; apply H).
-    rewrite <- Heqn.
+  (*   remember (hi_n - lo_n)%nat as n. *)
+  (*   apply f_equal with (f := Z.of_nat) in Heqn. *)
+  (*   rewrite (Nat2Z.inj_sub) in Heqn by (apply Nat2Z.inj_le ; apply H). *)
+  (*   rewrite <- Heqn. *)
 
-    assert (H_bound : (Z.pred 0 < Z.of_nat n < @modulus U32)%Z) by lia.
+  (*   assert (H_bound : (Z.pred 0 < Z.of_nat n < @modulus U32)%Z) by lia. *)
 
-    clear Heqn.
-    induction n.
-    - reflexivity.
-    - pose proof (H_max_bound := modulus_range_helper _ (range_of_nat_succ _ H_bound)).
-      rewrite <- foldi__nat_move_S_fuel by apply H_max_bound.
-      cbn.
-      rewrite SuccNat2Pos.id_succ.
-      rewrite <- foldi__move_S_fuel by apply H_max_bound.
+  (*   clear Heqn. *)
+  (*   induction n. *)
+  (*   - reflexivity. *)
+  (*   - pose proof (H_max_bound := modulus_range_helper _ (range_of_nat_succ _ H_bound)). *)
+  (*     rewrite <- foldi__nat_move_S_fuel by apply H_max_bound. *)
+  (*     cbn. *)
+  (*     rewrite SuccNat2Pos.id_succ. *)
+  (*     rewrite <- foldi__move_S_fuel by apply H_max_bound. *)
 
-      destruct n.
-      + cbn.
-        replace (repr 0) with (@zero U32) by (apply word_ext ; reflexivity).
-        unfold Hacspec_Lib_Pre.int_add.
-        rewrite add0w.
-        reflexivity.
-      + assert (H_bound_pred: (Z.pred 0 < Z.pos (Pos.of_succ_nat n) < @modulus U32)%Z) by lia.
-        rewrite <- (IHn H_bound_pred) ; clear IHn.
-        f_equal.
-        * cbn in *.
-          setoid_rewrite foldi__move_S.
-          f_equal.
-          lia.
-        * apply functional_extensionality.
-          intros.
+  (*     destruct n. *)
+  (*     + cbn. *)
+  (*       replace (repr 0) with (@zero U32) by (apply word_ext ; reflexivity). *)
+  (*       unfold Hacspec_Lib_Pre.int_add. *)
+  (*       rewrite add0w. *)
+  (*       reflexivity. *)
+  (*     + assert (H_bound_pred: (Z.pred 0 < Z.pos (Pos.of_succ_nat n) < @modulus U32)%Z) by lia. *)
+  (*       setoid_rewrite <- (IHn H_bound_pred) ; clear IHn. *)
+  (*       f_equal. *)
+  (*       * cbn in *. *)
+  (*         setoid_rewrite foldi__move_S. *)
+  (*         f_equal. *)
+  (*         lia. *)
+  (*       * apply functional_extensionality. *)
+  (*         intros. *)
 
-          unfold int_add.
+  (*         unfold int_add. *)
 
-          setoid_rewrite bind_rewrite.
-          replace (@Hacspec_Lib_Pre.int_add U32 _ _) with (@repr U32 (Z.of_nat (Init.Nat.add (S n) lo_n))). reflexivity.
+  (*         setoid_rewrite bind_rewrite. *)
+  (*         replace (@Hacspec_Lib_Pre.int_add U32 _ _) with (@repr U32 (Z.of_nat (Init.Nat.add (S n) lo_n))). reflexivity. *)
 
-          apply word_ext.
+  (*         apply word_ext. *)
 
-          replace (urepr _) with (@unsigned U32 (repr (Z.of_nat (S n)))) by reflexivity.
-          replace (urepr _) with (@unsigned U32 (repr (Z.of_nat lo_n))) by reflexivity.
-          do 2 rewrite unsigned_repr_alt by lia.
-          rewrite Nat2Z.inj_add.
-          reflexivity.
-  Qed.
+  (*         replace (urepr _) with (@unsigned U32 (repr (Z.of_nat (S n)))) by reflexivity. *)
+  (*         replace (urepr _) with (@unsigned U32 (repr (Z.of_nat lo_n))) by reflexivity. *)
+  (*         do 2 rewrite unsigned_repr_alt by lia. *)
+  (*         rewrite Nat2Z.inj_add. *)
+  (*         reflexivity. *)
+  (* Qed. *)
 
-  Lemma foldi_nat_to_foldi :
-    forall {acc: choice_type}
-      (lo: nat)
-      (hi: nat) (* {lo <= hi} *)
-      {L I}
-      (f: nat -> acc -> code L I (acc)) (* {i < hi} *)
-      (init: acc),
-      (lo <= hi) ->
-      (Z.of_nat hi < @modulus U32)%Z ->
-      (forall x, f x = f (from_uint_size (repr (Z.of_nat x)))) ->
-      foldi_nat lo hi f init =
-        foldi_pre (usize lo) (usize hi) (fun x => f (from_uint_size x)) init.
-  Proof.
-    intros.
-    rewrite foldi_to_foldi_nat.
-    2: {
-      unfold nat_uint_sizeable.
-      unfold usize, lift_to_both, is_pure.
-      unfold Hacspec_Lib_Pre.usize.
+  (* Lemma foldi_nat_to_foldi : *)
+  (*   forall {acc: choice_type} *)
+  (*     (lo: nat) *)
+  (*     (hi: nat) (* {lo <= hi} *) *)
+  (*     {L I} *)
+  (*     (f: code L I (chArrow 'nat (chArrow acc acc))) (* {i < hi} *) *)
+  (*     (init: acc), *)
+  (*     (lo <= hi) -> *)
+  (*     (Z.of_nat hi < @modulus U32)%Z -> *)
+  (*     (forall x, f x = f (from_uint_size (repr (Z.of_nat x)))) -> *)
+  (*     foldi_nat lo hi f init = *)
+  (*       foldi_pre (usize lo) (usize hi) (fun x => f (from_uint_size x)) init. *)
+  (* Proof. *)
+  (*   intros. *)
+  (*   rewrite foldi_to_foldi_nat. *)
+  (*   2: { *)
+  (*     unfold nat_uint_sizeable. *)
+  (*     unfold usize, lift_to_both, is_pure. *)
+  (*     unfold Hacspec_Lib_Pre.usize. *)
 
-      do 2 rewrite wunsigned_repr.
-      rewrite Zmod_small by (split ; [ lia | apply Z.le_lt_trans with (m := Z.of_nat hi) ; try apply inj_le ; assumption ]).
-      rewrite Zmod_small by (split ; try easy ; lia).
-      lia.
-    }
+  (*     do 2 rewrite wunsigned_repr. *)
+  (*     rewrite Zmod_small by (split ; [ lia | apply Z.le_lt_trans with (m := Z.of_nat hi) ; try apply inj_le ; assumption ]). *)
+  (*     rewrite Zmod_small by (split ; try easy ; lia). *)
+  (*     lia. *)
+  (*   } *)
 
-    unfold nat_uint_sizeable.
-    unfold usize, lift_to_both, is_pure.
-    unfold Hacspec_Lib_Pre.usize.
+  (*   unfold nat_uint_sizeable. *)
+  (*   unfold usize, lift_to_both, is_pure. *)
+  (*   unfold Hacspec_Lib_Pre.usize. *)
 
-    do 2 rewrite wunsigned_repr.
-    rewrite Zmod_small by (split ; [ lia | apply Z.le_lt_trans with (m := Z.of_nat hi) ; try apply inj_le ; assumption ]).
-    rewrite Zmod_small by (split ; try easy ; lia).
-    do 2 rewrite Nat2Z.id.
+  (*   do 2 rewrite wunsigned_repr. *)
+  (*   rewrite Zmod_small by (split ; [ lia | apply Z.le_lt_trans with (m := Z.of_nat hi) ; try apply inj_le ; assumption ]). *)
+  (*   rewrite Zmod_small by (split ; try easy ; lia). *)
+  (*   do 2 rewrite Nat2Z.id. *)
 
-    f_equal.
-    apply functional_extensionality. intros.
-    rewrite <- H1.
-    reflexivity.
-  Qed.
+  (*   f_equal. *)
+  (*   apply functional_extensionality. intros. *)
+  (*   rewrite <- H1. *)
+  (*   reflexivity. *)
+  (* Qed. *)
 
   (* folds can be computed by doing one iteration and incrementing the lower bound *)
   Lemma foldi_nat_split_S :
@@ -693,39 +699,39 @@ Section Loops.
   Qed.
 
   (* folds can be split at some midpoint *)
-  Lemma foldi_split :
-    forall (mid : uint_size), (* {lo <= mid <= hi} *)
-    forall {acc: choice_type}
-      (lo: uint_size)
-      (hi: uint_size) (* {lo <= hi} *)
-      {L I}
-      (f: uint_size -> acc -> code L I (acc)) (* {i < hi} *)
-      (init: acc),
-    forall {guarantee: (unsigned lo <= unsigned mid <= unsigned hi)%Z},
-      foldi_pre lo hi f init = (cur' ← foldi_pre lo mid f init ;; foldi_pre mid hi f (cur')).
-  Proof.
-    intros.
-    rewrite foldi_to_foldi_nat by lia.
-    rewrite foldi_to_foldi_nat by lia.
+  (* Lemma foldi_split : *)
+  (*   forall (mid : uint_size), (* {lo <= mid <= hi} *) *)
+  (*   forall {acc: choice_type} *)
+  (*     (lo: uint_size) *)
+  (*     (hi: uint_size) (* {lo <= hi} *) *)
+  (*     {L I} *)
+  (*     (f: uint_size -> acc -> code L I (acc)) (* {i < hi} *) *)
+  (*     (init: acc), *)
+  (*   forall {guarantee: (unsigned lo <= unsigned mid <= unsigned hi)%Z}, *)
+  (*     foldi_pre lo hi f init = (cur' ← foldi_pre lo mid f init ;; foldi_pre mid hi f (cur')). *)
+  (* Proof. *)
+  (*   intros. *)
+  (*   rewrite foldi_to_foldi_nat by lia. *)
+  (*   rewrite foldi_to_foldi_nat by lia. *)
 
-    pose @foldi_to_foldi_nat.
+  (*   pose @foldi_to_foldi_nat. *)
 
-    rewrite bind_cong with (v := foldi_nat (Z.to_nat (unsigned lo)) (Z.to_nat (unsigned mid))
-                                           (fun x : nat => f (repr (Z.of_nat x))) init) (g := fun init => foldi_nat (Z.to_nat (unsigned mid)) (Z.to_nat (unsigned hi))
-                                                                                                            (fun x : nat => f (repr (Z.of_nat x))) (init)).
+  (*   rewrite bind_cong with (v := foldi_nat (Z.to_nat (unsigned lo)) (Z.to_nat (unsigned mid)) *)
+  (*                                          (fun x : nat => f (repr (Z.of_nat x))) init) (g := fun init => foldi_nat (Z.to_nat (unsigned mid)) (Z.to_nat (unsigned hi)) *)
+  (*                                                                                                           (fun x : nat => f (repr (Z.of_nat x))) (init)). *)
 
-    apply foldi_nat_split ; lia.
-    reflexivity.
-    apply functional_extensionality.
-    intros.
+  (*   apply foldi_nat_split ; lia. *)
+  (*   reflexivity. *)
+  (*   apply functional_extensionality. *)
+  (*   intros. *)
 
-    rewrite foldi_to_foldi_nat by lia.
-    reflexivity.
-  Qed.
+  (*   rewrite foldi_to_foldi_nat by lia. *)
+  (*   reflexivity. *)
+  (* Qed. *)
 
 
   Lemma valid_foldi_pre :
-    forall {acc : choice_type} (lo hi : int) {L : {fset Location}} {I : Interface} (f : int -> _ -> code L I (_)),
+    forall {acc : choice_type} (lo hi : int) {L : {fset Location}} {I : Interface} (f : code L I (chArrow int (chArrow _ _))),
       forall init : (_),
         ValidCode L I (foldi_pre (acc := acc) lo hi f init).
   Proof.
@@ -733,39 +739,41 @@ Section Loops.
     unfold foldi_pre.
     destruct (unsigned hi - unsigned lo)%Z.
     - ssprove_valid.
+    - apply init.
     - apply valid_foldi_.
-    - ssprove_valid.
+    - apply init.
+      (* ssprove_valid. *)
   Qed.
 
   Definition foldi
              {acc: choice_type}
              (lo: uint_size)
              (hi: uint_size) (* {lo <= hi} *)
-             (init: acc)
              {L}
              {I}
-             (f: (uint_size) -> acc -> code L I (acc))
+             (init: code L I acc)
+             (f: code L I (chArrow (uint_size) (chArrow acc acc)))
     :
     code L I (acc) :=
     {| prog := foldi_pre lo hi f init;
       prog_valid := @valid_foldi_pre acc lo hi L I f init |}.
 
-  Definition foldi'
-             {acc: choice_type}
-             (lo: uint_size)
-             (hi: uint_size) (* {lo <= hi} *)
-             (init: acc)
-             {L1 L2 : {fset Location}} {H_loc_incl : List.incl L1 L2}
-             {I1 I2 : Interface} {H_opsig_incl : List.incl I1 I2}
-             (f: (uint_size) -> acc -> code L1 I1 (acc))
-    :
-    code L2 I2 (acc)
-  .
-    eapply lift_code_scope.
-    apply (foldi lo hi init f).
-    apply H_loc_incl.
-    apply H_opsig_incl.
-  Defined.
+  (* Definition foldi' *)
+  (*            {acc: choice_type} *)
+  (*            (lo: uint_size) *)
+  (*            (hi: uint_size) (* {lo <= hi} *) *)
+  (*            (init: acc) *)
+  (*            {L1 L2 : {fset Location}} {H_loc_incl : List.incl L1 L2} *)
+  (*            {I1 I2 : Interface} {H_opsig_incl : List.incl I1 I2} *)
+  (*            (f: code L1 I1 (chArrow (uint_size) (chArrow acc acc))) *)
+  (*   : *)
+  (*   code L2 I2 (acc) *)
+  (* . *)
+  (*   eapply lift_code_scope. *)
+  (*   apply (foldi lo hi init f). *)
+  (*   apply H_loc_incl. *)
+  (*   apply H_opsig_incl. *)
+  (* Defined. *)
 
   Lemma valid_remove_back :
     forall x (xs : {fset Location}) I {ct} c,
@@ -1524,27 +1532,72 @@ Arguments Err {_ _}.
 
 (*** Notation *)
 
+(* Definition to_arrow *)
+(*   {L  : {fset Location}} {I} {A B : choice_type} *)
+(*   (f : both L I A -> both L I B) : *)
+(*   both L I (chArrow A B). *)
+(* Proof. *)
+(*   refine {| is_pure := (fun a => is_pure (f (lift_to_both a))) : chArrow A B ; is_state := _ |}. *)
+(*   Unshelve. *)
+(*   2:{ *)
+(*     pose (fun (x : A) => is_state (f (lift_to_both x))). *)
+(*     refine {code ret ((fun (x : A) => _ : B) : chArrow A B)}. *)
+    
+(*     refine is_state f *)
+(*     refine is_state. *)
+(*     is_state (f (lift_to_both x)) *)
+(*     is_pure := fun x => is_pure (f (lift_to_both x)) ; *)
+(*   |}. *)
+
+(* Definition to_code_arrow *)
+(*   {L  : {fset Location}} {I} {A B : choice_type} *)
+(*   (f : code L I A -> code L I B) : *)
+(*   code L I (chArrow A B). *)
+(* Proof. *)
+(*   econstructor. *)
+(*   Unshelve. *)
+(*   2:{ *)
+(*     constructor. *)
+(*     simpl. *)
+
+    
+    
+    
+(* Definition temp {L  : {fset Location}} {I} {A B : choice_type} (f_pure : A -> B) (f_state : code L I A -> code L I B) : both L I (chArrow A B). *)
+(* Proof. *)
+(*   refine {| is_pure := f_pure : chArrow A B ; is_state := {code f_state} |}. *)
+
 Program Definition let_both {L  : {fset Location}} {I} {A B : choice_type}
         (x : both L I A)
-        (f : both L I A -> both L I B)
+        (f : both L I (chArrow A B))
   : both L I B :=
   {|
-    is_state := {code temp ← is_state x ;; is_state (f (lift_to_both temp))} ;
-    is_pure := is_pure (f (lift_to_both x)) ;
-  |}.
+    is_state :=
+    {code
+       x_state ← is_state x ;;
+       f_state ← is_state f ;;
+       ret (f_state x_state)} ;
+    is_pure := (is_pure f) (is_pure x) ;
+    |}.
 Next Obligation.
   intros.
   cbn.
-  replace (ret _) with (temp ← ret (is_pure x) ;; ret ((is_pure (f (lift_to_both temp))))) by reflexivity.
+  replace (ret _) with (temp_x ← ret (is_pure x) ;; temp_f ← ret (is_pure f) ;; ret (temp_f temp_x)) by reflexivity.
 
   eapply r_bind.
   apply x.
-
   intros.
   apply rpre_hypothesis_rule.
   intros ? ? [[] []]. subst.
   eapply rpre_weaken_rule.
+
+  eapply r_bind.
   apply f.
+  intros.
+  apply rpre_hypothesis_rule.
+  intros ? ? [[] []]. subst.
+
+  apply r_ret ; easy.
   reflexivity.
 Qed.
 
@@ -1663,24 +1716,10 @@ Notation "'bndm(' M ',' A ',' B ',' L ')' ' x '⇠' y 'in' f" := (choice_typeMon
 Notation "'letbndm(' M ')' x ':=' y 'in' f" := (choice_typeMonad.bind_both (BindBoth := M) (lift_scope (H_loc_incl := _) (H_opsig_incl := _) y) (fun x => f)) (at level 100, x pattern, right associativity).
 Notation "'letbndm(' M ')' ' x ':=' y 'in' f" := (choice_typeMonad.bind_both (BindBoth := M) (lift_scope (H_loc_incl := _) (H_opsig_incl := _) y) (fun x => f)) (at level 100, x pattern, right associativity).
 
-Program Definition foldi_bind_code' {A : choice_type} {L : {fset Location}} {I} `{H_bind_code : choice_typeMonad.BindCode} (a : uint_size) (b : uint_size)  (init : A) (f : uint_size -> A -> code (L) I ((M A)))  : code (L) I (M A) :=
+Program Definition foldi_bind_code {A : choice_type} {L : {fset Location}} {I} `{H_bind_code : choice_typeMonad.BindCode} (lo : uint_size) (hi : uint_size)  (init : code (L) I (M A)) (f : code (L) I (chArrow uint_size (chArrow A (M A))))  : code (L) I (M A) :=
   {code
-   foldi
-     a b (choice_typeMonad.ret init)
-     (fun x y =>
-        choice_typeMonad.bind_code
-          (lift_to_code y)
-          (f x))
-  }.
-
-Program Definition foldi_bind_code {A : choice_type} {L : {fset Location}} {I} `{H_bind_code : choice_typeMonad.BindCode} (lo : uint_size) (hi : uint_size)  (init : code (L) I (M A)) (f : uint_size -> A -> code (L) I ((M A)))  : code (L) I (M A) :=
-  {code
-     t ← init ;;
-   foldi lo hi (t)
-     (fun x y =>
-        choice_typeMonad.bind_code
-          (lift_to_code y)
-          (f x))
+     temp_f ← f ;; 
+   foldi lo hi (init) {code ret (fun a b => choice_typeMonad.bind b (temp_f a))}
   }.
 
 Program Definition foldi_both
@@ -1690,59 +1729,90 @@ Program Definition foldi_both
              (lo: both L I uint_size)
              (hi: both L I uint_size) (* {lo <= hi} *)
              (init: both L I acc)
-             (f: (both0 uint_size) -> both L I acc -> both L I acc) : both L I acc :=
+             (f: both L I (chArrow (uint_size) (chArrow acc acc))) : both L I acc :=
   {|
-    is_pure := Hacspec_Lib_Pre.foldi lo hi (is_pure init) (fun x y => f (lift_to_both x) (lift_to_both y)) ;
-    is_state := foldi lo hi init (fun x y => f (lift_to_both x) (lift_to_both y))
+    is_pure := Hacspec_Lib_Pre.foldi lo hi (is_pure init) (is_pure f) ;
+    is_state := foldi lo hi (is_state init) (is_state f)
   |}.
 Next Obligation.
   intros.
   unfold foldi_pre.
   unfold Hacspec_Lib_Pre.foldi.
 
-  set (b_lo := lo).
-  set (b_hi := hi).
-  destruct lo as [lo ? ?].
-  destruct hi as [hi ? ?].
+  (* set (b_lo := lo). *)
+  (* set (b_hi := hi). *)
+  destruct lo as [lo lo_state lo_pure].
+  destruct hi as [hi hi_state hi_pure].
 
   simpl.
 
-  destruct ((_ - unsigned lo)%Z) ; [ apply r_ret ; easy | | apply r_ret ; easy ].
+  clear lo_pure.
+  clear lo_state.
+  clear hi_pure.
+  clear hi_state.
+
+  destruct ((_ - unsigned lo)%Z) ; [ apply init | | apply init ].
   
   generalize dependent lo.
   clear.
   generalize dependent init.
-
+  
   induction (Pos.to_nat p) ; intros.
-  - cbn.
-    apply r_ret ; easy.
+  - apply init.
   - rewrite <- foldi__move_S.
     rewrite <- Hacspec_Lib_Pre.foldi__move_S.
 
-    set (b' := f (lift_to_both lo) (lift_to_both init)). (* TODO: This should not use lift_to_both !! *)
+    simpl.
 
-    pose @r_bind_trans_both.
-    specialize r with (b := b').
+    epose ({| is_pure := (is_pure f) lo init ;
+             is_state := {code temp_cur ← init ;;
+                          temp_f ← f ;;
+                          ret (temp_f lo temp_cur) } |}).
 
+    replace ((is_pure f) lo init) with (is_pure b) in * by reflexivity.
+    replace ({code temp_cur ← init ;;
+           temp_f ← f ;;
+           ret (temp_f lo temp_cur) }) with (is_state b) in * by reflexivity.
+    
+    pose (IHn b (Hacspec_Lib_Pre.int_add lo one)).
+    eapply r.
+
+    Unshelve.
+    simpl.
     pattern_both_fresh.
-    subst b_lo.
-    apply r.
+    apply r_bind_trans_both.
     subst H H0 H1. hnf.
+    
+    replace (ret _) with
+      (temp_f ← ret (is_pure f) ;;
+       ret (temp_f lo init)) by reflexivity.
+    eapply r_bind.
+    apply f.
+    intros.
+    apply rpre_hypothesis_rule.
+    intros ? ? [[] []]. subst.
 
-    admit.
-    (* apply IHn. *)
-Admitted.
-(* Qed. *)
+    apply r_ret. easy.
+Qed.
 
 (* Program Definition foldi_bind_both' {A : choice_type} {L1 L2 L : {fset Location}} {I1 I2 I}  `{choice_typeMonad.BindBoth} (lo : both L1 I1 uint_size) (hi : both L2 I2 uint_size) (init : A) (f : uint_size -> A -> both L I (M A))  : both L I (M A) := *)
 (*   foldi_both lo hi (lift_to_both (choice_typeMonad.ret init)) (fun x y => choice_typeMonad.bind_both (lift_to_both y) (f x)). *)
 (* Next Obligation. *)
 (*   intros. *)
 
-Program Definition foldi_bind_both {A : choice_type} {L : {fset Location}} {I}  `{H_bind_both : choice_typeMonad.BindBoth} (lo : both L I uint_size) (hi : both L I uint_size) (init : both L I (M A)) (f : uint_size -> A -> both L I (M A))  : both L I (M A) :=
-  let_both init (fun init' =>
-  foldi_both lo hi init' (fun x y => choice_typeMonad.bind_both (lift_to_both y) (f x))).
+(* code L I A *)
 
+Program Definition foldi_bind_both {A : choice_type} {L : {fset Location}} {I}  `{H_bind_both : choice_typeMonad.BindBoth} (lo : both L I uint_size) (hi : both L I uint_size) (init : both L I (M A)) (f : both L I (chArrow uint_size (chArrow A (M A))))  : both L I (M A).
+Proof.
+  apply (let_both init).
+  epose (foldi_both lo hi).
+  admit.
+  (* apply let_both. *)
+
+  (* let_both init (fun init' => *)
+  (* foldi_both lo hi init' (fun x y => choice_typeMonad.bind_both (lift_to_both y) (f x))). *)
+Admitted.
+  
 (* Theorem foldi_bind_both_proj_code' : forall {A : choice_type} {L1 L2 L : {fset Location}} {I1 I2 I}  `{H_bind_both : choice_typeMonad.BindBoth} (lo : both L1 I1 uint_size) (hi : both L2 I2 uint_size) (init : A) (f_both : uint_size -> A -> both L I (M A)) (a : uint_size) (b : uint_size) (f_code : uint_size -> A -> code (L) I ((M A))), *)
 (*     (forall i x, is_state (f_both i x) = f_code i x) -> *)
 (*     is_pure lo = a -> is_pure hi = b -> *)
@@ -1908,29 +1978,31 @@ Proof.
     apply IHn.
 Qed.
 
+Check @foldi.
+
 Lemma foldi_as_both :
   forall {A : choice_type} {L I} (lo hi : both L I uint_size)
-    (state : uint_size -> A -> code L I (A))
+    (state : code L I (chArrow uint_size (chArrow A A)))
     (pure : uint_size -> A -> A)
-     v,
+     (v : both L I A),
     (unsigned lo <= unsigned hi)%Z ->
-    (forall x y,
+    (
     ⊢ ⦃ true_precond ⦄
-        state x y ≈ lift_to_code (L := L) (I := I) (pure x y)
-    ⦃ pre_to_post_ret true_precond ((pure x y)) ⦄) ->
+        state ≈ lift_to_code (L := L) (I := I) (pure : (chArrow uint_size (chArrow A A)))
+    ⦃ pre_to_post_ret true_precond ((pure : (chArrow uint_size (chArrow A A)))) ⦄) ->
   ⊢ ⦃ true_precond ⦄
-     @foldi _ lo hi v L I state
+     @foldi _ lo hi L I (is_state v) state
   ≈
-     lift_to_both (L := L) (I := I) (Hacspec_Lib_Pre.foldi lo hi v pure)
-  ⦃ pre_to_post_ret true_precond ((Hacspec_Lib_Pre.foldi lo hi v pure)) ⦄.
+     lift_to_both (L := L) (I := I) (Hacspec_Lib_Pre.foldi lo hi (is_pure v) pure)
+  ⦃ pre_to_post_ret true_precond ((Hacspec_Lib_Pre.foldi lo hi (is_pure v) pure)) ⦄.
 Proof.
   intros.
-  pose (fun x y => Build_both L I A (pure x y) (state x y) (H0 x y)).
+  pose (Build_both L I (chArrow uint_size (chArrow A A)) (pure) (state) (H0)).
   unfold lift_to_both.
   unfold is_state.
   unfold prog.
 
-  apply (code_eq_proof_statement (foldi_both lo hi (lift_to_both v) b)).
+  apply (code_eq_proof_statement (foldi_both lo hi v b)).
 Qed.
 
 (*** For loop again *)
