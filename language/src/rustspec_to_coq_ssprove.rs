@@ -111,6 +111,10 @@ fn make_let_binding<'a>(
     } else {
         false
     };
+    let temp_ident = match pat.clone() {
+        Pattern::Tuple(x) if x.len() > 1 => RcDoc::as_string(fresh_codegen_id()),
+        _ => RcDoc::nil(),
+    };
     RcDoc::as_string("letb")
         .append(if monad_bind {
             RcDoc::as_string("nd")
@@ -136,14 +140,19 @@ fn make_let_binding<'a>(
         })
         .append(RcDoc::space())
         .append(
-            match typ.clone() {
-                None => translate_pattern_tick(pat.clone()),
-                Some(tau) => translate_pattern_tick(pat.clone())
-                    .append(RcDoc::space())
+            match pat.clone() {
+                Pattern::Tuple(x) if x.len() > 1 => {
+                    RcDoc::as_string("temp_").append(temp_ident.clone())
+                }
+                _ => translate_pattern_tick(pat.clone()),
+            }
+            .append(match typ.clone() {
+                None => RcDoc::nil(),
+                Some(tau) => RcDoc::space()
                     .append(RcDoc::as_string(": both0"))
                     .append(RcDoc::space())
                     .append(make_paren(tau)),
-            }
+            })
             .group(),
         )
         .append(RcDoc::space())
@@ -164,6 +173,21 @@ fn make_let_binding<'a>(
         .nest(2)
         .append(RcDoc::space())
         .append(RcDoc::as_string("in"))
+        .append(match pat.clone() {
+            Pattern::Tuple(x) if x.len() > 1 => RcDoc::line()
+                .append(RcDoc::as_string("let "))
+                .append(translate_pattern_tick(pat.clone()))
+                .append(RcDoc::as_string(" := split_both temp_"))
+                .append(temp_ident)
+                .append(RcDoc::as_string(" in")),
+            // .append(RcDoc::line())
+            // .append(RcDoc::as_string("let "))
+            // .append(translate_pattern_tick(pat.clone()))
+            // .append(RcDoc::as_string(" := unsplit_both_all"))
+            // .append(translate_pattern(pat.clone()))
+            // .append(RcDoc::as_string(" in")),
+            _ => RcDoc::nil(),
+        })
 }
 
 fn translate_expression<'a>(e: Expression, top_ctx: &'a TopLevelContext) -> RcDoc<'a, ()> {
@@ -251,7 +275,8 @@ fn translate_expression<'a>(e: Expression, top_ctx: &'a TopLevelContext) -> RcDo
         } // )
         Expression::FuncCall(prefix, name, args, arg_types) => {
             let (func_name, additional_args, func_ret_ty, (_, extra_info)) =
-                rustspec_to_coq_ssprove_state::translate_func_name( // pure
+                rustspec_to_coq_ssprove_state::translate_func_name(
+                    // pure
                     prefix.clone(),
                     Ident::TopLevel(name.0.clone()),
                     top_ctx,
@@ -274,8 +299,8 @@ fn translate_expression<'a>(e: Expression, top_ctx: &'a TopLevelContext) -> RcDo
                 .append(RcDoc::concat(args.into_iter().enumerate().map(
                     |(i, ((arg, _), _))| {
                         RcDoc::space().append(make_paren(if i < extra_info.len() {
-                            // let (pre_arg, post_arg) = 
-                                extra_info[i].clone()
+                            // let (pre_arg, post_arg) =
+                            extra_info[i].clone()
                             // pre_arg
                             //     .clone()
                             //     .append(translate_expression(arg, top_ctx))
@@ -329,8 +354,8 @@ fn translate_expression<'a>(e: Expression, top_ctx: &'a TopLevelContext) -> RcDo
                                 // let (pre_arg, post_arg) = extra_info[i].clone();
                                 // pre_arg
                                 //     .clone()
-                                    extra_info[i].clone()// .append(translate_expression(arg, top_ctx))
-                                    // .append(post_arg.clone())
+                                extra_info[i].clone() // .append(translate_expression(arg, top_ctx))
+                                                      // .append(post_arg.clone())
                             } else {
                                 translate_expression(arg, top_ctx)
                             }))
@@ -430,7 +455,7 @@ fn translate_expression<'a>(e: Expression, top_ctx: &'a TopLevelContext) -> RcDo
                         };
                         let trans_x = translate_expression(x.as_ref().0.clone(), top_ctx);
 
-                        RcDoc::as_string("(fun x => lift_to_both0 (repr (unsigned x)))")
+                        RcDoc::as_string("cast_int")
                             .append(make_paren(trans_x))
                             .group()
                     }
@@ -499,11 +524,15 @@ fn translate_statements<'a>(
 
             expr
         }
-        Statement::ReturnExp(e1, _typ) => RcDoc::as_string("lift_scope")
-            .append(RcDoc::space())
-            .append(RcDoc::as_string("(H_loc_incl := _) (H_opsig_incl := _)"))
-            .append(RcDoc::space())
-            .append(make_paren(translate_expression(e1.clone(), top_ctx))),
+        Statement::ReturnExp(e1, _typ) =>
+        // RcDoc::as_string("lift_scope")
+        // .append(RcDoc::space())
+        // .append(RcDoc::as_string("(H_loc_incl := _) (H_opsig_incl := _)"))
+        // .append(RcDoc::space())
+        // .append(make_paren(
+        {
+            translate_expression(e1.clone(), top_ctx)
+        } // ))
         Statement::Conditional((cond, _), (mut b1, _), b2, mutated) => {
             let mutated_info = mutated.unwrap();
             let pat = Pattern::Tuple(
@@ -566,26 +595,26 @@ fn translate_statements<'a>(
                     let block2_expr = translate_block(b2.clone(), true, top_ctx);
 
                     RcDoc::space()
-                        .append(RcDoc::as_string("lift_scope"))
-                        .append(RcDoc::space())
-                        .append(make_paren(RcDoc::as_string("L1 := ").append(
-                            rustspec_to_coq_ssprove_state::fset_from_scope(b2.mutable_vars.clone()),
-                        )))
-                        .append(RcDoc::space())
-                        .append(make_paren(RcDoc::as_string("L2 := ").append(
-                            rustspec_to_coq_ssprove_state::fset_from_scope(smv.clone()),
-                        )))
-                        .append(RcDoc::space())
-                        .append(make_paren(
-                            RcDoc::as_string("I1 := ").append(RcDoc::as_string("[interface]")),
-                        ))
-                        .append(RcDoc::space())
-                        .append(make_paren(
-                            RcDoc::as_string("I2 := ").append(RcDoc::as_string("[interface]")),
-                        ))
-                        .append(RcDoc::space())
-                        .append(RcDoc::as_string("(H_loc_incl := _) (H_opsig_incl := _)"))
-                        .append(RcDoc::space())
+                        // .append(RcDoc::as_string("lift_scope"))
+                        // .append(RcDoc::space())
+                        // .append(make_paren(RcDoc::as_string("L1 := ").append(
+                        //     rustspec_to_coq_ssprove_state::fset_from_scope(b2.mutable_vars.clone()),
+                        // )))
+                        // .append(RcDoc::space())
+                        // .append(make_paren(RcDoc::as_string("L2 := ").append(
+                        //     rustspec_to_coq_ssprove_state::fset_from_scope(smv.clone()),
+                        // )))
+                        // .append(RcDoc::space())
+                        // .append(make_paren(
+                        //     RcDoc::as_string("I1 := ").append(RcDoc::as_string("[interface]")),
+                        // ))
+                        // .append(RcDoc::space())
+                        // .append(make_paren(
+                        //     RcDoc::as_string("I2 := ").append(RcDoc::as_string("[interface]")),
+                        // ))
+                        // .append(RcDoc::space())
+                        // .append(RcDoc::as_string("(H_loc_incl := _) (H_opsig_incl := _)"))
+                        // .append(RcDoc::space())
                         .append(make_paren(block2_expr))
                 }
             };
@@ -598,26 +627,26 @@ fn translate_statements<'a>(
                 .append(RcDoc::line())
                 .append(RcDoc::as_string("then"))
                 .append(RcDoc::space())
-                .append(RcDoc::as_string("lift_scope"))
-                .append(RcDoc::space())
-                .append(make_paren(RcDoc::as_string("L1 := ").append(
-                    rustspec_to_coq_ssprove_state::fset_from_scope(b1.mutable_vars.clone()),
-                )))
-                .append(RcDoc::space())
-                .append(make_paren(RcDoc::as_string("L2 := ").append(
-                    rustspec_to_coq_ssprove_state::fset_from_scope(smv.clone()),
-                )))
-                .append(RcDoc::space())
-                .append(make_paren(
-                    RcDoc::as_string("I1 := ").append(RcDoc::as_string("[interface]")),
-                ))
-                .append(RcDoc::space())
-                .append(make_paren(
-                    RcDoc::as_string("I2 := ").append(RcDoc::as_string("[interface]")),
-                ))
-                .append(RcDoc::space())
-                .append(RcDoc::as_string("(H_loc_incl := _) (H_opsig_incl := _)"))
-                .append(RcDoc::space())
+                // .append(RcDoc::as_string("lift_scope"))
+                // .append(RcDoc::space())
+                // .append(make_paren(RcDoc::as_string("L1 := ").append(
+                //     rustspec_to_coq_ssprove_state::fset_from_scope(b1.mutable_vars.clone()),
+                // )))
+                // .append(RcDoc::space())
+                // .append(make_paren(RcDoc::as_string("L2 := ").append(
+                //     rustspec_to_coq_ssprove_state::fset_from_scope(smv.clone()),
+                // )))
+                // .append(RcDoc::space())
+                // .append(make_paren(
+                //     RcDoc::as_string("I1 := ").append(RcDoc::as_string("[interface]")),
+                // ))
+                // .append(RcDoc::space())
+                // .append(make_paren(
+                //     RcDoc::as_string("I2 := ").append(RcDoc::as_string("[interface]")),
+                // ))
+                // .append(RcDoc::space())
+                // .append(RcDoc::as_string("(H_loc_incl := _) (H_opsig_incl := _)"))
+                // .append(RcDoc::space())
                 .append(make_paren(block_1.clone()))
                 .append(RcDoc::line())
                 .append(RcDoc::as_string("else"))
@@ -671,13 +700,18 @@ fn translate_statements<'a>(
                 }
             };
 
+            let mut_temp_ident = match mut_tuple.clone() {
+                Pattern::Tuple(x) if x.len() > 1 => RcDoc::as_string(fresh_codegen_id()),
+                _ => RcDoc::nil(),
+            };
+
             make_let_binding(
                 mut_tuple.clone(),
                 None,
                 if b_question_mark {
                     RcDoc::as_string("foldi_bind_both'")
                 } else {
-                    RcDoc::as_string("foldi_both'")
+                    RcDoc::as_string("foldi_both")
                 }
                 .append(RcDoc::space())
                 .append(make_paren(translate_expression(e1, top_ctx)))
@@ -686,7 +720,7 @@ fn translate_statements<'a>(
                 .append(RcDoc::space())
                 .append(match mut_tuple.clone() {
                     Pattern::Tuple(_) => {
-                        RcDoc::as_string("prod_ce").append(translate_pattern(mut_tuple.clone()))
+                        RcDoc::as_string("prod_b").append(translate_pattern(mut_tuple.clone()))
                     }
                     _ => translate_pattern(mut_tuple.clone()),
                 })
@@ -707,10 +741,31 @@ fn translate_statements<'a>(
                             None => RcDoc::as_string("_"),
                         })
                         .append(RcDoc::space())
-                        .append(translate_pattern_tick(mut_tuple.clone()))
+                        .append(match mut_tuple.clone() {
+                            Pattern::Tuple(x) if x.len() > 1 => {
+                                RcDoc::as_string("temp_").append(mut_temp_ident.clone())
+                            }
+                            _ => translate_pattern_tick(mut_tuple.clone()),
+                        })
                         .append(RcDoc::space())
                         .append(RcDoc::as_string("=>"))
                         .append(RcDoc::line())
+                        .append(match mut_tuple.clone() {
+                            Pattern::Tuple(x) if x.len() > 1 => RcDoc::line()
+                                .append(RcDoc::as_string("let "))
+                                .append(translate_pattern_tick(mut_tuple.clone()))
+                                .append(RcDoc::as_string(" := split_both temp_"))
+                                .append(mut_temp_ident)
+                                .append(RcDoc::as_string(" in"))
+                                .append(RcDoc::line())
+                                // .append(RcDoc::as_string("let "))
+                                // .append(translate_pattern_tick(mut_tuple.clone()))
+                                // .append(RcDoc::as_string(" := unsplit_both_all"))
+                                // .append(translate_pattern(mut_tuple.clone()))
+                                // .append(RcDoc::as_string(" in"))
+                                .append(RcDoc::line()),
+                            _ => RcDoc::nil(),
+                        })
                         .append(translate_block(b, true, top_ctx)),
                 ))
                 .group()

@@ -8,7 +8,7 @@ src/ChoiceEquality.v
 src/Hacspec_Lib_Pre.v
 src/Hacspec_Lib.v
 
-src/Hacspec_Aes_Jazz.v
+# src/Hacspec_Aes_Jazz.v
 # src/Hacspec_Xor.v
 
 # src/Hacspec_Aes.v
