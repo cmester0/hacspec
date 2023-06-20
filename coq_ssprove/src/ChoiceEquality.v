@@ -49,14 +49,84 @@ Definition true_precond : precond := fun _ => True.
 (*   Pack {sort; _ : class_of L I sort}. *)
 (* End Both. *)
 
-Class both L I (A : choice_type) :=
+Class cfset :=
+  {
+    L : list Location ;
+    is_sorted : is_true (path.sorted (@Ord.lt _) L) ;
+    is_unique : is_true (@seq.uniq loc_eqType L)
+  }.
+Definition cfset_to_fset : cfset -> {fset Location} := fun x => @FSet.FSet loc_ordType _ (FSet.fset_subproof (@L x)).
+Coercion cfset_to_fset : cfset >-> fset_of.
+
+(* Require Import Hacspec_Lib_Comparable. *)
+(* Program Fixpoint merge_undup (L1 L2 : list Location) {measure (length L1 + length L2)%nat} := *)
+(*   match L1 with *)
+(*   | [] => *)
+(*       L2 *)
+(*   | a :: xs => *)
+(*       match L2 with *)
+(*       | [] => a :: xs *)
+(*       | b :: ys => *)
+(*           if Ord.lt (* Hacspec_Lib_Comparable.leb *) a b *)
+(*           then a :: merge_undup xs (b :: ys) *)
+(*           else *)
+(*             if Ord.lt b a (* Hacspec_Lib_Comparable.leb *) *)
+(*             then b :: merge_undup (a :: xs) ys *)
+(*             else a :: merge_undup xs ys *)
+(*       end *)
+(*   end. *)
+(* Next Obligation. *)
+(*   intros. *)
+(*   subst. *)
+(*   simpl. *)
+(*   Lia.lia. *)
+(* Qed. *)
+(* Next Obligation. *)
+(*   intros. *)
+(*   subst. *)
+(*   simpl. *)
+(*   Lia.lia. *)
+(* Qed. *)
+(* Fail Next Obligation. *)
+
+(* Program Instance cfsetU (x y : cfset) : cfset := *)
+(*   {| L := merge_undup (@L x) (@L y) ; |}. *)
+
+Program Instance cfsetU (x y : cfset) : cfset :=
+  {| L := path.sort Ord.leq (@seq.undup loc_ordType (@L x ++ @L y)) ; |}.
+Next Obligation.
+  intros.
+  apply FSet.fset_subproof.
+Qed.
+Next Obligation.
+  intros.
+  apply (@path.sorted_uniq loc_ordType Ord.lt ).
+  - apply Ord.lt_trans.
+  - unfold ssrbool.irreflexive.
+    intros.
+    apply Ord.ltxx.
+  - apply FSet.fset_subproof. 
+Qed.
+Fail Next Obligation.
+
+Class both (L : cfset)
+      I (A : choice_type) :=
   {
     is_pure : choice.Choice.sort A ;
-    is_state : code L I A ;
+    is_state : code (cfset_to_fset L) I A ;
     code_eq_proof_statement :
     ⊢ ⦃ true_precond ⦄ is_state ≈ ret (is_pure)
       ⦃ pre_to_post_ret true_precond (is_pure) ⦄
   }.
+
+(* Class both L I (A : choice_type) := *)
+(*   { *)
+(*     is_pure : choice.Choice.sort A ; *)
+(*     is_state : code L I A ; *)
+(*     code_eq_proof_statement : *)
+(*     ⊢ ⦃ true_precond ⦄ is_state ≈ ret (is_pure) *)
+(*       ⦃ pre_to_post_ret true_precond (is_pure) ⦄ *)
+(*   }. *)
 
 Arguments is_pure {_} {_} {_} both.
 Arguments is_state {_} {_} {_} both.
