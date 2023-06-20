@@ -41,65 +41,61 @@ Open Scope list_scope.
 
 Import choice.Choice.Exports.
 
-Program Definition lift3_both {A B C D : choice_type} {L1 L2 L3 I1 I2 I3} : (A -> B -> C -> D) -> both L1 I1 A -> both L2 I2 B -> both L3 I3 C -> both (L1 :|: L2 :|: L3) (I1 :|: I2 :|: I3) D :=
-  fun f x y z =>
-    bind_both x (fun x' =>
-    bind_both y (fun y' =>
-    bind_both (L2 := L3) (I2 := I3) z (fun z' =>
-    lift_to_both (f x' y' z')))).
-Next Obligation.
-  intros.
-  rewrite fsetUid.
-  now rewrite fsetUA.
-Qed.
-Next Obligation.
-  intros.
-  rewrite fsetUid.
-  now rewrite fsetUA.
-Qed.
+Definition lift3_both_ {A B C D : choice_type} {L} {I} (f : A -> B -> C -> D) (x : both L I A) (y : both L I B) (z : both L I C) :=
+  bind_both_ x (fun x' =>
+  bind_both_ y (fun y' =>
+  bind_both_ z (fun z' =>
+  lift_to_both (f x' y' z')))).
 
-Program Definition lift2_both {A B C : choice_type} {L1 L2 I1 I2} : (A -> B -> C) -> both L1 I1 A -> both L2 I2 B -> both (L1 :|: L2) (I1 :|: I2) C :=
-  fun f x y =>
-    bind_both x (fun x' =>
-    bind_both (L2 := L2) (I2 := I2) y (fun y' =>
-    lift_to_both (f x' y'))).
-Next Obligation.
-  intros.
-  now rewrite fsetUid.
-Qed.
-Next Obligation.
-  intros.
-  now rewrite fsetUid.
-Qed.
-(* Global Transparent lift2_both. *)
+Notation lift3_both(*  {A B C D : choice_type} {L1 L2 L3 L4 : {fset Location}} {I1 I2 I3 I4 : Interface} (f : A -> B -> C -> D) (x : both L1 I1 A) (y : both L2 I2 B) (z : both L3 I3 C) *)
+  (*       `{H_loc_incl_x : List.incl L1 L4} `{H_opsig_incl_x : List.incl I1 I4} *)
+  (*       `{H_loc_incl_y : List.incl L2 L4} `{H_opsig_incl_y : List.incl I2 I4} *)
+  (*       `{H_loc_incl_z : List.incl L3 L4} `{H_opsig_incl_z : List.incl I3 I4} *)
+  (* : both L4 I4 D *) :=
+  (fun (f : _ -> _ -> _ -> _) (x : both _ _ _) (y : both _ _ _) (z : both _ _ _) =>
+  bind_both (H_loc_incl := _) (H_opsig_incl := _) x (fun x' =>
+  bind_both (H_loc_incl := _) (H_opsig_incl := _) y (fun y' =>
+  bind_both (H_loc_incl := _) (H_opsig_incl := _) z (fun z' =>
+  lift_to_both (f x' y' z'))))).
 
-Program Definition lift1_both {A B : choice_type} {L} {I} : (A -> B) -> both L I A -> both L I B :=
-  fun f x =>
-    bind_both (L2 := L) (I2 := I) x (fun x' =>
-    lift_to_both (f x')).
-Next Obligation.
-  intros.
-  now rewrite fsetUid.
-Qed.
-Next Obligation.
-  intros.
-  now rewrite fsetUid.
-Qed.
-(* Global Transparent lift1_both. *)
+Definition lift2_both_ {A B C : choice_type} {L} {I} (f : A -> B -> C) (x : both L I A) (y : both L I B) :=
+  bind_both_ x (fun x' =>
+  bind_both_ y (fun y' =>
+  lift_to_both (f x' y'))).
 
-(* Section IntType. *)
-  Notation int_modi := (lift2_both (A := int _) (B := int _) (C := int _) int_modi).
-  Notation int_add := (lift2_both (A := int _) (B := int _) (C := int _) int_add).
-  Notation int_sub := (lift2_both (A := int _) (B := int _) (C := int _) int_sub).
-  Notation int_opp := (lift1_both (A := int _) (B := int _) int_opp).
-  Notation int_mul := (lift2_both (A := int _) (B := int _) (C := int _) int_mul).
-  Notation int_div := (lift2_both (A := int _) (B := int _) (C := int _) int_div).
-  Notation int_mod := (lift2_both (A := int _) (B := int _) (C := int _) int_mod).
-  Notation int_xor := (lift2_both (A := int _) (B := int _) (C := int _) int_xor).
-  Notation int_and := (lift2_both (A := int _) (B := int _) (C := int _) int_and).
-  Notation int_or := (lift2_both (A := int _) (B := int _) (C := int _) int_or).
-  Notation int_not := (lift1_both (A := int _) (B := int _) int_not).
-  Notation cast_int := (lift1_both (A := int _) (B := int _) (fun n => repr _ (unsigned n))).
+Notation lift2_both (* {A B C : choice_type} {L1 L2 L3 : {fset Location}} {I1 I2 I3 : Interface} *) (* (f : A -> B -> C) (x : both L1 I1 A) (y : both L2 I2 B) *)
+  (*       `{H_loc_incl_x : List.incl L1 L3} `{H_opsig_incl_x : List.incl I1 I3} *)
+  (*       `{H_loc_incl_y : List.incl L2 L3} `{H_opsig_incl_y : List.incl I2 I3} *)
+  (* : both L3 I3 C *)
+  :=
+  (fun (f : _ -> _ -> _) (x : both _ _ _) (y : both _ _ _) =>
+  bind_both (H_loc_incl := _) (H_opsig_incl := _) x (fun x' =>
+  bind_both (H_loc_incl := _) (H_opsig_incl := _) y (fun y' =>
+  lift_to_both (f x' y')))).
+
+Definition lift1_both_ {A B C : choice_type} {L} {I} (f : A -> B) (x : both L I A) :=
+  bind_both_ x (fun x' =>
+  lift_to_both (f x')).
+
+Notation lift1_both (* {A B C : choice_type} {L1 L2 : {fset Location}} {I1 I2 : Interface} (f : A -> B) (x : both L1 I1 A) *)
+        (* `{H_loc_incl_x : List.incl L1 L2} `{H_opsig_incl_x : List.incl I1 I2} *)
+  (* : both L2 I2 B *)
+  :=
+  (fun f x => bind_both (H_loc_incl := _) (H_opsig_incl := _) x (fun x' => lift_to_both (f x'))).
+
+  Notation int_add := (lift2_both (@int_add _)).
+  Check (int_add (lift_to_both (repr _ 3) : both0 _) (lift_to_both (repr _ 4) : both0 _)).
+
+  Notation int_sub := (lift2_both (int_sub : int _ -> int _ -> int _)).
+  Notation int_opp := (lift1_both (int_opp : int _ -> int _)).
+  Notation int_mul := (lift2_both (int_mul : int _ -> int _ -> int _)).
+  Notation int_div := (lift2_both (int_div : int _ -> int _ -> int _)).
+  Notation int_mod := (lift2_both (int_mod : int _ -> int _ -> int _)).
+  Notation int_xor := (lift2_both (int_xor : int _ -> int _ -> int _)).
+  Notation int_and := (lift2_both (int_and : int _ -> int _ -> int _)).
+  Notation int_or := (lift2_both (int_or : int _ -> int _ -> int _)).
+  Notation int_not := (lift1_both (int_not : int _ -> int _)).
+  Notation cast_int := (lift1_both (fun (n : int _) => repr _ (unsigned n))).
 (* End IntType. *)
 
 Notation secret := (lift1_both secret).
@@ -559,7 +555,7 @@ Section Loops.
     rewrite foldi_to_foldi_nat.
     2: {
       unfold nat_uint_sizeable.
-      unfold usize, lift_to_both, is_pure.
+      unfold usize, is_pure.
       unfold Hacspec_Lib_Pre.usize.
 
       do 2 rewrite wunsigned_repr.
@@ -569,7 +565,7 @@ Section Loops.
     }
 
     unfold nat_uint_sizeable.
-    unfold usize, lift_to_both, is_pure.
+    unfold usize, is_pure.
     unfold Hacspec_Lib_Pre.usize.
 
     do 2 rewrite wunsigned_repr.
@@ -1000,12 +996,22 @@ Infix "seq_xor" := seq_xor_ (at level 33) : hacspec_scope.
   Definition uint16_word_t : choice_type := nseq_ uint8 2.
 
   (**** Array manipulation *)
-  Definition array_new_ {A: choice_type} {L I} (init: both L I A) `(len: uint_size) : both L I (nseq A len) :=
+  Program Definition array_new_ {A: choice_type} {L I} (init: both L I A) `(len: uint_size) : both L I (nseq A len) :=
     lift1_both (fun x => array_new_ x (from_uint_size len)) init.
-
+  Next Obligation.
+    intros.
+    apply incl_refl.
+  Qed.
+  Next Obligation.
+    intros.
+    apply incl_refl.
+  Qed.
+  
   Notation array_index := (lift2_both (fun x y => array_index x y)).
 
-  Definition array_upd {A: choice_type} {len : nat} {L1 L2 L3 I1 I2 I3} (s: both L1 I1 (nseq_ A len)) {WS} (i: both L2 I2 (@int WS)) (new_v: both L3 I3 A) := (lift3_both (fun s i new_v => array_upd s i new_v) s i new_v).
+  Notation array_upd :=
+    (fun (s: both _ _ (nseq_ _ _)) (i: both _ _ (@int _)) (new_v: both _ _ _) => (lift3_both (fun s i new_v => array_upd s i new_v) s i new_v)).
+
     (* substitutes a sequence (seq) into an array (nseq), given index interval  *)
   Definition update_sub {A : choice_type} {len slen}  (v : (nseq_ A len)) (i : nat) (n : nat) (sub : (nseq_ A slen)) : both0 ((nseq_ A len)) :=
     lift_to_both (update_sub v i n sub).
@@ -1027,6 +1033,14 @@ Infix "seq_xor" := seq_xor_ (at level 33) : hacspec_scope.
         }
       |}
     end.
+    Next Obligation.
+    intros.
+    apply incl_refl.
+  Qed.
+  Next Obligation.
+    intros.
+    apply incl_refl.
+  Qed.
   Next Obligation.
     intros.
     pattern_both_fresh.
@@ -1059,8 +1073,16 @@ Infix "seq_xor" := seq_xor_ (at level 33) : hacspec_scope.
     | (x :: xs) => array_from_list_helper x xs (length xs)
     end.
 
-  Definition array_from_seq {A: choice_type} {L I} (out_len: nat) (input: both L I (seq A)) : both L I (nseq_ A out_len) :=
+  Program Definition array_from_seq {A: choice_type} {L I} (out_len: nat) (input: both L I (seq A)) : both L I (nseq_ A out_len) :=
     lift1_both (array_from_seq out_len) input.
+  Next Obligation.
+    intros.
+    apply incl_refl.
+  Qed.
+  Next Obligation.
+    intros.
+    apply incl_refl.
+  Qed.
 
   Notation array_to_seq := (lift1_both array_to_seq).
 
@@ -1218,17 +1240,17 @@ Definition nat_get_mod_bit {p} (a : nat_mod p) (i : uint_size) : both0 'bool := 
 Definition nat_mod_get_bit {p} (a : nat_mod p) n : both0 (nat_mod p) :=
   lift_to_both (nat_mod_get_bit a n).
 
-Definition array_declassify_eq {A l} (x : nseq_ A l) (y : nseq_ A l) : both0 'bool := lift_to_both0 (array_declassify_eq x y).
-Definition array_to_le_uint32s {A l} (x : nseq_ A l) : both0 (seq uint32) := lift_to_both0 (array_to_le_uint32s x).
-Definition array_to_be_uint32s {l} (x : nseq_ uint8 l) : both0 (seq uint32) := lift_to_both0 (array_to_be_uint32s x).
-Definition array_to_le_uint64s {A l} (x : nseq_ A l) : both0 (seq uint64) := lift_to_both0 (array_to_le_uint64s x).
-Definition array_to_be_uint64s {l} (x : nseq_ uint8 l) : both0 (seq uint64) := lift_to_both0 (array_to_be_uint64s x).
-Definition array_to_le_uint128s {A l} (x : nseq_ A l) : both0 (seq uint128) := lift_to_both0 (array_to_le_uint128s x).
-Definition array_to_be_uint128s {l} (x : nseq_ uint8 l) : both0 (seq uint128) := lift_to_both0 (array_to_be_uint128s x).
-Definition array_to_le_bytes {A l} (x : nseq_ A l) : both0 (seq uint8) := lift_to_both0 (array_to_le_bytes x).
-Definition array_to_be_bytes {A l} (x : nseq_ A l) : both0 (seq uint8) := lift_to_both0 (array_to_be_bytes x).
-Definition nat_mod_from_byte_seq_le {A n} (x : seq A) : both0 (nat_mod n) := lift_to_both0 (nat_mod_from_byte_seq_le x).
-Definition most_significant_bit {m} (x : nat_mod m) (n : uint_size) : both0 (uint_size) := lift_to_both0 (most_significant_bit x n).
+Definition array_declassify_eq {A l} (x : nseq_ A l) (y : nseq_ A l) : both0 'bool := lift_to_both (array_declassify_eq x y).
+Definition array_to_le_uint32s {A l} (x : nseq_ A l) : both0 (seq uint32) := lift_to_both (array_to_le_uint32s x).
+Definition array_to_be_uint32s {l} (x : nseq_ uint8 l) : both0 (seq uint32) := lift_to_both (array_to_be_uint32s x).
+Definition array_to_le_uint64s {A l} (x : nseq_ A l) : both0 (seq uint64) := lift_to_both (array_to_le_uint64s x).
+Definition array_to_be_uint64s {l} (x : nseq_ uint8 l) : both0 (seq uint64) := lift_to_both (array_to_be_uint64s x).
+Definition array_to_le_uint128s {A l} (x : nseq_ A l) : both0 (seq uint128) := lift_to_both (array_to_le_uint128s x).
+Definition array_to_be_uint128s {l} (x : nseq_ uint8 l) : both0 (seq uint128) := lift_to_both (array_to_be_uint128s x).
+Definition array_to_le_bytes {A l} (x : nseq_ A l) : both0 (seq uint8) := lift_to_both (array_to_le_bytes x).
+Definition array_to_be_bytes {A l} (x : nseq_ A l) : both0 (seq uint8) := lift_to_both (array_to_be_bytes x).
+Definition nat_mod_from_byte_seq_le {A n} (x : seq A) : both0 (nat_mod n) := lift_to_both (nat_mod_from_byte_seq_le x).
+Definition most_significant_bit {m} (x : nat_mod m) (n : uint_size) : both0 (uint_size) := lift_to_both (most_significant_bit x n).
 
 
 (* We assume 2^x < m *)
@@ -1376,11 +1398,11 @@ Global Program Instance Dec_eq_prod (A B : Type) `{EqDec A} `{EqDec B} : EqDec (
 }.
 Next Obligation.
   split ; intros ; destruct x ; destruct y.
-  - symmetry in H1.
-    apply Bool.andb_true_eq in H1. destruct H1.
-    symmetry in H1. rewrite (eqb_leibniz) in H1.
-    symmetry in H2. rewrite (eqb_leibniz) in H2.
-    rewrite H1. rewrite H2. reflexivity.
+  - (* symmetry in H1. *)
+    (* apply Bool.andb_true_eq in H1. destruct H1. *)
+    rewrite is_true_split_and in H1. destruct H1.
+    rewrite (eqb_leibniz) in H1.
+    rewrite (eqb_leibniz) in H2. now subst.
   - inversion_clear H1. now do 2 rewrite eqb_refl.
 Defined.
 
@@ -1625,24 +1647,24 @@ Next Obligation.
     subst H H0 H1. hnf.
 
     rewrite bind_rewrite.
-    
+
     apply IHn.
 Qed.
 
-Definition foldi_both'
-             {acc: choice_type}
-             {L1} {L2} {L3} {L}
-             {I1} {I2} {I3} {I}
-             (lo: both L1 I1 uint_size)
-             (hi: both L2 I2 uint_size) (* {lo <= hi} *)
-             (f: both L I (uint_size) -> both L I acc -> both L I acc)
-             (init: both L3 I3 acc)
-  : both L I acc :=
-  foldi_both lo hi (lift_to_both init) f.
+(* Program Definition foldi_both' *)
+(*              {acc: choice_type} *)
+(*              {L1} {L2} {L3} {L} *)
+(*              {I1} {I2} {I3} {I} *)
+(*              (lo: both L1 I1 uint_size) *)
+(*              (hi: both L2 I2 uint_size) (* {lo <= hi} *) *)
+(*              (f: both L I (uint_size) -> both L I acc -> both L I acc) *)
+(*              (init: both L3 I3 acc) *)
+(*   : both L I acc := *)
+(*   foldi_both lo hi (lift_to_both init) f. *)
 
-Program Definition foldi_bind_both {A : choice_type} {L : {fset Location}} {I}  `{H_bind_both : choice_typeMonad.BindBoth} (lo : both L I uint_size) (hi : both L I uint_size) (init : both L I (M A)) (f : uint_size -> A -> both L I (M A))  : both L I (M A) :=
-  let_both init (fun init' =>
-  foldi_both lo hi init' (fun x y => choice_typeMonad.bind_both (y) (f x))).
+(* Program Definition foldi_bind_both {A : choice_type} {L1 L2 L3 : {fset Location}} {I1 I2 I3}  `{H_bind_both : choice_typeMonad.BindBoth} (lo : both L1 I1 uint_size) (hi : both L2 I2 uint_size) (init : both L3 I3 (M A)) (f : uint_size -> A -> both (L1 :|: L2 :|: L3) (I1 :|: I2 :|: I3) (M A))  : both  (L1 :|: L2 :|: L3) (I1 :|: I2 :|: I3) (M A) := *)
+(*   let_both init (fun init' => *)
+(*   foldi_both' lo hi init' (fun x y => choice_typeMonad.bind_both (y) (f x))). *)
 
 (* Theorem foldi_bind_both_proj_code' : forall {A : choice_type} {L1 L2 L : {fset Location}} {I1 I2 I}  `{H_bind_both : choice_typeMonad.BindBoth} (lo : both L1 I1 uint_size) (hi : both L2 I2 uint_size) (init : A) (f_both : uint_size -> A -> both L I (M A)) (a : uint_size) (b : uint_size) (f_code : uint_size -> A -> code (L) I ((M A))), *)
 (*     (forall i x, is_state (f_both i x) = f_code i x) -> *)
@@ -1733,11 +1755,11 @@ Lemma foldi_nat_both :
   ⊢ ⦃ true_precond ⦄
       @foldi_nat _ lo hi b v
   ≈
-  lift_to_both (L := L) (I := I) (Hacspec_Lib_Pre.foldi_nat lo hi b v)
+  lift_to_both (Hacspec_Lib_Pre.foldi_nat lo hi b v) : both L I A
   ⦃ pre_to_post_ret true_precond ((Hacspec_Lib_Pre.foldi_nat lo hi b v)) ⦄.
 Proof.
   intros.
-  unfold prog, lift_to_both, is_state at 2.
+  unfold prog, is_state at 2.
   unfold foldi_nat.
   unfold Hacspec_Lib_Pre.foldi_nat.
 
@@ -1792,12 +1814,11 @@ Lemma foldi_as_both :
   ⊢ ⦃ true_precond ⦄
      @foldi _ lo hi L I state v
   ≈
-     lift_to_both (L := L) (I := I) (Hacspec_Lib_Pre.foldi lo hi pure v)
+     lift_to_both (Hacspec_Lib_Pre.foldi lo hi pure v) : both L I A
   ⦃ pre_to_post_ret true_precond ((Hacspec_Lib_Pre.foldi lo hi pure v)) ⦄.
 Proof.
   intros.
   pose (fun x y => Build_both L I A (pure x y) (state x y) (H x y)).
-  unfold lift_to_both.
   unfold is_state.
   unfold prog.
 
@@ -2138,11 +2159,16 @@ Ltac ssprove_package_obligation :=
 
 Ltac solve_ssprove_obligations :=
   intros ;
-  try repeat rewrite fsetUid ;
-  try repeat rewrite <- fset_cat ;
-  try repeat rewrite fsetU0 ;
-  try repeat rewrite fset0U ;
-  try repeat rewrite fsetUid ;
+  try rewrite !fset1E ;
+  try rewrite <- !fset0E ;
+  try rewrite !fsetU0 ;
+  try rewrite !fset0U ;
+  try rewrite !fsetUid ;
+  try rewrite <- !fset_cat ;
+  try rewrite !fsetU0 ;
+  try rewrite !fset0U ;
+  try rewrite !fset0E ;
+  try rewrite !fsetUid ;
   (ssprove_valid_location || loc_incl_compute || opsig_incl_compute || ssprove_package_obligation)
   || (match goal with
      | [ |- context [ pkg_composition.Parable _ _ ]] =>
@@ -2188,91 +2214,94 @@ Ltac init_both_proof b_state b_pure :=
 Ltac bind_both_eq_code :=
   erewrite <- @choice_typeMonad.bind_both_proj_code ; [ reflexivity | hnf | reflexivity ].
 
+(* Theorem letbm_proj_code : *)
+(*   forall (L1 L2 : {fset Location}) `{H_loc_incl : List.incl L1 L2}, *)
+(*   forall {I1 I2 : {fset opsig}} `{H_opsig_incl : List.incl I1 I2}, *)
+(*   forall B (i : Location), *)
+(*   forall `{H_in : is_true (ssrbool.in_mem (i) (ssrbool.mem L2))}, *)
+(*   forall (x : both L1 I1 (i)) (f : (i) -> both (L1 :|: L2) (I1 :|: I2) B), *)
+(*   forall (y : code L1 I1 (i)) (g : (i) -> code (L1 :|: L2) (I1 :|: I2) B), *)
+(*     is_state x = y -> *)
+(*     (forall x, is_state (f x) = (g x)) -> *)
+(*     is_state ((let_mut_both i (H_in := H_in) x f)) = *)
+(*     let_mut_code i (H_in := H_in) (lift_code_scope (H_loc_incl := H_loc_incl) (H_opsig_incl := H_opsig_incl) y) g *)
+(*     . *)
+(* Proof. *)
+(*   intros L1 L2 H_loc_incl I1 I2 H_opsig_incl B [A n]. *)
+(*   intros H_in x f y g H_var_eq H_fun_eq. *)
+(*   apply code_ext. unfold prog. *)
+(*   unfold let_mut_both, is_state at 1. *)
+(*   unfold lift_scope. unfold is_state at 1. *)
+(*   rewrite let_mut_code_equation_1. *)
+(*   unfold prog. *)
+(*   unfold lift_code_scope. *)
+(*   rewrite H_var_eq. *)
+(*   apply f_equal. *)
+(*   apply functional_extensionality. intros. *)
+(*   apply f_equal. *)
+(*   apply f_equal. *)
+(*   apply functional_extensionality. intros. *)
+(*   now rewrite H_fun_eq. *)
+(* Qed. *)
 
-Theorem letbm_proj_code :
-  forall (L1 L2 : {fset Location}) `{H_loc_incl : List.incl L1 L2} {I1 I2 : {fset opsig}} `{H_opsig_incl : List.incl I1 I2} B (i : Location),
-  forall `{H_in : is_true (ssrbool.in_mem (i) (ssrbool.mem L2))} (x : both L1 I1 (i)) (f : (i) -> both L2 I2 B) (y : code L1 I1 (i)) (g : (i) -> code L2 I2 B),
-    is_state x = y ->
-    (forall x, is_state (f x) = (g x)) ->
-    is_state ((let_mut_both i (H_in := H_in) (lift_scope (H_loc_incl := H_loc_incl) (H_opsig_incl := H_opsig_incl) x) f)) =
-    let_mut_code i (H_in := H_in) (lift_code_scope (H_loc_incl := H_loc_incl) (H_opsig_incl := H_opsig_incl) y) g
-    .
-Proof.
-  intros L1 L2 H_loc_incl I1 I2 H_opsig_incl B [A n].
-  intros H_in x f y g H_var_eq H_fun_eq.
-  apply code_ext. unfold prog.
-  unfold let_mut_both, is_state at 1.
-  unfold lift_scope. unfold is_state at 1.
-  rewrite let_mut_code_equation_1.
-  unfold prog.
-  unfold lift_code_scope.
-  rewrite H_var_eq.
-  apply f_equal.
-  apply functional_extensionality. intros.
-  apply f_equal.
-  apply f_equal.
-  apply functional_extensionality. intros.
-  now rewrite H_fun_eq.
-Qed.
-
-Ltac letbm_eq_code :=
-  match goal with
-  | [ |- context [let_mut_both _ (lift_scope ?k) ?f] ] =>
-      erewrite letbm_proj_code with (g := f) (y := k) ; [ hnf | reflexivity | reflexivity ]
-  end.
+(* Ltac letbm_eq_code := *)
+(*   match goal with *)
+(*   | [ |- context [let_mut_both _ (lift_scope ?k) ?f] ] => *)
+(*       erewrite letbm_proj_code with (g := f) (y := k) ; [ hnf | reflexivity | reflexivity ] *)
+(*   end. *)
 Ltac f_equal_fun_ext :=
   repeat (apply f_equal ; try (apply Coq.Logic.FunctionalExtensionality.functional_extensionality ; intros)).
 
 Definition u32_word_t := nseq_ uint8 4.
 Definition u128_word_t := nseq_ uint8 16.
 
-Lemma letbm_ret_r :
-  forall {A : choice.Choice.type} {B : choice_type}
-    (r₁ : raw_code A) (pre : precond)
-    (post : postcond (choice.Choice.sort A) (choice.Choice.sort B))
-    (ℓ : Location)
-    (L : {fset Location})
-    (I : Interface)
-    v (f : _ -> both L I B) (H_in : is_true (ssrbool.in_mem (ℓ) (ssrbool.mem L))),
-    ⊢ ⦃ (set_rhs (@existT choice_type (fun _ : choice_type => nat) ((projT1 ℓ)) (projT2 ℓ)) v pre) ⦄ r₁ ≈ f v ⦃ post ⦄ ->
-    ⊢ ⦃ pre ⦄ r₁ ≈ let_mut_both ℓ (H_in := H_in) (lift_to_both (v)) f ⦃ post ⦄.
-Proof.
-  intros.
-  cbn.
-  unfold let_mut_code.
-  unfold lift_to_code.
-  (* unfold Hacspec_Lib.let_mut_both_obligation_1. *)
-  cbn.
-  destruct ℓ.
-  cbn.
-  apply better_r_put_get_rhs.
-  apply better_r, r_put_rhs.
-  apply H.
-Qed.
+(* Lemma letbm_ret_r : *)
+(*   forall {A : choice.Choice.type} {B : choice_type} *)
+(*     (r₁ : raw_code A) (pre : precond) *)
+(*     (post : postcond (choice.Choice.sort A) (choice.Choice.sort B)) *)
+(*     (ℓ : Location) *)
+(*     (L : {fset Location}) *)
+(*     (I : Interface) *)
+(*     v (f : _ -> both L I B) (H_in : is_true (ssrbool.in_mem (ℓ) (ssrbool.mem L))), *)
+(*     ⊢ ⦃ (set_rhs (@existT choice_type (fun _ : choice_type => nat) ((projT1 ℓ)) (projT2 ℓ)) v pre) ⦄ r₁ ≈ f v ⦃ post ⦄ -> *)
+(*     ⊢ ⦃ pre ⦄ r₁ ≈ let_mut_both ℓ (H_in := H_in) (lift_to_both (v)) f ⦃ post ⦄. *)
+(* Proof. *)
+(*   intros. *)
+(*   cbn. *)
+(*   unfold let_mut_code. *)
+(*   unfold lift_to_code. *)
+(*   (* unfold Hacspec_Lib.let_mut_both_obligation_1. *) *)
+(*   cbn. *)
+(*   destruct ℓ. *)
+(*   cbn. *)
+(*   apply better_r_put_get_rhs. *)
+(*   apply better_r, r_put_rhs. *)
+(*   apply H. *)
+(* Qed. *)
 
-Lemma letbm_ret_l :
-  forall {A : choice_type} {B : choice.Choice.type}
-    (r₀ : raw_code A)
-    (r₁ : raw_code B) (pre : precond)
-    (post : postcond (choice.Choice.sort A) (choice.Choice.sort B))
-    (ℓ : Location)
-    (L : {fset Location})
-    (I : Interface)
-    v (f : _ -> both L I A) (H_in : is_true (ssrbool.in_mem (ℓ) (ssrbool.mem L))),
-    ⊢ ⦃ (set_lhs (@existT choice_type (fun _ : choice_type => nat) ((projT1 ℓ)) (projT2 ℓ)) v pre) ⦄ f v ≈ r₁ ⦃ post ⦄ ->
-    ⊢ ⦃ pre ⦄ let_mut_both ℓ (H_in := H_in) (lift_to_both (v)) f ≈ r₁ ⦃ post ⦄.
-Proof.
-  intros.
-  cbn.
-  unfold let_mut_code.
-  unfold lift_to_code.
-  (* unfold Hacspec_Lib.let_mut_both_obligation_1. *)
-  cbn.
-  destruct ℓ.
-  apply better_r_put_get_lhs.
-  apply better_r_put_lhs.
-  apply H.
-Qed.
+(* Lemma letbm_ret_l : *)
+(*   forall {A : choice_type} {B : choice.Choice.type} *)
+(*     (r₀ : raw_code A) *)
+(*     (r₁ : raw_code B) (pre : precond) *)
+(*     (post : postcond (choice.Choice.sort A) (choice.Choice.sort B)) *)
+(*     (ℓ : Location) *)
+(*     (L : {fset Location}) *)
+(*     (I : Interface) *)
+(*     v (f : _ -> both L I A) (H_in : is_true (ssrbool.in_mem (ℓ) (ssrbool.mem L))), *)
+(*     ⊢ ⦃ (set_lhs (@existT choice_type (fun _ : choice_type => nat) ((projT1 ℓ)) (projT2 ℓ)) v pre) ⦄ f v ≈ r₁ ⦃ post ⦄ -> *)
+(*     ⊢ ⦃ pre ⦄ let_mut_both ℓ (H_in := H_in) (lift_to_both (v)) f ≈ r₁ ⦃ post ⦄. *)
+(* Proof. *)
+(*   intros. *)
+(*   cbn. *)
+(*   unfold let_mut_code. *)
+(*   unfold lift_to_code. *)
+(*   (* unfold Hacspec_Lib.let_mut_both_obligation_1. *) *)
+(*   cbn. *)
+(*   destruct ℓ. *)
+(*   apply better_r_put_get_lhs. *)
+(*   apply better_r_put_lhs. *)
+(*   apply H. *)
+(* Qed. *)
 
 
 Program Definition let_both_prod {L  : {fset Location}} {I} {A B C : choice_type}
@@ -2308,191 +2337,190 @@ Definition both_L0_I0_to_both_L_I {L I A} : both (L :|: fset0) (I :|: fset []) A
 Proof.
   rewrite <- fset0E.
   now do 2 rewrite fsetU0.
-  Show Proof.
 Defined.
 
   (* takes two nseq's and joins them using a function op : a -> a -> a *)
-  Definition array_join_map
-             {a: choice_type}
-             {len: uint_size}
-             {L1 L2 I1 I2}
-             (op: forall {L1 L2 I1 I2}, ( (both L1 I1 a)) -> (both L2 I2 a) -> ( (both (L1 :|: L2) (I1 :|: I2) a)))
-             (s1: (both L1 I1 (nseq a len)))
-             (s2 : (both L2 I2 (nseq a len))) : both (L1 :|: L2) (I1 :|: I2) ((nseq a len)) := @foldi_both' _ L1 L2 L1 (L1 :|: L2) I1 I2 I1 (I1 :|: I2) (lift_to_both (usize 0)) (lift_to_both len)
-   (fun x y =>
-    let b1 :=
-      eq_rect (L1 :|: (L1 :|: L2))
-        (fun
-           f : {fset tag_ordType (I:=choice_type_ordType)
-                       (fun _ : choice_type => nat_ordType)} =>
-         both f (I1 :|: (I1 :|: I2)) a) (array_index s1 x) (L1 :|: L1 :|: L2)
-        (fsetUA
-           (T:=tag_ordType (I:=choice_type_ordType)
-                 (fun _ : choice_type => nat_ordType)) L1 L1 L2) in
-    let b2 :=
-      eq_rect (I1 :|: (I1 :|: I2))
-        (fun
-           f : {fset prod_ordType nat_ordType
-                       (prod_ordType choice_type_ordType
-                          choice_type_ordType)} =>
-         both (L1 :|: L1 :|: L2) f a) b1 (I1 :|: I1 :|: I2)
-        (fsetUA
-           (T:=prod_ordType nat_ordType
-                 (prod_ordType choice_type_ordType choice_type_ordType)) I1
-           I1 I2) in
-    let b3 :=
-      eq_rect (L1 :|: L1)
-        (fun
-           f : {fset tag_ordType (I:=choice_type_ordType)
-                       (fun _ : choice_type => nat_ordType)} =>
-         both (f :|: L2) (I1 :|: I1 :|: I2) a) b2 L1
-        (fsetUid
-           (T:=tag_ordType (I:=choice_type_ordType)
-                 (fun _ : choice_type => nat_ordType)) L1) in
-    let b4 :=
-      eq_rect (I1 :|: I1)
-        (fun
-           f : {fset prod_ordType nat_ordType
-                       (prod_ordType choice_type_ordType
-                          choice_type_ordType)} =>
-         both (L1 :|: L2) (f :|: I2) a) b3 I1
-        (fsetUid
-           (T:=prod_ordType nat_ordType
-                 (prod_ordType choice_type_ordType choice_type_ordType)) I1)
-      in
-    let b5 :=
-      eq_rect (L2 :|: (L1 :|: L2))
-        (fun
-           f : {fset tag_ordType (I:=choice_type_ordType)
-                       (fun _ : choice_type => nat_ordType)} =>
-         both f (I2 :|: (I1 :|: I2)) a) (array_index s2 x) (L1 :|: L2 :|: L2)
-        (fsetUC
-           (T:=tag_ordType (I:=choice_type_ordType)
-                 (fun _ : choice_type => nat_ordType)) L2 
-           (L1 :|: L2)) in
-    let b6 :=
-      eq_rect_r
-        (fun
-           f : {fset tag_ordType (I:=choice_type_ordType)
-                       (fun _ : choice_type => nat_ordType)} =>
-         both f (I2 :|: (I1 :|: I2)) a) b5
-        (fsetUA
-           (T:=tag_ordType (I:=choice_type_ordType)
-                 (fun _ : choice_type => nat_ordType)) L1 L2 L2) in
-    let b7 :=
-      eq_rect (L2 :|: L2)
-        (fun
-           f : {fset tag_ordType (I:=choice_type_ordType)
-                       (fun _ : choice_type => nat_ordType)} =>
-         both (L1 :|: f) (I2 :|: (I1 :|: I2)) a) b6 L2
-        (fsetUid
-           (T:=tag_ordType (I:=choice_type_ordType)
-                 (fun _ : choice_type => nat_ordType)) L2) in
-    let b8 :=
-      eq_rect (I2 :|: (I1 :|: I2))
-        (fun
-           f : {fset prod_ordType nat_ordType
-                       (prod_ordType choice_type_ordType
-                          choice_type_ordType)} => 
-         both (L1 :|: L2) f a) b7 (I1 :|: I2 :|: I2)
-        (fsetUC
-           (T:=prod_ordType nat_ordType
-                 (prod_ordType choice_type_ordType choice_type_ordType)) I2
-           (I1 :|: I2)) in
-    let b9 :=
-      eq_rect_r
-        (fun
-           f : {fset prod_ordType nat_ordType
-                       (prod_ordType choice_type_ordType
-                          choice_type_ordType)} => 
-         both (L1 :|: L2) f a) b8
-        (fsetUA
-           (T:=prod_ordType nat_ordType
-                 (prod_ordType choice_type_ordType choice_type_ordType)) I1
-           I2 I2) in
-    let b10 :=
-      eq_rect (I2 :|: I2)
-        (fun
-           f : {fset prod_ordType nat_ordType
-                       (prod_ordType choice_type_ordType
-                          choice_type_ordType)} =>
-         both (L1 :|: L2) (I1 :|: f) a) b9 I2
-        (fsetUid
-           (T:=prod_ordType nat_ordType
-                 (prod_ordType choice_type_ordType choice_type_ordType)) I2)
-      in
-    let b11 := @op (L1 :|: L2) (L1 :|: L2) (I1 :|: I2) (I1 :|: I2) b4 b10 in
-    let b12 :=
-      eq_rect (L1 :|: L2 :|: (L1 :|: L2))
-        (fun
-           f : {fset tag_ordType (I:=choice_type_ordType)
-                       (fun _ : choice_type => nat_ordType)} =>
-         both f (I1 :|: I2 :|: (I1 :|: I2)) a) b11 
-        (L1 :|: L2)
-        (fsetUid
-           (T:=tag_ordType (I:=choice_type_ordType)
-                 (fun _ : choice_type => nat_ordType)) 
-           (L1 :|: L2)) in
-    let b13 :=
-      eq_rect (I1 :|: I2 :|: (I1 :|: I2))
-        (fun
-           f : {fset prod_ordType nat_ordType
-                       (prod_ordType choice_type_ordType
-                          choice_type_ordType)} => 
-         both (L1 :|: L2) f a) b12 (I1 :|: I2)
-        (fsetUid
-           (T:=prod_ordType nat_ordType
-                 (prod_ordType choice_type_ordType choice_type_ordType))
-           (I1 :|: I2)) in
-    let b14 := array_upd y x b13 in
-    let b15 :=
-      eq_rect (L1 :|: L2 :|: (L1 :|: L2))
-        (fun
-           f : {fset tag_ordType (I:=choice_type_ordType)
-                       (fun _ : choice_type => nat_ordType)} =>
-         both (f :|: (L1 :|: L2))
-           (I1 :|: I2 :|: (I1 :|: I2) :|: (I1 :|: I2))
-           (nseq_ a (from_uint_size len))) b14 (L1 :|: L2)
-        (fsetUid
-           (T:=tag_ordType (I:=choice_type_ordType)
-                 (fun _ : choice_type => nat_ordType)) 
-           (L1 :|: L2)) in
-    let b16 :=
-      eq_rect (L1 :|: L2 :|: (L1 :|: L2))
-        (fun
-           f : {fset tag_ordType (I:=choice_type_ordType)
-                       (fun _ : choice_type => nat_ordType)} =>
-         both f (I1 :|: I2 :|: (I1 :|: I2) :|: (I1 :|: I2))
-           (nseq_ a (from_uint_size len))) b15 (L1 :|: L2)
-        (fsetUid
-           (T:=tag_ordType (I:=choice_type_ordType)
-                 (fun _ : choice_type => nat_ordType)) 
-           (L1 :|: L2)) in
-    let b17 :=
-      eq_rect (I1 :|: I2 :|: (I1 :|: I2))
-        (fun
-           f : {fset prod_ordType nat_ordType
-                       (prod_ordType choice_type_ordType
-                          choice_type_ordType)} =>
-         both (L1 :|: L2) (f :|: (I1 :|: I2))
-           (nseq_ a (from_uint_size len))) b16 (I1 :|: I2)
-        (fsetUid
-           (T:=prod_ordType nat_ordType
-                 (prod_ordType choice_type_ordType choice_type_ordType))
-           (I1 :|: I2)) in
-    let b18 :=
-      eq_rect (I1 :|: I2 :|: (I1 :|: I2))
-        (fun
-           f : {fset prod_ordType nat_ordType
-                       (prod_ordType choice_type_ordType
-                          choice_type_ordType)} =>
-         both (L1 :|: L2) f (nseq_ a (from_uint_size len))) b17 
-        (I1 :|: I2)
-        (fsetUid
-           (T:=prod_ordType nat_ordType
-                 (prod_ordType choice_type_ordType choice_type_ordType))
-           (I1 :|: I2)) in
-    b18) s1.
+  (* Definition array_join_map *)
+  (*            {a: choice_type} *)
+  (*            {len: uint_size} *)
+  (*            {L1 L2 I1 I2} *)
+  (*            (op: forall {L1 L2 I1 I2}, ( (both L1 I1 a)) -> (both L2 I2 a) -> ( (both (L1 :|: L2) (I1 :|: I2) a))) *)
+  (*            (s1: (both L1 I1 (nseq a len))) *)
+  (*            (s2 : (both L2 I2 (nseq a len))) : both (L1 :|: L2) (I1 :|: I2) ((nseq a len)) := @foldi_both' _ L1 L2 L1 (L1 :|: L2) I1 I2 I1 (I1 :|: I2) (lift_to_both (usize 0)) (lift_to_both len) *)
+  (*  (fun x y => *)
+  (*   let b1 := *)
+  (*     eq_rect (L1 :|: (L1 :|: L2)) *)
+  (*       (fun *)
+  (*          f : {fset tag_ordType (I:=choice_type_ordType) *)
+  (*                      (fun _ : choice_type => nat_ordType)} => *)
+  (*        both f (I1 :|: (I1 :|: I2)) a) (array_index s1 x) (L1 :|: L1 :|: L2) *)
+  (*       (fsetUA *)
+  (*          (T:=tag_ordType (I:=choice_type_ordType) *)
+  (*                (fun _ : choice_type => nat_ordType)) L1 L1 L2) in *)
+  (*   let b2 := *)
+  (*     eq_rect (I1 :|: (I1 :|: I2)) *)
+  (*       (fun *)
+  (*          f : {fset prod_ordType nat_ordType *)
+  (*                      (prod_ordType choice_type_ordType *)
+  (*                         choice_type_ordType)} => *)
+  (*        both (L1 :|: L1 :|: L2) f a) b1 (I1 :|: I1 :|: I2) *)
+  (*       (fsetUA *)
+  (*          (T:=prod_ordType nat_ordType *)
+  (*                (prod_ordType choice_type_ordType choice_type_ordType)) I1 *)
+  (*          I1 I2) in *)
+  (*   let b3 := *)
+  (*     eq_rect (L1 :|: L1) *)
+  (*       (fun *)
+  (*          f : {fset tag_ordType (I:=choice_type_ordType) *)
+  (*                      (fun _ : choice_type => nat_ordType)} => *)
+  (*        both (f :|: L2) (I1 :|: I1 :|: I2) a) b2 L1 *)
+  (*       (fsetUid *)
+  (*          (T:=tag_ordType (I:=choice_type_ordType) *)
+  (*                (fun _ : choice_type => nat_ordType)) L1) in *)
+  (*   let b4 := *)
+  (*     eq_rect (I1 :|: I1) *)
+  (*       (fun *)
+  (*          f : {fset prod_ordType nat_ordType *)
+  (*                      (prod_ordType choice_type_ordType *)
+  (*                         choice_type_ordType)} => *)
+  (*        both (L1 :|: L2) (f :|: I2) a) b3 I1 *)
+  (*       (fsetUid *)
+  (*          (T:=prod_ordType nat_ordType *)
+  (*                (prod_ordType choice_type_ordType choice_type_ordType)) I1) *)
+  (*     in *)
+  (*   let b5 := *)
+  (*     eq_rect (L2 :|: (L1 :|: L2)) *)
+  (*       (fun *)
+  (*          f : {fset tag_ordType (I:=choice_type_ordType) *)
+  (*                      (fun _ : choice_type => nat_ordType)} => *)
+  (*        both f (I2 :|: (I1 :|: I2)) a) (array_index s2 x) (L1 :|: L2 :|: L2) *)
+  (*       (fsetUC *)
+  (*          (T:=tag_ordType (I:=choice_type_ordType) *)
+  (*                (fun _ : choice_type => nat_ordType)) L2  *)
+  (*          (L1 :|: L2)) in *)
+  (*   let b6 := *)
+  (*     eq_rect_r *)
+  (*       (fun *)
+  (*          f : {fset tag_ordType (I:=choice_type_ordType) *)
+  (*                      (fun _ : choice_type => nat_ordType)} => *)
+  (*        both f (I2 :|: (I1 :|: I2)) a) b5 *)
+  (*       (fsetUA *)
+  (*          (T:=tag_ordType (I:=choice_type_ordType) *)
+  (*                (fun _ : choice_type => nat_ordType)) L1 L2 L2) in *)
+  (*   let b7 := *)
+  (*     eq_rect (L2 :|: L2) *)
+  (*       (fun *)
+  (*          f : {fset tag_ordType (I:=choice_type_ordType) *)
+  (*                      (fun _ : choice_type => nat_ordType)} => *)
+  (*        both (L1 :|: f) (I2 :|: (I1 :|: I2)) a) b6 L2 *)
+  (*       (fsetUid *)
+  (*          (T:=tag_ordType (I:=choice_type_ordType) *)
+  (*                (fun _ : choice_type => nat_ordType)) L2) in *)
+  (*   let b8 := *)
+  (*     eq_rect (I2 :|: (I1 :|: I2)) *)
+  (*       (fun *)
+  (*          f : {fset prod_ordType nat_ordType *)
+  (*                      (prod_ordType choice_type_ordType *)
+  (*                         choice_type_ordType)} =>  *)
+  (*        both (L1 :|: L2) f a) b7 (I1 :|: I2 :|: I2) *)
+  (*       (fsetUC *)
+  (*          (T:=prod_ordType nat_ordType *)
+  (*                (prod_ordType choice_type_ordType choice_type_ordType)) I2 *)
+  (*          (I1 :|: I2)) in *)
+  (*   let b9 := *)
+  (*     eq_rect_r *)
+  (*       (fun *)
+  (*          f : {fset prod_ordType nat_ordType *)
+  (*                      (prod_ordType choice_type_ordType *)
+  (*                         choice_type_ordType)} =>  *)
+  (*        both (L1 :|: L2) f a) b8 *)
+  (*       (fsetUA *)
+  (*          (T:=prod_ordType nat_ordType *)
+  (*                (prod_ordType choice_type_ordType choice_type_ordType)) I1 *)
+  (*          I2 I2) in *)
+  (*   let b10 := *)
+  (*     eq_rect (I2 :|: I2) *)
+  (*       (fun *)
+  (*          f : {fset prod_ordType nat_ordType *)
+  (*                      (prod_ordType choice_type_ordType *)
+  (*                         choice_type_ordType)} => *)
+  (*        both (L1 :|: L2) (I1 :|: f) a) b9 I2 *)
+  (*       (fsetUid *)
+  (*          (T:=prod_ordType nat_ordType *)
+  (*                (prod_ordType choice_type_ordType choice_type_ordType)) I2) *)
+  (*     in *)
+  (*   let b11 := @op (L1 :|: L2) (L1 :|: L2) (I1 :|: I2) (I1 :|: I2) b4 b10 in *)
+  (*   let b12 := *)
+  (*     eq_rect (L1 :|: L2 :|: (L1 :|: L2)) *)
+  (*       (fun *)
+  (*          f : {fset tag_ordType (I:=choice_type_ordType) *)
+  (*                      (fun _ : choice_type => nat_ordType)} => *)
+  (*        both f (I1 :|: I2 :|: (I1 :|: I2)) a) b11  *)
+  (*       (L1 :|: L2) *)
+  (*       (fsetUid *)
+  (*          (T:=tag_ordType (I:=choice_type_ordType) *)
+  (*                (fun _ : choice_type => nat_ordType))  *)
+  (*          (L1 :|: L2)) in *)
+  (*   let b13 := *)
+  (*     eq_rect (I1 :|: I2 :|: (I1 :|: I2)) *)
+  (*       (fun *)
+  (*          f : {fset prod_ordType nat_ordType *)
+  (*                      (prod_ordType choice_type_ordType *)
+  (*                         choice_type_ordType)} =>  *)
+  (*        both (L1 :|: L2) f a) b12 (I1 :|: I2) *)
+  (*       (fsetUid *)
+  (*          (T:=prod_ordType nat_ordType *)
+  (*                (prod_ordType choice_type_ordType choice_type_ordType)) *)
+  (*          (I1 :|: I2)) in *)
+  (*   let b14 := array_upd y x b13 in *)
+  (*   let b15 := *)
+  (*     eq_rect (L1 :|: L2 :|: (L1 :|: L2)) *)
+  (*       (fun *)
+  (*          f : {fset tag_ordType (I:=choice_type_ordType) *)
+  (*                      (fun _ : choice_type => nat_ordType)} => *)
+  (*        both (f :|: (L1 :|: L2)) *)
+  (*          (I1 :|: I2 :|: (I1 :|: I2) :|: (I1 :|: I2)) *)
+  (*          (nseq_ a (from_uint_size len))) b14 (L1 :|: L2) *)
+  (*       (fsetUid *)
+  (*          (T:=tag_ordType (I:=choice_type_ordType) *)
+  (*                (fun _ : choice_type => nat_ordType))  *)
+  (*          (L1 :|: L2)) in *)
+  (*   let b16 := *)
+  (*     eq_rect (L1 :|: L2 :|: (L1 :|: L2)) *)
+  (*       (fun *)
+  (*          f : {fset tag_ordType (I:=choice_type_ordType) *)
+  (*                      (fun _ : choice_type => nat_ordType)} => *)
+  (*        both f (I1 :|: I2 :|: (I1 :|: I2) :|: (I1 :|: I2)) *)
+  (*          (nseq_ a (from_uint_size len))) b15 (L1 :|: L2) *)
+  (*       (fsetUid *)
+  (*          (T:=tag_ordType (I:=choice_type_ordType) *)
+  (*                (fun _ : choice_type => nat_ordType))  *)
+  (*          (L1 :|: L2)) in *)
+  (*   let b17 := *)
+  (*     eq_rect (I1 :|: I2 :|: (I1 :|: I2)) *)
+  (*       (fun *)
+  (*          f : {fset prod_ordType nat_ordType *)
+  (*                      (prod_ordType choice_type_ordType *)
+  (*                         choice_type_ordType)} => *)
+  (*        both (L1 :|: L2) (f :|: (I1 :|: I2)) *)
+  (*          (nseq_ a (from_uint_size len))) b16 (I1 :|: I2) *)
+  (*       (fsetUid *)
+  (*          (T:=prod_ordType nat_ordType *)
+  (*                (prod_ordType choice_type_ordType choice_type_ordType)) *)
+  (*          (I1 :|: I2)) in *)
+  (*   let b18 := *)
+  (*     eq_rect (I1 :|: I2 :|: (I1 :|: I2)) *)
+  (*       (fun *)
+  (*          f : {fset prod_ordType nat_ordType *)
+  (*                      (prod_ordType choice_type_ordType *)
+  (*                         choice_type_ordType)} => *)
+  (*        both (L1 :|: L2) f (nseq_ a (from_uint_size len))) b17  *)
+  (*       (I1 :|: I2) *)
+  (*       (fsetUid *)
+  (*          (T:=prod_ordType nat_ordType *)
+  (*                (prod_ordType choice_type_ordType choice_type_ordType)) *)
+  (*          (I1 :|: I2)) in *)
+  (*   b18) s1. *)
 
   Fixpoint array_eq_
            {a: choice_type}
@@ -2546,3 +2574,7 @@ Notation "'ssp(' 'fun' x => 'fun' ' ( a , b , c , d ) => f )" :=
        let '(a, b, c, d) := (unsplit_both a, unsplit_both b, unsplit_both c, unsplit_both d) in
      f)) : both _ _ uint_size -> both _ _ (_ × _ × _ × _) -> both _ _ _) (at level 100, x at next level, f at next level, a at next level, b at next level, c at next level, d at next level).
 
+(* eq_fset *)
+(* finmap.finSet *)
+(* https://coq.zulipchat.com/#narrow/stream/237977-Coq-users/topic/aac-tactics.2C.20fset.20automation.2C.20universes *)
+(* Display map / exponenetial maps *)

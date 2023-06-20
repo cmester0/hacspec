@@ -6,6 +6,7 @@ From extructures Require Import ord fset fmap.
 Require Import Hacspec_Lib_Comparable.
 From Jasmin Require Import xseq.
 Require Import Coq.Logic.FunctionalExtensionality.
+Import List.ListNotations.
 
 (*****************************************************)
 (*   This file defines a utility functions to reason *)
@@ -521,3 +522,86 @@ Proof.
 
   apply ZifyClasses.and_morph ; rewrite loc_list_incl_fsubset ; rewrite <- loc_list_incl_remove_fset ; reflexivity.
 Qed.
+
+
+Lemma path_sorted_tl :
+  forall {T : ordType} {A} {e} {fmval : list A},
+  is_true (path.sorted e fmval) ->
+  is_true (path.sorted e (tl fmval)).
+Proof.
+  intros.
+  destruct fmval.
+  - easy.
+  - cbn.
+    cbn in H.
+    destruct (fmval).
+    + reflexivity.
+    + cbn in H.
+      now rewrite LocationUtility.is_true_split_and in H.
+Qed.
+
+Fixpoint eqb_fset_helper {T : ordType} `{EqDec T} (x : list T) (i : is_true (path.sorted Ord.lt x)) (y : list T) (j : is_true (path.sorted Ord.lt y)) : bool :=
+  match x, y return
+        is_true (path.sorted Ord.lt x) ->
+        is_true (path.sorted Ord.lt y) ->
+        bool
+  with
+  | [], [] => fun _ _ => true
+  | a :: xs , b :: ys =>
+      fun i j =>
+        andb
+          (eqb a b)
+          (eqb_fset_helper xs (path_sorted_tl (T := T) i) ys (path_sorted_tl (T := T) j))
+  | _, _ => fun _ _ => false
+  end i j.
+Transparent eqb_fset_helper.
+
+Definition eqb_fset {T : ordType} `{EqDec T} (x y : {fset T}) : bool :=
+  match x , y with
+  | @FSet.FSet _ fsval i, @FSet.FSet _ fsval0 i0 =>
+      eqb_fset_helper fsval i fsval0 i0
+  end.
+Transparent eqb_fset.
+
+Theorem eqb_leibniz_fset {T : ordType} `{EqDec T} : forall  (x y : {fset T}),
+    is_true (eqb_fset x y) <-> x = y.
+Proof.
+  intros.
+  split.
+  - intros.
+    destruct x , y.
+    unfold eqb_fset in H0.
+
+    apply pkg_composition.fsval_eq.
+    simpl.
+
+    generalize dependent fsval0.
+    induction fsval ; intros.
+    + destruct fsval0.
+      * reflexivity.
+      * discriminate H0.
+    + destruct fsval0.
+      * discriminate H0.
+      * cbn in H0.
+
+        rewrite is_true_split_and in H0 ; destruct H0.
+
+        apply (eqb_leibniz a s) in H0.
+        subst.
+        f_equal.
+
+        eapply IHfsval.
+        apply H1.
+  - intros.
+    subst.
+    destruct y.
+    simpl.
+    induction fsval.
+    + reflexivity.
+    + simpl.
+      rewrite IHfsval.
+      now rewrite eqb_refl.
+Qed.
+
+Instance fset_EqDec {T : ordType} `{EqDec T} : EqDec {fset T} :=
+  {| eqb := eqb_fset  ; eqb_leibniz := eqb_leibniz_fset |}.

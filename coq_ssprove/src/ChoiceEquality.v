@@ -31,23 +31,23 @@ Definition pre_to_post_ret (P : precond) {A} v : postcond A A :=
 
 Definition true_precond : precond := fun _ => True.
 
-Module Both.
-Definition code_eq_proof_statement L I (A : choice_type) (functional : A) (state : code L I A) :=
-  ⊢ ⦃ true_precond ⦄ state ≈ ret (functional)
-    ⦃ pre_to_post_ret true_precond (functional) ⦄.
+(* Module Both. *)
+(* Definition code_eq_proof_statement L I (A : choice_type) (functional : A) (state : code L I A) := *)
+(*   ⊢ ⦃ true_precond ⦄ state ≈ ret (functional) *)
+(*     ⦃ pre_to_post_ret true_precond (functional) ⦄. *)
 
-Record mixin_of L I (A : choice_type) := Mixin {
-                            functional : A  ;
-                            state : code L I A ;
-                            _ : code_eq_proof_statement L I A functional state ;
-                        }.
+(* Record mixin_of L I (A : choice_type) := Mixin { *)
+(*                             functional : A  ; *)
+(*                             state : code L I A ; *)
+(*                             _ : code_eq_proof_statement L I A functional state ; *)
+(*                         }. *)
 
-Record class_of L I (A : choice_type) :=
-  Class {Base : choice.Choice.class_of A; mixin: mixin_of L I A}.
+(* Record class_of L I (A : choice_type) := *)
+(*   Class {Base : choice.Choice.class_of A; mixin: mixin_of L I A}. *)
 
-Structure both L I :=
-  Pack {sort; _ : class_of L I sort}.
-End Both.
+(* Structure both L I := *)
+(*   Pack {sort; _ : class_of L I sort}. *)
+(* End Both. *)
 
 Class both L I (A : choice_type) :=
   {
@@ -64,6 +64,10 @@ Arguments code_eq_proof_statement {_} {_} {_} both.
 
 Coercion is_pure : both >-> choice.Choice.sort.
 Coercion is_state : both >-> code.
+
+Definition both_fun L I (A B : choice_type) :=
+  ∑ (is_pure_f : choice.Choice.sort A -> choice.Choice.sort B) (is_state_f : code L I A -> code L I B),
+    forall (x : both L I A), ⊢ ⦃ true_precond ⦄ is_state_f x ≈ ret (is_pure_f x) ⦃ pre_to_post_ret true_precond (is_pure_f (is_pure x)) ⦄.
 
 (* Lemma helper : *)
 (*   forall (o : opsigCE), *)
@@ -353,15 +357,14 @@ Fixpoint chElement_ordType_ce_to_ce (ce : choice_type) (X : ce) : chElement_ordT
 (*   now apply r_ret. *)
 (* Defined. *)
 
-Definition lift_to_both {ce : choice_type} {L I} (x : choice.Choice.sort ce) : both L I ce :=
-  {| is_pure := x ;
-    is_state := {code ret x};
-    code_eq_proof_statement :=
-    r_ret x x true_precond (pre_to_post_ret true_precond x) (fun (s₀ s₁ : heap) => conj (conj eq_refl eq_refl))
-  |}.
-
-Definition both0 (A : choice_type) := both fset.fset0 [interface] A.
-Notation lift_to_both0 := (@lift_to_both _ fset.fset0 [interface]).
+Notation "'lift_to_both' x" :=
+  ({| is_pure := x ;
+    is_state := {code ret x #with valid_ret _ _ x };
+    code_eq_proof_statement := r_ret x x true_precond (pre_to_post_ret true_precond x) (fun (s₀ s₁ : heap) => conj (conj eq_refl eq_refl))
+  |}) (at level 100).
+Check lift_to_both _.
+Notation both0 := (both fset.fset0 [interface]).
+(* Notation lift_to_both0 := (@lift_to_both _ fset.fset0 [interface]). *)
 
 Definition lift_code_scope {L1 L2 : {fset Location}} {I1 I2 : {fset opsig}} {A} (c : code L1 I1 A) `{H_loc_incl : List.incl L1 L2} `{H_opsig_incl : List.incl I1 I2} : code L2 I2 A :=
   {code (prog c) #with
@@ -983,7 +986,7 @@ Proof.
   apply H0.
 Qed.
 
-Lemma isolate_mem_sectiongetr_set_lhs :
+Lemma getr_set_lhs :
   forall {A B} ℓ v pre post (a : _ -> raw_code A) (b : raw_code B),
   ⊢ ⦃ set_lhs ℓ v pre ⦄
      a v
@@ -1085,37 +1088,27 @@ Fixpoint unsplit_both {L I A} (x : split_type (both L I) A) : both L I A :=
   end x.
 Notation "'unsplit_both_all' ( a , b , .. , c )" := ((.. ((unsplit_both a , unsplit_both b)) .. , unsplit_both c)).
 
-Program Definition bind_both  {L1 L2  : {fset Location}} {I1 I2} {A B : choice_type} (x : both L1 I1 A) (f : A -> both L2 I2 B) : both (L1 :|: L2) (I1 :|: I2) B :=
-  {| is_state := {code temp ← is_state x ;; f temp} ;
-    is_pure := is_pure (f x)
+Check (fun (x : both _ _ _) (f : _ -> both _ _ _) => {code temp ← is_state x ;; is_state (f temp) #with
+           valid_bind _ _ _ _ (is_state x) (fun temp => is_state (f temp))
+           (prog_valid (is_state x))
+           (fun temp => prog_valid (is_state (f temp)))
+      }).
+
+Definition bind_both_ {L I A B} (x : both L I A) (f : A -> both L I B) : both L I B :=
+  {|
+    is_state := {code temp ← is_state x ;; is_state (f temp) #with _} ;
+    is_pure := is_pure (f (is_pure x)) ;
+    code_eq_proof_statement := (r_bind_trans_both (f := fun y => prog (is_state (f y))) (g := fun y => ret (is_pure (f y))) x true_precond (pre_to_post_ret _ _) (code_eq_proof_statement (f (is_pure x))))
   |}.
-Next Obligation.
-  intros.
-  ssprove_valid.
-  apply valid_injectLocations with (L1 := L1). apply fsubsetUl.
-  apply @valid_injectMap with (I1 := I1). apply fsubsetUl.
-  apply (is_state x).
 
-  ssprove_valid.
-  apply valid_injectLocations with (L1 := L2). apply fsubsetUr.
-  apply @valid_injectMap with (I1 := I2). apply fsubsetUr.
-  apply (is_state (f x0)).
-Qed.
-Next Obligation.
-  intros.
-  match_bind_trans_both.
-  apply code_eq_proof_statement.
-Qed.
-
-Program Definition let_both {L  : {fset Location}} {I} {A B : choice_type}
-        (x : both L I A)
-        (f : both L I A -> both L I B)
-  : both L I B := (f x).
+Definition bind_both {L1 L2 I1 I2 A B} (x : both L1 I1 A) (f : A -> both L2 I2 B)  `{H_loc_incl : List.incl L1 L2} `{H_opsig_incl : List.incl I1 I2} : both L2 I2 B :=
+  bind_both_ (lift_scope (H_loc_incl := H_loc_incl) (H_opsig_incl := H_opsig_incl) x) f.
 
 Notation "'letb' x ':=' y 'in' f" :=
-  (let_both (lift_scope (H_loc_incl := _) (H_opsig_incl := _) y) (fun x => f)) (at level 100, x pattern, right associativity).
+  (let x := y in f) (* (let_both y (fun x => f)) *) (at level 100, x pattern, right associativity).
 Notation "'letb' ''' x ':=' y 'in' f" :=
-  (let_both (lift_scope (H_loc_incl := _) (H_opsig_incl := _) y) (fun x => f)) (at level 100, x pattern, right associativity).
+  (let x := y in f) (* (let_both y (fun x => f)) *) (at level 100, x pattern, right associativity).
+(* (lift_scope (H_loc_incl := _) (H_opsig_incl := _) y) *)
 
 Equations let_mut_code  {L : {fset Location}} {I} {B : choice_type}
            (x_loc : Location)
@@ -1135,29 +1128,53 @@ Notation "'letmc' x 'loc(' ℓ ')' ':=' y 'in' f" :=
 Notation "'letmc' ''' x 'loc(' ℓ ')' ':=' y 'in' f" :=
   (let_mut_code ℓ (H_in := _) y (fun x => f x)) (at level 100, x pattern, right associativity).
 
-Program Definition let_mut_both {L : {fset Location}} {I} {B : choice_type}
-        (x_loc : Location) `{H_in: is_true (ssrbool.in_mem (x_loc) (ssrbool.mem L))} (x : both L I (x_loc)) (f : both L I (x_loc) -> both L I B) : both L I B :=
+Program Definition split_both_func {A B : choice_type} {L1 L2 : {fset Location}} {I1 I2}
+        (f : both L1 I1 A -> both (L1 :|: L2) (I1 :|: I2) B) : (A -> B) * (code L1 I1 A -> code (L1 :|: L2) (I1 :|: I2) B) :=
+  (fun y : A => is_pure ((fun temp : A => f (lift_to_both temp)) y),
+   fun y : code L1 I1 A => {code temp ← y ;; f (lift_to_both temp) }).
+Next Obligation.
+  intros.
+  ssprove_valid.
+
+  apply valid_injectLocations with (L1 := L1). apply fsubsetUl.
+  apply @valid_injectMap with (I1 := I1). apply fsubsetUl.
+  apply y.
+
+  apply (is_state (f (lift_to_both x))).
+Qed.
+
+Program Definition store_x {L1 L2 : {fset Location}} {I1 I2} {B : choice_type}
+        (x_loc : Location) (x : both (L1) I1 (x_loc)) (f : x_loc -> both (x_loc |: L1 :|: L2) (I1 :|: I2) B) : both (x_loc |: L1 :|: L2) (I1 :|: I2) B :=
   {|
-    is_state := {code
-       y ← x ;;
-       #put x_loc := y ;;
-       temp ← get x_loc ;;
-       f (lift_to_both temp) } ;
-     is_pure := is_pure (f (lift_to_both x)) ;
+    is_pure := f (is_pure x) ;
+    is_state := {code y ← (is_state x) ;; putr x_loc y (getr x_loc f)}
   |}.
 Next Obligation.
   intros.
-  cbn.
-  replace (ret _) with (temp ← ret (is_pure x) ;; ret ((is_pure (f (lift_to_both temp))))) by (reflexivity).
 
-  destruct x_loc as [A n].
+  apply valid_bind.
 
-  eapply r_bind.
-  apply x.
+  apply valid_injectLocations with (L1 := x_loc |: L1). apply fsubsetUl.
+  apply valid_injectLocations with (L1 := L1). apply fsubsetUr.
+  apply @valid_injectMap with (I1 := I1). apply fsubsetUl.
+  apply (is_state x).
+  intros y.
+
+  apply valid_putr.
+  rewrite in_fsetU ; rewrite is_true_split_or ; left.
+  now rewrite in_fsetU1 ; rewrite is_true_split_or ; left.
+
+  apply valid_getr.
+  rewrite in_fsetU ; rewrite is_true_split_or ; left.
+  now rewrite in_fsetU1 ; rewrite is_true_split_or ; left.
   intros.
 
-  apply rpre_hypothesis_rule.
-  intros ? ? [[] []]. subst.
+  apply (is_state (f v)).
+Qed.
+Next Obligation.
+  intros.
+
+  match_bind_trans_both.
 
   apply better_r_put_get_lhs.
   apply better_r_put_lhs.
@@ -1166,12 +1183,21 @@ Next Obligation.
   apply f.
   reflexivity.
 Qed.
+Fail Next Obligation.
+
+(* Definition let_mut_both {L1 L2 : {fset Location}} {I1 I2} {B : choice_type} (x_loc : Location) (x : both L1 I1 (x_loc)) (f : both (x_loc |: L1) I1 x_loc -> both (x_loc |: L1 :|: L2) (I1 :|: I2) B) : both (x_loc |: L1 :|: L2) (I1 :|: I2) B := *)
+(*   store_x x_loc x (fun y => f (lift_to_both y)). *)
+
+Notation let_mut_both := (fun (x_loc : Location) x f =>
+                            {|
+    is_pure := (fun y => f (lift_to_both y)) (is_pure x) ;
+    is_state := {code y ← (is_state x) ;; putr x_loc y (getr x_loc (fun y => f (lift_to_both y)))}
+  |}).
 
 Notation "'letbm' x 'loc(' ℓ ')' ':=' y 'in' f" :=
-  (let_mut_both ℓ (H_in := _) (lift_scope (H_loc_incl := _) (H_opsig_incl := _) y) (fun x => f)) (at level 200, x pattern, right associativity, format "'letbm'  x  'loc(' ℓ ')'  ':='  y  'in' '//' f").
+  (let_mut_both ℓ y (fun x => f)) (at level 100, x pattern, right associativity, format "'letbm'  x  'loc(' ℓ ')'  ':='  y  'in' '//' f").
 Notation "'letbm' ''' x 'loc(' ℓ ')' ':=' y 'in' f" :=
-  (let '(ℓT, ℓv) := ℓ in
-   let_mut_both ℓ (H_in := _) (lift_scope (H_loc_incl := _) (H_opsig_incl := _) y) (fun x => f)) (at level 200, x pattern, right associativity, format "'letbm'  ''' x  'loc(' ℓ ')'  ':='  y  'in' '//' f").
+  (let_mut_both ℓ y (fun x => f)) (at level 100, x pattern, right associativity, format "'letbm'  ''' x  'loc(' ℓ ')'  ':='  y  'in' '//' f").
 
 (* Handle products of size 2 - 4 for letb *)
 Notation "'letb' ' '(' a ',' b ')' ':=' z 'in' f" :=

@@ -2883,11 +2883,9 @@ Global Program Instance Dec_eq_prod (A B : Type) `{EqDec A} `{EqDec B} : EqDec (
   }.
 Next Obligation.
   split ; intros ; destruct x ; destruct y.
-  - unfold is_true in H1.
-    symmetry in H1.
-    apply Bool.andb_true_eq in H1. destruct H1.
-    symmetry in H1. rewrite (eqb_leibniz) in H1.
-    symmetry in H2. rewrite (eqb_leibniz) in H2.
+  - rewrite LocationUtility.is_true_split_and in H1. destruct H1.
+    rewrite (eqb_leibniz) in H1.
+    rewrite (eqb_leibniz) in H2.
     rewrite H1. rewrite H2. reflexivity.
   - inversion_clear H1. now do 2 rewrite eqb_refl.
 Defined.

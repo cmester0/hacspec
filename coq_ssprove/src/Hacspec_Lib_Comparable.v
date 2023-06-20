@@ -14,7 +14,7 @@ Global Arguments default {_} {_}.
 
 Class EqDec (A : Type) :=
   { eqb : A -> A -> bool ;
-    eqb_leibniz : forall x y, eqb x y = true <-> x = y }.
+    eqb_leibniz : forall x y, is_true (eqb x y) <-> x = y }.
 
 Infix "=.?" := eqb (at level 40) : hacspec_scope.
 Infix "!=.?" := (fun a b => negb (eqb a b)) (at level 40) : hacspec_scope.
