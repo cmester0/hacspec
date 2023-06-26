@@ -18,6 +18,8 @@ From extructures Require Import ord fset fmap.
 
 Import choice.Choice.Exports.
 
+Import List.ListNotations.
+
 Notation "prod_ce( a , b )" := ((a , b) : chProd _ _) : hacspec_scope.
 Notation "prod_ce( a , b , .. , c )" := ((.. ((a , b) : chProd _ _) .. , c) : chProd _ _) : hacspec_scope.
 
@@ -30,6 +32,14 @@ Definition pre_to_post_ret (P : precond) {A} v : postcond A A :=
   fun '(a, h₀) '(b, h₁) => (a = b /\ b = v) /\ P (h₀ , h₁).
 
 Definition true_precond : precond := fun _ => True.
+
+Theorem forget_precond {B} (x y : raw_code B) P Q :
+  ⊢ ⦃ true_precond ⦄ x ≈ y ⦃ Q ⦄ ->
+  ⊢ ⦃ P ⦄ x ≈ y ⦃ Q ⦄.
+Proof.
+  intros.
+  now apply (rpre_weaken_rule _ _ _ H).
+Qed.
 
 (* Module Both. *)
 (* Definition code_eq_proof_statement L I (A : choice_type) (functional : A) (state : code L I A) := *)
@@ -49,14 +59,20 @@ Definition true_precond : precond := fun _ => True.
 (*   Pack {sort; _ : class_of L I sort}. *)
 (* End Both. *)
 
-Class cfset :=
-  {
-    L : list Location ;
-    is_sorted : is_true (path.sorted (@Ord.lt _) L) ;
-    is_unique : is_true (@seq.uniq loc_eqType L)
-  }.
-Definition cfset_to_fset : cfset -> {fset Location} := fun x => @FSet.FSet loc_ordType _ (FSet.fset_subproof (@L x)).
-Coercion cfset_to_fset : cfset >-> fset_of.
+(* Class cfset := *)
+(*   { *)
+(*     L : list Location ; *)
+(*     is_sorted : is_true (path.sorted (@Ord.lt _) L) ; *)
+(*     is_unique : is_true (@seq.uniq loc_eqType L) *)
+(*   }. *)
+(* Definition cfset_to_fset : cfset -> {fset Location} := fun x => @FSet.FSet loc_ordType _ (FSet.fset_subproof (@L x)). *)
+(* Coercion cfset_to_fset : cfset >-> fset_of. *)
+
+(* Instance cfset0 : cfset := *)
+(*   {| L := [] ; is_sorted := ltac:(reflexivity) ; is_unique := ltac:(reflexivity) |}. *)
+
+(* Instance cfset1 (ℓ : Location) : cfset := *)
+(*   {| L := [ℓ] ; is_sorted := ltac:(reflexivity) ; is_unique := ltac:(reflexivity) |}. *)
 
 (* Require Import Hacspec_Lib_Comparable. *)
 (* Program Fixpoint merge_undup (L1 L2 : list Location) {measure (length L1 + length L2)%nat} := *)
@@ -92,32 +108,451 @@ Coercion cfset_to_fset : cfset >-> fset_of.
 (* Program Instance cfsetU (x y : cfset) : cfset := *)
 (*   {| L := merge_undup (@L x) (@L y) ; |}. *)
 
-Program Instance cfsetU (x y : cfset) : cfset :=
-  {| L := path.sort Ord.leq (@seq.undup loc_ordType (@L x ++ @L y)) ; |}.
+(* Program Instance cfsetU (x y : cfset) : cfset := *)
+(*   {| L := path.sort Ord.leq (@seq.undup loc_ordType (@L x ++ @L y)) ; |}. *)
+(* Next Obligation. *)
+(*   intros. *)
+(*   apply FSet.fset_subproof. *)
+(* Qed. *)
+(* Next Obligation. *)
+(*   intros. *)
+(*   apply (@path.sorted_uniq loc_ordType Ord.lt ). *)
+(*   - apply Ord.lt_trans. *)
+(*   - unfold ssrbool.irreflexive. *)
+(*     intros. *)
+(*     apply Ord.ltxx. *)
+(*   - apply FSet.fset_subproof.  *)
+(* Qed. *)
+(* Fail Next Obligation. *)
+
+From mathcomp Require Import ssrbool.
+
+Section Both.
+
+  Context (L : {fset Location}).
+  Context (I : Interface).
+
+  Class raw_both (A : choice_type) :=
+    {
+      is_pure : choice.Choice.sort A ;
+      is_state : raw_code A ;
+    }.
+  Arguments is_pure {_} raw_both.
+  Arguments is_state {_} raw_both.
+
+  Inductive valid_both {A} :
+    forall (b : raw_both A), Prop :=
+  | both_valid_ret :
+    forall x, valid_both {| is_pure := x ; is_state := ret x |}
+  | both_valid_putr_getr :
+    forall l k v,
+      l \in L ->
+      (forall v, valid_both (k v)) ->
+      valid_both
+        ({| is_pure := is_pure (k v) ;
+           is_state := putr l v (getr l (fun x => is_state (k x))) |})
+  | both_valid_putr :
+    forall l v k,
+      l \in L ->
+      valid_both k ->
+      valid_both ({| is_pure := is_pure k ; is_state := putr l v (is_state k) |}).
+
+  (* | valid_opr : *)
+  (*   forall o x k, *)
+  (*     o \in import -> *)
+  (*           (forall v, valid_both (k v)) -> *)
+  (*           valid_both ({| is_pure := k v ;  opr o x k |}) *)
+
+  (* | valid_sampler : *)
+  (*   forall op k, *)
+  (*     (forall v, valid_code (k v)) -> *)
+  (*     valid_code (sampler op k) *)
+
+  Class ValidBoth {A} (p : raw_both A) :=
+    { is_valid_code : ValidCode L I (is_state p) ;
+      is_valid_both : @valid_both A p ;
+    }.
+  Arguments is_valid_code {_} {_} ValidBoth.
+  Arguments is_valid_both {_} {_} ValidBoth.
+
+  Record both A :=
+    mk2prog {
+        both_prog :> raw_both A ;
+        both_prog_valid : @ValidBoth A both_prog ;
+        p_eq : ⊢ ⦃ true_precond ⦄ (is_state both_prog) ≈ ret (is_pure both_prog) ⦃ pre_to_post_ret true_precond (is_pure both_prog) ⦄ ;
+      }.
+  Arguments both_prog {_} b.
+  Arguments both_prog_valid {_} b.
+  Arguments p_eq {_} b.
+
+End Both.
+
+Arguments is_pure {_} raw_both.
+Arguments is_state {_} raw_both.
+
+Arguments is_valid_code {_} {_} {_} {_} ValidBoth.
+
+Arguments is_valid_both {_} {_} {_} {_} ValidBoth.
+
+Arguments both_prog {_} {_} {_} b.
+Arguments both_prog_valid {_} {_} {_} b.
+Arguments p_eq {_} {_} {_} b.
+
+Section Both_helper.
+
+  Lemma valid_both_eta :
+    forall {L (* I *)} {A : choice_type} {x : raw_both A},
+      valid_both L (* I *) x ->
+      valid_both L (* I *) {| is_pure := is_pure x ; is_state := is_state x |}.
+  Proof.
+    now intros ? (* ? *) ? [] ?.
+  Defined.
+
+  Lemma ValidBoth_eta :
+    forall {L I} {A : choice_type} {x : both L I A},
+      ValidBoth L I x ->
+      ValidBoth L I {| is_pure := is_pure x ; is_state := is_state x |}.
+  Proof.
+    now intros ? ? ? [[] ? ?] ?.
+  Defined.
+
+  Lemma both_valid_injectLocations :
+    forall A L1 L2 (* I *) (v : raw_both A),
+      fsubset L1 L2 ->
+      valid_both L1 (* I *) v ->
+      valid_both L2 (* I *) v.
+  Proof.
+    intros A L1 L2 (* I *) v h p.
+    induction p ; simpl in * ; intros.
+    + constructor.
+    + apply both_valid_putr_getr ; eauto.
+      eapply injectSubset.
+      apply h.
+      assumption.
+    - constructor ; eauto.
+      eapply injectSubset.
+      apply h.
+      assumption.
+  Qed.
+
+  Lemma valid_injectLocations_both :
+    forall A L1 L2 I (v : raw_both A),
+      fsubset L1 L2 ->
+      ValidBoth L1 I v ->
+      ValidBoth L2 I v.
+  Proof.
+    intros A L1 L2 I v h p.
+    destruct p as [is_valid_code valid_both].
+    constructor.
+    - eapply valid_injectLocations.
+      apply h.
+      apply is_valid_code.
+    - eapply both_valid_injectLocations.
+      apply h.
+      apply valid_both.
+  Qed.
+
+  Lemma valid_injectMap_both :
+    forall A L I1 I2 (v : raw_both A),
+      fsubset I1 I2 ->
+      ValidBoth L I1 v ->
+      ValidBoth L I2 v.
+  Proof.
+    intros A L I1 I2 v h p.
+    destruct p as [is_valid_code valid_both].
+    constructor.
+    - eapply valid_injectMap.
+      apply h.
+      apply is_valid_code.
+    - generalize dependent is_valid_code.
+      induction valid_both ; simpl in *.
+      + constructor.
+      + constructor ; eauto.
+      + constructor ; eauto.
+  Qed.
+
+  Definition bind_raw_both {A B} (c : raw_both A) (k : A -> raw_both B) : raw_both B :=
+    {| is_pure := is_pure (k (is_pure c)) ;
+           is_state := bind (is_state c) (fun x => is_state (k x)) |}.
+
+  Lemma valid_bind_both_ :
+    forall {L1 L2 (* I1 I2 *)} A B c k,
+      valid_both L1 (* I1 *) c ->
+      (forall x, valid_both L2 (* I2 *) {| is_pure := is_pure (k x) ; is_state := is_state (k x) |}) ->
+      `{is_true (fsubset L1 L2)} ->
+      valid_both L2 (@bind_raw_both A B c k).
+  Proof.
+    intros L1 L2 (* I1 I2 *) A B c k Hc Hk Hfsubset.
+    induction Hc ; intros.
+    - apply Hk.
+    - unfold bind_raw_both.
+      simpl.
+      apply (both_valid_putr_getr L2 l (fun l => bind_raw_both (k0 l) k) v (injectSubset Hfsubset H) H1).
+    - apply (both_valid_putr L2 l v (bind_raw_both k0 k) (injectSubset Hfsubset H) IHHc).
+  Qed.
+
+  Lemma valid_bind_both :
+    forall {L1 L2 I1 I2} A B c k,
+      ValidBoth L1 I1 c ->
+      (forall x, ValidBoth L2 I2 (k x)) ->
+      `{fsubset L1 L2} ->
+      `{fsubset I1 I2} ->
+      ValidBoth L2 I2 (@bind_raw_both A B c k).
+  Proof.
+    intros L1 L2 I1 I2 A B c k Hc Hk Hloc Hopsig.
+    constructor ; simpl.
+    - apply valid_bind.
+      eapply valid_injectLocations. apply Hloc.
+      eapply valid_injectMap. apply Hopsig.
+      apply (is_valid_code Hc).
+      apply (fun x => is_valid_code (Hk x)).
+    - eapply valid_bind_both_.
+      apply (is_valid_both Hc).
+      intros.
+      apply valid_both_eta.
+      apply (fun x => is_valid_both (Hk x)).
+      assumption.
+  Qed.
+
+  Instance valid_putr_both :
+    forall {L I A} ℓ v (k : both L I A),
+      ℓ \in L ->
+      ValidBoth L I ({| is_pure := is_pure k ; is_state := #put ℓ := v ;; is_state k |}).
+  Proof.
+    intros.
+    constructor.
+    - simpl.
+      apply valid_putr. assumption.
+      apply k.
+    - apply both_valid_putr. assumption.
+      apply k.
+  Qed. 
+
+  Instance valid_putr_getr_both :
+    forall {L I A} ℓ v (k : _ -> both L I A),
+      ℓ \in L ->
+      (forall v, ValidBoth L I (k v)) ->
+      ValidBoth L I ({| is_pure := is_pure (k v) ;
+           is_state := putr ℓ v (getr ℓ (fun x => is_state (k x))) |}).
+  Proof.
+    intros.
+    constructor.
+    - simpl.
+      apply valid_putr. assumption.
+      apply valid_getr. assumption.
+      apply k.
+    - apply (both_valid_putr_getr L (* I *) ℓ k v H).
+      apply H0.
+  Qed.
+
+  
+  Definition both_ret {A : choice_type} (x : A) : raw_both A :=
+    {| is_pure := x ; is_state := ret x |} .
+
+  Program Definition both_ret_valid {L I} {A : choice_type} (x : A) : ValidBoth L I (both_ret x) :=
+    {| is_valid_code := valid_ret _ _ _ ; is_valid_both := both_valid_ret L (* I *) _ |} 
+    .
+  Fail Next Obligation.
+
+  
+End Both_helper.
+
+Program Definition ret_both {L I} {A : choice_type} (x : A) : both L I A :=
+  {|
+    both_prog := {| is_pure := x ; is_state := ret x |} ;
+    both_prog_valid := {|
+                        is_valid_code := valid_ret L I x ;
+                        is_valid_both := both_valid_ret L x ;
+                      |} ;
+    p_eq := r_ret _ _ _ _ _ ;
+  |}.
+Fail Next Obligation.
+
+Ltac pattern_both Hx Hf Hg :=
+  (match goal with
+   | [ |- context [ @is_state _ ?x : both _ _ _ ] ] =>
+       set (Hx := x)
+       ; try change (@is_pure _ _) with (@is_pure _ Hx)
+       ; match goal with
+         | [ |- context [ ⊢ ⦃ _ ⦄ bind _ ?fb ≈ ?os ⦃ _ ⦄ ] ] =>
+             let H := fresh in
+             set (H := os)
+             ; pattern (@is_pure _ Hx) in H
+             ; subst H
+             ; set (Hf := fb)
+             ; match goal with
+               | [ |- context [ ⊢ ⦃ _ ⦄ _ ≈ ?gb _ ⦃ _ ⦄ ] ] =>
+                   set (Hg := gb)
+               end
+         end
+   end).
+
+Ltac pattern_both_fresh :=
+  let x := fresh in
+  let y := fresh in
+  let z := fresh in
+  pattern_both x y z.
+
+Theorem r_bind_trans :
+  forall {B C : choice_type}
+     (f : choice.Choice.sort B -> raw_code C)
+    (g : choice.Choice.sort B -> raw_code C) (x : raw_code B) (y : choice.Choice.sort B),
+  forall (P P_mid : precond) (Q : postcond (choice.Choice.sort C) (choice.Choice.sort C)),
+  forall (H_x_is_y : ⊢ ⦃ P ⦄ x  ≈ ret y ⦃ pre_to_post_ret P_mid (y) ⦄),
+    (⊢ ⦃ P_mid ⦄ f (y)  ≈ g y ⦃ Q ⦄) ->
+    ⊢ ⦃ P ⦄ temp ← x ;; f temp ≈ g y ⦃ Q ⦄.
+Proof.
+  intros.
+  replace (g y) with (temp ← ret y ;; g temp) by reflexivity.
+
+  pose @r_bind.
+  specialize r with (f₀ := f) (f₁ := fun x => g x).
+  specialize r with (m₀ := x) (m₁ := (ret y)).
+  specialize r with (pre := P) (mid := pre_to_post_ret P_mid y ) (post := Q).
+  apply r ; clear r.
+
+  - apply H_x_is_y.
+  - intros.
+    eapply rpre_hypothesis_rule.
+    intros ? ? [[] ?]. subst.
+    eapply rpre_weaken_rule.
+    cbn in H2.
+    subst.
+    apply H.
+    intros ? ? []. subst. apply H2.
+Qed.
+
+Theorem r_bind_trans_both : forall {B C : choice_type} {L I} {f : choice.Choice.sort B -> raw_code C} {g : choice.Choice.sort B -> raw_code C} (b : both L I B),
+  forall (P : precond) (Q : postcond _ _),
+    (⊢ ⦃ true_precond ⦄ f ((is_pure b))  ≈ g (is_pure b) ⦃ Q ⦄) ->
+    ⊢ ⦃ P ⦄ temp ← is_state b ;; f temp ≈ g (is_pure b) ⦃ Q ⦄.
+Proof.
+  intros.
+  apply r_bind_trans with (P_mid := true_precond).
+
+  eapply rpre_weaken_rule.
+  apply p_eq.
+  reflexivity.
+
+  apply H.
+Qed.
+
+Ltac match_bind_trans_both :=
+  let Hx := fresh in
+  let Hf := fresh in
+  let Hg := fresh in
+  pattern_both Hx Hf Hg
+  ; apply (@r_bind_trans_both) with (b := Hx) (f := Hf) (g := Hg)
+  ; intros ; subst Hf ; subst Hg ; subst Hx ; hnf.
+
+Ltac r_bind_both a :=
+  eapply r_bind ; [ apply (p_eq a) | ] ;
+  intros ;
+  apply rpre_hypothesis_rule ;
+  intros ? ? [[] []] ; subst ;
+  apply forget_precond.
+
+Ltac r_subst_both a :=
+  let x := fresh in
+  let y := fresh in
+  let z := fresh in
+  pattern_both x y z ;
+  change (z _) with (temp ← ret (is_pure x) ;; z temp) ;
+  r_bind_both a ;
+  subst x y z ; hnf.
+
+Program Definition bind_both {L1 L2 I1 I2} {A B} (c : both L1 I1 A) (k : A -> both L2 I2 B) `{fsubset_loc : fsubset L1 L2} `{fsubset_opsig : fsubset I1 I2} : both L2 I2 B :=
+  {|
+    both_prog := bind_raw_both (both_prog c) (fun x => both_prog (k x)) ;
+    both_prog_valid := valid_bind_both A B c k (both_prog_valid c) (fun x => both_prog_valid (k x)) _ _ ;
+  |}.
 Next Obligation.
   intros.
-  apply FSet.fset_subproof.
+  r_subst_both c.
+  apply (k (is_pure c)).
+Qed.
+
+Definition lift_both {L1 L2 I1 I2} {A} (x : both L1 I1 A) `{fsubset_loc : is_true (fsubset L1 L2)} `{fsubset_opsig : is_true (fsubset I1 I2)} : both L2 I2 A :=
+    {| both_prog := x ;
+      both_prog_valid := valid_injectLocations_both A L1 L2 I2 x fsubset_loc (valid_injectMap_both A L1 I1 I2 x fsubset_opsig (both_prog_valid x)) ;
+      p_eq := p_eq x |}.
+
+Equations lift1_both {A B : choice_type} {L : {fset Location}} {I : Interface} (f : A -> B) (x : both L I A)
+        (* `{H_loc_incl_x : is_true (fsubset L1 L2)} `{H_opsig_incl_x : is_true (fsubset I1 I2)} *)
+  : both L I B
+  :=
+  lift1_both f x := bind_both x (fun x' => ret_both (f x')).
+Next Obligation.
+  intros.
+  apply fsubsetxx.
 Qed.
 Next Obligation.
   intros.
-  apply (@path.sorted_uniq loc_ordType Ord.lt ).
-  - apply Ord.lt_trans.
-  - unfold ssrbool.irreflexive.
-    intros.
-    apply Ord.ltxx.
-  - apply FSet.fset_subproof. 
+  apply fsubsetxx.
 Qed.
 Fail Next Obligation.
 
-Class both (L : cfset)
-      I (A : choice_type) :=
-  {
-    is_pure : choice.Choice.sort A ;
-    is_state : code (cfset_to_fset L) I A ;
-    code_eq_proof_statement :
-    ⊢ ⦃ true_precond ⦄ is_state ≈ ret (is_pure)
-      ⦃ pre_to_post_ret true_precond (is_pure) ⦄
-  }.
+Equations lift2_both {A B C : choice_type} {L1 L2 (* L3 *) : {fset Location}} {I1 I2 (* I3 *) : Interface} (f : A -> B -> C) (x : both L1 I1 A) (y : both L2 I2 B)
+        (* `{H_loc_incl_x : is_true (fsubset L1 L3)} `{H_opsig_incl_x : is_true (fsubset I1 I3)} *)
+        (* `{H_loc_incl_y : is_true (fsubset L2 L3)} `{H_opsig_incl_y : is_true (fsubset I2 I3)} *)
+  : both (L1 :|: L2) (* L3 *) (I1 :|: I2) (* I3 *) C
+  :=
+  lift2_both f x y :=
+    bind_both x (fun x' =>
+    (* lift1_both (f x') y *)
+    bind_both y (fun y' =>
+    ret_both (f x' y'))).
+Next Obligation.
+  intros. apply fsubsetUr.
+Qed.
+Next Obligation.
+  intros. apply fsubsetUr.
+Qed.
+Next Obligation.
+  intros. apply fsubsetUl.
+Qed.
+Next Obligation.
+  intros. apply fsubsetUl.
+Qed.
+Fail Next Obligation.
+
+Equations lift3_both {A B C D : choice_type} {L1 L2 L3 (* L4 *) : {fset Location}} {I1 I2 I3 (* I4 *) : Interface} (f : A -> B -> C -> D) (x : both L1 I1 A) (y : both L2 I2 B) (z : both L3 I3 C)
+        (* `{H_loc_incl_x : is_true (fsubset L1 L4)} `{H_opsig_incl_x : is_true (fsubset I1 I4)} *)
+        (* `{H_loc_incl_y : is_true (fsubset L2 L4)} `{H_opsig_incl_y : is_true (fsubset I2 I4)} *)
+        (* `{H_loc_incl_z : is_true (fsubset L3 L4)} `{H_opsig_incl_z : is_true (fsubset I3 I4)} *)
+  : both (L1 :|: L2 :|: L3) (* L4 *) (I1 :|: I2 :|: I3) (* I4 *) D :=
+  lift3_both f x y z :=
+  bind_both x (fun x' => lift_both (lift2_both (f x') y z)).
+Next Obligation.
+  intros.
+  rewrite <- fsetUA.
+  apply fsubsetUr.
+Qed.
+Next Obligation.
+  intros.
+  rewrite <- fsetUA.
+  apply fsubsetUr.
+Qed.
+Next Obligation.
+  intros.
+  rewrite <- fsetUA.
+  apply fsubsetUl.
+Qed.
+Next Obligation.
+  intros.
+  rewrite <- fsetUA.
+  apply fsubsetUl.
+Qed.
+Fail Next Obligation.
+
+(* Class both (L : {fset Location}) I (A : choice_type) := *)
+(*   { *)
+(*     is_pure : choice.Choice.sort A ; *)
+(*     is_state : code L I A ; *)
+(*     code_eq_proof_statement : *)
+(*     ⊢ ⦃ true_precond ⦄ is_state ≈ ret (is_pure) *)
+(*       ⦃ pre_to_post_ret true_precond (is_pure) ⦄ *)
+(*   }. *)
 
 (* Class both L I (A : choice_type) := *)
 (*   { *)
@@ -128,16 +563,16 @@ Class both (L : cfset)
 (*       ⦃ pre_to_post_ret true_precond (is_pure) ⦄ *)
 (*   }. *)
 
-Arguments is_pure {_} {_} {_} both.
-Arguments is_state {_} {_} {_} both.
-Arguments code_eq_proof_statement {_} {_} {_} both.
+(* Arguments is_pure {_} {_} {_} both. *)
+(* Arguments is_state {_} {_} {_} both. *)
+(* Arguments code_eq_proof_statement {_} {_} {_} both. *)
 
-Coercion is_pure : both >-> choice.Choice.sort.
-Coercion is_state : both >-> code.
+(* Coercion is_pure : both >-> choice.Choice.sort. *)
+(* Coercion is_state : both >-> code. *)
 
-Definition both_fun L I (A B : choice_type) :=
-  ∑ (is_pure_f : choice.Choice.sort A -> choice.Choice.sort B) (is_state_f : code L I A -> code L I B),
-    forall (x : both L I A), ⊢ ⦃ true_precond ⦄ is_state_f x ≈ ret (is_pure_f x) ⦃ pre_to_post_ret true_precond (is_pure_f (is_pure x)) ⦄.
+(* Definition both_fun (L : cfset) I (A B : choice_type) := *)
+(*   ∑ (is_pure_f : choice.Choice.sort A -> choice.Choice.sort B) (is_state_f : code L I A -> code L I B), *)
+(*     forall (x : both L I A), ⊢ ⦃ true_precond ⦄ is_state_f x ≈ ret (is_pure_f x) ⦃ pre_to_post_ret true_precond (is_pure_f (is_pure x)) ⦄. *)
 
 (* Lemma helper : *)
 (*   forall (o : opsigCE), *)
@@ -427,159 +862,127 @@ Fixpoint chElement_ordType_ce_to_ce (ce : choice_type) (X : ce) : chElement_ordT
 (*   now apply r_ret. *)
 (* Defined. *)
 
-Notation "'lift_to_both' x" :=
-  ({| is_pure := x ;
-    is_state := {code ret x #with valid_ret _ _ x };
-    code_eq_proof_statement := r_ret x x true_precond (pre_to_post_ret true_precond x) (fun (s₀ s₁ : heap) => conj (conj eq_refl eq_refl))
-  |}) (at level 100).
-Check lift_to_both _.
-Notation both0 := (both fset.fset0 [interface]).
+(* Notation "'lift_to_both' x" := *)
+(*   ({| is_pure := x ; *)
+(*     is_state := {code ret x #with valid_ret _ _ x }; *)
+(*     code_eq_proof_statement := r_ret x x true_precond (pre_to_post_ret true_precond x) (fun (s₀ s₁ : heap) => conj (conj eq_refl eq_refl)) *)
+(*   |}) (at level 100). *)
+(* Notation both0 := (both (fset []) [interface]). *)
 (* Notation lift_to_both0 := (@lift_to_both _ fset.fset0 [interface]). *)
 
-Definition lift_code_scope {L1 L2 : {fset Location}} {I1 I2 : {fset opsig}} {A} (c : code L1 I1 A) `{H_loc_incl : List.incl L1 L2} `{H_opsig_incl : List.incl I1 I2} : code L2 I2 A :=
-  {code (prog c) #with
-    (@valid_injectMap L2 A I1 I2 _ (proj2 (opsig_list_incl_fsubset _ _) H_opsig_incl) (@valid_injectLocations I1 A L1 L2 _ (proj2 (loc_list_incl_fsubset _ _) H_loc_incl) (prog_valid c))) }.
+(* Definition lift_code_scope {L1 L2 : {fset Location}} {I1 I2 : {fset opsig}} {A} (c : code L1 I1 A) `{H_loc_incl : List.incl L1 L2} `{H_opsig_incl : List.incl I1 I2} : code L2 I2 A := *)
+(*   {code (prog c) #with *)
+(*     (@valid_injectMap L2 A I1 I2 _ (proj2 (opsig_list_incl_fsubset _ _) H_opsig_incl) (@valid_injectLocations I1 A L1 L2 _ (proj2 (loc_list_incl_fsubset _ _) H_loc_incl) (prog_valid c))) }. *)
 
-Definition lift_scope {L1 L2 : {fset Location}} {I1 I2 : {fset opsig}} {A} (b : both L1 I1 A) `{H_loc_incl : List.incl L1 L2} `{H_opsig_incl : List.incl I1 I2} : both L2 I2 A :=
-  {|
-    is_pure := is_pure b ;
-    is_state := lift_code_scope (H_loc_incl := H_loc_incl) (H_opsig_incl := H_opsig_incl) (is_state b) ;
-    code_eq_proof_statement := code_eq_proof_statement b
-  |}.
-Definition lift_scopeI
-  {L1 L2 : {fset Location}} {I : {fset opsig}} {A} (b : both L1 I A) `{H_loc_incl : List.incl L1 L2} : both L2 I A :=
-  {|
-    is_pure := is_pure b ;
-    is_state := lift_code_scope (H_loc_incl := H_loc_incl) (H_opsig_incl := incl_refl _) (is_state b) ;
-    code_eq_proof_statement := code_eq_proof_statement b
-  |}.
+(* Program Definition lift_scope {L1 L2 : {fset Location}} {I1 I2 : {fset opsig}} {A} (b : both L1 I1 A) : both L2 I2 A := *)
+(*   {| *)
+(*     both_prog := both_prog b ; *)
+(*   |}. *)
+(* Next Obligation. *)
+(*   intros. *)
+(*   apply (@valid_injectMap L2 A I1 I2 _ ). *)
+  
+(*     {| *)
+(*       prog := {| is_pure := is_pure b ; prog (is_state b) |} ; *)
+(*     is_state := {code (prog (is_state b)) #with *)
+(*     (@valid_injectMap L2 A I1 I2 _ (proj2 (opsig_list_incl_fsubset _ _) H_opsig_incl) (@valid_injectLocations I1 A L1 L2 _ (proj2 (loc_list_incl_fsubset _ _) H_loc_incl) (prog_valid (is_state b)))) } ; *)
+(*     code_eq_proof_statement := code_eq_proof_statement b *)
+(*   |}. *)
 
-Definition lift_scope0 {L I} {A} (b : both fset.fset0 [interface] A) : both L I A :=
-  lift_scope (H_loc_incl := incl_nil_l _) (H_opsig_incl := ltac:(rewrite <- fset0E ; apply incl_nil_l)) b.
+(* Definition lift_scope {L1 L2 : {fset Location}} {I1 I2 : {fset opsig}} {A} (b : both L1 I1 A) `{H_loc_incl : List.incl L1 L2} `{H_opsig_incl : List.incl I1 I2} : both L2 I2 A := *)
+(*   {| *)
+(*     is_pure := is_pure b ; *)
+(*     is_state := lift_code_scope (H_loc_incl := H_loc_incl) (H_opsig_incl := H_opsig_incl) (is_state b) ; *)
+(*     code_eq_proof_statement := code_eq_proof_statement b *)
+(*   |}. *)
 
-Instance both_comparable {A : choice_type} `{Comparable (choice.Choice.sort A)} {L I} : Comparable (both L I A) :=
-  {|
-    ltb x y := ltb (is_pure x) (is_pure y) ;
-    leb x y := leb (is_pure x) (is_pure y) ;
-    gtb x y := gtb (is_pure x) (is_pure y) ;
-    geb x y := geb (is_pure x) (is_pure y)
-  |}.
+(* Definition lift_scopeI *)
+(*   {L1 L2 : {fset Location}} {I : {fset opsig}} {A} (b : both L1 I A) `{H_loc_incl : List.incl L1 L2} : both L2 I A := *)
+(*   {| *)
+(*     is_pure := is_pure b ; *)
+(*     is_state := lift_code_scope (H_loc_incl := H_loc_incl) (H_opsig_incl := incl_refl _) (is_state b) ; *)
+(*     code_eq_proof_statement := code_eq_proof_statement b *)
+(*   |}. *)
 
-Theorem forget_precond {B} (x y : raw_code B) P Q :
-  ⊢ ⦃ true_precond ⦄ x ≈ y ⦃ Q ⦄ ->
-  ⊢ ⦃ P ⦄ x ≈ y ⦃ Q ⦄.
-Proof.
+(* Definition lift_scope0 {L I} {A} (b : both fset0 [interface] A) : both L I A := *)
+(*   lift_scope (H_loc_incl := incl_nil_l _) (H_opsig_incl := ltac:(rewrite <- fset0E ; apply incl_nil_l)) b. *)
+
+(* (* TODO: *) *)
+(* Instance both_comparable {A : choice_type} `{Comparable (choice.Choice.sort A)} {L I} : Comparable (both L I A) := *)
+(*   {| *)
+(*     ltb x y := ltb (is_pure x) (is_pure y) ; *)
+(*     leb x y := leb (is_pure x) (is_pure y) ; *)
+(*     gtb x y := gtb (is_pure x) (is_pure y) ; *)
+(*     geb x y := geb (is_pure x) (is_pure y) *)
+(*   |}. *)
+
+(* Goal forall (L1 L2 : cfset), True. *)
+(*   intros. *)
+(*   assert (cfsetU L1 L2 = cfsetU L2 L1). *)
+  
+
+(* Theorem valid_cfsetUl : *)
+(*   forall A (L1 L2 : cfset) I (c : raw_code A), *)
+(*   valid_code L1 I c -> *)
+(*   valid_code (cfsetU L1 L2) I c. *)
+(* Proof. *)
+(*   intros. *)
+(*   apply valid_injectLocations with (L1 := L1). *)
+(*   destruct L1. *)
+(*   unfold cfset_to_fset in *. *)
+(*   cbn. *)
+
+  
+(*   intros. *)
+(*   destruct L2. *)
+(*   induction L0. *)
+(*   - unfold cfsetU. *)
+(*     cbn. *)
+
+Equations prod_both {ceA ceB : choice_type} {L1 L2 (* L3 *) : {fset Location}} {I1 I2 (* I3 *) : {fset _}} (a : both L1 I1 ceA) (b : both L2 I2 ceB) (* `{fsubset L1 L3} `{fsubset I1 I3} `{fsubset L2 L3} `{fsubset I2 I3} *) : both (L1 :|: L2) (I1 :|: I2) (ceA × ceB) :=
+  prod_both a b :=
+    bind_both a (fun a' =>
+    bind_both b (fun b' =>
+    ret_both ((a', b') : _ × _))).
+Next Obligation.
   intros.
-  now apply (rpre_weaken_rule _ _ _ H).
+  apply fsubsetUr.
 Qed.
-
-Program Instance prod_both {ceA ceB : choice_type} {L1 L2 : {fset _}} {I1 I2 : {fset _}} (a : both L1 I1 ceA) (b : both L2 I2 ceB) : both (L1 :|: L2) (I1 :|: I2) (ceA × ceB) :=
-  {|
-    is_pure := (is_pure a , is_pure b) ;
-    is_state :=
-    {code
-       x ← a ;;
-       y ← b ;;
-       @ret (chProd _ _) (x , y)
-    }
-  |}.
 Next Obligation.
   intros.
-  ssprove_valid.
-  apply valid_injectLocations with (L1 := L1). apply fsubsetUl.
-  apply @valid_injectMap with (I1 := I1). apply fsubsetUl.
-  apply (is_state a).
-
-  apply valid_injectLocations with (L1 := L2). apply fsubsetUr.
-  apply @valid_injectMap with (I1 := I2). apply fsubsetUr.
-  apply (is_state b).
-Defined.
+  apply fsubsetUr.
+Qed.
 Next Obligation.
   intros.
-
-  set (r := ret _).
-  pattern (is_pure a) in r.
-  set (g := fun _ => _) in r.
-  subst r.
-  replace (g a) with (bind (ret a) g) by reflexivity.
-  subst g. hnf.
-
-  eapply r_bind ; [ apply (code_eq_proof_statement a) | ].
+  apply fsubsetUl.
+Qed.
+Next Obligation.
   intros.
-  apply rpre_hypothesis_rule.
-  intros ? ? [[] []]. subst.
-  apply forget_precond.
-
-  set (r := ret _).
-  pattern (is_pure b) in r.
-  set (g := fun _ => _) in r.
-  subst r.
-  replace (g b) with (bind (ret b) g) by reflexivity.
-  subst g. hnf.
-
-  eapply r_bind ; [ apply (code_eq_proof_statement b) | ].
-  intros.
-  apply rpre_hypothesis_rule.
-  intros ? ? [[] []]. subst.
-  apply forget_precond.
-
-  apply r_ret.
-  intros ? ? []. easy.
-Defined.
+  apply fsubsetUl.
+Qed.
+Fail Next Obligation.
 Notation "prod_b( a , b )" := (prod_both a b) : hacspec_scope.
 Notation "prod_b( a , b , .. , c )" := (prod_both .. (prod_both a b) .. c) : hacspec_scope.
 
-Program Instance prod_both0 {ceA ceB : choice_type} {L : {fset _}} {I : {fset _}} (a : both L I ceA) (b : both L I ceB) : both (L) (I) (ceA × ceB) :=
-  {|
-    is_pure := (is_pure a , is_pure b) ;
-    is_state :=
-    {code
-       x ← a ;;
-       y ← b ;;
-       @ret (chProd _ _) (x , y)
-    }
-  |}.
+(* Equations *) Program Definition prod_both0 {ceA ceB : choice_type} {L : {fset _}} {I : {fset _}} (a : both L I ceA) (b : both L I ceB) : both (L) (I) (ceA × ceB) :=
+  (* prod_both0 a b := *)
+  prod_both a b.
 Next Obligation.
-  intros.
+  intros. apply fsetUid.
+Qed.
+Next Obligation.
+  intros. apply fsetUid.
+Qed.
+Fail Next Obligation.
 
-  set (r := ret _).
-  pattern (is_pure a) in r.
-  set (g := fun _ => _) in r.
-  subst r.
-  replace (g a) with (bind (ret a) g) by reflexivity.
-  subst g. hnf.
+(* Notation "prod_b0( a , b )" := (prod_both0 a b) : hacspec_scope. *)
+(* Notation "prod_b0( a , b , .. , c )" := (prod_both0 .. (prod_both0 a b) .. c) : hacspec_scope. *)
 
-  eapply r_bind ; [ apply (code_eq_proof_statement a) | ].
-  intros.
-  apply rpre_hypothesis_rule.
-  intros ? ? [[] []]. subst.
-  apply forget_precond.
+(* Ltac ssprove_valid_fset T := *)
+(*   apply (fset_compute (T:=T)) ; try apply -> (in_remove_fset (T:=T)) ; repeat (try (left ; reflexivity) ; right) ; try reflexivity. *)
 
-  set (r := ret _).
-  pattern (is_pure b) in r.
-  set (g := fun _ => _) in r.
-  subst r.
-  replace (g b) with (bind (ret b) g) by reflexivity.
-  subst g. hnf.
-
-  eapply r_bind ; [ apply (code_eq_proof_statement b) | ].
-  intros.
-  apply rpre_hypothesis_rule.
-  intros ? ? [[] []]. subst.
-  apply forget_precond.
-
-  apply r_ret.
-  intros ? ? []. easy.
-Defined.
-
-Notation "prod_b0( a , b )" := (prod_both0 a b) : hacspec_scope.
-Notation "prod_b0( a , b , .. , c )" := (prod_both0 .. (prod_both0 a b) .. c) : hacspec_scope.
-
-Ltac ssprove_valid_fset T :=
-  apply (fset_compute (T:=T)) ; try apply -> (in_remove_fset (T:=T)) ; repeat (try (left ; reflexivity) ; right) ; try reflexivity.
-
-Ltac ssprove_valid_location := ssprove_valid_fset loc_ordType.
-Ltac ssprove_valid_opsig := ssprove_valid_fset opsig_ordType.
+(* Ltac ssprove_valid_location := ssprove_valid_fset loc_ordType. *)
+(* Ltac ssprove_valid_opsig := ssprove_valid_fset opsig_ordType. *)
 
 Ltac ssprove_valid_program :=
   try (apply prog_valid) ;
@@ -608,24 +1011,24 @@ Ltac destruct_choice_type_prod :=
          end ;
   cbv zeta.
 
-Theorem single_mem : forall m,
-Datatypes.is_true
-    (@ssrbool.in_mem
-       (Ord.sort (@tag_ordType choice_type_ordType (fun _ : choice_type => nat_ordType)))
-       m
-       (@ssrbool.mem
-          (Ord.sort
-             (@tag_ordType choice_type_ordType (fun _ : choice_type => nat_ordType)))
-          (fset_predType
-             (@tag_ordType choice_type_ordType (fun _ : choice_type => nat_ordType)))
-          (@fset (@tag_ordType choice_type_ordType (fun _ : choice_type => nat_ordType))
-             (@cons (@sigT choice_type (fun _ : choice_type => nat)) m
-                    (@nil (@sigT choice_type (fun _ : choice_type => nat))))))).
-Proof.
-  intros.
-  rewrite <- (@fset1E (@tag_ordType choice_type_ordType (fun _ : choice_type => nat_ordType))).
-  rewrite (ssrbool.introT (fset1P _ _)) ; reflexivity.
-Qed.
+(* Theorem single_mem : forall m, *)
+(* Datatypes.is_true *)
+(*     (@ssrbool.in_mem *)
+(*        (Ord.sort (@tag_ordType choice_type_ordType (fun _ : choice_type => nat_ordType))) *)
+(*        m *)
+(*        (@ssrbool.mem *)
+(*           (Ord.sort *)
+(*              (@tag_ordType choice_type_ordType (fun _ : choice_type => nat_ordType))) *)
+(*           (fset_predType *)
+(*              (@tag_ordType choice_type_ordType (fun _ : choice_type => nat_ordType))) *)
+(*           (@fset (@tag_ordType choice_type_ordType (fun _ : choice_type => nat_ordType)) *)
+(*              (@cons (@sigT choice_type (fun _ : choice_type => nat)) m *)
+(*                     (@nil (@sigT choice_type (fun _ : choice_type => nat))))))). *)
+(* Proof. *)
+(*   intros. *)
+(*   rewrite <- (@fset1E (@tag_ordType choice_type_ordType (fun _ : choice_type => nat_ordType))). *)
+(*   rewrite (ssrbool.introT (fset1P _ _)) ; reflexivity. *)
+(* Qed. *)
 
 Theorem tag_leq_simplify :
   forall (a b : Location),
@@ -712,43 +1115,43 @@ Proof.
       reflexivity.
 Qed.
 
-Ltac loc_incl_compute :=
-  now (try apply -> loc_list_incl_remove_fset ; apply loc_list_incl_expand ; (now repeat (split ; [ repeat ((left ; reflexivity) || (right)) | ]))).
+(* Ltac loc_incl_compute := *)
+(*   now (try apply -> loc_list_incl_remove_fset ; apply loc_list_incl_expand ; (now repeat (split ; [ repeat ((left ; reflexivity) || (right)) | ]))). *)
 
-Ltac opsig_incl_compute :=
-  now (try apply -> opsig_list_incl_remove_fset ; apply opsig_list_incl_expand ; (now repeat (split ; [ repeat ((left ; reflexivity) || (right)) | ]))).
+(* Ltac opsig_incl_compute := *)
+(*   now (try apply -> opsig_list_incl_remove_fset ; apply opsig_list_incl_expand ; (now repeat (split ; [ repeat ((left ; reflexivity) || (right)) | ]))). *)
 
-Lemma valid_subset_fset :
-  forall xs ys I {ct} c,
-    List.incl (xs) (ys) ->
-    ValidCode (fset xs) I c ->
-    @ValidCode (fset ys) I ct c.
-Proof.
-  intros.
-  apply (valid_injectLocations) with (L1 := fset xs).
-  - apply loc_list_incl_fsubset.
-    apply -> loc_list_incl_remove_fset.
-    apply H.
-  - apply H0.
-Qed.
+(* Lemma valid_subset_fset : *)
+(*   forall xs ys I {ct} c, *)
+(*     List.incl (xs) (ys) -> *)
+(*     ValidCode (fset xs) I c -> *)
+(*     @ValidCode (fset ys) I ct c. *)
+(* Proof. *)
+(*   intros. *)
+(*   apply (valid_injectLocations) with (L1 := fset xs). *)
+(*   - apply loc_list_incl_fsubset. *)
+(*     apply -> loc_list_incl_remove_fset. *)
+(*     apply H. *)
+(*   - apply H0. *)
+(* Qed. *)
 
-Lemma valid_subset :
-  forall (xs ys : {fset Location}) I {ct} c,
-    List.incl (xs) (ys) ->
-    ValidCode (xs) I c ->
-    @ValidCode (ys) I ct c.
-Proof.
-  intros.
-  apply (valid_injectLocations) with (L1 := xs).
-  - apply loc_list_incl_fsubset.
-    apply H.
-  - apply H0.
-Qed.
+(* Lemma valid_subset : *)
+(*   forall (xs ys : {fset Location}) I {ct} c, *)
+(*     List.incl (xs) (ys) -> *)
+(*     ValidCode (xs) I c -> *)
+(*     @ValidCode (ys) I ct c. *)
+(* Proof. *)
+(*   intros. *)
+(*   apply (valid_injectLocations) with (L1 := xs). *)
+(*   - apply loc_list_incl_fsubset. *)
+(*     apply H. *)
+(*   - apply H0. *)
+(* Qed. *)
 
 Ltac valid_program :=
   apply prog_valid
   || (apply valid_scheme ; try rewrite <- fset.fset0E ; apply prog_valid)
-  || (eapply (valid_subset_fset) ; [ | apply prog_valid ] ; loc_incl_compute).
+  (* || (eapply (valid_subset_fset) ; [ | apply prog_valid ] ; loc_incl_compute) *).
 
 
 Definition heap_ignore_post fset {A} : postcond A A :=
@@ -833,35 +1236,6 @@ Qed.
 Theorem r_bind_eq : forall {B C : choice_type} (y : choice.Choice.sort B) (g : choice.Choice.sort B  -> raw_code C), (temp ← ret y ;; g temp) = g y.
 Proof. reflexivity. Qed.
 
-Theorem r_bind_trans :
-  forall {B C : choice_type}
-     (f : choice.Choice.sort B -> raw_code C)
-    (g : choice.Choice.sort B -> raw_code C) (x : raw_code B) (y : choice.Choice.sort B),
-  forall (P P_mid : precond) (Q : postcond (choice.Choice.sort C) (choice.Choice.sort C)),
-  forall (H_x_is_y : ⊢ ⦃ P ⦄ x  ≈ ret y ⦃ pre_to_post_ret P_mid (y) ⦄),
-    (⊢ ⦃ P_mid ⦄ f (y)  ≈ g y ⦃ Q ⦄) ->
-    ⊢ ⦃ P ⦄ temp ← x ;; f temp ≈ g y ⦃ Q ⦄.
-Proof.
-  intros.
-  replace (g y) with (temp ← ret y ;; g temp) by reflexivity.
-
-  pose @r_bind.
-  specialize r with (f₀ := f) (f₁ := fun x => g x).
-  specialize r with (m₀ := x) (m₁ := (ret y)).
-  specialize r with (pre := P) (mid := pre_to_post_ret P_mid y ) (post := Q).
-  apply r ; clear r.
-
-  - apply H_x_is_y.
-  - intros.
-    eapply rpre_hypothesis_rule.
-    intros ? ? [[] ?]. subst.
-    eapply rpre_weaken_rule.
-    cbn in H2.
-    subst.
-    apply H.
-    intros ? ? []. subst. apply H2.
-Qed.
-
 Theorem r_bind_trans' :
   forall {B C : choice_type}
      (f : choice.Choice.sort B -> raw_code C)
@@ -910,60 +1284,45 @@ Proof.
     apply H.
 Qed.
 
-Lemma heap_ignore_remove_set_heap :
-  forall {fset} {s₀ s₁ : heap} {ℓ v},
-  is_true (ssrbool.in_mem ℓ (ssrbool.mem fset)) ->
-  heap_ignore (fset) (s₀, s₁) ->
-  heap_ignore (fset) (set_heap s₀ ℓ v, s₁).
-Proof.
-  intros.
-  unfold heap_ignore.
-  intros.
-  unfold heap_ignore in H0.
-  specialize (H0 ℓ0 ltac:(assumption)).
-  rewrite <- H0.
-  rewrite <- get_heap_set_heap.
-  reflexivity.
+(* Lemma heap_ignore_remove_set_heap : *)
+(*   forall {fset} {s₀ s₁ : heap} {ℓ v}, *)
+(*   is_true (ssrbool.in_mem ℓ (ssrbool.mem fset)) -> *)
+(*   heap_ignore (fset) (s₀, s₁) -> *)
+(*   heap_ignore (fset) (set_heap s₀ ℓ v, s₁). *)
+(* Proof. *)
+(*   intros. *)
+(*   unfold heap_ignore. *)
+(*   intros. *)
+(*   unfold heap_ignore in H0. *)
+(*   specialize (H0 ℓ0 ltac:(assumption)). *)
+(*   rewrite <- H0. *)
+(*   rewrite <- get_heap_set_heap. *)
+(*   reflexivity. *)
 
-  destruct (@eqtype.eq_op
-          (@eqtype.tag_eqType choice_type_eqType
-                              (fun _ : choice_type => ssrnat.nat_eqType)) ℓ0 ℓ) eqn:ℓ_eq.
-  - apply (ssrbool.elimT eqtype.eqP) in ℓ_eq.
-    subst.
-    exfalso.
-    apply (ssrbool.elimT ssrbool.negP) in H.
-    + apply H.
-    + assumption.
-  - reflexivity.
-Qed.
+(*   destruct (@eqtype.eq_op *)
+(*           (@eqtype.tag_eqType choice_type_eqType *)
+(*                               (fun _ : choice_type => ssrnat.nat_eqType)) ℓ0 ℓ) eqn:ℓ_eq. *)
+(*   - apply (ssrbool.elimT eqtype.eqP) in ℓ_eq. *)
+(*     subst. *)
+(*     exfalso. *)
+(*     apply (ssrbool.elimT ssrbool.negP) in H. *)
+(*     + apply H. *)
+(*     + assumption. *)
+(*   - reflexivity. *)
+(* Qed. *)
 
-Lemma isolate_mem_section :
-  forall (fset : {fset Location}) ℓ  fset_head fset_tail,
-    is_true (ssrbool.in_mem ℓ (ssrbool.mem fset)) ->
-    is_true (ssrbool.in_mem ℓ (ssrbool.mem (fset_head :|: fset :|: fset_tail))).
-Proof.
-  intros.
-  apply fset_compute. apply in_split_fset_cat ; left ; apply in_split_fset_cat ; right.
-  apply fset_compute. apply H.
-Qed.
+(* Lemma isolate_mem_section : *)
+(*   forall (fset : {fset Location}) ℓ  fset_head fset_tail, *)
+(*     is_true (ssrbool.in_mem ℓ (ssrbool.mem fset)) -> *)
+(*     is_true (ssrbool.in_mem ℓ (ssrbool.mem (fset_head :|: fset :|: fset_tail))). *)
+(* Proof. *)
+(*   intros. *)
+(*   apply fset_compute. apply in_split_fset_cat ; left ; apply in_split_fset_cat ; right. *)
+(*   apply fset_compute. apply H. *)
+(* Qed. *)
 
-Ltac solve_heap_ignore_remove_set_heap :=
-  apply (heap_ignore_remove_set_heap) ; [ apply isolate_mem_section ; apply fset_compute ; apply -> in_remove_fset ; cbn ; repeat (left ; reflexivity || right || reflexivity) | assumption ].
-
-Theorem r_bind_trans_both : forall {B C : choice_type} {L I} {f : choice.Choice.sort B -> raw_code C} {g : choice.Choice.sort B -> raw_code C} (b : both L I B),
-  forall (P : precond) (Q : postcond _ _),
-    (⊢ ⦃ true_precond ⦄ f ((is_pure b))  ≈ g (is_pure b) ⦃ Q ⦄) ->
-    ⊢ ⦃ P ⦄ temp ← is_state b ;; f temp ≈ g (is_pure b) ⦃ Q ⦄.
-Proof.
-  intros.
-  apply r_bind_trans with (P_mid := true_precond).
-
-  eapply rpre_weaken_rule.
-  apply code_eq_proof_statement.
-  reflexivity.
-
-  apply H.
-Qed.
+(* Ltac solve_heap_ignore_remove_set_heap := *)
+(*   apply (heap_ignore_remove_set_heap) ; [ apply isolate_mem_section ; apply fset_compute ; apply -> in_remove_fset ; cbn ; repeat (left ; reflexivity || right || reflexivity) | assumption ]. *)
 
 
 Ltac solve_post_from_pre :=
@@ -975,7 +1334,7 @@ Ltac solve_post_from_pre :=
       || (apply restore_set_lhs in H
          ; [ assumption
            | intros ? ?
-             ; solve_heap_ignore_remove_set_heap ] )).
+             (* ; solve_heap_ignore_remove_set_heap *) ] )).
 
 Corollary better_r :
   forall {A B : choice.Choice.type}
@@ -1082,97 +1441,27 @@ Proof.
   apply H.
 Qed.
 
-Ltac pattern_both Hx Hf Hg :=
-  (match goal with
-   | [ |- context [ prog (@is_state ?L ?I _ ?x) : both _ _ _ ] ] =>
-       set (Hx := x)
-       ; try replace (@is_pure _ _ _ _) with (@is_pure _ _ _ Hx) by reflexivity
-       ; match goal with
-         | [ |- context [ ⊢ ⦃ _ ⦄ bind _ ?fb ≈ ?os ⦃ _ ⦄ ] ] =>
-             let H := fresh in
-             set (H := os)
-             ; pattern (@is_pure L I _ Hx) in H
-             ; subst H
-             ; set (Hf := fb)
-             ; match goal with
-               | [ |- context [ ⊢ ⦃ _ ⦄ _ ≈ ?gb _ ⦃ _ ⦄ ] ] =>
-                   set (Hg := gb)
-               end
-         end
-   end).
-
-Ltac pattern_both_fresh :=
-  let x := fresh in
-  let y := fresh in
-  let z := fresh in
-  pattern_both x y z.
-
-Ltac match_bind_trans_both :=
-  let Hx := fresh in
-  let Hf := fresh in
-  let Hg := fresh in
-  pattern_both Hx Hf Hg
-  ; apply (@r_bind_trans_both) with (b := Hx) (f := Hf) (g := Hg)
-  ; intros ; subst Hf ; subst Hg ; subst Hx ; hnf.
-
-Definition prod_to_prod {A B} {L I} (x : both L I (A × B)) : (both L I A * both L I B) :=
-  ({| is_pure := fst (is_pure x) ;
-     is_state := {code temp ← (is_state x) ;; ret (fst temp) } ;
-     code_eq_proof_statement := r_bind_trans (fun x0 : choice.Choice.sort (A × B) => ret (fst x0))
-                                             (fun x0 : choice.Choice.sort (A × B) => ret (fst x0)) x x true_precond true_precond
-                                             (pre_to_post_ret true_precond (fst _)) (code_eq_proof_statement x)
-                                             (r_ret (fst _) (fst _) true_precond
-                                                    (pre_to_post_ret true_precond (fst _))
-                                                    (fun (H H0 : heap) (H1 : true_precond (H, H0)) =>
-                                                       conj (conj eq_refl eq_refl) H1)) |} ,
-   {| is_pure := snd (is_pure x) ;
-     is_state := {code temp ← (is_state x) ;; ret (snd temp) };
-     code_eq_proof_statement := r_bind_trans (fun x0 : choice.Choice.sort (A × B) => ret (snd x0))
-                                             (fun x0 : choice.Choice.sort (A × B) => ret (snd x0)) x x true_precond true_precond
-                                             (pre_to_post_ret true_precond (snd _)) (code_eq_proof_statement x)
-                                             (r_ret (snd _) (snd _) true_precond
-                                                    (pre_to_post_ret true_precond (snd _))
-                                                    (fun (H H0 : heap) (H1 : true_precond (H, H0)) =>
-                                                       conj (conj eq_refl eq_refl) H1))|}).
-
-Fixpoint split_type (F : choice_type -> Type) (A : choice_type) : Type :=
-  match A with
-  | C × D => split_type F C * split_type F D
-  | _ => F A
-  end.
-
-Fixpoint split_both {L I A} (x : both L I A) : split_type (both L I) A :=
-  match A as B return (both L I B -> split_type (both L I) B) with
-  | C × D =>
-      fun y =>
-      let (c,d) := (prod_to_prod y) in
-      (split_both c, split_both d)
-  | _ => fun y => y
-  end x.
-
-Fixpoint unsplit_both {L I A} (x : split_type (both L I) A) : both L I A :=
-  match A as B return (split_type (both L I) B -> both L I B) with
-  | C × D =>
-      fun '(c,d) => prod_both0 (unsplit_both c) (unsplit_both d)
-  | _ => fun y => y
-  end x.
-Notation "'unsplit_both_all' ( a , b , .. , c )" := ((.. ((unsplit_both a , unsplit_both b)) .. , unsplit_both c)).
-
-Check (fun (x : both _ _ _) (f : _ -> both _ _ _) => {code temp ← is_state x ;; is_state (f temp) #with
-           valid_bind _ _ _ _ (is_state x) (fun temp => is_state (f temp))
-           (prog_valid (is_state x))
-           (fun temp => prog_valid (is_state (f temp)))
-      }).
-
-Definition bind_both_ {L I A B} (x : both L I A) (f : A -> both L I B) : both L I B :=
-  {|
-    is_state := {code temp ← is_state x ;; is_state (f temp) #with _} ;
-    is_pure := is_pure (f (is_pure x)) ;
-    code_eq_proof_statement := (r_bind_trans_both (f := fun y => prog (is_state (f y))) (g := fun y => ret (is_pure (f y))) x true_precond (pre_to_post_ret _ _) (code_eq_proof_statement (f (is_pure x))))
-  |}.
-
-Definition bind_both {L1 L2 I1 I2 A B} (x : both L1 I1 A) (f : A -> both L2 I2 B)  `{H_loc_incl : List.incl L1 L2} `{H_opsig_incl : List.incl I1 I2} : both L2 I2 B :=
-  bind_both_ (lift_scope (H_loc_incl := H_loc_incl) (H_opsig_incl := H_opsig_incl) x) f.
+Equations prod_to_prod {A B} {L I} (x : both L I (A × B)) : (both L I A * both L I B) :=
+  prod_to_prod x :=
+  (bind_both x (fun x' => ret_both (fst x')) ,
+   bind_both x (fun x' => ret_both (snd x'))).
+Next Obligation.
+  intros.
+  apply fsubsetxx.
+Qed.
+Next Obligation.
+  intros.
+  apply fsubsetxx.
+Qed.
+Next Obligation.
+  intros.
+  apply fsubsetxx.
+Qed.
+Next Obligation.
+  intros.
+  apply fsubsetxx.
+Qed.
+Fail Next Obligation.
 
 Notation "'letb' x ':=' y 'in' f" :=
   (let x := y in f) (* (let_both y (fun x => f)) *) (at level 100, x pattern, right associativity).
@@ -1180,107 +1469,103 @@ Notation "'letb' ''' x ':=' y 'in' f" :=
   (let x := y in f) (* (let_both y (fun x => f)) *) (at level 100, x pattern, right associativity).
 (* (lift_scope (H_loc_incl := _) (H_opsig_incl := _) y) *)
 
-Equations let_mut_code  {L : {fset Location}} {I} {B : choice_type}
-           (x_loc : Location)
-           `{H_in: is_true (ssrbool.in_mem (x_loc) (ssrbool.mem L))}
-           (x : code L I (x_loc)) (f : (x_loc) -> code L I B) : code L I B :=
-  let_mut_code (A; n) x f :=
-    {code
-       y ← x ;;
-       #put (A; n) := y ;;
-       temp ← get (A; n) ;;
-       f (temp) }.
-Global Transparent let_mut_code.
-
-Notation "'letmc' x 'loc(' ℓ ')' ':=' y 'in' f" :=
-  (let_mut_code ℓ (H_in := _) y (fun x => f x))
-    (at level 100, x pattern, right associativity).
-Notation "'letmc' ''' x 'loc(' ℓ ')' ':=' y 'in' f" :=
-  (let_mut_code ℓ (H_in := _) y (fun x => f x)) (at level 100, x pattern, right associativity).
-
 Program Definition split_both_func {A B : choice_type} {L1 L2 : {fset Location}} {I1 I2}
-        (f : both L1 I1 A -> both (L1 :|: L2) (I1 :|: I2) B) : (A -> B) * (code L1 I1 A -> code (L1 :|: L2) (I1 :|: I2) B) :=
-  (fun y : A => is_pure ((fun temp : A => f (lift_to_both temp)) y),
-   fun y : code L1 I1 A => {code temp ← y ;; f (lift_to_both temp) }).
+        (f : both L1 I1 A -> both L2 I2 B) `{fsubset L1 L2} `{fsubset I1 I2} : (A -> B) * (code L1 I1 A -> code L2 I2 B) :=
+  (fun y : A => is_pure ((fun temp : A => f (ret_both temp)) y),
+   fun y : code L1 I1 A => {code temp ← y ;; is_state (f (ret_both temp)) }).
 Next Obligation.
   intros.
   ssprove_valid.
 
-  apply valid_injectLocations with (L1 := L1). apply fsubsetUl.
-  apply @valid_injectMap with (I1 := I1). apply fsubsetUl.
+  apply valid_injectLocations with (L1 := L1). apply fsubset2.
+  apply @valid_injectMap with (I1 := I1). apply fsubset3.
   apply y.
 
-  apply (is_state (f (lift_to_both x))).
+  apply (f (ret_both x)).
 Qed.
 
-Program Definition store_x {L1 L2 : {fset Location}} {I1 I2} {B : choice_type}
-        (x_loc : Location) (x : both (L1) I1 (x_loc)) (f : x_loc -> both (x_loc |: L1 :|: L2) (I1 :|: I2) B) : both (x_loc |: L1 :|: L2) (I1 :|: I2) B :=
-  {|
-    is_pure := f (is_pure x) ;
-    is_state := {code y ← (is_state x) ;; putr x_loc y (getr x_loc f)}
-  |}.
+Equations let_mut_both {L1 L2 I1 I2 B} (x_loc : Location) `{loc_in : x_loc \in L2} (x : both L1 I1 x_loc) (f : both (fset [x_loc] :|: L1) I1 x_loc -> both L2 I2 B) `{fsubset_loc : is_true (fsubset L1 L2)} `{fsubset_opsig : is_true (fsubset I1 I2)} : both L2 I2 B :=
+  let_mut_both x_loc x f :=
+  bind_both x (fun y =>
+    {| both_prog := {|
+      is_pure := is_pure (f (ret_both y)) ;
+      is_state := putr x_loc y (getr x_loc (fun y => is_state (f (ret_both y))))
+    |} |}).
 Next Obligation.
   intros.
-
-  apply valid_bind.
-
-  apply valid_injectLocations with (L1 := x_loc |: L1). apply fsubsetUl.
-  apply valid_injectLocations with (L1 := L1). apply fsubsetUr.
-  apply @valid_injectMap with (I1 := I1). apply fsubsetUl.
-  apply (is_state x).
-  intros y.
-
-  apply valid_putr.
-  rewrite in_fsetU ; rewrite is_true_split_or ; left.
-  now rewrite in_fsetU1 ; rewrite is_true_split_or ; left.
-
-  apply valid_getr.
-  rewrite in_fsetU ; rewrite is_true_split_or ; left.
-  now rewrite in_fsetU1 ; rewrite is_true_split_or ; left.
-  intros.
-
-  apply (is_state (f v)).
+  apply (@valid_putr_getr_both L2 I2 B x_loc y (fun x => f (ret_both x)) loc_in).
+  intros. apply f.
 Qed.
 Next Obligation.
   intros.
-
-  match_bind_trans_both.
-
-  apply better_r_put_get_lhs.
   apply better_r_put_lhs.
-
-  eapply rpre_weaken_rule with (pre := true_precond).
+  apply getr_set_lhs.
+  apply forget_precond.
   apply f.
-  reflexivity.
 Qed.
 Fail Next Obligation.
 
-(* Definition let_mut_both {L1 L2 : {fset Location}} {I1 I2} {B : choice_type} (x_loc : Location) (x : both L1 I1 (x_loc)) (f : both (x_loc |: L1) I1 x_loc -> both (x_loc |: L1 :|: L2) (I1 :|: I2) B) : both (x_loc |: L1 :|: L2) (I1 :|: I2) B := *)
-(*   store_x x_loc x (fun y => f (lift_to_both y)). *)
-
-Notation let_mut_both := (fun (x_loc : Location) x f =>
-                            {|
-    is_pure := (fun y => f (lift_to_both y)) (is_pure x) ;
-    is_state := {code y ← (is_state x) ;; putr x_loc y (getr x_loc (fun y => f (lift_to_both y)))}
-  |}).
-
 Notation "'letbm' x 'loc(' ℓ ')' ':=' y 'in' f" :=
-  (let_mut_both ℓ y (fun x => f)) (at level 100, x pattern, right associativity, format "'letbm'  x  'loc(' ℓ ')'  ':='  y  'in' '//' f").
+  (let_mut_both ℓ y (fun x => f) (fsubset_loc := _) (fsubset_opsig := _) (loc_in := _)) (at level 100, x pattern, right associativity, format "'letbm'  x  'loc(' ℓ ')'  ':='  y  'in' '//' f").
 Notation "'letbm' ''' x 'loc(' ℓ ')' ':=' y 'in' f" :=
-  (let_mut_both ℓ y (fun x => f)) (at level 100, x pattern, right associativity, format "'letbm'  ''' x  'loc(' ℓ ')'  ':='  y  'in' '//' f").
+  (let_mut_both ℓ y (fun x => f) (fsubset_loc := _) (fsubset_opsig := _) (loc_in := _)) (at level 100, x pattern, right associativity, format "'letbm'  ''' x  'loc(' ℓ ')'  ':='  y  'in' '//' f").
+
+Fixpoint split_type (F : choice_type -> Type) (A : choice_type) : Type :=
+  match A with
+  | C × D => split_type F C * split_type F D
+  | _ => F A
+  end.
+
+Fixpoint split_both {L I A} (x : both L I A) : (split_type (both L I) A) :=
+   match A as c return (both L I c -> split_type (both L I) c) with
+   | _ × _ => fun y => (split_both (fst (prod_to_prod y)) , split_both (snd (prod_to_prod y)))
+   | _ => fun y : both L I _ => y
+   end x.
+
+Fixpoint unsplit_both {L I A} (s : split_type (both L I) A) : both L I A :=
+  match A as c return (split_type (both L I) c -> both L I c) with
+  | _ × _ =>
+      fun y => prod_both0 ( unsplit_both (fst y)) ((unsplit_both (snd y)))
+  | _ => fun y => y
+  end s.
+
+Notation "'unsplit_both_all' ( a , b , .. , c )" := ((.. ((unsplit_both a , unsplit_both b)) .. , unsplit_both c)).
+
 
 (* Handle products of size 2 - 4 for letb *)
+
+Fixpoint prod_to_prod_n_ty (n : nat) (F : choice_type -> Type) (A : choice_type) : Type :=
+  match n with
+  | O => F A
+  | S n' =>
+      match A with
+      | B × C => (prod_to_prod_n_ty n' F B) * F C
+      | _ => F A
+      end
+  end.
+Eval simpl in prod_to_prod_n_ty 2 (both fset0 fset0) ('nat × 'bool).
+
+Fixpoint prod_to_prod_n {L I A} (n : nat) (x : both L I A) : prod_to_prod_n_ty n  (both L I) A :=
+  match n as m return prod_to_prod_n_ty m (both L I) A with
+  | O => x
+  | S n' =>
+      match A as B return both L I B -> prod_to_prod_n_ty (S n') (both L I) B with
+      | B × C => fun y => (prod_to_prod_n n' (fst (prod_to_prod y)), snd (prod_to_prod y))
+      | _ => fun y => y
+      end x
+  end.
+
 Notation "'letb' ' '(' a ',' b ')' ':=' z 'in' f" :=
-  (let '(a, b) := split_both z in
-   (* let '(a, b) := (unsplit_both a, unsplit_both b) in *)
+  (let '(a,b) := prod_to_prod_n 1 z in
    f) (at level 100).
 
 Notation "'letb' ' '(' a ',' b ',' c ')' ':=' z 'in' f" :=
-  (let '(a, b, c) := split_both z in
-   (* let '(a, b, c) := (unsplit_both a, unsplit_both b, unsplit_both c) in *)
+  (let '(a, b, c) := prod_to_prod_n 2 z in
    f) (at level 100).
 
 Notation "'letb' ' '(' a ',' b ',' c ',' d ')' ':=' z 'in' f" :=
-  (  let '(a, b, c, d) := split_both z in
-     (* let '(a, b, c, d) := (unsplit_both a, unsplit_both b, unsplit_both c, unsplit_both d) in *)
+  (  let '(a, b, c, d) := prod_to_prod_n 3 z in
      f) (at level 100).
+
+
+(* Locate prod_b( _ , _ ). *)

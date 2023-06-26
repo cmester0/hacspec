@@ -2162,7 +2162,7 @@ Proof.
   reflexivity.
 Qed.
 
-Definition array_to_seq {A : choice_type} {n} (f : (nseq_ A n)) : (seq _) :=
+Definition array_to_seq {A : choice_type} {n} (f : (nseq_ A n)) : (seq A) :=
   seq_from_list _ (array_to_list f).
 
 Definition positive_slice {A : choice_type} {n} `{H: Positive n} (l : (nseq_ A n)) (i j : nat) `{H1: (i < j)%nat} `{(j - i < length (array_to_list l) - i)%nat} : Positive (length (slice (array_to_list l) i j)).
