@@ -239,6 +239,10 @@ Ltac solve_match :=
 
 Ltac solve_is_true :=
   now hnf ;
+  change ((Ord.sort
+             (@tag_ordType choice_type_ordType
+                           (fun _ : choice_type => nat_ordType)))) with
+    Location ;
   try rewrite <- !fset0E ;
   try rewrite !fsetU0 ;
   try rewrite !fset0U ;
@@ -264,10 +268,21 @@ Ltac solve_fset_eq :=
   solve_in_fset.
 
 Ltac fset_equality :=
+  repeat
+    match goal with
+    | H : fsubset (?x :|: ?y) ?z = true |- _ =>
+        rewrite fsubUset in H ;
+        apply andb_prop in H ;
+        destruct H
+    end ;
   match goal with
   | [ |- context [ @eq (fset_of _) _ _ ] ] =>
       solve_fset_eq
   | [ |- context [ @eq Interface _ _ ] ] =>
+      solve_fset_eq
+  | [ |- context [ @Logic.eq (fset_of _) _ _ ] ] =>
+      solve_fset_eq
+  | [ |- context [ @Logic.eq Interface _ _ ] ] =>
       solve_fset_eq
   end.
 
@@ -275,31 +290,39 @@ Ltac fset_equality :=
 
 Section Loops.
 
-
   Program Fixpoint foldi_
            {acc : choice_type}
            (fuel : nat)
-           {L1 L2 I1 I2}
+           {L L2 I I2}
            (i : both L2 I2 uint_size)
-           (f: forall {L I}, both L2 I2 uint_size -> both L I acc -> both (L :|: L2) (I :|: I2) (acc))
-           (cur : both L1 I1 acc)
-           {struct fuel} : both (L1 :|: L2) (I1 :|: I2) (acc) :=
+           (f: both L2 I2 uint_size -> both L I acc -> both L I (acc))
+           (cur : both L I acc)
+           `{fsubset_loc : is_true (fsubset L2 L)}
+           `{fsubset_opsig : is_true (fsubset I2 I)}
+           {struct fuel} : both L I (acc) :=
     match fuel with
-    | O => lift_both cur
-    | S n' => foldi_ n' ((bind_both i (fun i => ret_both (Hacspec_Lib_Pre.int_add i one)))) (@f) (f i cur)
+    | 0 => lift_both cur
+    | S n' => foldi_ n' (int_add i (ret_both one)) f (f i cur)
     end.
   Solve All Obligations with (intros ; (fset_equality || solve_in_fset)).
+  Next Obligation.
+    intros.
+    now rewrite fsetUid.
+  Qed.
+  Next Obligation.
+    intros.
+    now rewrite fsetUid.
+  Qed.
   Fail Next Obligation.
 
-  Equations foldi_both_
+  Program Definition foldi_both_
            {acc : choice_type}
            (fuel : nat)
            {L1 L2 I1 I2}
            (i : both L2 I2 uint_size)
-           (f: forall {L I}, both L2 I2 (uint_size) -> both L I acc -> both (L :|: L2) (I :|: I2) (acc))
+           (f: forall {L I} `{is_true (fsubset L1 L)} `{is_true (fsubset I1 I)}, both L2 I2 (uint_size) -> both L I acc -> both (L :|: L2) (I :|: I2) (acc))
            (cur : both L1 I1 acc) : both (L1 :|: L2) (I1 :|: I2) (acc) :=
-    foldi_both_ fuel i f cur :=
-      foldi_ fuel i (@f) (lift_both cur).
+      foldi_ (L := L1 :|: L2) fuel i (@f (L1 :|: L2) (I1 :|: I2) (fsubsetUl _ _) (fsubsetUl _ _)) (lift_both cur (fsubset_loc := _) (fsubset_opsig := _)) (fsubset_loc := _) (fsubset_opsig := _).
   Solve All Obligations with (intros ; (fset_equality || solve_in_fset)).
   Fail Next Obligation.
 
@@ -308,7 +331,7 @@ Section Loops.
              {L1 L2 L3 I1 I2 I3}
              (lo: both L2 I2 uint_size)
              (hi: both L3 I3 uint_size) (* {lo <= hi} *)
-             (f: forall {L I}, both (L2 :|: L3) (I2 :|: I3) (uint_size) -> both L I acc -> both (L :|: (L2 :|: L3)) (I :|: (I2 :|: I3)) (acc)) (* {i < hi} *)
+             (f: forall {L I}  `{is_true (fsubset L1 L)} `{is_true (fsubset I1 I)}, both (L2 :|: L3) (I2 :|: I3) (uint_size) -> both L I acc -> both (L :|: (L2 :|: L3)) (I :|: (I2 :|: I3)) (acc)) (* {i < hi} *)
              (init: both L1 I1 acc) : both (L1 :|: (L2 :|: L3)) (I1 :|: (I2 :|: I3)) (acc) :=
     foldi lo hi f init :=
       bind_both lo (fun lo =>
@@ -2710,7 +2733,7 @@ Equations foldi_both
         {acc: choice_type}
         {L1 L2 L3 I1 I2 I3}
         (lo_hi: both L2 I2 uint_size * both L3 I3 uint_size)
-        (f: forall {L I}, both (L2 :|: L3) (I2 :|: I3) uint_size -> both L I acc -> both (L :|: (L2 :|: L3)) (I :|: (I2 :|: I3)) (acc)) (* {i < hi} *)
+        (f: forall {L I} `{is_true (fsubset L1 L)} `{is_true (fsubset I1 I)}, both (L2 :|: L3) (I2 :|: I3) uint_size -> both L I acc -> both (L :|: (L2 :|: L3)) (I :|: (I2 :|: I3)) (acc)) (* {i < hi} *)
         (init: both L1 I1 acc)
          : both (L1 :|: (L2 :|: L3)) (I1 :|: (I2 :|: I3)) (acc) :=
   foldi_both lo_hi f init :=
