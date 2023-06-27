@@ -229,30 +229,47 @@ Infix "shift_right" := (shift_right_) (at level 77) : hacspec_scope.
 
 (*** Ltac *)
 
-Ltac solve_in_fset :=
-  (* match goal with *)
-  (* | [ |- context [ is_true (fsubset _ _) ] ] => *)
+Ltac solve_match :=
+  match goal with
+  | |- context [ fsubset ?a (?a :|: _) ] => apply fsubsetUl
+  | |- context [ fsubset ?a (_ :|: ?a) ] => apply fsubsetUr
+  | |- context [ fsubset fset0 _ ] => apply fsub0set
+  | |- context [ fsubset ?a ?a ] => apply fsubsetxx
+  end.
+
+Ltac solve_is_true :=
   now hnf ;
-  try rewrite <- !fsetUA ;
   try rewrite <- !fset0E ;
   try rewrite !fsetU0 ;
   try rewrite !fset0U ;
+  (* try rewrite <- !fsetUA ; *)
+  repeat (match goal with
+          | |- context [?a :|: ?b :|: ?c] =>
+              replace (a :|: b :|: c) with (a :|: (b :|: c)) by apply fsetUA
+          end) ;
   repeat (rewrite is_true_split_and || rewrite fsubUset) ;
-        repeat (try rewrite andb_true_intro ; split) ; repeat (apply fsubsetxx || apply fsub0set || apply fsubsetU ; rewrite is_true_split_or ; (left ; (apply fsubsetxx || apply fsub0set)) || right)
-  (* end *).
+  repeat (try rewrite andb_true_intro ; split) ;
+  repeat (solve_match || apply fsubsetU ; rewrite is_true_split_or ; (left ; solve_match) || right).
+
+Ltac solve_in_fset :=
+  match goal with
+  | [ |- context [ is_true (fsubset _ _) ] ] => solve_is_true
+  | [ |- context [ fsubset _ _ = true ] ] => solve_is_true
+  end.
+
+Ltac solve_fset_eq :=
+  apply (ssrbool.elimT eqtype.eqP) ;
+  rewrite eqEfsubset ;
+  rewrite is_true_split_and ; split ;
+  solve_in_fset.
 
 Ltac fset_equality :=
-  (* match goal with *)
-  (* | [ |- context [ @eq (fset_of _) _ _ ] ] => *)
-      apply (ssrbool.elimT eqtype.eqP) ;
-      rewrite eqEfsubset ;
-      solve_in_fset
-  (* | [ |- context [ @eq Interface _ _ ] ] => *)
-  (*     apply (ssrbool.elimT eqtype.eqP) ; *)
-  (*     rewrite eqEfsubset ; *)
-  (*     repeat (rewrite is_true_split_and || rewrite fsubUset) ; *)
-  (*     solve_in_fset *)
-  (* end *).
+  match goal with
+  | [ |- context [ @eq (fset_of _) _ _ ] ] =>
+      solve_fset_eq
+  | [ |- context [ @eq Interface _ _ ] ] =>
+      solve_fset_eq
+  end.
 
 (*** Loops *)
 
@@ -271,7 +288,7 @@ Section Loops.
     | O => lift_both cur
     | S n' => foldi_ n' ((bind_both i (fun i => ret_both (Hacspec_Lib_Pre.int_add i one)))) (@f) (f i cur)
     end.
-  Solve All Obligations with (intros ; (solve_in_fset || fset_equality)).
+  Solve All Obligations with (intros ; (fset_equality || solve_in_fset)).
   Fail Next Obligation.
 
   Equations foldi_both_
@@ -283,7 +300,7 @@ Section Loops.
            (cur : both L1 I1 acc) : both (L1 :|: L2) (I1 :|: I2) (acc) :=
     foldi_both_ fuel i f cur :=
       foldi_ fuel i (@f) (lift_both cur).
-  Solve All Obligations with (intros ; (solve_in_fset || fset_equality)).
+  Solve All Obligations with (intros ; (fset_equality || solve_in_fset)).
   Fail Next Obligation.
 
   Equations foldi
@@ -302,7 +319,7 @@ Section Loops.
       | Zpos p => foldi_both_ (Pos.to_nat p) (ret_both lo) (@f) init (* (fsubset_loc1 := fsubset_loc1) (fsubset_opsig1 := fsubset_opsig1) *)
       end))
     .
-  Solve All Obligations with (intros ; (solve_in_fset || fset_equality)).
+  Solve All Obligations with (intros ; (fset_equality || solve_in_fset)).
   Fail Next Obligation.
 
   (* Fold done using natural numbers for bounds *)
@@ -1133,7 +1150,7 @@ Infix "seq_xor" := seq_xor_ (at level 33) : hacspec_scope.
         bind_both (array_from_list_helper y ys k) (fun temp_y =>
         ret_both (setm (temp_y : nseq_ A (S k)) (Ordinal (ssrbool.introT ssrnat.ltP (lt_succ_diag_r_sub k (length (y :: ys))))) temp_x : nseq_ A (S k))) (fsubset_loc := _)  (fsubset_opsig := _)) (fsubset_loc := _)  (fsubset_opsig := _)
     end.
-  Solve All Obligations with (intros ; (solve_in_fset || fset_equality)).
+  Solve All Obligations with (intros ; time (fset_equality || solve_in_fset)).
   Fail Next Obligation.
 
   Definition array_from_list {A: choice_type} {L I} (l: list (both L I A))
@@ -2551,13 +2568,13 @@ Infix "array_neq" := (fun s1 s2 => negb (array_eq_ eq s1 s2)) (at level 33) : ha
 
 (* Handle products of size 1 - 4 for foldi_both' *)
 Notation "'ssp(' 'fun' a => f )" :=
-  (((fun (a : both _ _ _) => f)) : both _ _ uint_size -> both _ _ _ -> both _ _ _) (at level 100, f at next level, a at next level).
+  (((fun (a : both _ _ _) => f)) (* : both _ _ uint_size -> both _ _ _ -> both _ _ _ *)) (at level 100, f at next level, a at next level).
 
 Notation "'ssp(' 'fun' ' ( a , b ) => f )" :=
   (((fun (temp : both _ _ (_ × _)) =>
        letb '(a, b) := (* split_both *) temp in
        (* let '(a, b) := unsplit_both_all(a, b) in *)
-       f)) : both _ _ uint_size -> both _ _ (_ × _) -> both _ _ _) (at level 100, f at next level, a at next level, b at next level).
+       f)) (* : both _ _ uint_size -> both _ _ (_ × _) -> both _ _ _ *)) (at level 100, f at next level, a at next level, b at next level).
 
 Notation "'ssp(' 'fun' ' ( a , b , c ) => f )" :=
   (((fun (temp : both _ _ (_ × _ × _)) =>
@@ -2662,15 +2679,19 @@ Ltac solve_in_mem :=
   (* end *).
 
 Ltac solve_ssprove_obligations :=
-  (time "fset_std_fmt" (intros ;
-  hnf ;
-  try rewrite <- !fsetUA ;
-  try rewrite <- !fset0E ;
-  try rewrite !fsetU0 ;
-  try rewrite !fset0U)) ;
-  (now time "solve_in_mem" solve_in_mem) (* TODO: add match goal *)
-  || (now time "solve_in_fset" solve_in_fset) (* TODO: add match goal *)
-  || (now time "fset_eq" fset_equality) (* TODO: add match goal *)
+  (intros ;
+   hnf ;
+   try rewrite <- !fset0E ;
+   try rewrite !fsetU0 ;
+   try rewrite !fset0U ;
+  (* try rewrite <- !fsetUA *)
+  repeat (match goal with
+  | |- context [?a :|: ?b :|: ?c] =>
+      replace (a :|: b :|: c) with (a :|: (b :|: c)) by apply fsetUA
+  end)) ;
+  (now solve_in_mem) (* TODO: add match goal *)
+  || (now fset_equality) (* TODO: add match goal *)
+  || (now solve_in_fset) (* TODO: add match goal *)
   (* || (ssprove_valid_location || loc_incl_compute || opsig_incl_compute || ssprove_package_obligation) || *)
   (* (apply fsubsetxx || rewrite <- !fset0E ; apply fsub0set || now (try rewrite <- !fset0E ; try rewrite !fset0U ; try rewrite !fsetU0 ; try rewrite !fsetUA)) *)
   (* || (match goal with *)
@@ -2681,8 +2702,8 @@ Ltac solve_ssprove_obligations :=
   (*    end) *)
   (* || now repeat rewrite <- fset_cat *)
   (* || (ssprove_valid_package ; ssprove_valid'_2) *)
-  || (time "ssprove_valid" ssprove_valid'_2)
-  || (time "default" (try (Tactics.program_simpl; fail)))
+  || (ssprove_valid'_2)
+  || ((try (Tactics.program_simpl; fail)))
 .
 
 Equations foldi_both
