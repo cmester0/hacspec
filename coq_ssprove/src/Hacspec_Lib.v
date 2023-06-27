@@ -229,6 +229,21 @@ Infix "shift_right" := (shift_right_) (at level 77) : hacspec_scope.
 
 (*** Ltac *)
 
+Ltac noramlize_fset :=
+  hnf ;
+  change ((Ord.sort
+             (@tag_ordType choice_type_ordType
+                           (fun _ : choice_type => nat_ordType)))) with
+    Location ;
+  try rewrite <- !fset0E ;
+  try rewrite !fsetU0 ;
+  try rewrite !fset0U ;
+  (* try rewrite <- !fsetUA *)
+  repeat (match goal with
+          | |- context [?a :|: ?b :|: ?c] =>
+              replace (a :|: b :|: c) with (a :|: (b :|: c)) by apply fsetUA
+          end).
+
 Ltac solve_match :=
   match goal with
   | |- context [ fsubset ?a (?a :|: _) ] => apply fsubsetUl
@@ -238,19 +253,7 @@ Ltac solve_match :=
   end.
 
 Ltac solve_is_true :=
-  now hnf ;
-  change ((Ord.sort
-             (@tag_ordType choice_type_ordType
-                           (fun _ : choice_type => nat_ordType)))) with
-    Location ;
-  try rewrite <- !fset0E ;
-  try rewrite !fsetU0 ;
-  try rewrite !fset0U ;
-  (* try rewrite <- !fsetUA ; *)
-  repeat (match goal with
-          | |- context [?a :|: ?b :|: ?c] =>
-              replace (a :|: b :|: c) with (a :|: (b :|: c)) by apply fsetUA
-          end) ;
+  now noramlize_fset ;
   repeat (rewrite is_true_split_and || rewrite fsubUset) ;
   repeat (try rewrite andb_true_intro ; split) ;
   repeat (solve_match || apply fsubsetU ; rewrite is_true_split_or ; (left ; solve_match) || right).
@@ -2702,32 +2705,23 @@ Ltac solve_in_mem :=
   (* end *).
 
 Ltac solve_ssprove_obligations :=
-  (intros ;
-   hnf ;
-   try rewrite <- !fset0E ;
-   try rewrite !fsetU0 ;
-   try rewrite !fset0U ;
-  (* try rewrite <- !fsetUA *)
-  repeat (match goal with
-  | |- context [?a :|: ?b :|: ?c] =>
-      replace (a :|: b :|: c) with (a :|: (b :|: c)) by apply fsetUA
-  end)) ;
-  (now solve_in_mem) (* TODO: add match goal *)
-  || (now fset_equality) (* TODO: add match goal *)
-  || (now solve_in_fset) (* TODO: add match goal *)
-  (* || (ssprove_valid_location || loc_incl_compute || opsig_incl_compute || ssprove_package_obligation) || *)
-  (* (apply fsubsetxx || rewrite <- !fset0E ; apply fsub0set || now (try rewrite <- !fset0E ; try rewrite !fset0U ; try rewrite !fsetU0 ; try rewrite !fsetUA)) *)
-  (* || (match goal with *)
-  (*    | [ |- context [ pkg_composition.Parable _ _ ]] => *)
-  (*        unfold pkg_composition.Parable, fdisjoint, fsetI, fset_filter, *)
-  (*        fmap.domm, fmap.FMap.fmval, fmap.mkfmap, fmap.setm, fmap.fmap, fset *)
-  (*        ; now rewrite ssreflect.locked_withE *)
-  (*    end) *)
-  (* || now repeat rewrite <- fset_cat *)
-  (* || (ssprove_valid_package ; ssprove_valid'_2) *)
-  || (ssprove_valid'_2)
-  || ((try (Tactics.program_simpl; fail)))
-.
+  repeat (
+      intros ; noramlize_fset ;
+      (now solve_in_mem) (* TODO: add match goal *)
+      || (now fset_equality) (* TODO: add match goal *)
+      || (now solve_in_fset) (* TODO: add match goal *)
+      (* || (ssprove_valid_location || loc_incl_compute || opsig_incl_compute || ssprove_package_obligation) || *)
+      (* (apply fsubsetxx || rewrite <- !fset0E ; apply fsub0set || now (try rewrite <- !fset0E ; try rewrite !fset0U ; try rewrite !fsetU0 ; try rewrite !fsetUA)) *)
+      (* || (match goal with *)
+      (*    | [ |- context [ pkg_composition.Parable _ _ ]] => *)
+      (*        unfold pkg_composition.Parable, fdisjoint, fsetI, fset_filter, *)
+      (*        fmap.domm, fmap.FMap.fmval, fmap.mkfmap, fmap.setm, fmap.fmap, fset *)
+      (*        ; now rewrite ssreflect.locked_withE *)
+      (*    end) *)
+      (* || now repeat rewrite <- fset_cat *)
+      (* || (ssprove_valid_package ; ssprove_valid'_2) *)
+      || (ssprove_valid'_2)
+      || ((try (Tactics.program_simpl; fail)))).
 
 Equations foldi_both
         {acc: choice_type}
