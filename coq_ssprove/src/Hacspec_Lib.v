@@ -2593,22 +2593,22 @@ Infix "array_neq" := (fun s1 s2 => negb (array_eq_ eq s1 s2)) (at level 33) : ha
 
 
 (* Handle products of size 1 - 4 for foldi_both' *)
-Notation "'ssp(' 'fun' a => f )" :=
+Notation "'ssp' ( 'fun' a => f )" :=
   (((fun (a : both _ _ _) => f)) (* : both _ _ uint_size -> both _ _ _ -> both _ _ _ *)) (at level 100, f at next level, a at next level).
 
-Notation "'ssp(' 'fun' ' ( a , b ) => f )" :=
+Notation "'ssp' ( 'fun' ' ( a , b ) => f )" :=
   (((fun (temp : both _ _ (_ × _)) =>
        letb '(a, b) := (* split_both *) temp in
        (* let '(a, b) := unsplit_both_all(a, b) in *)
        f)) (* : both _ _ uint_size -> both _ _ (_ × _) -> both _ _ _ *)) (at level 100, f at next level, a at next level, b at next level).
 
-Notation "'ssp(' 'fun' ' ( a , b , c ) => f )" :=
+Notation "'ssp' ( 'fun' ' ( a , b , c ) => f )" :=
   (((fun (temp : both _ _ (_ × _ × _)) =>
        letb '(a, b, c) := (* split_both *) temp in
        (* let '(a, b, c) := unsplit_both_all(a, b, c) in *)
      f)) (* : both _ _ uint_size -> both _ _ (_ × _ × _) -> both _ _ _ *)) (at level 100, f at next level, a at next level, b at next level, c at next level).
 
-Notation "'ssp(' 'fun' ' ( a , b , c , d ) => f )" :=
+Notation "'ssp' ( 'fun' ' ( a , b , c , d ) => f )" :=
   (((fun (temp : both _ _ (_ × _ × _ × _)) =>
        letb '(a, b, c, d) := (* split_both *) temp in
        (* let '(a, b, c, d) := unsplit_both_all(a,b,c,d) in *)
@@ -2733,8 +2733,8 @@ Equations foldi_both
   foldi_both lo_hi f init :=
     foldi (fst lo_hi) (snd lo_hi) (@f) init.
 
-Notation "'foldi_both'" :=
-  (fun lo_hi init f => foldi_both lo_hi init f).
+Notation "'fold'" :=
+  (fun lo_hi init f => foldi_both lo_hi f init).
 
 
 (* Check (0%nat : ident , ('nat , 'bool)) : opsig. *)
