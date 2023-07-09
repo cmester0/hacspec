@@ -131,17 +131,18 @@ Section Both.
 
   Context (L : {fset Location}).
   Context (I : Interface).
+  Context (A : choice_type).
 
-  Class raw_both (A : choice_type) :=
+  Class raw_both :=
     {
       is_pure : choice.Choice.sort A ;
       is_state : raw_code A ;
     }.
-  Arguments is_pure {_} raw_both.
-  Arguments is_state {_} raw_both.
+  Arguments is_pure raw_both.
+  Arguments is_state raw_both.
 
-  Inductive valid_both {A} :
-    forall (b : raw_both A), Prop :=
+  Inductive valid_both :
+    forall (b : raw_both), Prop :=
   | both_valid_ret :
     forall x, valid_both {| is_pure := x ; is_state := ret x |}
   | both_valid_putr_getr :
@@ -149,13 +150,13 @@ Section Both.
       l \in L ->
       (forall v, valid_both (k v)) ->
       valid_both
-        ({| is_pure := is_pure (k v) ;
-           is_state := putr l v (getr l (fun x => is_state (k x))) |})
+        ({| is_pure := @is_pure (k v) ;
+           is_state := putr l v (getr l (fun x => @is_state (k x))) |})
   | both_valid_putr :
     forall l v k,
       l \in L ->
       valid_both k ->
-      valid_both ({| is_pure := is_pure k ; is_state := putr l v (is_state k) |}).
+      valid_both ({| is_pure := @is_pure k ; is_state := putr l v (@is_state k) |}).
 
   (* | valid_opr : *)
   (*   forall o x k, *)
@@ -168,30 +169,36 @@ Section Both.
   (*     (forall v, valid_code (k v)) -> *)
   (*     valid_code (sampler op k) *)
 
-  Class ValidBoth {A} (p : raw_both A) :=
-    { is_valid_code : ValidCode L I (is_state p) ;
-      is_valid_both : @valid_both A p ;
+  Class ValidBoth (p : raw_both) :=
+    { is_valid_code : ValidCode L I (@is_state p) ;
+      is_valid_both : @valid_both p ;
     }.
-  Arguments is_valid_code {_} {_} ValidBoth.
-  Arguments is_valid_both {_} {_} ValidBoth.
+  Arguments is_valid_code {_} ValidBoth.
+  Arguments is_valid_both {_} ValidBoth.
 
-  Record both A :=
+  
+  Record both : Type :=
     mk2prog {
-        both_prog :> raw_both A ;
-        both_prog_valid : @ValidBoth A both_prog ;
-        p_eq : ⊢ ⦃ true_precond ⦄ (is_state both_prog) ≈ ret (is_pure both_prog) ⦃ pre_to_post_ret true_precond (is_pure both_prog) ⦄ ;
+        both_prog :> raw_both ;
+        both_prog_valid : @ValidBoth both_prog ;
+        p_eq : ⊢ ⦃ true_precond ⦄ (@is_state both_prog) ≈ ret (@is_pure both_prog) ⦃ pre_to_post_ret true_precond (@is_pure both_prog) ⦄ ;
       }.
-  Arguments both_prog {_} b.
-  Arguments both_prog_valid {_} b.
-  Arguments p_eq {_} b.
+  Arguments both_prog b.
+  Arguments both_prog_valid b.
+  Arguments p_eq b.
 
 End Both.
 
 Arguments is_pure {_} raw_both.
 Arguments is_state {_} raw_both.
 
-Arguments is_valid_code {_} {_} {_} {_} ValidBoth.
+Arguments valid_both L {_}.
+Arguments both_valid_ret L {_}.
+Arguments both_valid_putr_getr L {_}.
+Arguments both_valid_putr L {_}.
 
+Arguments ValidBoth L I {_} p.
+Arguments is_valid_code {_} {_} {_} {_} ValidBoth.
 Arguments is_valid_both {_} {_} {_} {_} ValidBoth.
 
 Arguments both_prog {_} {_} {_} b.

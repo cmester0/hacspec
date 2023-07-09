@@ -60,14 +60,29 @@ Proof.
   - reflexivity.
 Qed.
 
-Theorem is_true_split_or : forall a b, is_true (a || b) = (is_true a \/ is_true b).
+Theorem is_true_split_or : forall a b, is_true (a || b)%bool = (is_true a \/ is_true b).
 Proof.
   intros.
   rewrite boolp.propeqE.
   symmetry.
   apply (ssrbool.rwP ssrbool.orP).
 Qed.
-Theorem is_true_split_and : forall a b, is_true (a && b) = (is_true a /\ is_true b).
+Theorem is_true_split_and : forall a b, is_true (a && b)%bool = (is_true a /\ is_true b).
+Proof.
+  intros.
+  rewrite boolp.propeqE.
+  symmetry.
+  apply (ssrbool.rwP ssrbool.andP).
+Qed.
+
+Theorem is_true_split_or_ : forall a b, ((a || b)%bool = true) = (a = true \/ b = true).
+Proof.
+  intros.
+  rewrite boolp.propeqE.
+  symmetry.
+  apply (ssrbool.rwP ssrbool.orP).
+Qed.
+Theorem is_true_split_and_ : forall a b, ((a && b)%bool = true) = (a = true /\ b = true).
 Proof.
   intros.
   rewrite boolp.propeqE.

@@ -235,6 +235,7 @@ Ltac noramlize_fset :=
              (@tag_ordType choice_type_ordType
                            (fun _ : choice_type => nat_ordType)))) with
     Location ;
+  try rewrite !fset_cons ; 
   try rewrite <- !fset0E ;
   try rewrite !fsetU0 ;
   try rewrite !fset0U ;
@@ -2701,7 +2702,9 @@ Ltac solve_in_mem :=
   (* match goal with *)
   (* | [ |- context [ ssrbool.in_mem _ (ssrbool.mem _) ] ] => *)
    (* rewrite is_true_split_or *)
-  repeat (rewrite (@in_fsetU loc_ordType) ; rewrite Bool.orb_true_intro) ; try rewrite <- !fset1E ; try rewrite (ssrbool.introT (fset1P _ _) eq_refl) ; repeat (reflexivity || (left ; reflexivity) || right)
+  (* repeat (rewrite (@in_fsetU loc_ordType) ; rewrite Bool.orb_true_intro) ; try rewrite <- !fset1E ; try rewrite (ssrbool.introT (fset1P _ _) eq_refl) ; repeat (reflexivity || (left ; reflexivity) || right) *)
+
+  repeat (rewrite (@in_fsetU loc_ordType) ; rewrite (is_true_split_or_)) ; try rewrite <- !fset1E ; try rewrite (ssrbool.introT (fset1P _ _) eq_refl) ; repeat (reflexivity || (left ; reflexivity) || right)
   (* end *).
 
 Ltac solve_ssprove_obligations :=
