@@ -227,69 +227,6 @@ Infix "usize_shift_left" := (usize_shift_left_) (at level 77) : hacspec_scope.
 Infix "shift_left" := (shift_left_) (at level 77) : hacspec_scope.
 Infix "shift_right" := (shift_right_) (at level 77) : hacspec_scope.
 
-(*** Ltac *)
-
-Ltac noramlize_fset :=
-  hnf ;
-  change ((Ord.sort
-             (@tag_ordType choice_type_ordType
-                           (fun _ : choice_type => nat_ordType)))) with
-    Location ;
-  try rewrite !fset_cons ; 
-  try rewrite <- !fset0E ;
-  try rewrite !fsetU0 ;
-  try rewrite !fset0U ;
-  (* try rewrite <- !fsetUA *)
-  repeat (match goal with
-          | |- context [?a :|: ?b :|: ?c] =>
-              replace (a :|: b :|: c) with (a :|: (b :|: c)) by apply fsetUA
-          end).
-
-Ltac solve_match :=
-  match goal with
-  | |- context [ fsubset ?a (?a :|: _) ] => apply fsubsetUl
-  | |- context [ fsubset ?a (_ :|: ?a) ] => apply fsubsetUr
-  | |- context [ fsubset fset0 _ ] => apply fsub0set
-  | |- context [ fsubset ?a ?a ] => apply fsubsetxx
-  end.
-
-Ltac solve_is_true :=
-  now noramlize_fset ;
-  repeat (rewrite is_true_split_and || rewrite fsubUset) ;
-  repeat (try rewrite andb_true_intro ; split) ;
-  repeat (solve_match || apply fsubsetU ; rewrite is_true_split_or ; (left ; solve_match) || right).
-
-Ltac solve_in_fset :=
-  match goal with
-  | [ |- context [ is_true (fsubset _ _) ] ] => solve_is_true
-  | [ |- context [ fsubset _ _ = true ] ] => solve_is_true
-  end.
-
-Ltac solve_fset_eq :=
-  apply (ssrbool.elimT eqtype.eqP) ;
-  rewrite eqEfsubset ;
-  rewrite is_true_split_and ; split ;
-  solve_in_fset.
-
-Ltac fset_equality :=
-  repeat
-    match goal with
-    | H : fsubset (?x :|: ?y) ?z = true |- _ =>
-        rewrite fsubUset in H ;
-        apply andb_prop in H ;
-        destruct H
-    end ;
-  match goal with
-  | [ |- context [ @eq (fset_of _) _ _ ] ] =>
-      solve_fset_eq
-  | [ |- context [ @eq Interface _ _ ] ] =>
-      solve_fset_eq
-  | [ |- context [ @Logic.eq (fset_of _) _ _ ] ] =>
-      solve_fset_eq
-  | [ |- context [ @Logic.eq Interface _ _ ] ] =>
-      solve_fset_eq
-  end.
-
 (*** Loops *)
 
 Section Loops.
@@ -309,14 +246,6 @@ Section Loops.
     | S n' => foldi_ n' (int_add i (ret_both one)) f (f i cur)
     end.
   Solve All Obligations with (intros ; (fset_equality || solve_in_fset)).
-  Next Obligation.
-    intros.
-    now rewrite fsetUid.
-  Qed.
-  Next Obligation.
-    intros.
-    now rewrite fsetUid.
-  Qed.
   Fail Next Obligation.
 
   Program Definition foldi_both_
@@ -343,9 +272,9 @@ Section Loops.
       match Z.sub (unsigned hi) (unsigned lo) with
       | Z0 => lift_both init
       | Zneg p => lift_both init
-      | Zpos p => foldi_both_ (Pos.to_nat p) (ret_both lo) (@f) init (* (fsubset_loc1 := fsubset_loc1) (fsubset_opsig1 := fsubset_opsig1) *)
+      | Zpos p => foldi_both_ (Pos.to_nat p) (solve_lift (ret_both lo)) (@f) init (* (fsubset_loc1 := fsubset_loc1) (fsubset_opsig1 := fsubset_opsig1) *)
       end))
-    .
+  .
   Solve All Obligations with (intros ; (fset_equality || solve_in_fset)).
   Fail Next Obligation.
 
@@ -1175,17 +1104,19 @@ Infix "seq_xor" := seq_xor_ (at level 33) : hacspec_scope.
     | y :: ys =>
         bind_both x (fun temp_x =>
         bind_both (array_from_list_helper y ys k) (fun temp_y =>
-        ret_both (setm (temp_y : nseq_ A (S k)) (Ordinal (ssrbool.introT ssrnat.ltP (lt_succ_diag_r_sub k (length (y :: ys))))) temp_x : nseq_ A (S k))) (fsubset_loc := _)  (fsubset_opsig := _)) (fsubset_loc := _)  (fsubset_opsig := _)
+        solve_lift (ret_both (setm (temp_y : nseq_ A (S k)) (Ordinal (ssrbool.introT ssrnat.ltP (lt_succ_diag_r_sub k (length (y :: ys))))) temp_x : nseq_ A (S k)))) (fsubset_loc := _)  (fsubset_opsig := _)) (fsubset_loc := _)  (fsubset_opsig := _)
     end.
   Solve All Obligations with (intros ; time (fset_equality || solve_in_fset)).
   Fail Next Obligation.
 
-  Definition array_from_list {A: choice_type} {L I} (l: list (both L I A))
+  Program Definition array_from_list {A: choice_type} {L I} (l: list (both L I A))
     : both L I (nseq_ A (length l)) :=
     match l as k return both L I (nseq_ A (length k)) with
-      [] => ret_both (tt : nseq_ A 0)
+      [] => solve_lift (ret_both (tt : nseq_ A 0))
     | (x :: xs) => array_from_list_helper x xs (length xs)
     end.
+  Solve All Obligations with (intros ; (fset_equality || solve_in_fset)).
+  Fail Next Obligation.
 
   Program Definition array_from_seq {A: choice_type} {L I} (out_len: nat) (input: both L I (seq A)) : both L I (nseq_ A out_len) :=
     lift1_both  (* (H_loc_incl_x := fsubsetxx _) (H_opsig_incl_x := fsubsetxx _) *) (array_from_seq out_len) input.
@@ -1625,12 +1556,11 @@ End choice_typeMonad.
 
 (*** Result *)
 
-Definition Ok {a b : choice_type} (x : a) : both (fset []) ([interface]) (result b a) :=
-  ret_both (Ok x : result b a).
-Definition Err {a b : choice_type} (x : b) : both (fset []) ([interface]) (result b a) :=   ret_both (Err x : result b a).
+Definition Ok {L I} {a b : choice_type} : both L I a -> both L I (result b a) := lift1_both Ok.
+Definition Err  {L I} {a b : choice_type} : both L I b -> both L I (result b a) := lift1_both Err.
 
-Arguments Ok {_ _}.
-Arguments Err {_ _}.
+(* Arguments Ok {_ _}. *)
+(* Arguments Err {_ _}. *)
 
 
 (*** Notation *)
@@ -1874,13 +1804,13 @@ Definition nat_mod_from_byte_seq_be {A n} (x : seq A) : both (fset []) ([interfa
 
 End TodoSection3.
 
-Definition neqb {A : choice_type} `{EqDec A} (x y : A) : both (fset []) ([interface]) 'bool := ret_both (negb (eqb x y) : 'bool).
-Definition eqb {A : choice_type} `{EqDec A} (x y : A) : both (fset []) ([interface]) 'bool := ret_both (eqb x y : 'bool).
+Definition neqb {A : choice_type} `{EqDec A} {L1 L2 I1 I2} : both L1 I1 A -> both L2 I2 A -> both (L1 :|: L2) (I1 :|: I2) 'bool := lift2_both (fun x y => negb (eqb x y) : 'bool).
+Definition eqb {A : choice_type} `{EqDec A}  {L1 L2 I1 I2} : both L1 I1 A -> both L2 I2 A -> both (L1 :|: L2) (I1 :|: I2) 'bool := lift2_both (fun x y => eqb x y : 'bool).
 
-Definition ltb {A : choice_type} `{Comparable A} (x y : A) : both (fset []) ([interface]) 'bool := ret_both (ltb x y : 'bool).
-Definition leb {A : choice_type} `{Comparable A} (x y : A) : both (fset []) ([interface]) 'bool := ret_both (leb x y : 'bool).
-Definition gtb {A : choice_type} `{Comparable A} (x y : A) : both (fset []) ([interface]) 'bool := ret_both (gtb x y : 'bool).
-Definition geb {A : choice_type} `{Comparable A} (x y : A) : both (fset []) ([interface]) 'bool := ret_both (geb x y : 'bool).
+Definition ltb {A : choice_type} `{Comparable A} {L1 L2 I1 I2} : both L1 I1 A -> both L2 I2 A -> both (L1 :|: L2) (I1 :|: I2) 'bool := lift2_both (fun x y => ltb x y : 'bool).
+Definition leb {A : choice_type} `{Comparable A} {L1 L2 I1 I2} : both L1 I1 A -> both L2 I2 A -> both (L1 :|: L2) (I1 :|: I2) 'bool := lift2_both (fun x y => leb x y : 'bool).
+Definition gtb {A : choice_type} `{Comparable A} {L1 L2 I1 I2} : both L1 I1 A -> both L2 I2 A -> both (L1 :|: L2) (I1 :|: I2) 'bool := lift2_both (fun x y => gtb x y : 'bool).
+Definition geb {A : choice_type} `{Comparable A} {L1 L2 I1 I2} : both L1 I1 A -> both L2 I2 A -> both (L1 :|: L2) (I1 :|: I2) 'bool := lift2_both (fun x y => geb x y : 'bool).
 
 Infix "=.?" := eqb (at level 40) : hacspec_scope.
 Infix "!=.?" := neqb (at level 40) : hacspec_scope.
@@ -2703,7 +2633,7 @@ Ltac solve_in_mem :=
   (* | [ |- context [ ssrbool.in_mem _ (ssrbool.mem _) ] ] => *)
    (* rewrite is_true_split_or *)
   (* repeat (rewrite (@in_fsetU loc_ordType) ; rewrite Bool.orb_true_intro) ; try rewrite <- !fset1E ; try rewrite (ssrbool.introT (fset1P _ _) eq_refl) ; repeat (reflexivity || (left ; reflexivity) || right) *)
-
+  noramlize_fset ;
   repeat (rewrite (@in_fsetU loc_ordType) ; rewrite (is_true_split_or_)) ; try rewrite <- !fset1E ; try rewrite (ssrbool.introT (fset1P _ _) eq_refl) ; repeat (reflexivity || (left ; reflexivity) || right)
   (* end *).
 
@@ -2730,16 +2660,115 @@ Equations foldi_both
         {acc: choice_type}
         {L1 L2 L3 I1 I2 I3}
         (lo_hi: both L2 I2 uint_size * both L3 I3 uint_size)
-        (f: forall {L I} `{is_true (fsubset L1 L)} `{is_true (fsubset I1 I)}, both (L2 :|: L3) (I2 :|: I3) uint_size -> both L I acc -> both (L :|: (L2 :|: L3)) (I :|: (I2 :|: I3)) (acc)) (* {i < hi} *)
+        (f: forall {L I} `{fsubset_loc : is_true (fsubset L1 L)} `{fsubset_opsig : is_true (fsubset I1 I)}, both (L2 :|: L3) (I2 :|: I3) uint_size -> both L I acc -> both (L :|: (L2 :|: L3)) (I :|: (I2 :|: I3)) (acc)) (* {i < hi} *)
         (init: both L1 I1 acc)
          : both (L1 :|: (L2 :|: L3)) (I1 :|: (I2 :|: I3)) (acc) :=
   foldi_both lo_hi f init :=
     foldi (fst lo_hi) (snd lo_hi) (@f) init.
 
 Notation "'fold'" :=
-  (fun lo_hi init f => foldi_both lo_hi f init).
+  (fun lo_hi init f => foldi_both (L1 := _) (L2 := _) (L3 := _) (I1 := _) (I2 := _) (I3 := _) lo_hi f init).
+
+Equations foldi_both_list
+           {acc B: choice_type}
+        {L1 L2 I1 I2}
+        (l : both L2 I2 (chList B))
+        (f: forall {L I} `{fsubset_loc : is_true (fsubset L1 L)} `{fsubset_opsig : is_true (fsubset I1 I)}, both (L2) (I2) B -> both L I acc -> both (L :|: (L2)) (I :|: (I2)) (acc)) (* {i < hi} *)
+        (init: both L1 I1 acc)
+  : both (L1 :|: (L2)) (I1 :|: (I2)) (acc) :=
+  foldi_both_list l f init :=
+  bind_both l (fun l' => List.fold_left (fun x y => solve_lift @f _ _ _ _ (solve_lift ret_both y) (x) : both (L1 :|: L2) (I1 :|: I2) _) l' (solve_lift init : both (L1 :|: L2) (I1 :|: I2) _)).
+Solve Obligations with intros ; (assumption || solve_in_fset).
+Fail Next Obligation.
+
+(* Equations foldi_both_list *)
+(*            {acc B: choice_type} *)
+(*            `{H : Default B} *)
+(*         {L1 L2 I1 I2} *)
+(*         (l : both L2 I2 (chList B)) *)
+(*         (f: forall {L I} `{fsubset_loc : is_true (fsubset L1 L)} `{fsubset_opsig : is_true (fsubset I1 I)}, both (L2) (I2) B -> both L I acc -> both (L :|: (L2)) (I :|: (I2)) (acc)) (* {i < hi} *) *)
+(*         (init: both L1 I1 acc) *)
+(*   : both (L1 :|: (L2)) (I1 :|: (I2)) (acc) := *)
+(*   foldi_both_list l f init := *)
+(*     (solve_lift bind_both l (fun l' => (foldi (ret_both (repr _ 0)) (solve_lift ret_both (repr _ (length l')) : both L2 I2 _) (fun {L I H0 H1} => fun i v => solve_lift bind_both i (fun i' => @f _ _ _ _ (solve_lift ret_both (List.nth (Z.to_nat (unsigned i')) l' default)) v)) init))). *)
+(* Solve Obligations with intros ; (assumption || solve_in_fset). *)
+(* Fail Next Obligation. *)
+
+Program Definition if_both {L1 L2 L3 I1 I2 I3} {A} (c : both L1 I1 'bool) (e_then : both L2 I2 A) (e_else : both L3 I3 A) : both (L1 :|: L2 :|: L3) (I1 :|: I2 :|: I3) A :=
+  bind_both (fsubset_loc := _) (fsubset_opsig := _) c (fun b => if b then lift_both (fsubset_loc := _) (fsubset_opsig := _) e_then else lift_both  (fsubset_loc := _) (fsubset_opsig := _) e_else).
+Solve All Obligations with solve_ssprove_obligations.
+Fail Next Obligation.
+
+Notation "'ifb' b 'then' et 'else' ee" :=
+  (if_both b et ee) (at level 100).
+
+Program Definition match_both {L1 L2 L3 I1 I2 I3} {A B} (x : both L3 I3 (option A)) (fa : both L3 I3 A -> both L1 I1 B) (fb : both L2 I2 B) `{fsubset_loc1 : is_true (fsubset L3 L1)}  `{fsubset_loc2 : is_true (fsubset L3 L2)}  `{fsubset_opsig1 : is_true (fsubset I3 I1)}  `{fsubset_opsig2 : is_true (fsubset I3 I2)} : both (L1 :|: L2) (I1 :|: I2) B :=
+  bind_both (fsubset_loc := _) (fsubset_opsig := _) x (fun y => match y with
+         | Some a => lift_both  (fsubset_loc := _) (fsubset_opsig := _) (fa (solve_lift (ret_both a)))
+         | None => lift_both  (fsubset_loc := _) (fsubset_opsig := _) fb
+                     end).
+Solve All Obligations with solve_ssprove_obligations.
+Fail Next Obligation.
+
+Notation "'matchb' x 'with' '|' 'Option_Some' a '=>' va '|' 'Option_None' '=>' vb 'end'" :=
+  (match_both x (fun a => va) vb (fsubset_loc1 := _) (fsubset_loc2 := _) (fsubset_opsig1 := _) (fsubset_opsig2 := _)).
+
+Notation "'matchb' x 'with' '|' 'Option_Some' a '=>' va '|' '_' '=>' vb 'end'" :=
+  (match_both x (fun a => va) vb (fsubset_loc1 := _) (fsubset_loc2 := _) (fsubset_opsig1 := _) (fsubset_opsig2 := _)).
 
 
-(* Check (0%nat : ident , ('nat , 'bool)) : opsig. *)
-(* Check (opr (0%nat : ident , ('nat , 'bool)) 3 (fun x => ret (if x then (33 : 'nat) else (22 : 'nat)))). *)
-(* Check (bind (opr (0%nat : ident , ('nat , 'bool)) 3 (fun x => ret (if x then (33 : 'nat) else (22 : 'nat)))) (fun y => ret y)). *)
+Program Definition foldi_both0_
+        {acc : choice_type}
+        (fuel : nat)
+        (i : both (fset []) (fset []) uint_size)
+        (f: both (fset []) (fset []) (uint_size) -> both (fset []) (fset []) acc -> both (fset []) (fset []) (acc))
+        (cur : both (fset []) (fset []) acc) : both (fset []) (fset []) (acc) :=
+  foldi_ fuel i (@f) (lift_both cur (fsubset_loc := _) (fsubset_opsig := _)) (fsubset_loc := _) (fsubset_opsig := _).
+Solve All Obligations with (intros ; (fset_equality || solve_in_fset)).
+Fail Next Obligation.
+
+Equations foldi0
+          {acc: choice_type}
+          (lo: both (fset []) (fset []) uint_size)
+          (hi: both (fset []) (fset []) uint_size) (* {lo <= hi} *)
+          (f: both (fset []) (fset []) (uint_size) -> both (fset []) (fset []) acc -> both (fset []) (fset []) (acc)) (* {i < hi} *)
+          (init: both (fset []) (fset []) acc) : both (fset []) (fset []) (acc) :=
+  foldi0 lo hi f init :=
+    bind_both lo (fun lo =>
+                    bind_both hi (fun hi =>
+                                    match Z.sub (unsigned hi) (unsigned lo) with
+                                    | Z0 => lift_both init
+                                    | Zneg p => lift_both init
+                                    | Zpos p => foldi_both0_ (Pos.to_nat p) (solve_lift (ret_both lo)) (@f) init
+                                    end))
+.
+Solve All Obligations with (intros ; (fset_equality || solve_in_fset)).
+Fail Next Obligation.
+
+Definition foldi_both0
+        {acc: choice_type}
+        (lo_hi: both (fset []) (fset []) uint_size * both (fset []) (fset []) uint_size)
+        (f: both (fset []) (fset []) uint_size -> both (fset []) (fset []) acc -> both (fset []) (fset []) (acc)) (* {i < hi} *)
+        (init: both (fset []) (fset []) acc)
+  : both (fset []) (fset []) (acc) :=
+  foldi0 (fst lo_hi) (snd lo_hi) f init.
+
+Equations foldi_both0_list
+           {acc B: choice_type}
+        (l : both (fset []) (fset []) (chList B))
+        (f: both ((fset [])) ((fset [])) B -> both(fset []) (fset []) acc -> both (fset []) (fset []) (acc)) (* {i < hi} *)
+        (init: both (fset []) (fset []) acc)
+  : both (fset []) (fset []) (acc) :=
+  foldi_both0_list l f init := 
+    bind_both l (fun l' => List.fold_left (fun x y => solve_lift @f (solve_lift ret_both y) (x) : both (fset []) (fset []) _) l' (solve_lift init : both (fset []) (fset []) _)).
+Solve Obligations with intros ; (assumption || solve_in_fset).
+Fail Next Obligation.
+
+
+Program Definition if_both0 {A} (c : both (fset []) (fset []) 'bool) (e_then : both (fset []) (fset []) A) (e_else : both (fset []) (fset []) A) : both (fset []) (fset []) A :=
+  bind_both (fsubset_loc := _) (fsubset_opsig := _) c (fun b => if b then lift_both (fsubset_loc := _) (fsubset_opsig := _) e_then else lift_both  (fsubset_loc := _) (fsubset_opsig := _) e_else).
+Solve All Obligations with solve_ssprove_obligations.
+Fail Next Obligation.
+
+Notation "'ifb0' b 'then' et 'else' ee" :=
+  (if_both0 b et ee) (at level 100).
