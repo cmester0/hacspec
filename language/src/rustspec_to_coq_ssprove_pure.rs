@@ -1578,7 +1578,7 @@ pub fn translate_and_write_to_file(
          From Crypt Require Import choice_type Package Prelude.\n\
          Import PackageNotation.\n\
          From extructures Require Import ord fset.\n\
-         From mathcomp.word Require Import ssrZ word.\n\
+         From mathcomp Require Import word_ssrZ word.\n\
          From Jasmin Require Import word.\n\
          Require Import ChoiceEquality.\n\
          \n\

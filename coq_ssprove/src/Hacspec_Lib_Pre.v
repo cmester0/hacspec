@@ -16,7 +16,7 @@ From extructures Require Import ord fset fmap.
 
 Require Import ChoiceEquality.
 
-From mathcomp.word Require Import ssrZ word.
+From mathcomp Require Import word_ssrZ word.
 From Jasmin Require Import word.
 
 From Coq Require Import ZArith List.

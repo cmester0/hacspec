@@ -14,7 +14,7 @@ From Crypt Require Import choice_type Package Prelude.
 Import PackageNotation.
 From extructures Require Import ord fset fmap.
 
-From mathcomp.word Require Import ssrZ word.
+From mathcomp Require Import word_ssrZ word.
 From Jasmin Require Import word.
 
 From Coq Require Import ZArith List.

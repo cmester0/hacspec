@@ -20,7 +20,7 @@ Set Bullet Behavior "Strict Subproofs".
 From Coq Require Import Utf8.
 From extructures Require Import ord fset fmap.
 Require Import micromega.Lia.
-From mathcomp.word Require Import word ssrZ.
+From mathcomp Require Import word word_ssrZ.
 From JasminSSProve Require Import aes_jazz jasmin_utils.
 From JasminSSProve Require Import aes_utils.
 Import JasminNotation JasminCodeNotation.
@@ -1688,7 +1688,7 @@ Section Hacspec.
         ≈
         is_state (array_index (rcon_v) (@repr U32 (S j)))
         ⦃ fun '(v0, h0) '(v1, h1) =>
-            (exists o1, v0 = [('int; o1)] /\ repr o1 = v1)  /\ pre (h0, h1) ⦄.
+            (exists (o1 : (λ i : choice_type_choiceType, i) _), v0 = [('int; o1)] /\ repr o1 = v1)  /\ pre (h0, h1) ⦄.
   Proof.
     intros.
     unfold JRCON.

@@ -130,7 +130,7 @@ Import Num.Def.
 Import Num.Theory.
 
 #[local] Open Scope ring_scope.
-From mathcomp.word Require Import ssrZ.
+From mathcomp Require Import word_ssrZ.
 
 Import GRing Order TotalTheory.
 
