@@ -1583,27 +1583,188 @@ Proof.
       apply (IHk x).
 Qed.
 
+Definition setm_leave_default {T : ordType} {S : choice_type}
+       (m : {fmap T -> S}) (i : T) (e : S) : {fmap T -> S} :=
+  if eqtype.eq_op e (chCanonical S)
+  then m
+  else setm m i e.
+
 Equations array_from_list_helper {A: choice_type} (x : A) (xs: list (A)) (k : nat) : (nseq_ A (S k)) :=
-    array_from_list_helper x [] k := setm emptym (Ordinal (ssrbool.introT ssrnat.ltP (lt_succ_diag_r_sub k O))) x ;
-  array_from_list_helper x (y :: ys) k := setm (array_from_list_helper y ys k) (Ordinal (ssrbool.introT ssrnat.ltP (lt_succ_diag_r_sub k (length (y :: ys))))) x.
+  array_from_list_helper x [] k :=
+    setm
+      emptym
+      (Ordinal (ssrbool.introT ssrnat.ltP (lt_succ_diag_r_sub k O)))
+      x ;
+  array_from_list_helper x (y :: ys) k :=
+    setm
+      (array_from_list_helper y ys k)
+      (Ordinal (ssrbool.introT ssrnat.ltP (lt_succ_diag_r_sub k (length (y :: ys)))))
+      x.
 
 Definition array_from_list {A: choice_type} (l: list (A))
   : (nseq_ A (length l)) :=
   match l with
-    [] => tt
+    nil => tt
   | (x :: xs) => array_from_list_helper x xs (length xs)
   end.
+
+Definition resize_to_k {A : choice_type} (l : list A) k := List.rev (seq.drop (length l - k) (List.rev l)) ++ (List.repeat (chCanonical A) (k - length l)).
+
+Theorem length_resize_to_k : forall {A : choice_type} (l : list A) k, List.length (resize_to_k l k) = k.
+Proof.
+  intros.
+  unfold resize_to_k.
+  rewrite List.app_length.
+  rewrite List.rev_length.
+  rewrite seq.size_drop.
+  rewrite List.repeat_length.
+  rewrite List.rev_length.
+  Lia.lia.
+Defined.
+
+Theorem resize_to_length_idemp : forall {A : choice_type} (l : list A), l = resize_to_k l (length l).
+Proof.
+  intros.
+  induction l.
+  - reflexivity.
+  - unfold resize_to_k.
+    rewrite (Nat.sub_diag).
+    rewrite seq.drop0.
+    rewrite List.rev_involutive.
+    now rewrite List.app_nil_r.
+Qed.
 
 Definition array_from_list' {A: choice_type}  (l: list (A)) (k : nat)
   : (nseq_ A k) :=
   match k with
   | O => (tt : (nseq_ A O))
   | S k' =>
-      match rev (seq.drop (length l - S k') (rev l)) ++ (repeat (chCanonical A) (S k' - length l)) with
-        [] => emptym
+      match resize_to_k l (S k') with
+        nil => fmap.emptym
       | (x :: xs) => array_from_list_helper x xs k'
       end
   end.
+
+Definition lift_ordinal n (x : 'I_n) : 'I_(S n).
+Proof.
+  destruct x.
+  apply (Ordinal (m := S m)).
+  apply i.
+Defined.
+
+Equations lift_fval {A : choice_type} {n} (a : list ('I_(S n) * (A))) : list ('I_(S(S n)) * (A)) :=
+  lift_fval [] := [] ;
+  lift_fval (x :: xs) :=
+    (lift_ordinal (S n) (fst x) , snd x) :: lift_fval xs.
+
+Lemma lift_is_sorted : forall  {A : choice_type} {n} (a : {fmap 'I_(S n) -> (A)}), is_true (path.sorted Ord.lt (seq.unzip1 (lift_fval a))).
+Proof.
+  intros.
+  destruct a.
+  simpl.
+
+  induction fmval.
+  - reflexivity.
+  - destruct a.
+    simpl.
+    intros.
+    rewrite lift_fval_equation_2 ; simpl.
+    destruct fmval.
+    + reflexivity.
+    + pose proof i.
+      rewrite lift_fval_equation_2 ; simpl.
+
+      simpl in H.
+      rewrite LocationUtility.is_true_split_and in H.
+      destruct H.
+
+      rewrite LocationUtility.is_true_split_and.
+      split ; [ | ].
+      2:{
+        apply IHfmval.
+        apply H0.
+      }
+
+      unfold lift_ordinal.
+      destruct s.
+      destruct (fst _).
+      apply H.
+Qed.
+
+Definition lift_nseq {A: choice_type} {len : nat} (x: nseq_ A len) : (nseq_ A (S len)) :=
+  match len as k return nseq_ A k -> nseq_ A (S k) with
+  | O => fun _ => emptym
+  | S n =>
+      fun x => @FMap.FMap _ _ (lift_fval (FMap.fmval x)) (lift_is_sorted x)
+  end x.
+
+Definition setm_option {T : ordType} {S : choice_type}
+       (m : {fmap T -> S}) (i : T) (e : chOption S) : {fmap T -> S} :=
+  match e with
+  | Some x => setm m i x
+  | None => m
+  end.
+
+Equations array_from_option_list_helper {A: choice_type} (x : chOption A) (xs: list (chOption A)) (k : nat) : (nseq_ A (S k)) :=
+  array_from_option_list_helper x (y :: ys) O :=
+      emptym ;
+  array_from_option_list_helper x [] k :=
+    setm_option
+      emptym
+      (Ordinal (ssrbool.introT ssrnat.ltP (lt_succ_diag_r_sub k O)))
+      x ;
+  array_from_option_list_helper x (y :: ys) (S k) :=
+    setm_option
+      (lift_nseq (array_from_option_list_helper y ys k))
+      (Ordinal (ssrbool.introT ssrnat.ltP (lt_succ_diag_r_sub (S k) (length (y :: ys)))))
+      x.
+Fail Next Obligation.
+
+Definition array_from_option_list' {A: choice_type}  (l: list (chOption A)) (k : nat)
+  : (nseq_ A k) :=
+  match k with
+  | O => (tt : (nseq_ A O))
+  | S k' =>
+      match resize_to_k l (S k') with
+        nil => fmap.emptym
+      | (x :: xs) => array_from_option_list_helper x xs k'
+      end
+  end.
+
+Theorem list_rev_is_seq_rev : forall T (x : list T), List.rev x = seq.rev x.
+Proof.
+  intros.
+  induction x.
+  - reflexivity.
+  - simpl.
+    rewrite IHx.
+    replace (a :: nil) with (seq.rev (a :: nil)) by reflexivity.
+    now rewrite <- seq.rev_cat.
+Qed.
+
+Theorem simple0_array_from_list : forall (A : choice_type) (x : list A), array_from_list' x (List.length x) = array_from_list x.
+Proof.
+  intros.
+  subst.
+  simpl.
+  induction x.
+  - reflexivity.
+  - simpl.
+    unfold resize_to_k.
+    simpl.
+    rewrite (Nat.sub_diag (length x)).
+    setoid_rewrite seq.drop0.
+    change (List.rev _ ++ _ :: nil) with (List.rev (a :: x)).
+    rewrite List.rev_involutive.
+    now rewrite List.app_nil_r.
+Defined.
+
+Theorem simple_array_from_list : forall (A : choice_type) (x : list A) len (H : List.length x = len), array_from_list' x len = (eq_rect (length x) (fun n : nat => nseq_ A n) (array_from_list x) len H).
+Proof.
+  intros.
+  subst.
+  apply simple0_array_from_list.
+Defined.
 
 (**** Array manipulation *)
 
@@ -1676,6 +1837,8 @@ Proof.
     + lia.
 Defined.
 
+
+
 Equations lower_fval {A : choice_type} {n} (a : list ('I_(S(S n)) * (A))) (H : forall x, In x a -> is_true (ord0 < fst x)%ord ) : list ('I_(S n) * (A)) :=
   lower_fval [] H := [] ;
   lower_fval (x :: xs) H :=
@@ -1743,6 +1906,13 @@ Proof.
       rewrite lower_fval_equation_2 in IHfmval ; simpl in IHfmval.
       simpl.
       apply IHfmval.
+Qed.
+
+Corollary lower_list_is_sorted : forall  {A : choice_type} {n} (a : list ('I_(S(S n)) * (A))) H, is_true (path.sorted Ord.lt (seq.unzip1 a)) -> is_true (path.sorted Ord.lt (seq.unzip1 (lower_fval a H))).
+Proof.
+  intros.
+  refine (lower_is_sorted (@FMap.FMap _ _ a _) _).
+  apply H0.
 Qed.
 
 Lemma ord_ext : forall {n} m0 m1 {H1 H2}, m0 = m1 <-> Ordinal (n := S n) (m := m0) H1 = Ordinal (n := S n) (m := m1) H2.
@@ -1826,6 +1996,23 @@ Proof.
 Qed.
 
 
+Lemma lower_fval_ext_list : forall  {A : choice_type} {n} (a b : list ('I_(S(S n)) * (A))) (Ha : is_true (path.sorted Ord.lt (seq.unzip1 a))) (Hb : is_true (path.sorted Ord.lt (seq.unzip1 b))) H1 H2, a = b <-> lower_fval a H1 = lower_fval b H2.
+Proof.
+  intros.
+  epose (lower_fval_ext (@FMap.FMap _ _ a Ha) (@FMap.FMap _ _ b Hb) H1 H2).
+  simpl in i.
+  rewrite <- i.
+  split.
+  intros.
+  apply fmap.eq_fmap.
+  intros x.
+  subst.
+  reflexivity.
+  intros.
+  now inversion H.
+Qed.
+
+
 Lemma gt_smallest_sorted : forall {A} {n} {p : 'I_n * A} {fmval}, is_true (path.sorted Ord.lt (seq.unzip1 (p :: fmval))) -> (forall x, In x fmval -> is_true (fst p < fst x)%ord).
   intros.
   induction fmval.
@@ -1883,8 +2070,11 @@ Qed.
 
 Equations tl_fmap {A : choice_type} {n} (a : {fmap 'I_(S(S n)) -> A}) : {fmap 'I_(S n) -> A} :=
   tl_fmap (@FMap.FMap _ _ [] i) := emptym ;
-  tl_fmap (@FMap.FMap _ _ ((@Ordinal _ 0 i3, k) :: fmval) i) := mkfmap (T:=ordinal_ordType (S n)) (lower_fval fmval (gt_smallest_sorted i)) ;
-  tl_fmap (@FMap.FMap _ _ ((@Ordinal _ (S m') i3, k) :: fmval) i) := mkfmap (T:=ordinal_ordType (S n)) (lower_fval ((Ordinal (n:=S (S n)) (m:=S m') i3, k) :: fmval) (in_nseq_tl_gt_zero fmval i)).
+  tl_fmap (@FMap.FMap _ _ ((@Ordinal _ 0 i3, k) :: fmval) i) :=
+    @FMap.FMap _ _ (lower_fval fmval (gt_smallest_sorted i)) (lower_list_is_sorted _ _ (path_path_tl i)) ;
+  tl_fmap (@FMap.FMap _ _ ((@Ordinal _ (S m') i3, k) :: fmval) i) :=
+    @FMap.FMap _ _ (lower_fval ((Ordinal (n:=S (S n)) (m:=S m') i3, k) :: fmval) (in_nseq_tl_gt_zero fmval i)) (lower_list_is_sorted _ _ i).
+Fail Next Obligation.
 
 Definition nseq_hd {A : choice_type} {n} (a : (nseq_ A (S n))) : A :=
   match a with
@@ -1893,6 +2083,16 @@ Definition nseq_hd {A : choice_type} {n} (a : (nseq_ A (S n))) : A :=
       match nat_of_ord (fst p) with
       | O => snd p
       | S _ => (chCanonical A)
+      end
+  end.
+
+Definition nseq_hd_option {A : choice_type} {n} (a : (nseq_ A (S n))) : chOption A :=
+  match a with
+  | @FMap.FMap _ _ [] _ => None
+  | @FMap.FMap _ _ (p :: _) _ =>
+      match nat_of_ord (fst p) with
+      | O => Some (snd p)
+      | S _ => None
       end
   end.
 
@@ -1913,7 +2113,7 @@ Proof.
     + apply Nat.eq_le_incl.
       f_equal.
       rewrite tl_fmap_equation_2.
-      rewrite mkfmapK ; [ | apply (lower_is_sorted (@FMap.FMap _ _ fmval (path_sorted_tl i)))].
+      (* rewrite mkfmapK ; [ | apply (lower_is_sorted (@FMap.FMap _ _ fmval (path_sorted_tl i)))]. *)
       epose (lower_keeps_value (FMap.FMap (T:=ordinal_ordType (S (S n))) (fmval:=fmval) (path_sorted_tl i))).
       simpl in e.
       rewrite <- (map_length snd).
@@ -1933,7 +2133,7 @@ Proof.
       apply le_n_S.
       eapply le_trans ; [ apply (IHfmval (path_sorted_tl i)) | ].
       apply Nat.eq_le_incl.
-      rewrite mkfmapK ; [ | apply (lower_is_sorted (@FMap.FMap _ _ ((Ordinal (n:=S (S n)) (m:=S m) i0, s0) :: fmval) i)) ].
+      (* rewrite mkfmapK ; [ | apply (lower_is_sorted (@FMap.FMap _ _ ((Ordinal (n:=S (S n)) (m:=S m) i0, s0) :: fmval) i)) ]. *)
       simpl.
       f_equal.
       f_equal.
@@ -1944,11 +2144,9 @@ Proof.
       * destruct a, s.
         destruct m0 ; [ discriminate | ].
         rewrite tl_fmap_equation_3.
-        rewrite mkfmapK ; [ | ].
-
+        simpl.
         erewrite (proj1 (lower_fval_ext (@FMap.FMap _ _ ((Ordinal (n:=S (S n)) (m:=S m0) i1, s1) :: fmval) (path_sorted_tl i)) _ _ _) eq_refl).
         reflexivity.
-        apply (lower_is_sorted (@FMap.FMap _ _ ((Ordinal (n:=S (S n)) (m:=S m0) i1, s1) :: fmval) (path_sorted_tl i))).
 Qed.
 
 
@@ -2100,6 +2298,34 @@ Defined.
 Equations array_to_list {A : choice_type} {n} (f : (nseq_ A n)) : list (A) :=
   array_to_list (n:=O%nat) f := [] ;
   array_to_list (n:=S _%nat) f := nseq_hd f :: array_to_list (nseq_tl f).
+Fail Next Obligation.
+
+Theorem array_to_length_list_is_len : forall (A : choice_type) len (x : nseq_ A len), List.length (array_to_list x) = len.
+Proof.
+  intros.
+  induction len.
+  - reflexivity.
+  - rewrite array_to_list_equation_2.
+    simpl.
+    rewrite IHlen.
+    reflexivity.
+Defined.
+
+Equations array_to_option_list {A : choice_type} {n} (f : (nseq_ A n)) : list (chOption A) :=
+  array_to_option_list (n:=O%nat) f := [] ;
+  array_to_option_list (n:=S _%nat) f := nseq_hd_option f :: array_to_option_list (nseq_tl f).
+Fail Next Obligation.
+
+Theorem array_to_length_option_list_is_len : forall (A : choice_type) len (x : nseq_ A len), List.length (array_to_option_list x) = len.
+Proof.
+  intros.
+  induction len.
+  - reflexivity.
+  - rewrite array_to_option_list_equation_2.
+    simpl.
+    rewrite IHlen.
+    reflexivity.
+Defined.
 
 Lemma nseq_hd_ord0 :
   forall A n (a : (nseq_ A (S n))) (x : A),
@@ -2127,7 +2353,8 @@ Proof.
   + reflexivity.
   + destruct a.
     induction fmval as [ | p ].
-    * reflexivity.
+    * apply eq_fmap. intros ?.
+      reflexivity.
     * destruct p, s.
       unfold setm.
       unfold fmap.
@@ -2137,10 +2364,15 @@ Proof.
 
       -- cbn.
          rewrite !tl_fmap_equation_2.
+         apply eq_fmap. intros ?.
+         cbn.
+         f_equal.
          now erewrite (proj1 (lower_fval_ext (@FMap.FMap _ _ fmval (path_sorted_tl i)) _ _ _) eq_refl).
       -- cbn.
          rewrite tl_fmap_equation_2.
          rewrite tl_fmap_equation_3.
+         apply eq_fmap. intros ?.
+         cbn.
          f_equal.
          now erewrite (proj1 (lower_fval_ext (@FMap.FMap _ _ ((Ordinal (n:=S (S n)) (m:=S m) i0, s0) :: fmval) i) _ _ _) eq_refl).
 Qed.
@@ -3062,65 +3294,72 @@ Definition option := chOption.
 (*** Monad / Bind *)
 
 Module choice_typeMonad.
-  Class CEMonad (M : choice_type -> choice_type) : Type :=
+  Class CEMonad : Type :=
     {
+      M :> choice_type -> choice_type ;
       bind {A B : choice_type} (x : (M A)) (f : A -> (M B)) : (M B) ;
       ret {A : choice_type} (x : A) : (M A) ;
+      monad_law1 : forall {A B : choice_type} a (f : A -> M B),
+        bind (ret a) f = f a ;
+      monad_law2 : forall {A : choice_type} c, bind c (@ret A) = c ;
+      monad_law3 : forall {A B C : choice_type} c (f : A -> M B) (g : B -> M C),
+          bind (bind c f) g
+          = bind c (fun a => bind (f a) g)
     }.
 
-  Class CEMonad2 (M : choice_type -> choice_type) : Type :=
-    {
-      unit {A : choice_type} (x : A) : (M A) ;
-      fmap {A B : choice_type} (f : A -> B) (x : (M A)) : (M B) ;
-      join {A : choice_type} (x : (M (M A))) : (M A) ;
-    }.
+  (* Class CEMonad2 (M : choice_type -> choice_type) : Type := *)
+  (*   { *)
+  (*     unit {A : choice_type} (x : A) : (M A) ; *)
+  (*     fmap {A B : choice_type} (f : A -> B) (x : (M A)) : (M B) ; *)
+  (*     join {A : choice_type} (x : (M (M A))) : (M A) ; *)
+  (*   }. *)
 
-  #[global] Instance CEMonadToCEMonad2 `{CEMonad} : CEMonad2 M :=
-    {|
-      unit A := @ret M _ A ;
-      fmap A B f x := bind x (fun y => ret (f y)) ;
-      join A x := bind x id
-    |}.
+  (* #[global] Instance CEMonadToCEMonad2 `{CEMonad} : CEMonad2 M := *)
+  (*   {| *)
+  (*     unit A := @ret M _ A ; *)
+  (*     fmap A B f x := bind x (fun y => ret (f y)) ; *)
+  (*     join A x := bind x id *)
+  (*   |}. *)
 
-  #[global] Instance CEMonad2ToCEMonad `{CEMonad2} : CEMonad M :=
-    {|
-      ret A := @unit M _ A ;
-      bind A B x f := join (fmap f x)
-    |}.
+  (* #[global] Instance CEMonad2ToCEMonad `{CEMonad2} : CEMonad M := *)
+  (*   {| *)
+  (*     ret A := @unit M _ A ; *)
+  (*     bind A B x f := join (fmap f x) *)
+  (*   |}. *)
 
-  Class CEMonad_prod (M M0 : choice_type -> choice_type) :=
-    { prod : forall A, (M0 (M (M0 A))) -> (M (M0 A)) }.
+  (* Class CEMonad_prod (M M0 : choice_type -> choice_type) := *)
+  (*   { prod : forall A, (M0 (M (M0 A))) -> (M (M0 A)) }. *)
 
-  #[global] Program Instance ComposeProd2 `{CEMonad2} `{CEMonad2} `{@CEMonad_prod M M0} : CEMonad2 (fun x => M (M0 x)) :=
-    {|
-      unit A x := unit (A := M0 A) (unit x) ;
-      fmap A B f x := fmap (A := M0 A) (B := M0 B) (fmap f) x ;
-      join A x := join (A := M0 A) (fmap (@prod M M0 _ A) x)
-    |}.
+  (* #[global] Program Instance ComposeProd2 `{CEMonad2} `{CEMonad2} `{@CEMonad_prod M M0} : CEMonad2 (fun x => M (M0 x)) := *)
+  (*   {| *)
+  (*     unit A x := unit (A := M0 A) (unit x) ; *)
+  (*     fmap A B f x := fmap (A := M0 A) (B := M0 B) (fmap f) x ; *)
+  (*     join A x := join (A := M0 A) (fmap (@prod M M0 _ A) x) *)
+  (*   |}. *)
 
-  #[global] Instance ComposeProd `{CEMonad} `{CEMonad} `(@CEMonad_prod M M0) : CEMonad (fun x => M (M0 x)) := (@CEMonad2ToCEMonad _ ComposeProd2).
+  (* #[global] Instance ComposeProd `{CEMonad} `{CEMonad} `(@CEMonad_prod M M0) : CEMonad (fun x => M (M0 x)) := (@CEMonad2ToCEMonad _ ComposeProd2). *)
 
-  Definition bind_prod `{CEMonad} `{CEMonad} `{@CEMonad_prod M M0}
-             {A B} (x : (M (M0 A))) (f : A -> (M (M0 B)))
-    : (M (M0 B)) :=
-    (@bind (fun x => M (M0 x)) (ComposeProd _) A B x f).
+  (* Definition bind_prod `{CEMonad} `{CEMonad} `{@CEMonad_prod M M0} *)
+  (*            {A B} (x : (M (M0 A))) (f : A -> (M (M0 B))) *)
+  (*   : (M (M0 B)) := *)
+  (*   (@bind (fun x => M (M0 x)) (ComposeProd _) A B x f). *)
 
 
-  Class CEMonad_swap (M M0 : choice_type -> choice_type) :=
-    { swap : forall A, (M0 (M A)) -> (M (M0 A)) }.
+  (* Class CEMonad_swap (M M0 : choice_type -> choice_type) := *)
+  (*   { swap : forall A, (M0 (M A)) -> (M (M0 A)) }. *)
 
-  #[global] Program Instance ComposeSwap2 `{CEMonad2 } `{CEMonad2} `{@CEMonad_swap M M0} : CEMonad2 (fun x => M (M0 x)) :=
-    {|
-      unit A x := unit (A := M0 A) (unit x) ;
-      fmap A B f x := fmap (A := M0 A) (B := M0 B) (fmap f) x ;
-      join A x := fmap (join (M := M0)) (join (fmap (@swap M M0 _ (M0 A)) x))
-    |}.
+  (* #[global] Program Instance ComposeSwap2 `{CEMonad2 } `{CEMonad2} `{@CEMonad_swap M M0} : CEMonad2 (fun x => M (M0 x)) := *)
+  (*   {| *)
+  (*     unit A x := unit (A := M0 A) (unit x) ; *)
+  (*     fmap A B f x := fmap (A := M0 A) (B := M0 B) (fmap f) x ; *)
+  (*     join A x := fmap (join (M := M0)) (join (fmap (@swap M M0 _ (M0 A)) x)) *)
+  (*   |}. *)
 
-  #[global] Instance ComposeSwap `{CEMonad} `{CEMonad} `(@CEMonad_swap M M0) : CEMonad (fun x => M (M0 x)) := (@CEMonad2ToCEMonad _ ComposeSwap2).
+  (* #[global] Instance ComposeSwap `{CEMonad} `{CEMonad} `(@CEMonad_swap M M0) : CEMonad (fun x => M (M0 x)) := (@CEMonad2ToCEMonad _ ComposeSwap2). *)
 
-  Definition bind_swap `{CEMonad} `{CEMonad} `{@CEMonad_swap M M0}
-             A B (x : (M (M0 A))) (f : A -> (M (M0 B))) : (M (M0 B)) :=
-    (@bind _ (@ComposeSwap M _ M0 _ _) A B x f).
+  (* Definition bind_swap `{CEMonad} `{CEMonad} `{@CEMonad_swap M M0} *)
+  (*            A B (x : (M (M0 A))) (f : A -> (M (M0 B))) : (M (M0 B)) := *)
+  (*   (@bind _ (@ComposeSwap M _ M0 _ _) A B x f). *)
 
 
   Section ResultMonad.
@@ -3132,12 +3371,13 @@ Module choice_typeMonad.
 
     Definition result_ret {C A : choice_type} (a : A) : (result C A) := Ok a.
 
-    Global Instance result_monad {C : choice_type} : CEMonad (result C) :=
+    Global Program Instance result_monad {C : choice_type} : CEMonad :=
       {|
-        bind := (@result_bind C) ;
-        ret := (@result_ret C) ;
+        M := result C ;
+        bind := @result_bind C ;
+        ret := @result_ret C ;
       |}.
-
+    Solve All Obligations with now destruct c.
     Arguments result_monad {_} &.
 
   End ResultMonad.
@@ -3150,8 +3390,9 @@ Module choice_typeMonad.
 
   Definition option_ret {A : choice_type} (a : A) : (option A) := Some a.
 
-  Global Instance option_monad : CEMonad option :=
-    Build_CEMonad option (@option_bind) (@option_ret).
+  Global Program Instance option_monad : CEMonad :=
+    Build_CEMonad option (@option_bind) (@option_ret) _ _ _.
+  Solve All Obligations with now destruct c.
 
   Definition option_is_none {A} (x : (option A)) : bool :=
     match x with
@@ -3161,20 +3402,20 @@ Module choice_typeMonad.
 
 End choice_typeMonad.
 
-#[global] Notation "x 'm(' v ')' ⇠ c1 ;; c2" :=
-  (choice_typeMonad.bind (M := v) c1 (fun x => c2))
-    (at level 100, c1 at next level, right associativity,
-      format "x  'm(' v ')'  ⇠  c1  ;;  '//' c2")
-    : hacspec_scope.
+(* #[global] Notation "x 'm(' v ')' ⇠ c1 ;; c2" := *)
+(*   (choice_typeMonad.bind (M := v) c1 (fun x => c2)) *)
+(*     (at level 100, c1 at next level, right associativity, *)
+(*       format "x  'm(' v ')'  ⇠  c1  ;;  '//' c2") *)
+(*     : hacspec_scope. *)
 
-#[global] Notation " ' x 'm(' v ')' ⇠ c1 ;; c2" :=
-  (choice_typeMonad.bind (M := v) c1 (fun x => c2))
-    (at level 100, c1 at next level, x pattern, right associativity,
-      format " ' x  'm(' v ')'  ⇠  c1  ;;  '//' c2")
-    : hacspec_scope.
+(* #[global] Notation " ' x 'm(' v ')' ⇠ c1 ;; c2" := *)
+(*   (choice_typeMonad.bind (M := v) c1 (fun x => c2)) *)
+(*     (at level 100, c1 at next level, x pattern, right associativity, *)
+(*       format " ' x  'm(' v ')'  ⇠  c1  ;;  '//' c2") *)
+(*     : hacspec_scope. *)
 
-Definition foldi_bind {A : choice_type} `{choice_typeMonad.CEMonad} (a : uint_size) (b : uint_size) (f : uint_size -> A -> (M A)) (init : (M A)) : (M A) :=
-  @foldi ((M A)) a b (fun x y => choice_typeMonad.bind y (f x)) init.
+Definition foldi_bind {A : choice_type} `{mnd : choice_typeMonad.CEMonad} (a : uint_size) (b : uint_size) (f : uint_size -> A -> (choice_typeMonad.M A)) (init : (choice_typeMonad.M A)) : (choice_typeMonad.M A) :=
+  @foldi ((choice_typeMonad.M A)) a b (fun x y => choice_typeMonad.bind y (f x)) init.
 
 (*** Notation *)
 
@@ -3184,7 +3425,7 @@ Notation "'ifbnd' b 'then' x 'elsebnd' y '>>' f" := (if b then f x else (choice_
 Notation "'ifbnd' b 'thenbnd' x 'elsebnd' y '>>' f" := (if b then choice_typeMonad.bind x f else choice_typeMonad.bind y f) (at level 200).
 
 Notation "'foldibnd' s 'to' e 'M(' v ')' 'for' z '>>' f" :=
-  (Hacspec_Lib_Pre.foldi s e (choice_typeMonad.ret z) (fun x y => choice_typeMonad.bind (M := v) y (f x))) (at level 50) : hacspec_scope.
+  (Hacspec_Lib_Pre.foldi s e (choice_typeMonad.ret z) (fun x y => choice_typeMonad.bind y (f x))) (at level 50) : hacspec_scope.
 
 Axiom nat_mod_from_byte_seq_be : forall  {A n}, (seq A) -> (nat_mod n).
 

@@ -23,7 +23,7 @@ Import List.ListNotations.
 
 (*** Ltac *)
 
-Ltac noramlize_fset :=
+Ltac normalize_fset :=
   hnf ;
   change ((Ord.sort
              (@tag_ordType choice_type_ordType
@@ -33,6 +33,7 @@ Ltac noramlize_fset :=
   try rewrite <- !fset0E ;
   try rewrite !fsetU0 ;
   try rewrite !fset0U ;
+  try rewrite !fset1E ;
   (* try rewrite <- !fsetUA *)
   repeat (match goal with
           | |- context [?a :|: ?b :|: ?c] =>
@@ -48,11 +49,17 @@ Ltac solve_match :=
   | _ => progress (try apply fsubsetUl ; try apply fsubsetUr ; try apply fsub0set ; try apply fsubsetxx)
   end.
 
-Ltac solve_is_true :=
-  now noramlize_fset ;
+Ltac split_fsubset_lhs :=
   repeat (rewrite is_true_split_and || rewrite fsubUset) ;
-  repeat (try rewrite andb_true_intro ; split) ;
+  repeat (try rewrite andb_true_intro ; split).
+
+Ltac solve_single_fset_fsubset :=
   repeat (solve_match || apply fsubsetU ; rewrite is_true_split_or ; (left ; solve_match) || right).
+
+Ltac solve_is_true :=
+  now normalize_fset ;
+  split_fsubset_lhs ;
+  solve_single_fset_fsubset.
 
 Ltac solve_in_fset :=
   match goal with
@@ -241,7 +248,6 @@ Section Both.
   Arguments is_valid_code {_} ValidBoth.
   Arguments is_valid_both {_} ValidBoth.
 
-  
   Record both : Type :=
     mk2prog {
         both_prog :> raw_both ;
@@ -585,7 +591,7 @@ Definition lift_both {L1 L2 I1 I2} {A} (x : both L1 I1 A) `{fsubset_loc : is_tru
       both_prog_valid := valid_injectLocations_both A L1 L2 I2 x fsubset_loc (valid_injectMap_both A L1 I1 I2 x fsubset_opsig (both_prog_valid x)) ;
       p_eq := p_eq x |}.
 
-Notation "'solve_lift' x" := (lift_both (* (L1 := _) (L2 := _) (I1 := _) (I2 := _) (A := _) *) x (fsubset_loc := _) (fsubset_opsig := _)) (at level 100).
+Notation "'solve_lift' x" := (lift_both (* (L1 := _) (L2 := _) (I1 := _) (I2 := _) (A := _) *) x (* (fsubset_loc := _) (fsubset_opsig := _) *)) (at level 100).
 
 Equations lift1_both {A B : choice_type} {L : {fset Location}} {I : Interface} (f : A -> B) (x : both L I A)
         (* `{H_loc_incl_x : is_true (fsubset L1 L2)} `{H_opsig_incl_x : is_true (fsubset I1 I2)} *)
@@ -1512,27 +1518,28 @@ Equations let_both {L1 L2 I1 I2 A B} (x : both L1 I1 A) (f : both L1 I1 A -> bot
   let_both x f := f x.
 
 Notation "'letb' x ':=' y 'in' f" :=
-  (let_both (* (L1 := _) (L2 := _) (I1 := _) (I2 := _) (A := _) (B := _) *) y (fun x => f) (fsubset_loc := _) (fsubset_opsig := _)) (* (let_both y (fun x => f)) *) (at level 100, x pattern, right associativity).
+  (let_both (* (L1 := _) (L2 := _) (I1 := _) (I2 := _) (A := _) (B := _) *) y (fun x => f) (* (fsubset_loc := _) (fsubset_opsig := _) *)) (* (let_both y (fun x => f)) *) (at level 100, x pattern, right associativity).
 Notation "'letb' ''' x ':=' y 'in' f" :=
-  (let_both (* (L1 := _) (L2 := _) (I1 := _) (I2 := _) (A := _) (B := _) *)  y (fun x => f) (fsubset_loc := _) (fsubset_opsig := _)) (* (let_both y (fun x => f)) *) (at level 100, x pattern, right associativity).
+  (let_both (* (L1 := _) (L2 := _) (I1 := _) (I2 := _) (A := _) (B := _) *)  y (fun x => f) (* (fsubset_loc := _) (fsubset_opsig := _) *)) (* (let_both y (fun x => f)) *) (at level 100, x pattern, right associativity).
 (* (lift_scope (H_loc_incl := _) (H_opsig_incl := _) y) *)
 
-Program Definition split_both_func {A B : choice_type} {L1 L2 : {fset Location}} {I1 I2}
-        (f : both L1 I1 A -> both L2 I2 B) `{fsubset L1 L2} `{fsubset I1 I2} : (A -> B) * (code L1 I1 A -> code L2 I2 B) :=
-  (fun y : A => is_pure ((fun temp : A => f (solve_lift (ret_both temp))) y),
-   fun y : code L1 I1 A => {code temp ← y ;; is_state (f (solve_lift (ret_both temp))) }).
-Solve All Obligations with intros ; solve_in_fset.
-Next Obligation.
-  intros.
-  ssprove_valid.
+(* Equations split_both_func {A B : choice_type} {L1 L2 : {fset Location}} {I1 I2} *)
+(*           (f : both L1 I1 A -> both L2 I2 B) `{fsubset L1 L2} `{fsubset I1 I2} : (A -> B) * (code L1 I1 A -> code L2 I2 B) := *)
+(*   split_both_func f := *)
+(*     (fun y : A => is_pure ((fun temp : A => f (solve_lift (ret_both temp))) y), *)
+(*      fun y : code L1 I1 A => {code temp ← y ;; is_state (f (solve_lift (ret_both temp))) #with _}). *)
+(* Solve All Obligations with intros ; solve_in_fset. *)
+(* Next Obligation. *)
+(*   intros. *)
+(*   ssprove_valid. *)
 
-  apply valid_injectLocations with (L1 := L1). apply fsubset2.
-  apply @valid_injectMap with (I1 := I1). apply fsubset3.
-  apply y.
+(*   apply valid_injectLocations with (L1 := L1). apply fsubset2. *)
+(*   apply @valid_injectMap with (I1 := I1). apply fsubset3. *)
+(*   apply y. *)
 
-  apply (f (solve_lift (ret_both x))).
-Qed.
-Fail Next Obligation.
+(*   apply (f (solve_lift (ret_both x))). *)
+(* Qed. *)
+(* Fail Next Obligation. *)
 
 Equations let_mut_both {L1 L2 I1 I2 B} (x_loc : Location) `{loc_in : x_loc \in L2} (x : both L1 I1 x_loc) (f : both (fset [x_loc] :|: L1) I1 x_loc -> both L2 I2 B) `{fsubset_loc : is_true (fsubset L1 L2)} `{fsubset_opsig : is_true (fsubset I1 I2)} : both L2 I2 B :=
   let_mut_both x_loc x f :=
@@ -1554,10 +1561,10 @@ Next Obligation.
 Qed.
 Fail Next Obligation.
 
-Notation "'letbm' x 'loc(' ℓ ')' ':=' y 'in' f" :=
-  (let_mut_both ℓ y (fun x => f) (fsubset_loc := _) (fsubset_opsig := _) (loc_in := _)) (at level 100, x pattern, right associativity, format "'letbm'  x  'loc(' ℓ ')'  ':='  y  'in' '//' f").
-Notation "'letbm' ''' x 'loc(' ℓ ')' ':=' y 'in' f" :=
-  (let_mut_both ℓ y (fun x => f) (fsubset_loc := _) (fsubset_opsig := _) (loc_in := _)) (at level 100, x pattern, right associativity, format "'letbm'  ''' x  'loc(' ℓ ')'  ':='  y  'in' '//' f").
+Notation "'letb' x 'loc(' ℓ ')' ':=' y 'in' f" :=
+  (let_mut_both ℓ y (fun x => f) (* (fsubset_loc := _) (fsubset_opsig := _) (loc_in := _) *)) (at level 100, x pattern, right associativity, format "'letb'  x 'loc(' ℓ ')'  ':=' y  'in' '//' f").
+Notation "'letb' ''' x  'loc(' ℓ ')' ':=' y 'in' f" :=
+  (let_mut_both ℓ y (fun x => f) (* (fsubset_loc := _) (fsubset_opsig := _) (loc_in := _) *)) (at level 100, x pattern, right associativity, format "'letb' ''' x  'loc(' ℓ ')' ':='  y  'in' '//' f").
 
 Fixpoint split_type (F : choice_type -> Type) (A : choice_type) : Type :=
   match A with
