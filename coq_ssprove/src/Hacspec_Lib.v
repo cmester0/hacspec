@@ -25,205 +25,7 @@ Import List.ListNotations.
 (* for Both types.                                      *)
 (********************************************************)
 
-(*** Integers *)
-
-Declare Scope hacspec_scope.
-
-Require Import ChoiceEquality.
-Require Import LocationUtility.
-Require Import Hacspec_Lib_Comparable.
-Require Import Hacspec_Lib_Pre.
-
-Open Scope bool_scope.
-Open Scope hacspec_scope.
-Open Scope nat_scope.
-Open Scope list_scope.
-
-Import choice.Choice.Exports.
-
-
-
-(* Definition lift3_both_ {A B C D : choice_type} {L} {I} (f : A -> B -> C -> D) (x : both L I A) (y : both L I B) (z : both L I C) := *)
-(*   bind_both_ x (fun x' => *)
-(*   bind_both_ y (fun y' => *)
-(*   bind_both_ z (fun z' => *)
-(*   ret_both (f x' y' z')))). *)
-
-Equations int_add {L1 L2 (* L3 *) : {fset Location}} {I1 I2 (* I3 *) : Interface} {WS}
-           (x : both L1 I1 (int WS)) (y : both L2 I2 (int WS))
-           (* `{H_loc_incl_x : is_true (fsubset L1 L3)} `{H_opsig_incl_x : is_true (fsubset I1 I3)} *)
-           (* `{H_loc_incl_y : is_true (fsubset L2 L3)} `{H_opsig_incl_y : is_true (fsubset I2 I3)} *) : both (L1 :|: L2) (* L3 *) (I1 :|: I2) (* I3 *) (int WS) :=
-  int_add := lift2_both (Hacspec_Lib_Pre.int_add).
-  Fail Next Obligation.
-
-  Equations int_sub {L1 L2 (* L3 *) : {fset Location}} {I1 I2 (* I3 *) : Interface} {WS}
-           (x : both L1 I1 (int WS)) (y : both L2 I2 (int WS))
-           (* `{H_loc_incl_x : is_true (fsubset L1 L3)} `{H_opsig_incl_x : is_true (fsubset I1 I3)} *)
-           (* `{H_loc_incl_y : is_true (fsubset L2 L3)} `{H_opsig_incl_y : is_true (fsubset I2 I3)} *) : both (L1 :|: L2) (* L3 *) (I1 :|: I2) (* I3 *) (int WS) :=
-    int_sub := (lift2_both (Hacspec_Lib_Pre.int_sub)).
-  Fail Next Obligation.
-
-  Equations int_opp {L (* L2 *) : {fset Location}} {I (* I2 *) : Interface} {WS}
-           (x : both L I (int WS))
-           (* `{H_loc_incl_x : is_true (fsubset L L2)} `{H_opsig_incl_x : is_true (fsubset I I2)} *) : both L I (int WS) :=
-    int_opp := (lift1_both (Hacspec_Lib_Pre.int_opp)).
-  Fail Next Obligation.
-
-  Equations int_mul {L1 L2 (* L3 *) : {fset Location}} {I1 I2 (* I3 *) : Interface} {WS}
-           (x : both L1 I1 (int WS)) (y : both L2 I2 (int WS))
-           (* `{H_loc_incl_x : is_true (fsubset L1 L3)} `{H_opsig_incl_x : is_true (fsubset I1 I3)} *)
-           (* `{H_loc_incl_y : is_true (fsubset L2 L3)} `{H_opsig_incl_y : is_true (fsubset I2 I3)} *) : both (L1 :|: L2) (* L3 *) (I1 :|: I2) (* I3 *) (int WS) :=
-    int_mul := (lift2_both (Hacspec_Lib_Pre.int_mul)).
-  Fail Next Obligation.
-
-  Equations int_div {L1 L2 (* L3 *) : {fset Location}} {I1 I2 (* I3 *) : Interface} {WS}
-           (x : both L1 I1 (int WS)) (y : both L2 I2 (int WS))
-           (* `{H_loc_incl_x : is_true (fsubset L1 L3)} `{H_opsig_incl_x : is_true (fsubset I1 I3)} *)
-           (* `{H_loc_incl_y : is_true (fsubset L2 L3)} `{H_opsig_incl_y : is_true (fsubset I2 I3)} *) : both (L1 :|: L2) (* L3 *) (I1 :|: I2) (* I3 *) (int WS) :=
-    int_div := (lift2_both (Hacspec_Lib_Pre.int_div : int _ -> int _ -> int _)).
-  Fail Next Obligation.
-
-  Equations int_mod {L1 L2 (* L3 *) : {fset Location}} {I1 I2 (* I3 *) : Interface} {WS}
-           (x : both L1 I1 (int WS)) (y : both L2 I2 (int WS))
-           (* `{H_loc_incl_x : is_true (fsubset L1 L3)} `{H_opsig_incl_x : is_true (fsubset I1 I3)} *)
-           (* `{H_loc_incl_y : is_true (fsubset L2 L3)} `{H_opsig_incl_y : is_true (fsubset I2 I3)} *) : both (L1 :|: L2) (* L3 *) (I1 :|: I2) (* I3 *) (int WS) :=
-    int_mod := (lift2_both (Hacspec_Lib_Pre.int_mod : int _ -> int _ -> int _)).
-  Fail Next Obligation.
-
-  Equations int_xor {L1 L2 (* L3 *) : {fset Location}} {I1 I2 (* I3 *) : Interface} {WS}
-           (x : both L1 I1 (int WS)) (y : both L2 I2 (int WS))
-           (* `{H_loc_incl_x : is_true (fsubset L1 L3)} `{H_opsig_incl_x : is_true (fsubset I1 I3)} *)
-           (* `{H_loc_incl_y : is_true (fsubset L2 L3)} `{H_opsig_incl_y : is_true (fsubset I2 I3)} *) : both (L1 :|: L2) (* L3 *) (I1 :|: I2) (* I3 *) (int WS) :=
-    int_xor := (lift2_both (Hacspec_Lib_Pre.int_xor : int _ -> int _ -> int _)).
-  Fail Next Obligation.
-
-  Equations int_and {L1 L2 (* L3 *) : {fset Location}} {I1 I2 (* I3 *) : Interface} {WS}
-           (x : both L1 I1 (int WS)) (y : both L2 I2 (int WS))
-           (* `{H_loc_incl_x : is_true (fsubset L1 L3)} `{H_opsig_incl_x : is_true (fsubset I1 I3)} *)
-           (* `{H_loc_incl_y : is_true (fsubset L2 L3)} `{H_opsig_incl_y : is_true (fsubset I2 I3)} *) : both (L1 :|: L2) (* L3 *) (I1 :|: I2) (* I3 *) (int WS) :=
-    int_and := (lift2_both (Hacspec_Lib_Pre.int_and : int _ -> int _ -> int _)).
-    Fail Next Obligation.
-
-    Equations int_or {L1 L2 (* L3 *) : {fset Location}} {I1 I2 (* I3 *) : Interface} {WS}
-           (x : both L1 I1 (int WS)) (y : both L2 I2 (int WS))
-           (* `{H_loc_incl_x : is_true (fsubset L1 L3)} `{H_opsig_incl_x : is_true (fsubset I1 I3)} *)
-           (* `{H_loc_incl_y : is_true (fsubset L2 L3)} `{H_opsig_incl_y : is_true (fsubset I2 I3)} *) : both (L1 :|: L2) (* L3 *) (I1 :|: I2) (* I3 *) (int WS) :=
-    int_or := (lift2_both (Hacspec_Lib_Pre.int_or : int _ -> int _ -> int _)).
-  Fail Next Obligation.
-
-  Equations int_not {L (* L2 *) : {fset Location}} {I (* I2 *) : Interface} {WS}
-           (x : both L I (int WS))
-           (* `{H_loc_incl_x : is_true (fsubset L1 L2)} `{H_opsig_incl_x : is_true (fsubset I1 I2)} *) : both L I (int WS) :=
-    int_not := (lift1_both (Hacspec_Lib_Pre.int_not : int _ -> int _)).
-  Fail Next Obligation.
-
-  Equations cast_int {L (* L2 *) : {fset Location}} {I (* I2 *) : Interface} {WS1 WS2}
-           (x : both L I (int WS1))
-           (* `{H_loc_incl_x : is_true (fsubset L1 L2)} `{H_opsig_incl_x : is_true (fsubset I1 I2)} *) : both L I (int WS2) :=
-    cast_int := (lift1_both (fun (n : int _) => repr _ (unsigned n))).
-  Fail Next Obligation.
-(* End IntType. *)
-
-Notation secret := (lift1_both secret).
-
-Infix ".%%" := int_modi (at level 40, left associativity) : Z_scope.
-Infix ".+" := int_add (at level 77) : hacspec_scope.
-Infix ".-" := int_sub (at level 77) : hacspec_scope.
-Notation "-" := int_opp (at level 77) : hacspec_scope.
-Infix ".*" := int_mul (at level 77) : hacspec_scope.
-Infix "./" := int_div (at level 77) : hacspec_scope.
-Infix ".%" := int_mod (at level 77) : hacspec_scope.
-Infix ".^" := int_xor (at level 77) : hacspec_scope.
-Infix ".&" := int_and (at level 77) : hacspec_scope.
-Infix ".|" := int_or (at level 77) : hacspec_scope.
-Notation "'not'" := int_not (at level 77) : hacspec_scope.
-
-(* Section Uint. *)
-  Notation uint8_declassify := (lift1_both uint8_declassify).
-  Notation int8_declassify := (lift1_both int8_declassify).
-  Notation uint16_declassify := (lift1_both uint16_declassify).
-  Notation int16_declassify := (lift1_both int16_declassify).
-  Notation uint32_declassify := (lift1_both uint32_declassify).
-  Notation int32_declassify := (lift1_both int32_declassify).
-  Notation uint64_declassify := (lift1_both uint64_declassify).
-  Notation int64_declassify := (lift1_both int64_declassify).
-  Notation uint128_declassify := (lift1_both uint128_declassify).
-  Notation int128_declassify := (lift1_both int128_declassify).
-
-  Notation uint8_classify := (lift1_both uint8_classify).
-  Notation int8_classify := (lift1_both int8_classify).
-  Notation uint16_classify := (lift1_both uint16_classify).
-  Notation int16_classify := (lift1_both int16_classify).
-  Notation uint32_classify := (lift1_both uint32_classify).
-  Notation int32_classify := (lift1_both int32_classify).
-  Notation uint64_classify := (lift1_both uint64_classify).
-  Notation int64_classify := (lift1_both int64_classify).
-  Notation uint128_classify := (lift1_both uint128_classify).
-  Notation int128_classify := (lift1_both int128_classify).
-
-  (* CompCert integers' signedness is only interpreted through 'signed' and 'unsigned',
-   and not in the representation. Therefore, uints are just names for their respective ints.
-   *)
-
-  Notation declassify_usize_from_uint8 := (lift1_both declassify_usize_from_uint8).
-  Notation declassify_u32_from_uint32 := (lift1_both declassify_u32_from_uint32).
-
-  Notation uint8_rotate_left := (lift2_both uint8_rotate_left).
-
-  Notation uint8_rotate_right := (lift2_both uint8_rotate_right).
-
-  Notation uint16_rotate_left := (lift2_both uint16_rotate_left).
-
-  Notation uint16_rotate_right := (lift2_both uint16_rotate_right).
-
-  Notation uint32_rotate_left := (lift2_both uint32_rotate_left).
-
-  Notation uint32_rotate_right := (lift2_both uint32_rotate_right).
-
-  Notation uint64_rotate_left := (lift2_both uint64_rotate_left).
-
-  Notation uint64_rotate_right := (lift2_both uint64_rotate_right).
-
-  Notation uint128_rotate_left := (lift2_both uint128_rotate_left).
-
-  Notation uint128_rotate_right := (lift2_both uint128_rotate_right).
-  Notation usize_shift_right_ := (lift2_both (fun u s => u usize_shift_right s)).
-
-  Notation usize_shift_left_ :=
-    (fun (u: both (fset []) ([interface]) uint_size) (s: both (fset []) ([interface]) int32) =>
-    {|
-      is_pure := (is_pure u) usize_shift_left (is_pure s) ;
-      is_state :=
-      {code
-         temp_u ← is_state u ;;
-         temp_s ← is_state s ;;
-         ret (temp_u usize_shift_left temp_s)
-      }
-    |}).
-  (* Next Obligation. *)
-  (*   intros. *)
-  (*   pattern_both Hb Hf Hg. *)
-  (*   apply (@r_bind_trans_both (uint_size) (uint_size)). *)
-  (*   subst Hf Hg Hb ; hnf. *)
-  (*   pattern_both Hb Hf Hg. *)
-  (*   apply (@r_bind_trans_both (int32)). *)
-  (*   subst Hf Hg Hb ; hnf. *)
-  (*   apply r_ret. *)
-  (*   easy. *)
-  (* Qed. *)
-
-  (**** Operations *)
-
-  Notation shift_left_ := (lift2_both shift_left_).
-  Notation shift_right_ := (lift2_both shift_right_).
-
-(* End Uint. *)
-
-Infix "usize_shift_right" := (usize_shift_right_) (at level 77) : hacspec_scope.
-Infix "usize_shift_left" := (usize_shift_left_) (at level 77) : hacspec_scope.
-
-Infix "shift_left" := (shift_left_) (at level 77) : hacspec_scope.
-Infix "shift_right" := (shift_right_) (at level 77) : hacspec_scope.
+Require Import Hacspec_Lib_Integers.
 
 (*** Loops *)
 
@@ -1101,8 +903,9 @@ Infix "seq_xor" := seq_xor_ (at level 33) : hacspec_scope.
     array_index x (WS := WS) y := lift2_both (fun x y => Hacspec_Lib_Pre.array_index x y) x y.
   Fail Next Obligation.
 
-  Notation array_upd :=
-    (fun (s: both _ _ (nseq_ _ _)) (i: both _ _ (@int _)) (new_v: both _ _ _) => (lift3_both (fun s i new_v => array_upd s i new_v) s i new_v)).
+  Equations array_upd {L1 L2 L3} {I1 I2 I3} {A : choice_type} {len} (s: both L1 I1 (nseq_ A len)) (i: both L2 I2 (@int U32)) (new_v: both L3 I3 A) : both (L1 :|: L2 :|: L3) (I1 :|: I2 :|: I3) (nseq_ A len) :=
+    array_upd s i new_v :=
+      (lift3_both (fun (s : nseq_ A len) i new_v => Hacspec_Lib_Pre.array_upd s i new_v) s i new_v).
 
     (* substitutes a sequence (seq) into an array (nseq), given index interval  *)
   Definition update_sub {A : choice_type} {len slen}  (v : (nseq_ A len)) (i : nat) (n : nat) (sub : (nseq_ A slen)) : both (fset []) ([interface]) ((nseq_ A len)) :=
@@ -1246,10 +1049,10 @@ Definition u128_from_be_bytes (n : (nseq_ int8 16)) : both (fset []) ([interface
 Section Todosection.
 
 Definition nat_mod_equal {p} (a b : nat_mod p) : both (fset []) ([interface]) 'bool :=
-  ret_both (@eqtype.eq_op (ordinal_eqType (S (Init.Nat.pred (Z.to_nat p)))) a b : 'bool).
+  ret_both (@eqtype.eq_op (fintype_ordinal__canonical__eqtype_Equality (S (Init.Nat.pred (Z.to_nat p)))) a b : 'bool).
 
 Definition nat_mod_equal_reflect {p} {a b} : Bool.reflect (a = b) (is_pure (@nat_mod_equal p a b)) :=
-  @eqtype.eqP (ordinal_eqType (S (Init.Nat.pred (Z.to_nat p)))) a b.
+  @eqtype.eqP (fintype_ordinal__canonical__eqtype_Equality (S (Init.Nat.pred (Z.to_nat p)))) a b.
 
 Definition nat_mod_zero {p} : both (fset []) ([interface]) ((nat_mod p)) := ret_both (nat_mod_zero).
 Definition nat_mod_one {p} : both (fset []) ([interface]) ((nat_mod p)) := ret_both (nat_mod_one).
@@ -1381,8 +1184,8 @@ Global Instance nat_mod_eqdec {p} : EqDec (nat_mod p) := {
   eqb_leibniz := nat_mod_eqb_spec;
 }.
 
-Global Instance nat_mod_comparable `{p : Z} : Comparable (nat_mod p) :=
-  eq_dec_lt_Comparable (@order.Order.lt order.Order.OrdinalOrder.ord_display (order.Order.OrdinalOrder.porderType _)).
+(* Global Instance nat_mod_comparable `{p : Z} : Comparable (nat_mod p) := *)
+(*   eq_dec_lt_Comparable (@order.Order.lt order.Order.OrdinalOrder.ord_display (order.Order.OrdinalOrder.porderType _)). *)
 
 Definition nat_mod_rem {n : Z} (a:nat_mod n) (b:nat_mod n) : both (fset []) ([interface]) (nat_mod n) :=
   ret_both (nat_mod_rem a b).
@@ -2764,12 +2567,16 @@ Equations foldi_both_list
            {acc B: choice_type}
         {L1 L2 I1 I2}
         (l : both L2 I2 (chList B))
-        (f: forall {L I} `{fsubset_loc : is_true (fsubset L1 L)} `{fsubset_opsig : is_true (fsubset I1 I)}, both (L2) (I2) B -> both L I acc -> both (L :|: (L2)) (I :|: (I2)) (acc)) (* {i < hi} *)
+        {L I}
+        (f: both (L2) (I2) B ->
+            both L I acc ->
+            both L I acc)
         (init: both L1 I1 acc)
-  : both (L1 :|: (L2)) (I1 :|: (I2)) (acc) :=
+        `{is_true (fsubset (L1 :|: L2) L)} `{is_true (fsubset (I1 :|: I2) I)}
+  : both L I (acc) :=
   foldi_both_list l f init :=
-  bind_both l (fun l' => List.fold_left (fun x y => solve_lift @f _ _ _ _ (solve_lift ret_both y) (x) : both (L1 :|: L2) (I1 :|: I2) _) l' (solve_lift init : both (L1 :|: L2) (I1 :|: I2) _)).
-Solve Obligations with intros ; (assumption || solve_in_fset).
+  bind_both l (fun l' => List.fold_left (fun x y => solve_lift @f (solve_lift ret_both y) (x) : both L I _) l' (solve_lift init)).
+Solve All Obligations with intros ; solve_ssprove_obligations ; solve_fsubset_trans.
 Fail Next Obligation.
 
 (* Equations foldi_both_list *)
@@ -2802,27 +2609,11 @@ Equations match_both_option {L1 L2 L3 I1 I2 I3} {A B} (x : both L3 I3 (option A)
 Solve All Obligations with solve_ssprove_obligations.
 Fail Next Obligation.
 
-Equations match_both_result {L1 L2 L3 I1 I2 I3} {A C B} (x : both L3 I3 (result C A)) (fa : both L3 I3 A -> both L1 I1 B) (fb : both L3 I3 C -> both L2 I2 B) `{fsubset_loc1 : is_true (fsubset L3 L1)}  `{fsubset_loc2 : is_true (fsubset L3 L2)}  `{fsubset_opsig1 : is_true (fsubset I3 I1)}  `{fsubset_opsig2 : is_true (fsubset I3 I2)} : both (L1 :|: L2) (I1 :|: I2) B :=
-  match_both_result x fa fb :=
-  bind_both x (fun y => match y with
-         | inl a => solve_lift (fa (solve_lift (ret_both a)))
-         | inr b => solve_lift (fb (solve_lift (ret_both b)))
-                                                             end).
-Solve All Obligations with
-  solve_ssprove_obligations.
-Fail Next Obligation.
-
 Notation "'matchb' x 'with' '|' 'Option_Some' a '=>' va '|' 'Option_None' '=>' vb 'end'" :=
   (match_both_option x (fun a => va) vb (fsubset_loc1 := _) (fsubset_loc2 := _) (fsubset_opsig1 := _) (fsubset_opsig2 := _)).
 
 Notation "'matchb' x 'with' '|' 'Option_Some' a '=>' va '|' '_' '=>' vb 'end'" :=
   (match_both_option x (fun a => va) vb (fsubset_loc1 := _) (fsubset_loc2 := _) (fsubset_opsig1 := _) (fsubset_opsig2 := _)).
-
-Notation "'matchb' x 'with' '|' 'Result_Ok' a '=>' va '|' 'Result_Err' b '=>' vb 'end'" :=
-  (match_both_result x (fun a => va) (fun b => vb) (fsubset_loc1 := _) (fsubset_loc2 := _) (fsubset_opsig1 := _) (fsubset_opsig2 := _)).
-
-Notation "'matchb' x 'with' '|' 'Result_Ok' a '=>' va '|' '_' '=>' vb 'end'" :=
-  (match_both_result x (fun a => va) (fun _ => vb) (fsubset_loc1 := _) (fsubset_loc2 := _) (fsubset_opsig1 := _) (fsubset_opsig2 := _)).
 
 Program Definition foldi_both0_
         {acc : choice_type}
@@ -3175,6 +2966,7 @@ Fail Next Obligation.
 Notation " x '.a[' i ']<-' a" := (array_upd x i a) (at level 40).
 
 Notation update_at := array_upd.
+Notation update_at_usize := array_upd.
 
 (* Definition update {A : Type}  `{Default A} {len slen} (s : nseq A len) {WS} (start : @int WS) (start_a : array_or_seq A slen) : nseq A len := *)
 (* array_update (a := A) (len := len) s (unsigned start) (as_seq start_a). *)
@@ -3250,7 +3042,7 @@ Notation classify := id.
 Notation U64_from_U8 := uint64_from_uint8.
 (* Definition Build_Range_t (a b : nat) := (a,b). (* match (b - a)%nat with O => [] | S n => match b with | O => [] | S b' => Build_Range_t a b' ++ [b] end end. *) *)
 
-Definition Build_t_Range {WS L1 L2 I1 I2} {f_start : both L1 I1 (int WS)} {f_end : both L2 I2 (int WS)} := (f_start,f_end).
+Definition Build_t_Range {WS L1 L2 I1 I2} {f_start : both L1 I1 (int WS)} {f_end : both L2 I2 (int WS)} := prod_b (f_start,f_end).
 Notation Build_Range  := Build_t_Range.
 
 Notation declassify_eq := eq.
@@ -3261,8 +3053,6 @@ Notation "'i16(' v ')'" := (ret_both (v : int16) : both (fset []) ([interface]) 
 Notation "'i32(' v ')'" := (ret_both (v : int32) : both (fset []) ([interface]) _).
 Notation "'i64(' v ')'" := (ret_both (v : int64) : both (fset []) ([interface]) _).
 Notation "'i128(' v ')'" := (ret_both (v : int128) : both (fset []) ([interface]) _).
-
-Notation into_iter := (fun x => x).
 
 Definition (* vec_ *)len {L I A ws} := lift1_both (L := L) (I := I)  (fun (x : chList A) => repr ws (List.length x)).
 
@@ -3387,14 +3177,16 @@ Notation Option_Some := Some.
 Definition append {L1 L2 I1 I2} {A : choice_type} (l : both L1 I1 (chList A)) (x : both L2 I2 (chList A)) : both (L2 :|: L1) (I2 :|: I1) (chList A × chList A) :=
   lift2_both (fun (x : chList A) (y : chList A) => (app y x, []) : chList A × chList A) x l.
 
-Notation clone := id.
+Notation f_clone := id.
 Definition seq_unzip {A B} (s : chList (A × B)) : chList A × chList B := (seq.unzip1 s, seq.unzip2 s).
 Definition unzip {L I} {A B} : both L I (chList (A × B)) -> both L I (chList A × chList B) := lift1_both seq_unzip.
 Equations deref {L I A} : both L I (t_Vec A t_Global) -> both L I (seq A) :=
   deref X := bind_both X (fun x : t_Vec A t_Global => solve_lift (ret_both (Hacspec_Lib_Pre.seq_from_list A x))).
 Solve All Obligations with solve_ssprove_obligations.
 Fail Next Obligation.
-Definition t_Never := False.
+Definition t_Never : choice_type := 'unit.
+Definition abort : both (fset []) (fset []) t_Never := ret_both (tt : 'unit).
+
 (* Notation v_Break := id. *)
 Notation Result_Err := Err.
 Notation Result_Ok := Ok.
@@ -3404,18 +3196,15 @@ Notation "'ret_both' 'tt'" := (ret_both (tt : 'unit)).
 (** Should be part of concordium.v **)
 Class HasInitContext (Self : choice_type).
 Class t_HasInitContext (Self : choice_type) (something : choice_type).
-Class t_HasActions (Self : choice_type) := {accept : forall {L I}, both L I Self}.
+Class t_HasActions (Self : choice_type) := {f_accept : forall {L I}, both L I Self}.
 Class HasReceiveContext (Self : choice_type).
 Definition t_ParamType := 'unit.
 Definition t_ParseError := 'unit.
 (* (t_RegisterParam) *)
-Class t_HasReceiveContext (Self : choice_type) (something : choice_type) := { get : forall {Ctx L I}, both L I (t_ParamType × t_Result Ctx (t_ParseError)) }.
-Arguments get {Self} {something} (t_HasReceiveContext) {Ctx} {L} {I}.
+Class t_HasReceiveContext (Self : choice_type) (something : choice_type) := { f_get : forall {Ctx L I}, both L I (t_ParamType × t_Result Ctx (t_ParseError)) }.
+Arguments f_get {Self} {something} (t_HasReceiveContext) {Ctx} {L} {I}.
 
-Definition parameter_cursor {T : _} `{ t_Sized (T)} `{ t_HasReceiveContext (T) ('unit)} `{ t_Sized (T)} `{ t_HasReceiveContext (T) ('unit)} {L1 : {fset Location}} {I1 : Interface} (ctx : both L1 I1 (T)) : t_HasReceiveContext (T) ('unit) := _.
-
-Notation "'matchb' 'branch' x 'with' '|' 'ControlFlow_Break' a '=>' va '|' 'ControlFlow_Continue' b '=>' vb 'end'" :=
-  (match_both_result x (fun b => vb) (fun a => va) (fsubset_loc1 := _) (fsubset_loc2 := _) (fsubset_opsig1 := _) (fsubset_opsig2 := _)).
+Definition f_parameter_cursor {T : _} `{ t_Sized (T)} `{ t_HasReceiveContext (T) ('unit)} `{ t_Sized (T)} `{ t_HasReceiveContext (T) ('unit)} {L1 : {fset Location}} {I1 : Interface} (ctx : both L1 I1 (T)) : t_HasReceiveContext (T) ('unit) := _.
 
 (* Section ExceptionMonad. *)
 (*   Definition exception (A R : choice_type) := (A -> R) -> R. *)
@@ -3451,8 +3240,6 @@ Notation "'matchb' 'branch' x 'with' '|' 'ControlFlow_Break' a '=>' va '|' 'Cont
 Notation ControlFlow_Continue := Result_Ok.
 Notation v_Break := Result_Err.
 Notation never_to_any := id.
-Notation "'matchb' 'branch' x 'with' '|' 'ControlFlow_Break' a '=>' va '|' 'ControlFlow_Continue' b '=>' vb 'end'" :=
-  (match_both_result x (fun b => vb) (fun a => va) (fsubset_loc1 := _) (fsubset_loc2 := _) (fsubset_opsig1 := _) (fsubset_opsig2 := _)).
 Equations run {L I A} (x : both L I (choice_typeMonad.M (CEMonad := (@choice_typeMonad.mnd (choice_typeMonad.result_bind_code A))) A)) : both L I A :=
   run x :=
   bind_both x (fun y => match y with
@@ -3460,7 +3247,34 @@ Equations run {L I A} (x : both L I (choice_typeMonad.M (CEMonad := (@choice_typ
                              end).
 Fail Next Obligation.
 
-Notation from_residual := Result_Err.
+
+Notation "'matchb' x 'with' '|' a '=>' b 'end'" :=
+  (bind_both x (fun y => match y with
+                      | a => b end)) (at level 100, a pattern).
+
+Notation "'matchb' x 'with' '|' a '=>' b '|' c '=>' d  'end'" :=
+  (bind_both x (fun y => match y with
+                      | a => b
+                      | c => d end)) (at level 100, a pattern, c pattern).
+
+Notation "'matchb' x 'with' '|' a '=>' b '|' c '=>' d '|' e '=>' f  'end'" :=
+  (bind_both x (fun y => match y with
+                      | a => b
+                      | c => d
+                      | e => f end)) (at level 100, a pattern, c pattern, e pattern).
+
+Notation "'matchb' x 'with' '|' a '=>' b '|' c '=>' d '|' e '=>' f '|' g '=>' h 'end'" :=
+  (bind_both x (fun y => match y with
+                      | a => b
+                      | c => d
+                      | e => f
+                      | g => h end)) (at level 100, a pattern, c pattern, e pattern, g pattern).
+
+Notation f_branch := id.
+Notation ControlFlow_Break_case := inr.
+Notation ControlFlow_Continue_case := inl.
+
+Notation f_from_residual := Result_Err.
 
 Ltac remove_duplicate_pair :=
   normalize_fset ;
@@ -3482,3 +3296,52 @@ Equations repeat {L1 L2 I1 I2} {A} (e : both L1 I1 A) (n : both L2 I2 uint_size)
        (Z.to_nat (unsigned (is_pure n)))
        (List.repeat_length (solve_lift e) (Z.to_nat (unsigned (is_pure n))))).
 Fail Next Obligation.
+
+Class iterable (A B : choice_type) := {f_into_iter : forall {L I}, both L I A -> both L I (chList B)}.
+Instance nseq_iterable : iterable (nseq int32 20) int32 := {| f_into_iter := fun _ _ => array_to_list |}.
+Program Instance range_iterable {WS} : iterable ((int WS) × (int WS)) (int WS) :=
+  {| f_into_iter :=
+    fun _ _ x =>
+      bind_both x (fun '((a, b) : int WS × int WS) => solve_lift (ret_both (List.map (fun x => repr WS (Z.of_nat x)) (List.seq (Z.to_nat (unsigned a)) (Z.to_nat (unsigned (b))-Z.to_nat (unsigned a))) : chList (int WS) )))
+  |}.
+Fail Next Obligation.
+Notation t_IntoIter := (chList _).
+
+Definition t_Amount := int64.
+
+Definition impl_20__contains_key := int64.
+Definition f_micro_ccd := int64.
+Equations Build_t_Amount {L0 : {fset Location}} {I0 : Interface} {f_micro_ccd : both L0 I0 int64} : both (L0) (I0) (t_Amount) :=
+  Build_t_Amount  :=
+    bind_both f_micro_ccd (fun f_micro_ccd =>
+                             solve_lift (ret_both ((f_micro_ccd) : (t_Amount)))) : both (L0) (I0) (t_Amount).
+Fail Next Obligation.
+Definition t_Timestamp := int32.
+Definition t_BTreeMap (A B : Type) (C : vec_typ) := int32.
+Definition f_slot_time := int64.
+Definition f_metadata := int64.
+Definition t_AccountAddress : choice_type := int64 ∐ int64.
+Definition Address_Contract_case (addr : int64) : t_AccountAddress := inl addr.
+Definition Address_Account_case (addr : int64) : t_AccountAddress := inr addr.
+Definition f_sender : t_AccountAddress :=
+  Address_Account_case 0.
+
+(* From ovn *)
+Notation f_into_iter_loc := fset0.
+Notation f_end_loc := fset0.
+Notation f_start_loc := fset0.
+Notation f_eq_loc := fset0.
+Equations impl__into_vec {L I A n} : both L I (nseq_ A n) -> both L I (t_Vec A t_Global) :=
+  impl__into_vec X := bind_both X (fun x : nseq_ A n => solve_lift (ret_both (Hacspec_Lib_Pre.array_to_list x : chList _))).
+Fail Next Obligation.
+
+Definition unsize {A} := @id A.
+Definition box_new {A} := @id A.
+
+Notation f_get_loc := fset0.
+Notation f_clone_loc := fset0.
+Notation f_accept_loc := fset0.
+Notation f_parameter_cursor_loc := fset0.
+
+Notation Result_Ok_case := inl.
+Notation Result_Err_case := inr.

@@ -6,7 +6,9 @@ src/Hacspec_Lib_Comparable.v
 src/LocationUtility.v
 src/ChoiceEquality.v
 src/Hacspec_Lib_Pre.v
+
 src/Hacspec_Lib.v
+src/Hacspec_Lib_Integers.v
 
 # src/Hacspec_Aes_Jazz.v
 # src/Hacspec_Xor.v

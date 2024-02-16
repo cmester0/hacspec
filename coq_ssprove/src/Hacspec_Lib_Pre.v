@@ -82,10 +82,11 @@ Import choice.Choice.Exports.
     intros.
     setoid_rewrite wrepr_add.
     rewrite urepr_word.
-    replace (urepr one) with 1%Z by reflexivity.
+    replace (urepr (@one WS)) with 1%Z by reflexivity.
     replace toword  with urepr by reflexivity.
     setoid_rewrite ureprK.
-    now rewrite ssralg.GRing.addrC.
+    rewrite ssralg.GRing.addrC.
+    now setoid_rewrite mkword1E.
   Defined.
 
   Lemma repr0_is_zero : forall {WS : wsize}, repr WS 0%Z = zero.
@@ -473,7 +474,10 @@ Section Util.
       + apply word_ext.
         rewrite Zmod_small by (unfold nat_of_wsize in gt ; lia).
         reflexivity.
-      + lia.
+      + cbn in gt.
+        unfold nat_of_wsize.
+        simpl.
+        lia.
     - contradiction.
   Defined.
 
@@ -777,16 +781,18 @@ Proof.
       f_equal.
       rewrite urepr_word.
 
-      replace (toword one)%Z with 1%Z by reflexivity.
+      replace (@toword (nat_of_wsize U32) (@one U32))%Z with 1%Z by reflexivity.
+      (* unfold urepr. *)
+      (* unfold eqtype.val. *)
+      (* (* unfold word_subType. *) *)
+      (* unfold toword. *)
+      (* unfold mkword. *)
       
-      unfold urepr.
-      unfold eqtype.val.
-      unfold word_subType.
-      unfold toword.
-      unfold mkword.
-      rewrite Zmod_small.
-
       rewrite Z.add_1_l.
+      f_equal.
+      rewrite mkwordK.
+      rewrite Zmod_small.
+        
       reflexivity.
 
       clear -H.
@@ -1194,7 +1200,7 @@ Proof.
   intros.
   pose (sorted_last_leq a0 l H).
   rewrite Ord.lt_neqAle.
-  rewrite (Ord.leq_trans i) ; [ | easy ].
+  rewrite (Ord.leq_trans _ _ _ i) ; [ | easy ].
 
   destruct (eqtype.eq_op _ _) eqn:p_eq_last.
   - apply (ssrbool.elimT eqtype.eqP) in p_eq_last.
@@ -1227,13 +1233,12 @@ Corollary sorted_last_is_last :
    forall {B} (a0 : nat * B) (l : list (nat * B)),
     is_true (path.sorted Ord.lt (seq.unzip1 (a0 :: l))) ->
         (S (fst (seq.last a0 l)) < fst a0)%ord = false /\
-          (@eqtype.eq_op nat_ordType (S (fst (seq.last a0 l))) (fst a0) = false).
+          (@eqtype.eq_op (nat : ordType) (S (fst (seq.last a0 l))) (fst a0) = false).
 Proof.
   intros.
 
   pose (i0 := sorted_last_nat_lt a0 l H).
   destruct (ord_lt_nleq_and_neq i0).
-  rewrite H0 , H1 ; clear H0 H1.
   easy.
 Qed.
 
@@ -1241,7 +1246,7 @@ Theorem ord_leq_lt_trans :
   forall {A : ordType} {a b c : A}, is_true (a <= b)%ord -> is_true (b < c)%ord -> is_true (a < c)%ord.
 Proof.
   intros.
-  pose proof (Ord.leq_trans H (Ord.ltW H0)).
+  pose proof (Ord.leq_trans _ _ _ H (Ord.ltW H0)).
   rewrite Ord.leq_eqVlt in H1.
   rewrite LocationUtility.is_true_split_or in H1.
   destruct H1.
@@ -1262,7 +1267,7 @@ Theorem ord_lt_leq_trans :
   forall {A : ordType} {a b c : A}, is_true (a < b)%ord -> is_true (b <= c)%ord -> is_true (a < c)%ord.
 Proof.
   intros.
-  pose proof (Ord.leq_trans (Ord.ltW H) H0).
+  pose proof (Ord.leq_trans _ _ _ (Ord.ltW H) H0).
   rewrite Ord.leq_eqVlt in H1.
   rewrite LocationUtility.is_true_split_or in H1.
   destruct H1.
@@ -1539,7 +1544,7 @@ Proof.
     rewrite seq.rev_cons in i.
     rewrite <- seq.cats1 in i.
 
-    set seq.rev in i ; unfold Ord.sort, nat_ordType in l0 ; subst l0.
+    (* set seq.rev in i ; unfold Ord.sort, nat_ordType in l0 ; subst l0. *)
     destruct (seq.rev _).
     + easy.
     + generalize dependent p.
@@ -2114,7 +2119,7 @@ Proof.
       f_equal.
       rewrite tl_fmap_equation_2.
       (* rewrite mkfmapK ; [ | apply (lower_is_sorted (@FMap.FMap _ _ fmval (path_sorted_tl i)))]. *)
-      epose (lower_keeps_value (FMap.FMap (T:=ordinal_ordType (S (S n))) (fmval:=fmval) (path_sorted_tl i))).
+      epose (lower_keeps_value (FMap.FMap (T:=fintype_ordinal__canonical__Ord_Ord (S (S n))) (fmval:=fmval) (path_sorted_tl i))).
       simpl in e.
       rewrite <- (map_length snd).
       rewrite <- (map_length snd).
@@ -2765,10 +2770,10 @@ Definition nat_mod (p : Z) : choice_type := 'fin (S (Init.Nat.pred (Z.to_nat p))
 Definition mk_natmod {p} (z : Z) : (nat_mod p) := @zmodp.inZp (Init.Nat.pred (Z.to_nat p)) (Z.to_nat z).
 
 Definition nat_mod_equal {p} (a b : (nat_mod p)) : bool :=
-  @eqtype.eq_op (ordinal_eqType (S (Init.Nat.pred (Z.to_nat p)))) a b.
+  @eqtype.eq_op (fintype_ordinal__canonical__eqtype_Equality (S (Init.Nat.pred (Z.to_nat p)))) a b.
 
 Definition nat_mod_equal_reflect {p} {a b} : Bool.reflect (a = b) (@nat_mod_equal p a b) :=
-  @eqtype.eqP (ordinal_eqType (S (Init.Nat.pred (Z.to_nat p)))) a b.
+  @eqtype.eqP (fintype_ordinal__canonical__eqtype_Equality (S (Init.Nat.pred (Z.to_nat p)))) a b.
 
 Definition nat_mod_zero {p} : (nat_mod p) := zmodp.Zp0.
 Definition nat_mod_one {p} : (nat_mod p) := zmodp.Zp1.

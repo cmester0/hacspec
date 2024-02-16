@@ -7,14 +7,27 @@ From Coq Require Import ZArith List.
 Import ListNotations.
 (* Require Import IntTypes. *)
 
-Require Import MachineIntegers.
+Require Import compcert.lib.Integers.
+(* Require Import MachineIntegers. *)
 From Coqprime Require GZnZ.
 
 Require Import Lia.
 
 Declare Scope hacspec_scope.
 
-Axiom secret : forall {WS : WORDSIZE},  (@int WS) -> (@int WS).
+Require Import Hacspec_Word.  
+Check MyInt.
+Definition int16 := MyInt.int. (* @int (WORDSIZE16). *)
+Definition int32 := int. (* @int (WORDSIZE32). *)
+Definition int64 := int.(* @int (WORDSIZE64). *)
+Definition int128 := @int (WORDSIZE128).
+
+Definition int : Type := MyInt.int.
+Definition repr : Z -> int := MyInt.repr.
+Definition unsigned : int -> Z := MyInt.unsigned.
+Definition signed : int -> Z := MyInt.signed.
+
+Axiom secret : forall {WS}, (@int WS) -> (@int WS).
 
 Axiom uint8_declassify : int8 -> int8.
 Axiom int8_declassify : int8 -> int8.

@@ -4,6 +4,7 @@
 -arg all
 
 src/MachineIntegers.v
+src/Hacspec_Word.v
 src/Hacspec_Lib.v
 src/QuickChickLib.v
 

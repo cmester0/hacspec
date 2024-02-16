@@ -1,3 +1,73 @@
+(* From extructures Require Import ord fset fmap. *)
+
+(* Ltac left_assoc := *)
+(*   repeat (match goal with *)
+(*           | |- context [fsetU (fsetU ?a ?b) ?c] => *)
+(*               replace (fsetU (fsetU a b) c) with (fsetU a (fsetU b c)) by apply fsetUA *)
+(*           end). *)
+
+(* Ltac prefer_is_true := *)
+(*   match goal with *)
+(*   | |- context [fsubset ?x ?y = true] => *)
+(*       change (fsubset x y = true) with (is_true (fsubset x y)) *)
+(*   end. *)
+
+(* Ltac solve_structured_fsubset := *)
+(*   left_assoc ; *)
+(*   rewrite fsubUset ; apply andb_true_intro ; split ; [ apply fsubsetUl | prefer_is_true ; repeat match goal with *)
+(*   | |- context [is_true (fsubset (fsetU _ _) (fsetU _ _)) ] => *)
+(*       apply fsetUSS *)
+(*   end ; (apply fsubsetxx || apply fsub0set) ]. *)
+
+(* (* congruence? *) *)
+(* Ltac solve_is_true_fast := (* fast ? *) *)
+(*   try prefer_is_true ; *)
+(*   apply fsubsetxx || *)
+(*     (left_assoc ; *)
+(*      match goal with *)
+(*      | |- context [is_true (fsubset _ (fsetU ?x ?y)) ] => *)
+(*          match goal with *)
+(*          | |- context [is_true (fsubset ?lhs ?rhs) ] => *)
+(*              let H_rhs := fresh in *)
+(*              let H_f := fresh in *)
+(*              let H_simpl := fresh in *)
+(*              let H_ass_l := fresh in *)
+(*              let H_ass_r := fresh in *)
+(*              set (H_rhs := rhs) ; pattern x in H_rhs *)
+(*              ; set (H_f := fun _ => _) in H_rhs *)
+(*              ; set (H_simpl := H_f fset0) ; subst H_f *)
+(*              ; assert (H_ass_l : is_true (fsubset lhs (fsetU H_simpl x))) by (subst H_rhs H_simpl ; hnf ; try rewrite !fset0U ; try rewrite ! fsetU0 ; solve_is_true_fast) *)
+(*              ; assert (H_ass_r : is_true (fsubset (fsetU x H_simpl) rhs)) by (subst H_rhs H_simpl ; hnf ; solve_structured_fsubset) (* Should always be true (safe under approximation), by structure always eq or fset0 <= x *) *)
+(*              ; replace (fsetU H_simpl x) with (fsetU x H_simpl) in H_ass_l by apply fsetUC *)
+(*              ; apply (fsubset_trans H_ass_l H_ass_r) *)
+(*          end *)
+(*      end). *)
+
+(* congruence? *)
+(* Ltac solve_is_true_fast := (* fast ? *) *)
+(*   try prefer_is_true ; *)
+(*   apply fsubsetxx || *)
+(*     (left_assoc ; *)
+(*      match goal with *)
+(*      | |- context [is_true (fsubset (fsetU ?x ?y) _) ] => *)
+(*          match goal with *)
+(*          | |- context [is_true (fsubset ?lhs ?rhs) ] => *)
+(*              let H_rhs := fresh in *)
+(*              let H_f := fresh in *)
+(*              let H_simpl := fresh in *)
+(*              let H_ass_l := fresh in *)
+(*              let H_ass_r := fresh in *)
+(*              set (H_rhs := rhs) ; pattern x in H_rhs *)
+(*              ; set (H_f := fun _ => _) in H_rhs *)
+(*              ; set (H_simpl := H_f fset0) ; subst H_f *)
+(*              ; assert (H_ass_l : is_true (fsubset lhs (fsetU H_simpl x))) by (subst H_rhs H_simpl ; hnf ; try rewrite !fset0U ; try rewrite ! fsetU0 ; solve_is_true_fast) *)
+(*              ; assert (H_ass_r : is_true (fsubset (fsetU x H_simpl) rhs)) by (subst H_rhs H_simpl ; hnf ; solve_structured_fsubset) (* Should always be true (safe under approximation), by structure always eq or fset0 <= x *) *)
+(*              ; replace (fsetU H_simpl x) with (fsetU x H_simpl) in H_ass_l by apply fsetUC *)
+(*              ; apply (fsubset_trans H_ass_l H_ass_r) *)
+(*          end *)
+(*      end). *)
+
+
 From Coq Require Import ZArith List.
 From Crypt Require Import choice_type Package.
 Import PackageNotation.
@@ -21,15 +91,96 @@ Import choice.Choice.Exports.
 
 Import List.ListNotations.
 
+
+(* Ltac GetPatterns pat res T :=  *)
+(*   (* try prefer_is_true ; *) *)
+(*   (left_assoc ; *)
+(*    match pat with *)
+(*    | (fsubset (fsetU ?x ?y) ?rhs) => *)
+(*        let H_f := fresh in *)
+(*        let temp := fresh in *)
+(*        let H_sub := fresh in *)
+(*        set (H_sub := fsubset _ _) ; *)
+(*        pattern x in H_sub ; *)
+(*        set (H_f := fun _ => _) in H_sub *)
+(*        ; pose (H_f (@fset0 T)) *)
+(*        ; match res with *)
+(*          | fset0 => clear res ; set (res := x) *)
+(*          | _ => set (temp := (res :|: x)%fset) *)
+(*                ; subst res *)
+(*                ; set (res := temp) *)
+(*                ; subst temp *)
+(*          end *)
+(*        ;subst H_f *)
+(*        ;subst H_sub *)
+(*    end). *)
+
+(* Goal forall (T : _) (L1 L2 : {fset (Ord.sort T)}), is_true (fsubset ( ( (fsetU (fsetU L1 (fsetU L1 L2)) (fsetU (fsetU (fsetU L1 L2) L1) L2)))) (fsetU L1 L2)  ). *)
+(* Proof. *)
+(*   intros. *)
+(*   (* time solve_is_true_slow. *) *)
+
+(*   left_assoc. *)
+(*   set (res := (@fset0 T :|: L1)%fset). *)
+(*   rewrite fset0U in res. *)
+
+(*   GetPatterns (fsubset (L1 :|: (L1 :|: (L2 :|: (L1 :|: (L2 :|: (L1 :|: L2))))))%fset (L1 :|: L2)%fset) res T. *)
+(*   rewrite fset0U in b. *)
+
+(*   GetPatterns (fsubset (L1 :|: (L1 :|: (L2 :|: (L1 :|: (L2 :|: (L1 :|: L2))))))%fset (L1 :|: L2)%fset = true) res. *)
+  
+
+(*   assert (is_true (fsubset fset0 (fset0 :|: L1)%fset)). *)
+(*   rewrite (@fset0E T). *)
+
+(*   Set Printing Implicit. *)
+(*   rewrite (@fset0U T L1) in res. *)
+  
+  
+(*   GetPatterns (fsubset (fset0 :|: (fset0 :|: (L2 :|: (fset0 :|: (L2 :|: (fset0 :|: L2))))))%fset *)
+(*                  (fset0 :|: L2)%fset = true) res. *)
+  
+(*   hnf in H1. *)
+(*   try prefer_is_true. *)
+(*   GetPatterns H1 res. *)
+  
+(*   try assert H1. *)
+(*   2:{ *)
+(*     GetPatterns (H1) res. *)
+  
+(*   rewrite <- fsetU0 in H1. *)
+
+(*   pose (H (fset[])). *)
+(*   GetPatterns P. *)
+  
+(*   try prefer_is_true ; *)
+(*     (left_assoc ; *)
+(*      match goal with *)
+(*      | |- context [is_true (fsubset (fsetU ?x ?y) _) ] => *)
+(*          match goal with *)
+(*          | |- context [is_true (fsubset ?lhs ?rhs) ] => *)
+(*              let H_f := fresh in *)
+(*              pattern x ; *)
+(*              set (H_f := fun _ => _) *)
+(*              expression_of *)
+(*          end *)
+(*      end). *)
+  
+
+  
+(*   caatime solve_is_true_fast. *)
+
+
 (*** Ltac *)
 
 Ltac normalize_fset :=
   hnf ;
-  change ((Ord.sort
-             (@tag_ordType choice_type_ordType
-                           (fun _ : choice_type => nat_ordType)))) with
-    Location ;
-  try rewrite !fset_cons ; 
+  autounfold with * ;
+  (* change ((Ord.sort *)
+  (*            (@tag_ordType choice_type_ordType *)
+  (*                          (fun _ : choice_type => nat_ordType)))) with *)
+  (*   Location ; *)
+  try rewrite !fset_cons ;
   try rewrite <- !fset0E ;
   try rewrite !fsetU0 ;
   try rewrite !fset0U ;
@@ -38,20 +189,35 @@ Ltac normalize_fset :=
   repeat (match goal with
           | |- context [?a :|: ?b :|: ?c] =>
               replace (a :|: b :|: c) with (a :|: (b :|: c)) by apply fsetUA
-          end).
+          end
+          || match goal with
+            | |- context [?a :|: (?a :|: ?b)] =>
+                rewrite (fsetUA a a b) ; rewrite (fsetUid a)
+            end
+          || match goal with
+            | |- context [?a :|: (?b :|: (?a :|: (?b :|: ?c)))] =>
+                rewrite (fsetUA a b (a :|: (b :|: c))) ;
+                rewrite (fsetUA a b c) ;
+                rewrite (fsetUA (a :|: b) (a :|: b) c) ;
+                rewrite (fsetUid (a :|: b))
+            end).
 
 Ltac solve_match :=
-  match goal with
-  | |- context [ fsubset ?a (?a :|: _) ] => apply fsubsetUl
-  | |- context [ fsubset ?a (_ :|: ?a) ] => apply fsubsetUr
-  | |- context [ fsubset fset0 _ ] => apply fsub0set
-  | |- context [ fsubset ?a ?a ] => apply fsubsetxx
-  | _ => progress (try apply fsubsetUl ; try apply fsubsetUr ; try apply fsub0set ; try apply fsubsetxx)
-  end.
+  try set (fset _) ;
+  (lazymatch (* match *) goal with
+   | |- context [ fsubset ?a (?a :|: _) ] => apply fsubsetUl
+   | |- context [ fsubset ?a (_ :|: ?a) ] => apply fsubsetUr
+   | |- context [ fsubset fset0 _ ] => apply fsub0set
+   | |- context [ fsubset ?a ?a ] => apply fsubsetxx
+   end).
+(* || (progress (try apply fsubsetUl ; *)
+(*                    try apply fsubsetUr ; *)
+(*                    try apply fsub0set ; *)
+(*                    try apply fsubsetxx)) *)
 
 Ltac split_fsubset_lhs :=
-  repeat (rewrite is_true_split_and || rewrite fsubUset) ;
-  repeat (try rewrite andb_true_intro ; split).
+  repeat (rewrite !is_true_split_and || rewrite !fsubUset) ;
+  repeat (try rewrite !andb_true_intro ; split).
 
 Ltac solve_single_fset_fsubset :=
   repeat (solve_match || apply fsubsetU ; rewrite is_true_split_or ; (left ; solve_match) || right).
@@ -60,6 +226,40 @@ Ltac solve_is_true :=
   now normalize_fset ;
   split_fsubset_lhs ;
   solve_single_fset_fsubset.
+
+Ltac left_assoc :=
+  repeat (match goal with
+          | |- context [?a :|: ?b :|: ?c] =>
+              replace (a :|: b :|: c) with (a :|: (b :|: c)) by apply fsetUA
+          end).
+
+(* Ltac solve_structured_fsubset := *)
+(*   left_assoc ; *)
+(*   try rewrite !fset_cons ; *)
+(*   admit (* TODO solve head and tail recursively/iteratively *) *)
+
+(* (* congruence? *) *)
+(* Ltac solve_is_true_fast := (* fast ? *) *)
+(*   easy || *)
+(*   (left_assoc ; *)
+(*    match goal with *)
+(*    | |- context [is_true (fsubset _ (?x :|: ?y))] => *)
+(*        match goal with *)
+(*        | |- context [is_true (fsubset ?lhs ?rhs) ] => *)
+(*            let H_rhs := fresh in *)
+(*            let H_f := fresh in *)
+(*            let H_simpl := fresh in *)
+(*            let H_ass_l := fresh in *)
+(*            let H_ass_r := fresh in *)
+(*            set (H_rhs := rhs) ; pattern x in H_rhs ; *)
+(*            set (H_f := fun _ => _) in H_rhs ; *)
+(*            set (H_simpl := H_f fset0) ; subst H_f ; *)
+(*            assert (H_ass_l : lhs = H_simpl :|: x) by (subst H_rhs H_simpl ; hnf ; try rewrite !fset0U ; try rewrite ! fsetU0 ; left_assoc ; solve_split_goal) ; *)
+(*            assert (H_ass_r : x :|: H_simpl = rhs) by (subst H_rhs H_f ; hnf ; solve_structured_fsubset) ; (* Should always be true (safe under approximation), by structure always eq or fset0 <= x *) *)
+(*            replace (H_simpl :|: x) with (x :|: H_simpl) in H_ass_l by apply add_commut ; *)
+(*            transitivity (x :|: H_simpl) ; assumption *)
+(*        end *)
+(*    end). *)
 
 Ltac solve_in_fset :=
   match goal with
@@ -1093,7 +1293,7 @@ Theorem tag_leq_simplify :
   forall (a b : Location),
     is_true (ssrfun.tag a <= ssrfun.tag b)%ord ->
     is_true (ssrfun.tagged a <= ssrfun.tagged b)%ord ->
-    is_true (tag_leq (I:=choice_type_ordType) (T_:=fun _ : choice_type => nat_ordType) a b).
+    is_true (tag_leq (I:=choice_type_choice_type__canonical__Ord_Ord) (T_:=fun _ : choice_type => Datatypes_nat__canonical__Ord_Ord) a b).
 Proof.
   intros [] [].
 
@@ -1121,9 +1321,9 @@ Qed.
 
 Theorem tag_leq_inverse :
   forall a b,
-    tag_leq (I:=choice_type_ordType) (T_:=fun _ : choice_type => nat_ordType) a b
+    tag_leq (I:=choice_type_choice_type__canonical__Ord_Ord) (T_:=fun _ : choice_type => Datatypes_nat__canonical__Ord_Ord) a b
     =
-      (negb (tag_leq (I:=choice_type_ordType) (T_:=fun _ : choice_type => nat_ordType)
+      (negb (tag_leq (I:=choice_type_choice_type__canonical__Ord_Ord) (T_:=fun _ : choice_type => Datatypes_nat__canonical__Ord_Ord)
                     b a) ||
            eqtype.eq_op (ssrfun.tag a) (ssrfun.tag b) &&
         eqtype.eq_op (ssrfun.tagged a) (ssrfun.tagged b))%bool.
@@ -1540,6 +1740,78 @@ Notation "'letb' ''' x ':=' y 'in' f" :=
 (*   apply (f (solve_lift (ret_both x))). *)
 (* Qed. *)
 (* Fail Next Obligation. *)
+
+Equations get_both {L1 I1 L2 I2 B} (x_loc : Location) (x : both L1 I1 x_loc) `{loc_in : x_loc \in L2} (y : both L2 I2 B) `{fsubset_loc : is_true (fsubset L1 L2)} `{fsubset_opsig : is_true (fsubset I1 I2)} : both L2 I2 B :=
+  get_both x_loc x y :=
+    bind_both x (fun x =>
+    {| both_prog :=
+        {|
+          is_pure := is_pure y ;
+          is_state := (putr x_loc x (is_state y))
+        |};
+      both_prog_valid := valid_putr_both x_loc x y loc_in
+    |}).
+Next Obligation.
+  intros.
+  apply better_r.
+  apply r_put_lhs.
+  apply better_r.
+  apply forget_precond.
+  apply (p_eq y).
+Qed.
+Fail Next Obligation.
+
+Notation "'getb' x 'loc(' ℓ ')' 'in' y" :=
+  (solve_lift get_both ℓ y (* (fsubset_loc := _) (fsubset_opsig := _) (loc_in := _) *)) (at level 100, x pattern, right associativity, format "'getb'  x 'loc(' ℓ ')'  'in' y").
+Notation "'getb' ''' x  'loc(' ℓ ')' 'in' y" :=
+  (solve_lift get_both ℓ y (* (fsubset_loc := _) (fsubset_opsig := _) (loc_in := _) *)) (at level 100, x pattern, right associativity, format "'getb' ''' x  'loc(' ℓ ')' 'in'  y").
+
+Equations assign_mut_both {L1 I1} (x_loc : Location) (x : both L1 I1 x_loc) : both (fset [x_loc] :|: L1) I1 'unit :=
+  assign_mut_both x_loc x :=
+    bind_both x (fun x =>
+    {| both_prog :=
+        {|
+          is_pure := (tt : 'unit) ;
+          is_state := (putr x_loc x (ret (tt : 'unit)))
+        |};
+      both_prog_valid := @valid_putr_both (fset [x_loc] :|: L1) I1 'unit x_loc x (solve_lift ret_both (tt : 'unit)) _
+    |}).
+Next Obligation.
+  intros.
+  normalize_fset.
+  solve_single_fset_fsubset.
+Qed.
+Next Obligation.
+  intros.
+  normalize_fset.
+  solve_single_fset_fsubset.
+Qed.
+Next Obligation.
+  intros.
+  rewrite <- fset1E.
+  now apply (ssrbool.introT (fsetU1P _ _ _)) ; left.
+Qed.
+Next Obligation.
+  intros.
+  apply better_r_put_lhs.
+  now apply r_ret.
+Qed.
+Next Obligation.
+  intros.
+  normalize_fset.
+  solve_single_fset_fsubset.
+Qed.
+Next Obligation.
+  intros.
+  normalize_fset.
+  solve_single_fset_fsubset.
+Qed.
+Fail Next Obligation.
+
+Notation "'assignb' x 'loc(' ℓ ')' ':=' y" :=
+  (solve_lift assign_mut_both ℓ y (* (fsubset_loc := _) (fsubset_opsig := _) (loc_in := _) *)) (at level 100, x pattern, right associativity, format "'assignb'  x 'loc(' ℓ ')'  ':=' y").
+Notation "'assignb' ''' x  'loc(' ℓ ')' ':=' y" :=
+  (solve_lift assign_mut_both ℓ y (* (fsubset_loc := _) (fsubset_opsig := _) (loc_in := _) *)) (at level 100, x pattern, right associativity, format "'assignb' ''' x  'loc(' ℓ ')' ':='  y").
 
 Equations let_mut_both {L1 L2 I1 I2 B} (x_loc : Location) `{loc_in : x_loc \in L2} (x : both L1 I1 x_loc) (f : both (fset [x_loc] :|: L1) I1 x_loc -> both L2 I2 B) `{fsubset_loc : is_true (fsubset L1 L2)} `{fsubset_opsig : is_true (fsubset I1 I2)} : both L2 I2 B :=
   let_mut_both x_loc x f :=

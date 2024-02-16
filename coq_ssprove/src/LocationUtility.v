@@ -1,3 +1,5 @@
+From mathcomp Require Import all_ssreflect all_algebra.
+
 From Coq Require Import ZArith List.
 From Crypt Require Import choice_type Package.
 Import PackageNotation.
@@ -15,18 +17,22 @@ Import List.ListNotations.
 
 (*** Location *)
 
-Definition loc_eqType :=
-  (@eqtype.tag_eqType choice_type_eqType (fun _ : choice_type => ssrnat.nat_eqType)).
+From HB Require Import structures.
+HB.instance Definition _ := hasDecEq.Build Location (fun x y => @tag_eqP _ _ x y).
+(* Variables (I : eqType) (T_ : I -> eqType). *)
+(* Implicit Types u v : {i : I & T_ i}. *)
+(* HB.instance Definition _ := hasDecEq.Build {x : _ & _} (fun x y => @tag_eqP _ _ x y). *)
+Definition loc_eqType := pkg_core_definition_Location__canonical__eqtype_Equality.
 
 Definition location_eqb (ℓ ℓ' : Location) :=
-  andb (@eqtype.eq_op ssrnat.nat_eqType (projT2 ℓ) (projT2 ℓ'))
+  andb (@eqtype.eq_op Datatypes_nat__canonical__eqtype_Equality (projT2 ℓ) (projT2 ℓ'))
        (@eqtype.eq_op _ (projT1 ℓ) (projT1 ℓ')).
 
 Definition location_eqbP : forall (l1 l2 : Location),
     @location_eqb (l1) (l2)
     = (@eqtype.eq_op
-         (@eqtype.tag_eqType choice_type_eqType
-                             (fun _ : choice_type => ssrnat.nat_eqType)) l1 l2).
+         _ (* (@eqtype.tag_eqType choice_type_eqType *)
+           (*                   (fun _ : choice_type => ssrnat.nat_eqType)) *) l1 l2).
 Proof.
   intros.
 
@@ -50,8 +56,9 @@ Proof.
   destruct b eqn:b_eq ; subst b.
   - f_equal.
     case eqtype.eqP ; intros.
-    + rewrite e in *.
-      unfold eq_sym.
+    + rewrite e in b_eq.
+      rewrite <- e.
+      simpl.
       reflexivity.
     + exfalso.
       apply (ssrbool.elimT eqtype.eqP) in b_eq.
@@ -109,13 +116,13 @@ Proof.
   intros.
   rewrite location_eqbP.
   pose (@eqtype.eqP loc_eqType).
-  unfold eqtype.Equality.axiom in a.
+  (* unfold eqtype.Equality.axiom in a. *)
   pose (ssrbool.elimT).
   pose (@eqtype.tag_eqP ).
 
   split.
 
-  apply (Couplings.reflection_nonsense (@eqtype.tag_eqType choice_type_eqType (fun _ : choice_type => ssrnat.nat_eqType)) ℓ ℓ').
+  apply (Couplings.reflection_nonsense _ ℓ ℓ').
   intros. subst.
   apply eqtype.eq_refl.
 Qed.
@@ -126,7 +133,7 @@ Global Program Instance location_eqdec: EqDec (Location) := {
   }.
 
 Definition location_ltb : Location -> Location -> bool :=
-  (tag_leq (I:=choice_type_ordType) (T_:=fun _ : choice_type => nat_ordType)).
+  (tag_leq (I:=choice_type_choice_type__canonical__Ord_Ord) (T_:=fun _ : choice_type => Datatypes_nat__canonical__Ord_Ord)).
 
 Definition location_ltb_simple : Location -> Location -> bool :=
   fun x y => ltb (projT2 x) (projT2 y).
@@ -134,7 +141,7 @@ Definition location_ltb_simple : Location -> Location -> bool :=
 Global Instance location_comparable : Comparable (Location) :=
   eq_dec_lt_Comparable location_ltb.
 
-Definition le_is_ord_leq : forall s s0 : nat_ordType,
+Definition le_is_ord_leq : forall s s0 : Datatypes_nat__canonical__Ord_Ord,
     eqtype.eq_op s s0 = false -> ltb s s0 = (s <= s0)%ord.
 Proof.
   intros s s0.
@@ -153,7 +160,7 @@ Proof.
 Qed.
 
 Definition opsig_eqb (ℓ ℓ' : opsig) : bool :=
-  andb (@eqtype.eq_op ssrnat.nat_eqType (fst ℓ) (fst ℓ'))
+  andb (@eqtype.eq_op Datatypes_nat__canonical__eqtype_Equality (fst ℓ) (fst ℓ'))
        (andb (@eqtype.eq_op _ (fst (snd ℓ)) (fst (snd ℓ')))
              (@eqtype.eq_op _ (snd (snd ℓ)) (snd (snd ℓ')))).
 
@@ -170,7 +177,7 @@ Proof.
   {
     apply ZifyClasses.and_morph.
     symmetry.
-    apply (ssrbool.rwP (@eqtype.eqP ssrnat.nat_eqType i i0)).
+    apply (ssrbool.rwP (@eqtype.eqP Datatypes_nat__canonical__eqtype_Equality i i0)).
     apply ZifyClasses.and_morph.
     symmetry.
     apply (ssrbool.rwP (@eqtype.eqP _ c c1)).
@@ -191,9 +198,9 @@ Global Program Instance opsig_eqdec: EqDec (opsig) := {
 (*   apply (ssrbool.rwP (xseq.InP _ _)). *)
 (* Qed. *)
 
-Definition opsig_ordType := (prod_ordType nat_ordType (prod_ordType choice_type_ordType choice_type_ordType)).
+Definition opsig_ordType := (Datatypes_prod__canonical__Ord_Ord Datatypes_nat__canonical__Ord_Ord (Datatypes_prod__canonical__Ord_Ord choice_type_choice_type__canonical__Ord_Ord choice_type_choice_type__canonical__Ord_Ord)).
 
-Definition loc_ordType := (@tag_ordType choice_type_ordType (fun _ : choice_type => nat_ordType)).
+Definition loc_ordType : ordType := @Specif_sigT__canonical__Ord_Ord choice_type_choice_type__canonical__Ord_Ord (fun _ : choice_type => Datatypes_nat__canonical__Ord_Ord).
 
 Fixpoint incl_expand A `{EqDec A} (l1 l2 : list A) : Prop :=
   match l1 with
@@ -392,7 +399,7 @@ Fixpoint incl_expand A `{EqDec A} (l1 l2 : list A) : Prop :=
 (*     apply IHl1. *)
 (* Qed. *)
 
-Definition location_lebP : (tag_leq (I:=choice_type_ordType) (T_:=fun _ : choice_type => nat_ordType)) = leb.
+Definition location_lebP : (tag_leq (I:=choice_type_choice_type__canonical__Ord_Ord) (T_:=fun _ : choice_type => Datatypes_nat__canonical__eqtype_Equality)) = leb.
 Proof.
   intros.
   do 2 (apply (@functional_extensionality Location) ; intros []).
@@ -430,7 +437,7 @@ Proof.
   destruct eqtype.eqP in *.
   2: contradiction.
   cbn in n_eq_n0.
-  destruct eq_sym in *.
+  rewrite <- e.
   rewrite ssrnat.eqnE in n_eq_n0.
   apply Couplings.reflection_nonsense in n_eq_n0.
   apply Ord.eq_leq. assumption.
