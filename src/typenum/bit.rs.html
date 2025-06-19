@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/typenum-1.16.0/src/bit.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>bit.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../typenum/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/typenum-1.18.0/src/bit.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>bit.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../typenum/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
         </a><h2 class="location"></h2>
     </nav>
     <nav class="sidebar"><a class="sidebar-logo" href="../../typenum/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
@@ -341,6 +341,16 @@
 <span id="335">335</span>
 <span id="336">336</span>
 <span id="337">337</span>
+<span id="338">338</span>
+<span id="339">339</span>
+<span id="340">340</span>
+<span id="341">341</span>
+<span id="342">342</span>
+<span id="343">343</span>
+<span id="344">344</span>
+<span id="345">345</span>
+<span id="346">346</span>
+<span id="347">347</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Type-level bits.</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! These are rather simple and are used as the building blocks of the</span>
@@ -527,18 +537,28 @@
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">tests</span>)]</span>
-<span class="kw">mod</span> <span class="ident">tests</span> {
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
+<span class="kw">mod</span> <span class="ident">bit_op_tests</span> {
+    <span class="kw">use</span> <span class="ident">core::ops</span>::{<span class="ident">BitAnd</span>, <span class="ident">BitOr</span>, <span class="ident">BitXor</span>, <span class="ident">Not</span>};
+
+    <span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">B0</span>, <span class="ident">B1</span>};
+
     <span class="comment">// macro for testing operation results. Uses `Same` to ensure the types are equal and</span>
     <span class="comment">// not just the values they evaluate to.</span>
     <span class="macro">macro_rules!</span> <span class="ident">test_bit_op</span> {
         (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">op</span>:<span class="ident">ident</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">Lhs</span>:<span class="ident">ident</span> <span class="op">=</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">Answer</span>:<span class="ident">ident</span>) =&gt; {{
-            <span class="kw">type</span> <span class="ident">Test</span> <span class="op">=</span> <span class="op">&lt;</span><span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">Lhs</span> <span class="kw">as</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">op</span><span class="op">&gt;</span><span class="ident">::Output</span> <span class="kw">as</span> <span class="ident">::Same</span><span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">Answer</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::Output</span>;
-            <span class="macro">assert_eq!</span>(<span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">Answer</span> <span class="kw">as</span> <span class="ident">Bit</span><span class="op">&gt;</span><span class="ident">::to_u8</span>(), <span class="op">&lt;</span><span class="ident">Test</span> <span class="kw">as</span> <span class="ident">Bit</span><span class="op">&gt;</span><span class="ident">::to_u8</span>());
+            <span class="kw">type</span> <span class="ident">Test</span> <span class="op">=</span> <span class="op">&lt;</span><span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">Lhs</span> <span class="kw">as</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">op</span><span class="op">&gt;</span><span class="ident">::Output</span> <span class="kw">as</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">crate::Same</span><span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">Answer</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::Output</span>;
+            <span class="macro">assert_eq!</span>(
+                <span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">Answer</span> <span class="kw">as</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">crate::Bit</span><span class="op">&gt;</span><span class="ident">::to_u8</span>(),
+                <span class="op">&lt;</span><span class="ident">Test</span> <span class="kw">as</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">crate::Bit</span><span class="op">&gt;</span><span class="ident">::to_u8</span>()
+            );
         }};
         (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">Lhs</span>:<span class="ident">ident</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">op</span>:<span class="ident">ident</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">Rhs</span>:<span class="ident">ident</span> <span class="op">=</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">Answer</span>:<span class="ident">ident</span>) =&gt; {{
-            <span class="kw">type</span> <span class="ident">Test</span> <span class="op">=</span> <span class="op">&lt;</span><span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">Lhs</span> <span class="kw">as</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">op</span><span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">Rhs</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::Output</span> <span class="kw">as</span> <span class="ident">::Same</span><span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">Answer</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::Output</span>;
-            <span class="macro">assert_eq!</span>(<span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">Answer</span> <span class="kw">as</span> <span class="ident">Bit</span><span class="op">&gt;</span><span class="ident">::to_u8</span>(), <span class="op">&lt;</span><span class="ident">Test</span> <span class="kw">as</span> <span class="ident">Bit</span><span class="op">&gt;</span><span class="ident">::to_u8</span>());
+            <span class="kw">type</span> <span class="ident">Test</span> <span class="op">=</span> <span class="op">&lt;</span><span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">Lhs</span> <span class="kw">as</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">op</span><span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">Rhs</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::Output</span> <span class="kw">as</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">crate::Same</span><span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">Answer</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::Output</span>;
+            <span class="macro">assert_eq!</span>(
+                <span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">Answer</span> <span class="kw">as</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">crate::Bit</span><span class="op">&gt;</span><span class="ident">::to_u8</span>(),
+                <span class="op">&lt;</span><span class="ident">Test</span> <span class="kw">as</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">crate::Bit</span><span class="op">&gt;</span><span class="ident">::to_u8</span>()
+            );
         }};
     }
 
@@ -661,7 +681,7 @@
 }
 
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
-<span class="kw">mod</span> <span class="ident">tests</span> {
+<span class="kw">mod</span> <span class="ident">bit_creation_tests</span> {
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">bit_creation</span>() {
         {

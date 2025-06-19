@@ -2,16 +2,16 @@
         </a><h2 class="location"></h2>
     </nav>
     <nav class="sidebar"><a class="sidebar-logo" href="../unicode_ident/index.html"><div class="logo-container"><img class="rust-logo" src="../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"><a href="#">Crate unicode_ident</a></h2><div class="sidebar-elems"><div class="block"><ul><li class="version">Version 1.0.6</li><li><a id="all-types" href="all.html">All Items</a></li></ul></div><section><div class="block"><ul><li><a href="#functions">Functions</a></li></ul></div></section></div></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../unicode_ident/index.html"><img class="rust-logo" src="../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1">
+        </a><h2 class="location"><a href="#">Crate unicode_ident</a></h2><div class="sidebar-elems"><div class="block"><ul><li class="version">Version 1.0.18</li><li><a id="all-types" href="all.html">All Items</a></li></ul></div><section><div class="block"><ul><li><a href="#functions">Functions</a></li></ul></div></section></div></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../unicode_ident/index.html"><img class="rust-logo" src="../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1">
                                 <a href="../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../wheel.svg"></a></div>
                         </div></form></nav></div><section id="main-content" class="content"><div class="main-heading">
-    <h1 class="fqn"><span class="in-band">Crate <a class="mod" href="#">unicode_ident</a><button id="copy-path" onclick="copy_path(this)" title="Copy item path to clipboard"><img src="../clipboard.svg" width="19" height="18" alt="Copy item path"></button></span></h1><span class="out-of-band"><a class="srclink" href="../src/unicode_ident/lib.rs.html#1-268">source</a> · <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">[<span class="inner">&#x2212;</span>]</a></span></div><details class="rustdoc-toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p><a href="https://github.com/dtolnay/unicode-ident"><img src="https://img.shields.io/badge/github-8da0cb?style=for-the-badge&amp;labelColor=555555&amp;logo=github" alt="github" /></a> <a href="https://crates.io/crates/unicode-ident"><img src="https://img.shields.io/badge/crates.io-fc8d62?style=for-the-badge&amp;labelColor=555555&amp;logo=rust" alt="crates-io" /></a> <a href="https://docs.rs/unicode-ident"><img src="https://img.shields.io/badge/docs.rs-66c2a5?style=for-the-badge&amp;labelColor=555555&amp;logo=docs.rs" alt="docs-rs" /></a></p>
+    <h1 class="fqn"><span class="in-band">Crate <a class="mod" href="#">unicode_ident</a><button id="copy-path" onclick="copy_path(this)" title="Copy item path to clipboard"><img src="../clipboard.svg" width="19" height="18" alt="Copy item path"></button></span></h1><span class="out-of-band"><a class="srclink" href="../src/unicode_ident/lib.rs.html#1-271">source</a> · <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">[<span class="inner">&#x2212;</span>]</a></span></div><details class="rustdoc-toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p><a href="https://github.com/dtolnay/unicode-ident"><img src="https://img.shields.io/badge/github-8da0cb?style=for-the-badge&amp;labelColor=555555&amp;logo=github" alt="github" /></a> <a href="https://crates.io/crates/unicode-ident"><img src="https://img.shields.io/badge/crates.io-fc8d62?style=for-the-badge&amp;labelColor=555555&amp;logo=rust" alt="crates-io" /></a> <a href="https://docs.rs/unicode-ident"><img src="https://img.shields.io/badge/docs.rs-66c2a5?style=for-the-badge&amp;labelColor=555555&amp;logo=docs.rs" alt="docs-rs" /></a></p>
 <br>
 <p>Implementation of <a href="https://www.unicode.org/reports/tr31/">Unicode Standard Annex #31</a> for determining which
 <code>char</code> values are valid in programming language identifiers.</p>
 <p>This crate is a better optimized implementation of the older <code>unicode-xid</code>
 crate. This crate uses less static storage, and is able to classify both
-ASCII and non-ASCII codepoints with better performance, 2–10×
+ASCII and non-ASCII codepoints with better performance, 2–6×
 faster than <code>unicode-xid</code>.</p>
 <br>
 <h3 id="comparison-of-performance"><a href="#comparison-of-performance">Comparison of performance</a></h3>
@@ -31,11 +31,11 @@ single <code>char</code> has the XID_Start or XID_Continue Unicode property,
 comparing across different ratios of ASCII to non-ASCII codepoints in the
 input data.</p>
 <div><table><thead><tr><th></th><th>static storage</th><th>0% nonascii</th><th>1%</th><th>10%</th><th>100% nonascii</th></tr></thead><tbody>
-<tr><td><strong><code>unicode-ident</code></strong></td><td>9.75 K</td><td>0.96 ns</td><td>0.95 ns</td><td>1.09 ns</td><td>1.55 ns</td></tr>
-<tr><td><strong><code>unicode-xid</code></strong></td><td>11.34 K</td><td>1.88 ns</td><td>2.14 ns</td><td>3.48 ns</td><td>15.63 ns</td></tr>
-<tr><td><strong><code>ucd-trie</code></strong></td><td>9.95 K</td><td>1.29 ns</td><td>1.28 ns</td><td>1.36 ns</td><td>2.15 ns</td></tr>
-<tr><td><strong><code>fst</code></strong></td><td>133 K</td><td>55.1 ns</td><td>54.9 ns</td><td>53.2 ns</td><td>28.5 ns</td></tr>
-<tr><td><strong><code>roaring</code></strong></td><td>66.1 K</td><td>2.78 ns</td><td>3.09 ns</td><td>3.37 ns</td><td>4.70 ns</td></tr>
+<tr><td><strong><code>unicode-ident</code></strong></td><td>10.4 K</td><td>1.03 ns</td><td>1.02 ns</td><td>1.11 ns</td><td>1.66 ns</td></tr>
+<tr><td><strong><code>unicode-xid</code></strong></td><td>11.8 K</td><td>2.57 ns</td><td>2.74 ns</td><td>3.20 ns</td><td>9.35 ns</td></tr>
+<tr><td><strong><code>ucd-trie</code></strong></td><td>10.3 K</td><td>1.27 ns</td><td>1.27 ns</td><td>1.41 ns</td><td>2.53 ns</td></tr>
+<tr><td><strong><code>fst</code></strong></td><td>144 K</td><td>49.3 ns</td><td>49.1 ns</td><td>47.1 ns</td><td>27.9 ns</td></tr>
+<tr><td><strong><code>roaring</code></strong></td><td>66.1 K</td><td>4.10 ns</td><td>4.05 ns</td><td>4.02 ns</td><td>5.12 ns</td></tr>
 </tbody></table>
 </div>
 <p>Source code for the benchmark is provided in the <em>bench</em> directory of this
@@ -64,7 +64,7 @@ table, while it would be just 1 bit in a dense bitmap.</p>
 cache lines on average. Each cache line fits only 8 table entries.
 Additionally, the branching performed during the binary search is probably
 mostly unpredictable to the branch predictor.</p>
-<p>Overall, the crate ends up being about 10× slower on non-ASCII input
+<p>Overall, the crate ends up being about 6× slower on non-ASCII input
 compared to the fastest crate.</p>
 <p>A potential improvement would be to pack the table entries more compactly.
 Rust’s <code>char</code> type is a 21-bit integer padded to 32 bits, which means every
@@ -180,5 +180,7 @@ necessitate raising the size of the trie’s first level.</p>
 <p>In contrast to binary search or the <code>ucd-trie</code> crate, performing lookups in
 this data structure is straight-line code with no need for branching.</p>
 </div></details><h2 id="functions" class="small-section-header"><a href="#functions">Functions</a></h2>
-<div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="fn" href="fn.is_xid_continue.html" title="unicode_ident::is_xid_continue fn">is_xid_continue</a></div><div class="item-right docblock-short"></div></div><div class="item-row"><div class="item-left module-item"><a class="fn" href="fn.is_xid_start.html" title="unicode_ident::is_xid_start fn">is_xid_start</a></div><div class="item-right docblock-short"></div></div></div></section></div></main><div id="rustdoc-vars" data-root-path="../" data-current-crate="unicode_ident" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (495b21669 2022-07-03)" ></div>
+<div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="fn" href="fn.is_xid_continue.html" title="unicode_ident::is_xid_continue fn">is_xid_continue</a></div><div class="item-right docblock-short"><p>Whether the character has the Unicode property XID_Continue.</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="fn" href="fn.is_xid_start.html" title="unicode_ident::is_xid_start fn">is_xid_start</a></div><div class="item-right docblock-short"><p>Whether the character has the Unicode property XID_Start.</p>
+</div></div></div></section></div></main><div id="rustdoc-vars" data-root-path="../" data-current-crate="unicode_ident" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (495b21669 2022-07-03)" ></div>
 </body></html>

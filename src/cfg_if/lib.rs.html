@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/cfg-if-1.0.0/src/lib.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../cfg_if/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/cfg-if-1.0.1/src/lib.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../cfg_if/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
         </a><h2 class="location"></h2>
     </nav>
     <nav class="sidebar"><a class="sidebar-logo" href="../../cfg_if/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
@@ -180,6 +180,21 @@
 <span id="174">174</span>
 <span id="175">175</span>
 <span id="176">176</span>
+<span id="177">177</span>
+<span id="178">178</span>
+<span id="179">179</span>
+<span id="180">180</span>
+<span id="181">181</span>
+<span id="182">182</span>
+<span id="183">183</span>
+<span id="184">184</span>
+<span id="185">185</span>
+<span id="186">186</span>
+<span id="187">187</span>
+<span id="188">188</span>
+<span id="189">189</span>
+<span id="190">190</span>
+<span id="191">191</span>
 </pre><pre class="rust"><code><span class="doccomment">//! A macro for defining `#[cfg]` if-else statements.</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! The macro provided by this crate, `cfg_if`, is similar to the `if/elif` C</span>
@@ -209,62 +224,76 @@
 <span class="attribute">#![<span class="ident">doc</span>(<span class="ident">html_root_url</span> <span class="op">=</span> <span class="string">&quot;https://docs.rs/cfg-if&quot;</span>)]</span>
 <span class="attribute">#![<span class="ident">deny</span>(<span class="ident">missing_docs</span>)]</span>
 <span class="attribute">#![<span class="ident">cfg_attr</span>(<span class="ident">test</span>, <span class="ident">deny</span>(<span class="ident">warnings</span>))]</span>
+<span class="attribute">#![<span class="ident">cfg_attr</span>(<span class="ident">test</span>, <span class="ident">allow</span>(<span class="ident">unexpected_cfgs</span>))]</span> <span class="comment">// we test with features that do not exist</span>
 
 <span class="doccomment">/// The main macro provided by this crate. See crate documentation for more</span>
 <span class="doccomment">/// information.</span>
 <span class="attribute">#[<span class="ident">macro_export</span>]</span>
 <span class="macro">macro_rules!</span> <span class="ident">cfg_if</span> {
     <span class="comment">// match if/else chains with a final `else`</span>
-    ($(
-        <span class="kw">if</span> <span class="attribute">#[<span class="ident">cfg</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">meta</span>:<span class="ident">meta</span>)]</span> { $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">tokens</span>:<span class="ident">tt</span>)<span class="op">*</span> }
-    ) <span class="kw">else</span> <span class="op">*</span> <span class="kw">else</span> {
-        $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">tokens2</span>:<span class="ident">tt</span>)<span class="op">*</span>
-    }) =&gt; {
+    (
+        $(
+            <span class="kw">if</span> <span class="attribute">#[<span class="ident">cfg</span>( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">i_meta</span>:<span class="ident">meta</span> )]</span> { $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">i_tokens</span>:<span class="ident">tt</span> )<span class="op">*</span> }
+        ) <span class="kw">else</span><span class="op">+</span>
+        <span class="kw">else</span> { $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">e_tokens</span>:<span class="ident">tt</span> )<span class="op">*</span> }
+    ) =&gt; {
         <span class="macro-nonterminal">$</span><span class="macro">crate::cfg_if!</span> {
-            @<span class="macro-nonterminal">__items</span>
-            () ;
-            $( ( (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">meta</span>) ($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">tokens</span>)<span class="kw-2">*</span>) ), )<span class="op">*</span>
-            ( () ($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">tokens2</span>)<span class="kw-2">*</span>) ),
+            @<span class="macro-nonterminal">__items</span> () ;
+            $(
+                (( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">i_meta</span> ) ( $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">i_tokens</span> )<span class="op">*</span> )) ,
+            )<span class="op">+</span>
+            (() ( $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">e_tokens</span> )<span class="op">*</span> )) ,
         }
     };
 
     <span class="comment">// match if/else chains lacking a final `else`</span>
     (
-        <span class="kw">if</span> <span class="attribute">#[<span class="ident">cfg</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">i_met</span>:<span class="ident">meta</span>)]</span> { $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">i_tokens</span>:<span class="ident">tt</span>)<span class="op">*</span> }
+        <span class="kw">if</span> <span class="attribute">#[<span class="ident">cfg</span>( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">i_meta</span>:<span class="ident">meta</span> )]</span> { $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">i_tokens</span>:<span class="ident">tt</span> )<span class="op">*</span> }
         $(
-            <span class="kw">else</span> <span class="kw">if</span> <span class="attribute">#[<span class="ident">cfg</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">e_met</span>:<span class="ident">meta</span>)]</span> { $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">e_tokens</span>:<span class="ident">tt</span>)<span class="op">*</span> }
+            <span class="kw">else</span> <span class="kw">if</span> <span class="attribute">#[<span class="ident">cfg</span>( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">e_meta</span>:<span class="ident">meta</span> )]</span> { $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">e_tokens</span>:<span class="ident">tt</span> )<span class="op">*</span> }
         )<span class="op">*</span>
     ) =&gt; {
         <span class="macro-nonterminal">$</span><span class="macro">crate::cfg_if!</span> {
-            @<span class="macro-nonterminal">__items</span>
-            () ;
-            ( (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">i_met</span>) ($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">i_tokens</span>)<span class="kw-2">*</span>) ),
-            $( ( (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">e_met</span>) ($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">e_tokens</span>)<span class="kw-2">*</span>) ), )<span class="op">*</span>
-            ( () () ),
+            @<span class="macro-nonterminal">__items</span> () ;
+            (( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">i_meta</span> ) ( $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">i_tokens</span> )<span class="op">*</span> )) ,
+            $(
+                (( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">e_meta</span> ) ( $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">e_tokens</span> )<span class="op">*</span> )) ,
+            )<span class="op">*</span>
         }
     };
 
     <span class="comment">// Internal and recursive macro to emit all the items</span>
     <span class="comment">//</span>
-    <span class="comment">// Collects all the negated cfgs in a list at the beginning and after the</span>
-    <span class="comment">// semicolon is all the remaining items</span>
-    (@<span class="ident">__items</span> ($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">not</span>:<span class="ident">meta</span>,)<span class="kw-2">*</span>) ; ) =&gt; {};
-    (@<span class="ident">__items</span> ($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">not</span>:<span class="ident">meta</span>,)<span class="kw-2">*</span>) ; ( ($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">m</span>:<span class="ident">meta</span>),<span class="kw-2">*</span>) ($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">tokens</span>:<span class="ident">tt</span>)<span class="kw-2">*</span>) ), $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rest</span>:<span class="ident">tt</span>)<span class="kw-2">*</span>) =&gt; {
+    <span class="comment">// Collects all the previous cfgs in a list at the beginning, so they can be</span>
+    <span class="comment">// negated. After the semicolon are all the remaining items.</span>
+    (@<span class="ident">__items</span> ( $( <span class="macro-nonterminal">$</span><span class="kw">_</span>:<span class="macro-nonterminal">meta</span> , )<span class="op">*</span> ) ; ) =&gt; {};
+    (
+        @<span class="ident">__items</span> ( $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">no</span>:<span class="ident">meta</span> , )<span class="op">*</span> ) ;
+        (( $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">yes</span>:<span class="ident">meta</span> )<span class="question-mark">?</span> ) ( $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">tokens</span>:<span class="ident">tt</span> )<span class="op">*</span> )) ,
+        $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">rest</span>:<span class="ident">tt</span> , )<span class="op">*</span>
+    ) =&gt; {
         <span class="comment">// Emit all items within one block, applying an appropriate #[cfg]. The</span>
-        <span class="comment">// #[cfg] will require all `$m` matchers specified and must also negate</span>
+        <span class="comment">// #[cfg] will require all `$yes` matchers specified and must also negate</span>
         <span class="comment">// all previous matchers.</span>
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">m</span>,)<span class="op">*</span> <span class="ident">not</span>(<span class="ident">any</span>($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">not</span>),<span class="kw-2">*</span>))))]</span> <span class="macro-nonterminal">$</span><span class="macro">crate::cfg_if!</span> { @<span class="macro-nonterminal">__identity</span> $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">tokens</span>)<span class="op">*</span> }
+        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(
+            $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">yes</span> , )<span class="question-mark">?</span>
+            <span class="ident">not</span>(<span class="ident">any</span>( $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">no</span> ),<span class="op">*</span> ))
+        ))]</span>
+        <span class="macro-nonterminal">$</span><span class="macro">crate::cfg_if!</span> { @<span class="macro-nonterminal">__identity</span> $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">tokens</span> )<span class="op">*</span> }
 
         <span class="comment">// Recurse to emit all other items in `$rest`, and when we do so add all</span>
-        <span class="comment">// our `$m` matchers to the list of `$not` matchers as future emissions</span>
+        <span class="comment">// our `$yes` matchers to the list of `$no` matchers as future emissions</span>
         <span class="comment">// will have to negate everything we just matched as well.</span>
-        <span class="macro-nonterminal">$</span><span class="macro">crate::cfg_if!</span> { @<span class="macro-nonterminal">__items</span> ($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">not</span>,)<span class="op">*</span> $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">m</span>,)<span class="kw-2">*</span>) ; $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rest</span>)<span class="op">*</span> }
+        <span class="macro-nonterminal">$</span><span class="macro">crate::cfg_if!</span> {
+            @<span class="macro-nonterminal">__items</span> ( $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">no</span> , )<span class="op">*</span> $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">yes</span> , )<span class="question-mark">?</span> ) ;
+            $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">rest</span> , )<span class="op">*</span>
+        }
     };
 
     <span class="comment">// Internal macro to make __apply work out right for different match types,</span>
-    <span class="comment">// because of how macros matching/expand stuff.</span>
-    (@<span class="ident">__identity</span> $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">tokens</span>:<span class="ident">tt</span>)<span class="kw-2">*</span>) =&gt; {
-        $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">tokens</span>)<span class="op">*</span>
+    <span class="comment">// because of how macros match/expand stuff.</span>
+    (@<span class="ident">__identity</span> $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">tokens</span>:<span class="ident">tt</span> )<span class="op">*</span> ) =&gt; {
+        $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">tokens</span> )<span class="op">*</span>
     };
 }
 
@@ -335,6 +364,7 @@
         }}
     }
 
+    <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">dead_code</span>)]</span>
     <span class="kw">trait</span> <span class="ident">Trait</span> {
         <span class="kw">fn</span> <span class="ident">blah</span>(<span class="kw-2">&amp;</span><span class="self">self</span>);
     }

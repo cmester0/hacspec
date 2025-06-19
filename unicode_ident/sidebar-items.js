@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["is_xid_continue",""],["is_xid_start",""]]};
+window.SIDEBAR_ITEMS = {"fn":[["is_xid_continue","Whether the character has the Unicode property XID_Continue."],["is_xid_start","Whether the character has the Unicode property XID_Start."]]};
